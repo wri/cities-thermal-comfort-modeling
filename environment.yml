@@ -1,0 +1,11 @@
+name: cities-thermal
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - ipykernel
+  - python-dotenv
+  - pip
+  - pip:
+    - git+https://github.com/wri/cities-cif@v0.1.2

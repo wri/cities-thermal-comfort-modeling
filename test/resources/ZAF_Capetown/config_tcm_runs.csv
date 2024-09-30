@@ -1,0 +1,3 @@
+met_set_id,enabled,met_file_name,utc_offset,dem_tif,dsm_tif,veg_canopy_tif,landcover_tif,svfs_zip,wall_height_tif,wall_aspect_tif
+1,TRUE,./met_files/met_20jan2022.txt,2,./source_data/dem.tif,./source_data/dsm_ground_build.tif,./source_data/tree_canopy.tif,./source_data/landcover.tif,./preprocessed_data/svfs.zip,./preprocessed_data/wallheight.tif,./preprocessed_data/wallaspect.tif
+2,FALSE,./met_files/met_21jan2022.txt,2,./source_data/dem.tif,./source_data/dsm_ground_build.tif,./source_data/tree_canopy.tif,./source_data/landcover.tif,./preprocessed_data/svfs.zip,./preprocessed_data/wallheight.tif,./preprocessed_data/wallaspect.tif

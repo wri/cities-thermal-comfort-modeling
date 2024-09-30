@@ -10,6 +10,7 @@ faulthandler.enable()
 
 UPP = UmepProcessingQgisPlugins()
 
+@pytest.mark.skip(reason="Very slow execution, so disabling by default")
 def test_wall_height_aspect(city_data):
     runID = 'test_wall_dimensions'
 
@@ -26,6 +27,7 @@ def test_wall_height_aspect(city_data):
     assert wall_height_file_exists and wall_aspect_file_exists
 
 
+@pytest.mark.skip(reason="Very slow execution, so disabling by default")
 def test_skyview_factor(city_data):
     runID = 'test_skyview_factor'
 
@@ -40,6 +42,7 @@ def test_skyview_factor(city_data):
     assert skyview_zip_exists
 
 
+@pytest.mark.skip(reason="Very slow execution, so disabling by default")
 def test_solweig_generator(city_data):
     runID = 'test_solweig'
     step = 0

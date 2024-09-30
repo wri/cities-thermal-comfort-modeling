@@ -21,7 +21,7 @@ def clean_folder(folder_path):
             try:
                 # Check if it is a file or a directory
                 if os.path.isfile(file_path) or os.path.islink(file_path):
-                    os.unlink(file_path)  # Remove the file or link
+                    os.remove(file_path)  # Remove the file or link
                 elif os.path.isdir(file_path):
                     shutil.rmtree(file_path)  # Remove the directory and its contents
             except Exception as e:
@@ -30,8 +30,7 @@ def clean_folder(folder_path):
 
 def remove_folder(folder_path):
     if os.path.isdir(folder_path):
-        clean_folder(folder_path)
-        os.rmdir(folder_path)
+        shutil.rmtree(folder_path)
 
 def remove_file(file_path):
     if os.path.isfile(file_path):

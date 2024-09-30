@@ -1,15 +1,19 @@
 import pytest
 import os
+import tempfile
 
 from src.CityData import instantiate_city_data
+from src.tools import remove_folder
 
-PACKAGE_FOLDER = os.path.dirname(os.getcwd())
-SOURCE_PATH = os.path.join(PACKAGE_FOLDER, 'sample_cities')
-TARGET_PATH = os.path.join(PACKAGE_FOLDER, 'test', 'resources')
-
+SOURCE_PATH = os.path.join(os.path.dirname(os.getcwd()), 'sample_cities')
+CITY_FOLDER_NAME = 'ZAF_Capetown_small_tile'
+TEMP_TARGET_FOLDER = tempfile.mkdtemp()
 
 @ pytest.fixture
-def city_data():
-    city_folder_name = 'ZAF_Capetown'
-    city_data = instantiate_city_data(city_folder_name, SOURCE_PATH, TARGET_PATH)
-    return city_data
+def setup_city_data():
+    city_data = instantiate_city_data(CITY_FOLDER_NAME, SOURCE_PATH, TEMP_TARGET_FOLDER)
+    yield city_data
+
+@pytest.fixture(autouse=True)
+def cleanup_files(monkeypatch):
+    remove_folder(TEMP_TARGET_FOLDER)

@@ -26,7 +26,7 @@ def run_data(data_source_folder, results_target_folder):
             enabled = src_tools.toBool[row[1].lower()]
 
             success = True
-            if enabled:
+            if enabled is True:
                 start_time = datetime.now()
                 city_folder_name = row[2]
                 city_data = instantiate_city_data(city_folder_name, source_data_path, target_path)

@@ -7,7 +7,7 @@ dependencies:
   - python=3.12
   - ipykernel
   - python-dotenv
-  - qgis
+  - qgis=3.34.11
   - scipy
   - numpy=1.26.4
   - conda-build

@@ -51,19 +51,19 @@ class CityData:
         self.city_source_path = str(os.path.join(self.source_base_path, city_folder_name))
         self.city_target_path = str(os.path.join(self.target_base_path, city_folder_name))
 
-        self.data_source_path = os.path.join(self.city_source_path, SOURCE_DATA_SUBFOLDER, self.tile_folder_name)
-        self.met_files_path = os.path.join(self.city_source_path, SOURCE_MET_SUBFOLDER)
-        self.preprocessed_data_path = os.path.join(self.city_target_path, GENERATED_PREPROCESSED_SUBFOLDER, self.tile_folder_name)
-        self.tcm_results_path = os.path.join(self.city_target_path, GENERATED_TCM_SUBFOLDER, self.tile_folder_name)
+        self.source_data_path = os.path.join(self.city_source_path, SOURCE_DATA_SUBFOLDER, self.tile_folder_name)
+        self.source_met_files_path = os.path.join(self.city_source_path, SOURCE_MET_SUBFOLDER)
+        self.target_preprocessed_data_path = os.path.join(self.city_target_path, GENERATED_PREPROCESSED_SUBFOLDER, self.tile_folder_name)
+        self.target_tcm_results_path = os.path.join(self.city_target_path, GENERATED_TCM_SUBFOLDER, self.tile_folder_name)
 
-        self.dem_path = os.path.join(self.data_source_path, self.dem_file)
-        self.dsm_path = os.path.join(self.data_source_path, self.dsm_file)
-        self.vegcanopy_path = os.path.join(self.data_source_path, self.veg_canopy_file)
-        self.landcover_path = os.path.join(self.data_source_path, self.landcover_file)
+        self.dem_path = os.path.join(self.source_data_path, self.dem_file)
+        self.dsm_path = os.path.join(self.source_data_path, self.dsm_file)
+        self.vegcanopy_path = os.path.join(self.source_data_path, self.veg_canopy_file)
+        self.landcover_path = os.path.join(self.source_data_path, self.landcover_file)
 
-        self.wallheight_path = os.path.join(self.preprocessed_data_path, self.wall_height_file)
-        self.wallaspect_path = os.path.join(self.preprocessed_data_path, self.wall_aspect_file)
-        self.svfszip_path = os.path.join(self.preprocessed_data_path, self.svfs_zip_file)
+        self.wallheight_path = os.path.join(self.target_preprocessed_data_path, self.wall_height_file)
+        self.wallaspect_path = os.path.join(self.target_preprocessed_data_path, self.wall_aspect_file)
+        self.svfszip_path = os.path.join(self.target_preprocessed_data_path, self.svfs_zip_file)
 
 def instantiate_city_data(city_folder_name, tile_folder_name, source_base_path, target_base_path):
     city_source_path = str(os.path.join(source_base_path, city_folder_name))

@@ -52,9 +52,9 @@ def run_data(data_source_folder, results_target_folder):
 
 
 def _run_tcm(UPP, runID, city_data):
-    config_tcm_path = os.path.join(city_data.city_source_path, SOLWEIG_TIME_SERIES_CONFIG_FILE)
+    config_tcm_time_series_path = os.path.join(city_data.city_source_path, SOLWEIG_TIME_SERIES_CONFIG_FILE)
     return_code = 0
-    with open(config_tcm_path, mode='r') as solweig_config_file:
+    with open(config_tcm_time_series_path, mode='r') as solweig_config_file:
         csv_reader = csv.reader(solweig_config_file)
         next(csv_reader, None)  # skip the headers
 
@@ -62,19 +62,14 @@ def _run_tcm(UPP, runID, city_data):
             step = row[0]
             enabled = src_tools.toBool[row[1].lower()]
             if enabled:
-                met_file_path = _get_data_path(city_data.met_files_path, row, 2)
+                met_file_name = row[2]
                 utc_offset = row[3]
 
-                return_code = UPP.generate_solweig(runID, step, city_data, met_file_path, utc_offset)
+                return_code = UPP.generate_solweig(runID, step, city_data, met_file_name, utc_offset)
             if return_code != 0:
                 break
 
         return return_code
-
-
-def _get_data_path(data_path, row, element_id):
-    element = row[element_id]
-    return None if element is None else os.path.abspath(os.path.join(data_path, element))
 
 def _construct_result_path(result_folder, met_file_path):
     result_path = os.path.join(os.path.abspath(result_folder), Path(met_file_path).stem)

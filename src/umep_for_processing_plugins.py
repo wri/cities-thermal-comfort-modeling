@@ -55,7 +55,7 @@ class UmepProcessingQgisPlugins():
         start_time = _log_method_start('Wall Height/Aspect', runID, None, city_data.source_base_path)
         warnings.filterwarnings("ignore")
 
-        create_folder(city_data.preprocessed_data_path)
+        create_folder(city_data.target_preprocessed_data_path)
         remove_file(city_data.wallheight_path)
         remove_file(city_data.wallaspect_path)
 
@@ -81,7 +81,7 @@ class UmepProcessingQgisPlugins():
         start_time = _log_method_start('Skyview-factor', runID, None, city_data.source_base_path)
         warnings.filterwarnings("ignore")
 
-        create_folder(city_data.preprocessed_data_path)
+        create_folder(city_data.target_preprocessed_data_path)
         remove_file(city_data.svfszip_path)
 
         try:
@@ -104,7 +104,7 @@ class UmepProcessingQgisPlugins():
                 Processing.initialize()
                 processing.run("umep:Urban Geometry: Sky View Factor", parin)
 
-                shutil.move(temp_svfs_file_with_extension, city_data.preprocessed_data_path)
+                shutil.move(temp_svfs_file_with_extension, city_data.target_preprocessed_data_path)
 
             _log_method_completion(start_time, 'Skyview-factor', runID, None, city_data.source_base_path)
             return 0
@@ -113,14 +113,16 @@ class UmepProcessingQgisPlugins():
             return -2
 
 
-    def generate_solweig(self, runID, step, city_data: CityData, met_file_path, utc_offset):
+    def generate_solweig(self, runID, step, city_data: CityData, met_file_name, utc_offset):
 
         start_time = _log_method_start('SOLWEIG', runID, step, city_data.source_base_path)
         warnings.filterwarnings("ignore")
 
-        out_folder = city_data.tcm_results_path
-        create_folder(out_folder)
-        clean_folder(out_folder)
+        source_met_file_path = os.path.join(city_data.source_met_files_path, met_file_name)
+        target_met_folder = os.path.join(city_data.target_tcm_results_path, Path(met_file_name).stem)
+
+        create_folder(target_met_folder)
+        clean_folder(target_met_folder)
 
         parin ={
                "INPUT_DSM":city_data.dsm_path,
@@ -147,7 +149,7 @@ class UmepProcessingQgisPlugins():
                "ABS_L":0.95,
                "POSTURE":0,
                "CYL":True,
-               "INPUTMET":met_file_path,
+               "INPUTMET":source_met_file_path,
                "ONLYGLOBAL":True,
                "UTC":utc_offset,
                "POI_FILE":None,
@@ -166,7 +168,7 @@ class UmepProcessingQgisPlugins():
                "OUTPUT_LUP":False,
                "OUTPUT_SH":city_data.output_sh,
                "OUTPUT_TREEPLANTER":False,
-               "OUTPUT_DIR":out_folder
+               "OUTPUT_DIR":target_met_folder
             }
 
         try:

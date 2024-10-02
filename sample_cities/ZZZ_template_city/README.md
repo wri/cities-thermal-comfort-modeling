@@ -2,9 +2,9 @@
 
 ## Folders:
 1. **met_files** - contains time-series of meteorological data
-1. **source_data** - contains TIF primary data files
+1. **primary_source_data** - contains TIF primary data files
 
 ## Configuration files:
 1. **data_processing_attributes.yml** - Specification of non-default input parameters for SOLWEIG and pre-processors.
-1. **primary_data_sources.yml** - Mapping of data-type to name of TIF file in the source_data folder.
+1. **primary_source_data.yml** - Mapping of data-type to name of TIF file in the source_data folder.
 1. **time_series_config.csv** - List of meteorological time-series files in the met_files folder, input parameters, and whether the time-series is enabled for execution.

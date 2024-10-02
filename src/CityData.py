@@ -1,6 +1,6 @@
 import os
 import yaml
-
+from attr.converters import to_bool
 
 SOURCE_DATA_SUBFOLDER = "primary_source_data"
 SOURCE_MET_SUBFOLDER = "met_files"
@@ -15,8 +15,11 @@ GENERATED_TCM_SUBFOLDER = 'tcm_results'
 class CityData:
     def __init__(self, source_base_path, target_base_path, city_folder_name, tile_folder_name,
                  dem_file, dsm_file, veg_canopy_file, landcover_file,
-                 wall_height_file, wall_aspect_file, wall_lower_limit_height,
-                 svfs_zip_file, light_transmissivity, trunk_zone_height):
+                 wall_height_file, wall_aspect_file, svfs_zip_file,
+                 wall_lower_limit_height, light_transmissivity, trunk_zone_height,
+                 leaf_start, leaf_end, conifer_trees, albedo_walls, albedo_ground, emis_walls, emis_ground,
+                 output_tmrt, output_sh
+                 ):
 
         self.source_base_path = source_base_path
         self.target_base_path = target_base_path
@@ -30,10 +33,20 @@ class CityData:
 
         self.wall_height_file = wall_height_file
         self.wall_aspect_file = wall_aspect_file
-        self.wall_lower_limit_height = wall_lower_limit_height
         self.svfs_zip_file = svfs_zip_file
+
+        self.wall_lower_limit_height = wall_lower_limit_height
         self.light_transmissivity = light_transmissivity
         self.trunk_zone_height = trunk_zone_height
+        self.leaf_start = leaf_start
+        self.leaf_end = leaf_end
+        self.conifer_trees = conifer_trees
+        self.albedo_walls = albedo_walls
+        self.albedo_ground = albedo_ground
+        self.emis_walls = emis_walls
+        self.emis_ground = emis_ground
+        self.output_tmrt = output_tmrt
+        self.output_sh = output_sh
 
         self.city_source_path = str(os.path.join(self.source_base_path, city_folder_name))
         self.city_target_path = str(os.path.join(self.target_base_path, city_folder_name))
@@ -73,6 +86,15 @@ def instantiate_city_data(city_folder_name, tile_folder_name, source_base_path, 
             wall_lower_limit_height = generated_atts_dict['wall_height_aspect']['lower_limit_for_wall_height']
             light_transmissivity = generated_atts_dict['skyview_factor']['transmissivity_of_light_through_vegetation']
             trunk_zone_height = generated_atts_dict['skyview_factor']['trunk_zone_height']
+            leaf_start = generated_atts_dict['solweig']['leaf_start']
+            leaf_end = generated_atts_dict['solweig']['leaf_end']
+            conifer_trees = to_bool(generated_atts_dict['solweig']['conifer_trees'])
+            albedo_walls = generated_atts_dict['solweig']['albedo_walls']
+            albedo_ground = generated_atts_dict['solweig']['albedo_ground']
+            emis_walls = generated_atts_dict['solweig']['emis_walls']
+            emis_ground = generated_atts_dict['solweig']['emis_ground']
+            output_tmrt = to_bool(generated_atts_dict['solweig']['output_tmrt'])
+            output_sh= to_bool(generated_atts_dict['solweig']['output_sh'])
 
         except yaml.YAMLError as exc:
             raise Exception('The %s file not found or improperly defined in %s' %
@@ -80,7 +102,10 @@ def instantiate_city_data(city_folder_name, tile_folder_name, source_base_path, 
 
     city_data = CityData(source_base_path, target_base_path, city_folder_name, tile_folder_name,
                          dem_file, dsm_file, veg_canopy_file, landcover_file,
-                         GENERATED_WALL_HEIGHT_FILE, GENERATED_WALL_ASPECT_FILE, wall_lower_limit_height,
-                         GENERATED_SVF_ZIP_FILE, light_transmissivity, trunk_zone_height)
+                         GENERATED_WALL_HEIGHT_FILE, GENERATED_WALL_ASPECT_FILE, GENERATED_SVF_ZIP_FILE,
+                         wall_lower_limit_height, light_transmissivity, trunk_zone_height,
+                         leaf_start, leaf_end, conifer_trees, albedo_walls, albedo_ground, emis_walls, emis_ground,
+                         output_tmrt, output_sh
+                         )
 
     return city_data

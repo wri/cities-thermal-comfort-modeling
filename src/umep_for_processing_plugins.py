@@ -114,6 +114,7 @@ class UmepProcessingQgisPlugins():
 
 
     def generate_solweig(self, runID, step, city_data: CityData, met_file_path, utc_offset):
+
         start_time = _log_method_start('SOLWEIG', runID, step, city_data.source_base_path)
         warnings.filterwarnings("ignore")
 
@@ -128,9 +129,9 @@ class UmepProcessingQgisPlugins():
                "INPUT_ASPECT":city_data.wallaspect_path,
                "INPUT_CDSM":city_data.vegcanopy_path,
                "TRANS_VEG":3,
-               "LEAF_START":97,
-               "LEAF_END":300,
-               "CONIFER_TREES":False,
+               "LEAF_START":city_data.leaf_start,
+               "LEAF_END":city_data.leaf_end,
+               "CONIFER_TREES":city_data.conifer_trees,
                "INPUT_TDSM":None,
                "INPUT_THEIGHT":25,
                "INPUT_LC":city_data.landcover_path,
@@ -138,10 +139,10 @@ class UmepProcessingQgisPlugins():
                "INPUT_DEM":city_data.dem_path,
                "SAVE_BUILD":False,
                "INPUT_ANISO":"",
-               "ALBEDO_WALLS":0.2,
-               "ALBEDO_GROUND":0.15,
-               "EMIS_WALLS":0.9,
-               "EMIS_GROUND":0.95,
+               "ALBEDO_WALLS":city_data.albedo_walls,
+               "ALBEDO_GROUND":city_data.albedo_ground,
+               "EMIS_WALLS":city_data.emis_walls,
+               "EMIS_GROUND":city_data.emis_ground,
                "ABS_S":0.7,
                "ABS_L":0.95,
                "POSTURE":0,
@@ -158,12 +159,12 @@ class UmepProcessingQgisPlugins():
                "HEIGHT":180,
                "SEX":0,
                "SENSOR_HEIGHT":10,
-               "OUTPUT_TMRT":True,
+               "OUTPUT_TMRT":city_data.output_tmrt,
                "OUTPUT_KDOWN":False,
                "OUTPUT_KUP":False,
                "OUTPUT_LDOWN":False,
                "OUTPUT_LUP":False,
-               "OUTPUT_SH":True,
+               "OUTPUT_SH":city_data.output_sh,
                "OUTPUT_TREEPLANTER":False,
                "OUTPUT_DIR":out_folder
             }

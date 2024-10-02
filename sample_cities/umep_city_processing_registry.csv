@@ -1,3 +1,4 @@
-run_id,enable,city_folder_name
-1,FALSE,ZAF_Capetown
-2,TRUE,ZAF_Capetown_small_tile
+run_id,enable,city_folder_name,tile_name
+1,FALSE,ZAF_Capetown,tile1
+2,TRUE,ZAF_Capetown_small_tile,tile1
+3,TRUE,ZAF_Capetown_small_tile,tile2

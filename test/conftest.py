@@ -11,7 +11,7 @@ TEMP_TARGET_FOLDER = tempfile.mkdtemp()
 
 @ pytest.fixture
 def setup_city_data():
-    city_data = instantiate_city_data(CITY_FOLDER_NAME, SOURCE_PATH, TEMP_TARGET_FOLDER)
+    city_data = instantiate_city_data(CITY_FOLDER_NAME, 'tile1', SOURCE_PATH, TEMP_TARGET_FOLDER)
     yield city_data
 
 @pytest.fixture(autouse=True)

@@ -16,10 +16,10 @@ def test_wall_height_aspect(setup_city_data):
     return_code = UPP.generate_wall_height_aspect(runID, setup_city_data)
 
     out_directory = setup_city_data.preprocessed_data_path
-    wall_height_path = setup_city_data.wall_height_path
-    wall_aspect_path = setup_city_data.wall_aspect_path
-    wall_height_file_exists = os.path.isfile(wall_height_path)
-    wall_aspect_file_exists = os.path.isfile(wall_aspect_path)
+    wallheight_path = setup_city_data.wallheight_path
+    wallaspect_path = setup_city_data.wallaspect_path
+    wall_height_file_exists = os.path.isfile(wallheight_path)
+    wall_aspect_file_exists = os.path.isfile(wallaspect_path)
 
     assert return_code == 0
     assert is_valid_output_directory(out_directory) == True
@@ -33,7 +33,7 @@ def test_skyview_factor(setup_city_data):
     assert return_code == 0
 
     out_directory = setup_city_data.preprocessed_data_path
-    skyview_zip_path = setup_city_data.svfs_zip_path
+    skyview_zip_path = setup_city_data.svfszip_path
     skyview_zip_exists = os.path.isfile(skyview_zip_path)
 
     assert is_valid_output_directory(out_directory) == True

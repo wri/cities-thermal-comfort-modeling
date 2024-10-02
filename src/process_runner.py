@@ -29,7 +29,9 @@ def run_data(data_source_folder, results_target_folder):
             if enabled is True:
                 start_time = datetime.now()
                 city_folder_name = row[2]
-                city_data = instantiate_city_data(city_folder_name, source_data_path, target_path)
+                tile_folder_name = row[3]
+                city_data = instantiate_city_data(city_folder_name, tile_folder_name, source_data_path, target_path)
+
                 # wall_height_aspect
                 return_code = UPP.generate_wall_height_aspect(runID, city_data)
                 if return_code == 0:
@@ -46,7 +48,7 @@ def run_data(data_source_folder, results_target_folder):
                     success = False
 
             if success is not True:
-                log_method_failure(start_time, city_folder_name, runID, None, '')
+                log_method_failure(start_time, city_data.city_folder_name, runID, None, city_data.source_base_path, '')
 
 
 def _run_tcm(UPP, runID, city_data):

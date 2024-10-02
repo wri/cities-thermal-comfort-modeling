@@ -9,7 +9,7 @@ for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
 log_file_path = os.path.join(os.path.dirname(os.getcwd()), 'execution.log')
 logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s %(message)s',
+                    format='%(asctime)s\t%(message)s',
                     datefmt='%a_%Y_%b_%d_%H:%M:%S',
                     filename=log_file_path
                     )
@@ -30,7 +30,8 @@ from qgis.core import QgsApplication
 from src.tools import remove_file, clean_folder, create_folder, get_configurations
 from processing.core.Processing import Processing
 
-qgis_home_path, qgis_plugin_path = get_configurations()
+import src
+qgis_home_path, qgis_plugin_path = src.tools.get_configurations()
 qgis_home = qgis_home_path
 sys.path.append(qgis_plugin_path)
 from processing_umep.processing_umep import ProcessingUMEPProvider
@@ -51,47 +52,47 @@ class UmepProcessingQgisPlugins():
 
 
     def generate_wall_height_aspect(self, runID, city_data):
-        start_time = _log_method_start('Wall Height/Aspect', runID, None)
+        start_time = _log_method_start('Wall Height/Aspect', runID, None, city_data.source_base_path)
         warnings.filterwarnings("ignore")
 
         create_folder(city_data.preprocessed_data_path)
-        remove_file(city_data.wall_height_path)
-        remove_file(city_data.wall_aspect_path)
+        remove_file(city_data.wallheight_path)
+        remove_file(city_data.wallaspect_path)
 
         parin ={
             'INPUT': city_data.dsm_path,
             'INPUT_LIMIT': city_data.wall_lower_limit_height,
-            'OUTPUT_HEIGHT': city_data.wall_height_path,
-            'OUTPUT_ASPECT': city_data.wall_aspect_path,
+            'OUTPUT_HEIGHT': city_data.wallheight_path,
+            'OUTPUT_ASPECT': city_data.wallaspect_path,
             }
 
         try:
             Processing.initialize()
             processing.run("umep:Urban Geometry: Wall Height and Aspect", parin)
 
-            _log_method_completion(start_time, 'Wall Height/Aspect', runID, None)
+            _log_method_completion(start_time, 'Wall Height/Aspect', runID, None, city_data.source_base_path)
             return 0
         except Exception as e_msg:
-            log_method_failure(start_time, 'Skyview-factor', runID, None, e_msg)
+            log_method_failure(start_time, 'Skyview-factor', runID, None, city_data.source_base_path, e_msg)
             return -1
 
 
     def generate_skyview_factor_files(self, runID, city_data):
-        start_time = _log_method_start('Skyview-factor', runID, None)
+        start_time = _log_method_start('Skyview-factor', runID, None, city_data.source_base_path)
         warnings.filterwarnings("ignore")
 
         create_folder(city_data.preprocessed_data_path)
-        remove_file(city_data.svfs_zip_path)
+        remove_file(city_data.svfszip_path)
 
         try:
             with tempfile.TemporaryDirectory() as tmpdirname:
-                temp_svfs_file_no_extension = os.path.join(tmpdirname, Path(city_data.svfs_zip_path).stem)
-                temp_svfs_file_with_extension = os.path.join(tmpdirname, os.path.basename(city_data.svfs_zip_path))
+                temp_svfs_file_no_extension = os.path.join(tmpdirname, Path(city_data.svfszip_path).stem)
+                temp_svfs_file_with_extension = os.path.join(tmpdirname, os.path.basename(city_data.svfszip_path))
 
                 # ANISO Specifies to generate 153 shadow images for use by SOLWEIG
                 parin = {
                     'INPUT_DSM': city_data.dsm_path,
-                    'INPUT_CDSM': city_data.veg_canopy_path,
+                    'INPUT_CDSM': city_data.vegcanopy_path,
                     'TRANS_VEG': 3,
                     'INPUT_TDSM': None,
                     'INPUT_THEIGHT': 25,
@@ -105,15 +106,15 @@ class UmepProcessingQgisPlugins():
 
                 shutil.move(temp_svfs_file_with_extension, city_data.preprocessed_data_path)
 
-            _log_method_completion(start_time, 'Skyview-factor', runID, None)
+            _log_method_completion(start_time, 'Skyview-factor', runID, None, city_data.source_base_path)
             return 0
         except Exception as e_msg:
-            log_method_failure(start_time, 'Skyview-factor', runID, None, e_msg)
+            log_method_failure(start_time, 'Skyview-factor', runID, None, city_data.source_base_path, e_msg)
             return -2
 
 
     def generate_solweig(self, runID, step, city_data: CityData, met_file_path, utc_offset):
-        start_time = _log_method_start('SOLWEIG', runID, step)
+        start_time = _log_method_start('SOLWEIG', runID, step, city_data.source_base_path)
         warnings.filterwarnings("ignore")
 
         out_folder = city_data.tcm_results_path
@@ -122,10 +123,10 @@ class UmepProcessingQgisPlugins():
 
         parin ={
                "INPUT_DSM":city_data.dsm_path,
-               "INPUT_SVF":city_data.svfs_zip_path,
-               "INPUT_HEIGHT":city_data.wall_height_path,
-               "INPUT_ASPECT":city_data.wall_aspect_path,
-               "INPUT_CDSM":city_data.veg_canopy_path,
+               "INPUT_SVF":city_data.svfszip_path,
+               "INPUT_HEIGHT":city_data.wallheight_path,
+               "INPUT_ASPECT":city_data.wallaspect_path,
+               "INPUT_CDSM":city_data.vegcanopy_path,
                "TRANS_VEG":3,
                "LEAF_START":97,
                "LEAF_END":300,
@@ -171,10 +172,10 @@ class UmepProcessingQgisPlugins():
             Processing.initialize()
             processing.run("umep:Outdoor Thermal Comfort: SOLWEIG", parin)
 
-            _log_method_completion(start_time, 'SOLWEIG', runID, step)
+            _log_method_completion(start_time, 'SOLWEIG', runID, step, city_data.source_base_path)
             return 0
         except Exception as e_msg:
-            log_method_failure(start_time, 'Skyview-factor', runID, None, e_msg)
+            log_method_failure(start_time, 'Skyview-factor', runID, None, city_data.source_base_path, e_msg)
             return -3
 
     # def generate_aggregated_shadows(self, runID, step, dsm_tif, cdsm_tif, start_year, start_month, start_day, number_of_days_in_run, out_file_path):
@@ -233,26 +234,26 @@ class UmepProcessingQgisPlugins():
     #
     #     return
 
-def _log_method_start(method, runId, step):
+def _log_method_start(method, runId, step, source_base_path):
     if step is None:
-        logging.info("run:%s - Starting execution of '%s'" % (runId, method))
+        logging.info("run:%s\tStarting '%s'\tconfig:'%s')" % (runId, method, source_base_path))
     else:
-        logging.info("run:%s - Starting execution of %s step '%s'" % (runId, method, step))
+        logging.info("run:%s\tStarting '%s' for met_series:%s\tconfig:'%s')" % (runId, method, step, source_base_path))
     return datetime.now()
 
-def _log_method_completion(start_time, method, runId, step):
+def _log_method_completion(start_time, method, runId, step, source_base_path):
     runtime = round((datetime.now() - start_time).seconds/60,2)
     if step is None:
-        logging.info("run:%s - Finished execution of '%s' with runtime of %s mins." % (runId, method, runtime))
+        logging.info("run:%s\tFinished '%s', runtime:%s mins\tconfig:'%s'" % (runId, method, runtime, source_base_path))
     else:
-        logging.info("run:%s - Finished execution of '%s' and step '%s' with runtime of %s mins." % (runId, method, step, runtime))
+        logging.info("run:%s\tFinished '%s' for met_series:%s, runtime:%s mins\tconfig:'%s'" % (runId, method, step, runtime, source_base_path))
 
-def log_method_failure(start_time, feature, runId, step, e_msg):
+def log_method_failure(start_time, feature, runId, step, source_base_path, e_msg):
     runtime = round((datetime.now() - start_time).seconds/60,2)
     if step is None:
-        logging.error("run:%s - **** FAILED execution of '%s' after runtime of %s mins. (%s)" % (runId, feature, runtime, e_msg))
+        logging.error("run:%s\t**** FAILED execution of '%s' after runtime:%s mins\tconfig:'%s'(%s)" % (runId, feature, runtime, source_base_path, e_msg))
     else:
-        logging.error("run:%s - **** FAILED execution of '%s' and step '%s' after runtime of %s mins. (%s)" % (runId, feature, step, runtime, e_msg))
+        logging.error("run:%s\t**** FAILED execution of '%s' fpr met_series:%s after runtime:%s mins\tconfig:'%s'(%s)" % (runId, feature, step, runtime, source_base_path, e_msg))
 
 def _aggregate_rasters_in_folder(folder_path, aggregation_raster):
     for file in os.listdir(folder_path):

@@ -73,7 +73,7 @@ class UmepProcessingQgisPlugins():
             _log_method_completion(start_time, 'Wall Height/Aspect', runID, None, city_data.source_base_path)
             return 0
         except Exception as e_msg:
-            log_method_failure(start_time, 'Skyview-factor', runID, None, city_data.source_base_path, e_msg)
+            log_method_failure(start_time, 'Wall Height/Aspect', runID, None, city_data.source_base_path, e_msg)
             return -1
 
 
@@ -178,7 +178,7 @@ class UmepProcessingQgisPlugins():
             _log_method_completion(start_time, 'SOLWEIG', runID, step, city_data.source_base_path)
             return 0
         except Exception as e_msg:
-            log_method_failure(start_time, 'Skyview-factor', runID, None, city_data.source_base_path, e_msg)
+            log_method_failure(start_time, 'SOLWEIG', runID, None, city_data.source_base_path, e_msg)
             return -3
 
     # def generate_aggregated_shadows(self, runID, step, dsm_tif, cdsm_tif, start_year, start_month, start_day, number_of_days_in_run, out_file_path):

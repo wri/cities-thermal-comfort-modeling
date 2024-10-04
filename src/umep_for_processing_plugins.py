@@ -27,6 +27,7 @@ from osgeo.gdalconst import *
 from src.tools import remove_file, clean_folder, create_folder
 from processing.core.Processing import Processing
 
+MAX_RETRY_COUNT = 3
 
 class UmepProcessingQgisPlugins:
     def __init__(self, qgis_app):
@@ -51,15 +52,27 @@ class UmepProcessingQgisPlugins:
             'OUTPUT_ASPECT': city_data.wallaspect_path,
             }
 
-        try:
-            Processing.initialize()
-            processing.run("umep:Urban Geometry: Wall Height and Aspect", parin)
+        retry_count = 1
+        return_code = -999
+        while retry_count <= MAX_RETRY_COUNT and return_code != 0:
+            try:
+                Processing.initialize()
+                processing.run("umep:Urban Geometry: Wall Height and Aspect", parin)
 
-            _log_method_completion(start_time, 'Wall Height/Aspect', runID, None, city_data.source_base_path)
-            return 0
-        except Exception as e_msg:
-            log_method_failure(start_time, 'Wall Height/Aspect', runID, None, city_data.source_base_path, e_msg)
-            return -1
+                _log_method_completion(start_time, 'Wall Height/Aspect', runID, None, city_data.source_base_path)
+                return_code = 0
+            except Exception as e_msg:
+                print('RunId:%s Height/Aspect failure. Retrying' % (runID))
+                log_method_failure(start_time, 'Wall Height/Aspect for try %s of %s retries' % (retry_count, MAX_RETRY_COUNT),
+                                   runID, None, city_data.source_base_path, e_msg)
+                return_code = -1
+
+            retry_count += 1
+        if retry_count >= MAX_RETRY_COUNT:
+            print('RunId:%s Height/Aspect failure. Maximum retries exceeded. See log for details.' % (runID))
+            log_other_failure('Wall Height/Aspect  failure exceeded maximum retry.', '')
+
+        return return_code
 
 
     def generate_skyview_factor_files(self, runID, city_data):
@@ -70,33 +83,45 @@ class UmepProcessingQgisPlugins:
         create_folder(city_data.target_preprocessed_data_path)
         remove_file(city_data.svfszip_path)
 
-        try:
-            with tempfile.TemporaryDirectory() as tmpdirname:
-                temp_svfs_file_no_extension = os.path.join(tmpdirname, Path(city_data.svfszip_path).stem)
-                temp_svfs_file_with_extension = os.path.join(tmpdirname, os.path.basename(city_data.svfszip_path))
+        retry_count = 1
+        return_code = -999
+        while retry_count <= MAX_RETRY_COUNT and return_code != 0:
+            try:
+                with tempfile.TemporaryDirectory() as tmpdirname:
+                    temp_svfs_file_no_extension = os.path.join(tmpdirname, Path(city_data.svfszip_path).stem)
+                    temp_svfs_file_with_extension = os.path.join(tmpdirname, os.path.basename(city_data.svfszip_path))
 
-                # ANISO Specifies to generate 153 shadow images for use by SOLWEIG
-                parin = {
-                    'INPUT_DSM': city_data.dsm_path,
-                    'INPUT_CDSM': city_data.vegcanopy_path,
-                    'TRANS_VEG': 3,
-                    'INPUT_TDSM': None,
-                    'INPUT_THEIGHT': 25,
-                    'ANISO': True,
-                    'OUTPUT_DIR': tmpdirname,
-                    'OUTPUT_FILE': temp_svfs_file_no_extension
-                    }
+                    # ANISO Specifies to generate 153 shadow images for use by SOLWEIG
+                    parin = {
+                        'INPUT_DSM': city_data.dsm_path,
+                        'INPUT_CDSM': city_data.vegcanopy_path,
+                        'TRANS_VEG': 3,
+                        'INPUT_TDSM': None,
+                        'INPUT_THEIGHT': 25,
+                        'ANISO': True,
+                        'OUTPUT_DIR': tmpdirname,
+                        'OUTPUT_FILE': temp_svfs_file_no_extension
+                        }
 
-                Processing.initialize()
-                processing.run("umep:Urban Geometry: Sky View Factor", parin)
+                    Processing.initialize()
+                    processing.run("umep:Urban Geometry: Sky View Factor", parin)
 
-                shutil.move(temp_svfs_file_with_extension, city_data.target_preprocessed_data_path)
+                    shutil.move(temp_svfs_file_with_extension, city_data.target_preprocessed_data_path)
 
-            _log_method_completion(start_time, 'Skyview-factor', runID, None, city_data.source_base_path)
-            return 0
-        except Exception as e_msg:
-            log_method_failure(start_time, 'Skyview-factor', runID, None, city_data.source_base_path, e_msg)
-            return -2
+                _log_method_completion(start_time, 'Skyview-factor', runID, None, city_data.source_base_path)
+                return_code = 0
+            except Exception as e_msg:
+                print('RunId:%s Skyview-factor  failure. Retrying' % (runID))
+                log_method_failure(start_time, 'Skyview-factor for try %s of %s retries' % (retry_count, MAX_RETRY_COUNT),
+                                   runID, None, city_data.source_base_path, e_msg)
+                return_code = -2
+
+            retry_count += 1
+        if retry_count >= MAX_RETRY_COUNT:
+            print('RunId:%s Skyview-factor failure. Maximum retries exceeded. See log for details.' % (runID))
+            log_other_failure('Skyview-factor failure exceeded maximum retry.', '')
+
+        return return_code
 
 
     def generate_solweig(self, runID, step, city_data: CityData, met_file_name, utc_offset):
@@ -157,15 +182,27 @@ class UmepProcessingQgisPlugins:
                "OUTPUT_DIR":target_met_folder
             }
 
-        try:
-            Processing.initialize()
-            processing.run("umep:Outdoor Thermal Comfort: SOLWEIG", parin)
+        retry_count = 1
+        return_code = -999
+        while retry_count <= MAX_RETRY_COUNT and return_code != 0:
+            try:
+                Processing.initialize()
+                processing.run("umep:Outdoor Thermal Comfort: SOLWEIG", parin)
 
-            _log_method_completion(start_time, 'SOLWEIG', runID, step, city_data.source_base_path)
-            return 0
-        except Exception as e_msg:
-            log_method_failure(start_time, 'SOLWEIG', runID, None, city_data.source_base_path, e_msg)
-            return -3
+                _log_method_completion(start_time, 'SOLWEIG', runID, step, city_data.source_base_path)
+                return_code = 0
+            except Exception as e_msg:
+                print('RunId:%s SOLWEIG failure. Retrying' % (runID))
+                log_method_failure(start_time, 'SOLWEIG for try %s of %s retries' % (retry_count, MAX_RETRY_COUNT),
+                                   runID, None, city_data.source_base_path, e_msg)
+                return_code = -3
+
+            retry_count += 1
+        if retry_count >= MAX_RETRY_COUNT:
+            print('RunId:%s SOLWEIG failure. Maximum retries exceeded. See log for details.' % (runID))
+            log_other_failure('SOLWEIG failure exceeded maximum retry.', '')
+
+        return return_code
 
     # def generate_aggregated_shadows(self, runID, step, dsm_tif, cdsm_tif, start_year, start_month, start_day, number_of_days_in_run, out_file_path):
     #     start_time = _start_log_entry(self, 'Shadow-generation', runID, step)
@@ -238,11 +275,17 @@ def _log_method_completion(start_time, method, runId, step, source_base_path):
         logging.info("run:%s\tFinished '%s' for met_series:%s, runtime:%s mins\tconfig:'%s'" % (runId, method, step, runtime, source_base_path))
 
 def log_method_failure(start_time, feature, runId, step, source_base_path, e_msg):
+    print('Failure. See log file.')
     runtime = round((datetime.now() - start_time).seconds/60,2)
     if step is None:
         logging.error("run:%s\t**** FAILED execution of '%s' after runtime:%s mins\tconfig:'%s'(%s)" % (runId, feature, runtime, source_base_path, e_msg))
     else:
         logging.error("run:%s\t**** FAILED execution of '%s' fpr met_series:%s after runtime:%s mins\tconfig:'%s'(%s)" % (runId, feature, step, runtime, source_base_path, e_msg))
+
+def log_other_failure(message, e_msg):
+    print('Failure. See log file.')
+    logging.error("**** FAILED execution with '%s' (%s)" % (message, e_msg))
+
 
 def _aggregate_rasters_in_folder(folder_path, aggregation_raster):
     for file in os.listdir(folder_path):

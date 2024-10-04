@@ -28,6 +28,9 @@ def clean_folder(folder_path):
             except Exception as e:
                 print(f'Failed to delete {file_path}. Reason: {e}')
 
+def verify_path(path):
+    is_valid = os.path.exists(path)
+    return is_valid
 
 def remove_folder(folder_path):
     if os.path.isdir(folder_path):

@@ -2,6 +2,7 @@ import os
 import yaml
 from attr.converters import to_bool
 
+
 SOURCE_DATA_SUBFOLDER = "primary_source_data"
 SOURCE_MET_SUBFOLDER = "met_files"
 SOURCE_DATA_MAP = "primary_source_data.yml"
@@ -64,6 +65,7 @@ class CityData:
         self.wallheight_path = os.path.join(self.target_preprocessed_data_path, self.wall_height_file)
         self.wallaspect_path = os.path.join(self.target_preprocessed_data_path, self.wall_aspect_file)
         self.svfszip_path = os.path.join(self.target_preprocessed_data_path, self.svfs_zip_file)
+
 
 def instantiate_city_data(city_folder_name, tile_folder_name, source_base_path, target_base_path):
     city_source_path = str(os.path.join(source_base_path, city_folder_name))

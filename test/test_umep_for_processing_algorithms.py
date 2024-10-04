@@ -71,8 +71,10 @@ def test_solweig_generator(startup_teardown):
     UMEP_PLUGIN.generate_skyview_factor_files(runID, city_data)
     return_code = UMEP_PLUGIN.generate_solweig(runID, step, city_data, met_file_name, utc_offset)
 
-    out_directory = os.path.join(city_data.target_tcm_results_path, Path(met_file_name).stem)
-    tmrt_average_file_path = os.path.join(out_directory, 'Tmrt_average.tif')
+    # out_directory = os.path.join(city_data.target_tcm_results_path, Path(met_file_name).stem)
+
+    target_met_folder = os.path.join(city_data.target_tcm_results_path, Path(met_file_name).stem, city_data.tile_folder_name)
+    tmrt_average_file_path = os.path.join(target_met_folder, 'Tmrt_average.tif')
     tmrt_average_file_exists = os.path.isfile(tmrt_average_file_path)
 
     assert return_code == 0

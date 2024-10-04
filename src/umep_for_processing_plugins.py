@@ -105,7 +105,7 @@ class UmepProcessingQgisPlugins:
         warnings.filterwarnings("ignore")
 
         source_met_file_path = os.path.join(city_data.source_met_files_path, met_file_name)
-        target_met_folder = os.path.join(city_data.target_tcm_results_path, Path(met_file_name).stem)
+        target_met_folder = os.path.join(city_data.target_tcm_results_path, Path(met_file_name).stem, city_data.tile_folder_name)
 
         create_folder(target_met_folder)
         clean_folder(target_met_folder)

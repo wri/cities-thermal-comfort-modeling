@@ -54,7 +54,7 @@ class CityData:
         self.source_data_path = os.path.join(self.city_source_path, SOURCE_DATA_SUBFOLDER, self.tile_folder_name)
         self.source_met_files_path = os.path.join(self.city_source_path, SOURCE_MET_SUBFOLDER)
         self.target_preprocessed_data_path = os.path.join(self.city_target_path, GENERATED_PREPROCESSED_SUBFOLDER, self.tile_folder_name)
-        self.target_tcm_results_path = os.path.join(self.city_target_path, GENERATED_TCM_SUBFOLDER, self.tile_folder_name)
+        self.target_tcm_results_path = os.path.join(self.city_target_path, GENERATED_TCM_SUBFOLDER)
 
         self.dem_path = os.path.join(self.source_data_path, self.dem_file)
         self.dsm_path = os.path.join(self.source_data_path, self.dsm_file)

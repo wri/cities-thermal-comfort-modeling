@@ -1,13 +1,11 @@
 import csv
 import os
-import pytest
-from setuptools.command.setopt import config_file
 
 from main import main
 from src import tools as src_tools
 from test.test_umep_for_processing_algorithms import is_valid_output_directory
 
-def test_default_run():
+def test_main():
     package_folder = os.path.dirname(os.getcwd())
     data_source_folder = os.path.join(package_folder, 'sample_cities')
     results_target_folder = os.path.join(package_folder, 'test', 'resources')

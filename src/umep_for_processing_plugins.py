@@ -24,32 +24,21 @@ from pathlib import Path
 from datetime import datetime
 from osgeo import gdal
 from osgeo.gdalconst import *
-from PyQt5.QtCore import QDate, QTime
-from qgis.core import QgsApplication
-
-from src.tools import remove_file, clean_folder, create_folder, get_configurations
+from src.tools import remove_file, clean_folder, create_folder
+# from src.qgis_initializer import QgisHandler
 from processing.core.Processing import Processing
 
-import src
-qgis_home_path, qgis_plugin_path = src.tools.get_configurations()
-qgis_home = qgis_home_path
-sys.path.append(qgis_plugin_path)
-from processing_umep.processing_umep import ProcessingUMEPProvider
 
-
-class UmepProcessingQgisPlugins():
-    def __init__(self):
-        # Initiating a QGIS application
-        QgsApplication.setPrefixPath(qgis_home, True)
-        self.app = QgsApplication([], False)
-        self.app.initQgis()
-
-        self.umep_provider = ProcessingUMEPProvider()
-        self.app.processingRegistry().addProvider(self.umep_provider)
-
-    def __del__(self):
-        self.app.exit()
-
+class UmepProcessingQgisPlugins:
+    def __init__(self, qgis_app):
+        from processing_umep.processing_umep import ProcessingUMEPProvider
+        umep_provider = ProcessingUMEPProvider()
+        qgis_app.processingRegistry().addProvider(umep_provider)
+    # def __init__(self):
+    #     self.qh = QgisHandler(0)
+    #
+    # def __del__(self):
+    #     self.qh.qgis_app.exit()
 
     def generate_wall_height_aspect(self, runID, city_data):
         start_time = _log_method_start('Wall Height/Aspect', runID, None, city_data.source_base_path)

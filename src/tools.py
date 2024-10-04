@@ -1,6 +1,7 @@
 import shutil
 import os
 import configparser
+from pathlib import Path
 
 def initialize_scratch_folder(folder_path):
     if os.path.isdir(folder_path):
@@ -37,13 +38,18 @@ def remove_file(file_path):
         os.remove(file_path)
 
 def get_configurations():
+    application_path = get_application_path()
+    config_file = os.path.join(application_path, 'config.ini')
+
     config = configparser.ConfigParser()
-    config_file = os.path.join('..', 'config.ini')
     config.read(config_file)
     qgis_home_path = config['Resources']['qgis_home_path']
     qgis_plugin_path = config['Resources']['qgis_plugin_path']
 
     return qgis_home_path, qgis_plugin_path
+
+def get_application_path():
+    return Path(os.path.dirname(os.path.abspath(__file__))).parent
 
 toBool = {'true': True, 'false': False}
 

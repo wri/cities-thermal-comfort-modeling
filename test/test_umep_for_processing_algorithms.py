@@ -1,33 +1,37 @@
 import faulthandler
 import os
+import shutil
+
 import pytest
-from pathlib import Path
 import tempfile
+from pathlib import Path
 
 from src.CityData import instantiate_city_data
 from src.umep_for_processing_plugins import UmepProcessingQgisPlugins
-from src.tools import remove_folder, clean_folder
 from test.tools import is_valid_output_file, is_valid_output_directory
 
 SOURCE_PATH = os.path.join(os.path.dirname(os.getcwd()), 'sample_cities')
 CITY_FOLDER_NAME = 'ZAF_Capetown_small_tile'
-
-UPP = UmepProcessingQgisPlugins()
+from src.qgis_initializer import QgisHandler
+qh = QgisHandler(0)
 
 faulthandler.enable()
 
 @pytest.fixture
-def temp_dir():
+def startup_teardown():
+    qgis_app = qh.qgis_app
+    UPP = UmepProcessingQgisPlugins(qgis_app)
     # Create a temporary directory
     temp_dir = tempfile.mkdtemp()
-    yield temp_dir
+    yield UPP, temp_dir
     # Cleanup: delete the directory after the test
-    # TODO - next command fails due to open files
-    #shutil.rmtree(temp_dir)
+    # UPP.shutdown_qgis()
+    # shutil.rmtree(temp_dir)
 
-def test_wall_height_aspect(temp_dir):
+def test_wall_height_aspect(startup_teardown):
     runID = 'test_wall_dimensions'
-
+    UPP = startup_teardown[0]
+    temp_dir = startup_teardown[1]
     city_data = instantiate_city_data(CITY_FOLDER_NAME, 'tile1', SOURCE_PATH, temp_dir)
     return_code = UPP.generate_wall_height_aspect(runID, city_data)
 
@@ -43,8 +47,10 @@ def test_wall_height_aspect(temp_dir):
     assert wall_height_file_exists and wall_aspect_file_exists
 
 
-def test_skyview_factor(temp_dir):
+def test_skyview_factor(startup_teardown):
     runID = 'test_skyview_factor'
+    UPP = startup_teardown[0]
+    temp_dir = startup_teardown[1]
 
     city_data = instantiate_city_data(CITY_FOLDER_NAME, 'tile1', SOURCE_PATH, temp_dir)
     return_code = UPP.generate_skyview_factor_files(runID, city_data)
@@ -61,11 +67,14 @@ def test_skyview_factor(temp_dir):
 
 # Prerequisites: The above tests for building dimensions and skview must be run prior to running this test
 # since solweige depends on output from above tests.
-def test_solweig_generator(temp_dir):
+def test_solweig_generator(startup_teardown):
     runID = 'test_solweig'
     step = 0
     met_file_name = 'met_20jan2022.txt'
     utc_offset = 2
+
+    UPP = startup_teardown[0]
+    temp_dir = startup_teardown[1]
 
     city_data = instantiate_city_data(CITY_FOLDER_NAME, 'tile1', SOURCE_PATH, temp_dir)
 

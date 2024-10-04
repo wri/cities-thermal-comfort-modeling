@@ -1,5 +1,5 @@
 run_id,enable,city_folder_name,tile_name,method
 1,FALSE,ZAF_Capetown,tile1,all
-2,TRUE,ZAF_Capetown_small_tile,tile1,wall_height_aspect
-3,FALSE,ZAF_Capetown_small_tile,tile2,all
+2,FALSE,ZAF_Capetown_small_tile,tile1,wall_height_aspect
+3,TRUE,ZAF_Capetown_small_tile,tile2,all
 4,FALSE,MEX_Monterrey,tile1,all

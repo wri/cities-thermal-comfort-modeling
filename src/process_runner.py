@@ -7,17 +7,14 @@ from pathlib import Path
 from src import tools as src_tools
 from src.CityData import instantiate_city_data
 from src.qgis_initializer import QgisHandler
-
+QH = QgisHandler(0)
 from src.umep_for_processing_plugins import UmepProcessingQgisPlugins, log_method_failure
 
 UMEP_CITY_PROCESSING_REGISTRY_FILE = 'umep_city_processing_registry.csv'
 SOLWEIG_TIME_SERIES_CONFIG_FILE = 'time_series_config.csv'
 
 def run_plugins(data_source_folder, results_target_folder):
-    print('hi1')
-    qh = QgisHandler(0)
-    qgis_app = qh.qgis_app
-    UPP = UmepProcessingQgisPlugins(qgis_app)
+    umep_plug = UmepProcessingQgisPlugins(QH.qgis_app)
     source_data_path = os.path.abspath(data_source_folder)
     target_path = os.path.abspath(results_target_folder)
 
@@ -44,11 +41,11 @@ def run_plugins(data_source_folder, results_target_folder):
                     e_msg = 'Invalid method'
                     success = False
                 else:
-                    return_code = _run_wall_height_aspect(UPP, runID, city_data, method)
+                    return_code = _run_wall_height_aspect(umep_plug, runID, city_data, method)
                     if return_code == 0:
-                        return_code = _run_skyview_factor(UPP, runID, city_data, method)
+                        return_code = _run_skyview_factor(umep_plug, runID, city_data, method)
                         if return_code == 0:
-                            return_code = _run_solweig(UPP, runID, city_data, method)
+                            return_code = _run_solweig(umep_plug, runID, city_data, method)
                             if return_code != 0:
                                 success = False
                         else:

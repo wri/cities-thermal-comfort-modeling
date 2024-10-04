@@ -25,20 +25,18 @@ from datetime import datetime
 from osgeo import gdal
 from osgeo.gdalconst import *
 from src.tools import remove_file, clean_folder, create_folder
-# from src.qgis_initializer import QgisHandler
 from processing.core.Processing import Processing
 
 
 class UmepProcessingQgisPlugins:
     def __init__(self, qgis_app):
+        self.qgis_app = qgis_app
         from processing_umep.processing_umep import ProcessingUMEPProvider
         umep_provider = ProcessingUMEPProvider()
-        qgis_app.processingRegistry().addProvider(umep_provider)
-    # def __init__(self):
-    #     self.qh = QgisHandler(0)
-    #
-    # def __del__(self):
-    #     self.qh.qgis_app.exit()
+        self.qgis_app.processingRegistry().addProvider(umep_provider)
+
+    def __del__(self):
+        self.qgis_app.exit()
 
     def generate_wall_height_aspect(self, runID, city_data):
         start_time = _log_method_start('Wall Height/Aspect', runID, None, city_data.source_base_path)

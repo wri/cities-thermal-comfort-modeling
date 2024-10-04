@@ -13,19 +13,18 @@ from test.tools import is_valid_output_file, is_valid_output_directory
 SOURCE_PATH = os.path.join(os.path.dirname(os.getcwd()), 'sample_cities')
 CITY_FOLDER_NAME = 'ZAF_Capetown_small_tile'
 from src.qgis_initializer import QgisHandler
-qh = QgisHandler(0)
+QH = QgisHandler(0)
 
 faulthandler.enable()
 
 @pytest.fixture
 def startup_teardown():
-    qgis_app = qh.qgis_app
-    UPP = UmepProcessingQgisPlugins(qgis_app)
+    umep_plugin = UmepProcessingQgisPlugins(QH.qgis_app)
     # Create a temporary directory
     temp_dir = tempfile.mkdtemp()
-    yield UPP, temp_dir
+    yield umep_plugin, temp_dir
     # Cleanup: delete the directory after the test
-    # UPP.shutdown_qgis()
+    # umep_plugin.__del__()
     # shutil.rmtree(temp_dir)
 
 def test_wall_height_aspect(startup_teardown):

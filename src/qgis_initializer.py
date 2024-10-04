@@ -22,8 +22,8 @@ class QgisHandler:
         # for alg in QgsApplication.processingRegistry().algorithms():
         #     print(alg.id(), "->", alg.displayName())
 
-    # def __del__(self):
-    #     self.qgis_app.exit()
+    def __del__(self):
+        self.qgis_app.exit()
 
     def qgis_app(self):
         return self.qgis_app

@@ -35,10 +35,8 @@ class UmepProcessingQgisPlugins:
         umep_provider = ProcessingUMEPProvider()
         self.qgis_app.processingRegistry().addProvider(umep_provider)
 
-    def __del__(self):
-        self.qgis_app.exit()
-
     def generate_wall_height_aspect(self, runID, city_data):
+        print('RunID:%s Generating wall-height/aspect results for tile:%s' % (runID, city_data.tile_folder_name))
         start_time = _log_method_start('Wall Height/Aspect', runID, None, city_data.source_base_path)
         warnings.filterwarnings("ignore")
 
@@ -65,6 +63,7 @@ class UmepProcessingQgisPlugins:
 
 
     def generate_skyview_factor_files(self, runID, city_data):
+        print('RunID:%s Generating skyview-factor results for tile:%s' % (runID, city_data.tile_folder_name))
         start_time = _log_method_start('Skyview-factor', runID, None, city_data.source_base_path)
         warnings.filterwarnings("ignore")
 
@@ -101,7 +100,7 @@ class UmepProcessingQgisPlugins:
 
 
     def generate_solweig(self, runID, step, city_data: CityData, met_file_name, utc_offset):
-
+        print('RunID:%s Generating SOLWEIG results for met_file:%s tile:%s' % (runID, met_file_name, city_data.tile_folder_name))
         start_time = _log_method_start('SOLWEIG', runID, step, city_data.source_base_path)
         warnings.filterwarnings("ignore")
 

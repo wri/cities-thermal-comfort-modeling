@@ -1,5 +1,9 @@
 import os
 from src.process_runner import run_plugins
+import logging
+from logging_config import logger_name
+logger = logging.getLogger(logger_name())
+
 """
 Guide to creating standalone app for calling QGIS: https://docs.qgis.org/3.16/en/docs/pyqgis_developer_cookbook/intro.html
 """

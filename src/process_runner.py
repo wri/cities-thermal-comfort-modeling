@@ -1,6 +1,5 @@
 import csv
 import os
-import ast
 
 from datetime import datetime
 from pathlib import Path
@@ -16,52 +15,13 @@ UMEP_CITY_PROCESSING_REGISTRY_FILE = 'umep_city_processing_registry.csv'
 SOLWEIG_TIME_SERIES_CONFIG_FILE = 'time_series_config.csv'
 METHODS = ['all', 'wall_height_aspect', 'skyview_factor', 'solweig']
 
-def verify_source_paths(source_data_path, target_path, config_processing_file_path):
-    if verify_path(source_data_path) is False:
-        log_other_failure(('Invalid path: %s' % source_data_path), '')
-        raise Exception('Invalid path: %s' % source_data_path)
-    if verify_path(target_path) is False:
-        log_other_failure(('Invalid path: %s' % target_path), '')
-        raise Exception('Invalid path: %s' % target_path)
-    if verify_path(config_processing_file_path) is False:
-        log_other_failure(('File does not exist: %s' % config_processing_file_path), '')
-        raise Exception('Processing Registry file does not exist: %s' % config_processing_file_path)
-
-def verify_all_primary_paths(runID, city_data):
-    if verify_path(city_data.source_data_path) is False:
-        log_other_failure(('Skipping runID:%s due to invalid path: %s' % (runID,city_data.source_data_path)), '')
-        return False
-    elif verify_path(city_data.source_met_files_path) is False:
-        log_other_failure(('Skipping runID:%s due to invalid path: %s' % (runID,city_data.source_met_files_path)), '')
-        return False
-    elif verify_path(city_data.dem_path) is False:
-        log_other_failure(('Skipping runID:%s due to invalid path: %s' % (runID,city_data.dem_path)), '')
-        return False
-    elif verify_path(city_data.dsm_path) is False:
-        log_other_failure(('Skipping runID:%s due to invalid path: %s' % (runID,city_data.dsm_path)), '')
-        return False
-    elif verify_path(city_data.vegcanopy_path) is False:
-        log_other_failure(('Skipping runID:%s due to invalid path: %s' % (runID,city_data.vegcanopy_path)), '')
-        return False
-    elif verify_path(city_data.landcover_path) is False:
-        log_other_failure(('Skipping runID:%s due to invalid path: %s' % (runID,city_data.landcover_path)), '')
-        return False
-    else:
-        return True
-
-def verify_method(runID, method):
-    if method not in METHODS:
-        log_other_failure(('Skipping runID:%s due to invalid method: %s' % (runID,method)), '')
-        return False
-    else:
-        return True
 
 def run_plugins(data_source_folder, results_target_folder):
     umep_plug = UmepProcessingQgisPlugins(QH.qgis_app)
     source_data_path = os.path.abspath(data_source_folder)
     target_path = os.path.abspath(results_target_folder)
     config_processing_file_path = os.path.join(source_data_path, UMEP_CITY_PROCESSING_REGISTRY_FILE)
-    verify_source_paths(source_data_path, target_path, config_processing_file_path)
+    _verify_source_paths(source_data_path, target_path, config_processing_file_path)
 
     with open(config_processing_file_path, mode='r') as file:
         csv_reader = csv.reader(file)
@@ -77,10 +37,10 @@ def run_plugins(data_source_folder, results_target_folder):
                 city_folder_name = row[2]
                 tile_folder_name = row[3]
                 city_data = instantiate_city_data(city_folder_name, tile_folder_name, source_data_path, target_path)
-                all_valid = verify_all_primary_paths(runID, city_data)
+                all_valid = _verify_all_primary_paths(runID, city_data)
                 if all_valid is not True: continue
                 method = row[4].lower()
-                is_valid_method = verify_method(runID, method)
+                is_valid_method = _verify_method(runID, method)
                 if is_valid_method is not True: continue
 
                 # TODO - Add checks for prerequite data!!
@@ -136,3 +96,43 @@ def _run_solweig(UPP, runID, city_data, method):
 def _construct_result_path(result_folder, met_file_path):
     result_path = os.path.join(os.path.abspath(result_folder), Path(met_file_path).stem)
     return result_path
+
+def _verify_source_paths(source_data_path, target_path, config_processing_file_path):
+    if verify_path(source_data_path) is False:
+        log_other_failure(('Invalid path: %s' % source_data_path), '')
+        raise Exception('Invalid path: %s' % source_data_path)
+    if verify_path(target_path) is False:
+        log_other_failure(('Invalid path: %s' % target_path), '')
+        raise Exception('Invalid path: %s' % target_path)
+    if verify_path(config_processing_file_path) is False:
+        log_other_failure(('File does not exist: %s' % config_processing_file_path), '')
+        raise Exception('Processing Registry file does not exist: %s' % config_processing_file_path)
+
+def _verify_all_primary_paths(runID, city_data):
+    if verify_path(city_data.source_data_path) is False:
+        log_other_failure(('Skipping runID:%s due to invalid path: %s' % (runID,city_data.source_data_path)), '')
+        return False
+    elif verify_path(city_data.source_met_files_path) is False:
+        log_other_failure(('Skipping runID:%s due to invalid path: %s' % (runID,city_data.source_met_files_path)), '')
+        return False
+    elif verify_path(city_data.dem_path) is False:
+        log_other_failure(('Skipping runID:%s due to invalid path: %s' % (runID,city_data.dem_path)), '')
+        return False
+    elif verify_path(city_data.dsm_path) is False:
+        log_other_failure(('Skipping runID:%s due to invalid path: %s' % (runID,city_data.dsm_path)), '')
+        return False
+    elif verify_path(city_data.vegcanopy_path) is False:
+        log_other_failure(('Skipping runID:%s due to invalid path: %s' % (runID,city_data.vegcanopy_path)), '')
+        return False
+    elif verify_path(city_data.landcover_path) is False:
+        log_other_failure(('Skipping runID:%s due to invalid path: %s' % (runID,city_data.landcover_path)), '')
+        return False
+    else:
+        return True
+
+def _verify_method(runID, method):
+    if method not in METHODS:
+        log_other_failure(('Skipping runID:%s due to invalid method: %s' % (runID,method)), '')
+        return False
+    else:
+        return True

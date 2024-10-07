@@ -1,20 +1,5 @@
 # see https://umep-docs.readthedocs.io/projects/tutorial/en/latest/Tutorials/PythonProcessing1.html
 
-import logging
-import os
-
-from src.CityData import CityData
-
-for handler in logging.root.handlers[:]:
-    logging.root.removeHandler(handler)
-log_file_path = os.path.join(os.path.dirname(os.getcwd()), 'execution.log')
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s\t%(message)s',
-                    datefmt='%a_%Y_%b_%d_%H:%M:%S',
-                    filename=log_file_path
-                    )
-
-import sys
 import os
 import tempfile
 import warnings
@@ -24,6 +9,8 @@ from pathlib import Path
 from datetime import datetime
 from osgeo import gdal
 from osgeo.gdalconst import *
+from src.CityData import CityData
+from src.logger_tools import log_method_start, log_method_completion, log_method_failure, log_other_failure
 from src.tools import remove_file, clean_folder, create_folder
 from processing.core.Processing import Processing
 
@@ -37,8 +24,9 @@ class UmepProcessingQgisPlugins:
         self.qgis_app.processingRegistry().addProvider(umep_provider)
 
     def generate_wall_height_aspect(self, runID, city_data):
-        print('RunID:%s Generating wall-height/aspect results for tile:%s' % (runID, city_data.tile_folder_name))
-        start_time = _log_method_start('Wall Height/Aspect', runID, None, city_data.source_base_path)
+        start_time = datetime.now()
+        # print('RunID:%s Generating wall-height/aspect results for tile:%s' % (runID, city_data.tile_folder_name))
+        log_method_start('Wall Height/Aspect', runID, None, city_data.source_base_path)
         warnings.filterwarnings("ignore")
 
         create_folder(city_data.target_preprocessed_data_path)
@@ -59,25 +47,26 @@ class UmepProcessingQgisPlugins:
                 Processing.initialize()
                 processing.run("umep:Urban Geometry: Wall Height and Aspect", parin)
 
-                _log_method_completion(start_time, 'Wall Height/Aspect', runID, None, city_data.source_base_path)
+                log_method_completion(start_time, 'Wall Height/Aspect', runID, None, city_data.source_base_path)
                 return_code = 0
             except Exception as e_msg:
-                print('RunId:%s Height/Aspect failure. Retrying' % (runID))
+                # print('RunId:%s Height/Aspect failure. Retrying' % (runID))
                 log_method_failure(start_time, 'Wall Height/Aspect for try %s of %s retries' % (retry_count, MAX_RETRY_COUNT),
                                    runID, None, city_data.source_base_path, e_msg)
                 return_code = -1
 
             retry_count += 1
         if retry_count >= MAX_RETRY_COUNT:
-            print('RunId:%s Height/Aspect failure. Maximum retries exceeded. See log for details.' % (runID))
+            # print('RunId:%s Height/Aspect failure. Maximum retries exceeded. See log for details.' % (runID))
             log_other_failure('Wall Height/Aspect  failure exceeded maximum retry.', '')
 
         return return_code
 
 
     def generate_skyview_factor_files(self, runID, city_data):
-        print('RunID:%s Generating skyview-factor results for tile:%s' % (runID, city_data.tile_folder_name))
-        start_time = _log_method_start('Skyview-factor', runID, None, city_data.source_base_path)
+        start_time = datetime.now()
+        # print('RunID:%s Generating skyview-factor results for tile:%s' % (runID, city_data.tile_folder_name))
+        log_method_start('Skyview-factor', runID, None, city_data.source_base_path)
         warnings.filterwarnings("ignore")
 
         create_folder(city_data.target_preprocessed_data_path)
@@ -108,25 +97,26 @@ class UmepProcessingQgisPlugins:
 
                     shutil.move(temp_svfs_file_with_extension, city_data.target_preprocessed_data_path)
 
-                _log_method_completion(start_time, 'Skyview-factor', runID, None, city_data.source_base_path)
+                log_method_completion(start_time, 'Skyview-factor', runID, None, city_data.source_base_path)
                 return_code = 0
             except Exception as e_msg:
-                print('RunId:%s Skyview-factor  failure. Retrying' % (runID))
+                # print('RunId:%s Skyview-factor  failure. Retrying' % (runID))
                 log_method_failure(start_time, 'Skyview-factor for try %s of %s retries' % (retry_count, MAX_RETRY_COUNT),
                                    runID, None, city_data.source_base_path, e_msg)
                 return_code = -2
 
             retry_count += 1
         if retry_count >= MAX_RETRY_COUNT:
-            print('RunId:%s Skyview-factor failure. Maximum retries exceeded. See log for details.' % (runID))
+            # print('RunId:%s Skyview-factor failure. Maximum retries exceeded. See log for details.' % (runID))
             log_other_failure('Skyview-factor failure exceeded maximum retry.', '')
 
         return return_code
 
 
     def generate_solweig(self, runID, step, city_data: CityData, met_file_name, utc_offset):
-        print('RunID:%s Generating SOLWEIG results for met_file:%s tile:%s' % (runID, met_file_name, city_data.tile_folder_name))
-        start_time = _log_method_start('SOLWEIG', runID, step, city_data.source_base_path)
+        start_time = datetime.now()
+        # print('RunID:%s Generating SOLWEIG results for met_file:%s tile:%s' % (runID, met_file_name, city_data.tile_folder_name))
+        log_method_start('SOLWEIG', runID, step, city_data.source_base_path)
         warnings.filterwarnings("ignore")
 
         source_met_file_path = os.path.join(city_data.source_met_files_path, met_file_name)
@@ -189,17 +179,17 @@ class UmepProcessingQgisPlugins:
                 Processing.initialize()
                 processing.run("umep:Outdoor Thermal Comfort: SOLWEIG", parin)
 
-                _log_method_completion(start_time, 'SOLWEIG', runID, step, city_data.source_base_path)
+                log_method_completion(start_time, 'SOLWEIG', runID, step, city_data.source_base_path)
                 return_code = 0
             except Exception as e_msg:
-                print('RunId:%s SOLWEIG failure. Retrying' % (runID))
+                # print('RunId:%s SOLWEIG failure. Retrying' % (runID))
                 log_method_failure(start_time, 'SOLWEIG for try %s of %s retries' % (retry_count, MAX_RETRY_COUNT),
                                    runID, None, city_data.source_base_path, e_msg)
                 return_code = -3
 
             retry_count += 1
         if retry_count >= MAX_RETRY_COUNT:
-            print('RunId:%s SOLWEIG failure. Maximum retries exceeded. See log for details.' % (runID))
+            # print('RunId:%s SOLWEIG failure. Maximum retries exceeded. See log for details.' % (runID))
             log_other_failure('SOLWEIG failure exceeded maximum retry.', '')
 
         return return_code
@@ -260,31 +250,6 @@ class UmepProcessingQgisPlugins:
     #
     #     return
 
-def _log_method_start(method, runId, step, source_base_path):
-    if step is None:
-        logging.info("run:%s\tStarting '%s'\tconfig:'%s')" % (runId, method, source_base_path))
-    else:
-        logging.info("run:%s\tStarting '%s' for met_series:%s\tconfig:'%s')" % (runId, method, step, source_base_path))
-    return datetime.now()
-
-def _log_method_completion(start_time, method, runId, step, source_base_path):
-    runtime = round((datetime.now() - start_time).seconds/60,2)
-    if step is None:
-        logging.info("run:%s\tFinished '%s', runtime:%s mins\tconfig:'%s'" % (runId, method, runtime, source_base_path))
-    else:
-        logging.info("run:%s\tFinished '%s' for met_series:%s, runtime:%s mins\tconfig:'%s'" % (runId, method, step, runtime, source_base_path))
-
-def log_method_failure(start_time, feature, runId, step, source_base_path, e_msg):
-    print('Failure. See log file.')
-    runtime = round((datetime.now() - start_time).seconds/60,2)
-    if step is None:
-        logging.error("run:%s\t**** FAILED execution of '%s' after runtime:%s mins\tconfig:'%s'(%s)" % (runId, feature, runtime, source_base_path, e_msg))
-    else:
-        logging.error("run:%s\t**** FAILED execution of '%s' fpr met_series:%s after runtime:%s mins\tconfig:'%s'(%s)" % (runId, feature, step, runtime, source_base_path, e_msg))
-
-def log_other_failure(message, e_msg):
-    print('Failure. See log file.')
-    logging.error("**** FAILED execution with '%s' (%s)" % (message, e_msg))
 
 
 def _aggregate_rasters_in_folder(folder_path, aggregation_raster):

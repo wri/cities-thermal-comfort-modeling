@@ -1,7 +1,7 @@
 # https://betterstack.com/community/guides/logging/python/python-logging-best-practices/#
 import logging.handlers
 import os
-from src.tools import create_folder, get_application_path
+from tools import create_folder, get_application_path
 
 log_folder = os.path.join(get_application_path(), 'logs')
 create_folder(log_folder)

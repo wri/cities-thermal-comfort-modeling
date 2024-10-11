@@ -2,8 +2,9 @@ import csv
 import os
 
 from main import main
-from src import tools as src_tools
-from test.test_umep_for_processing_algorithms import is_valid_output_directory
+from src_old import tools as src_tools, tools
+from test.tools import is_valid_output_directory
+
 
 def test_main():
     package_folder = os.path.dirname(os.getcwd())
@@ -22,16 +23,19 @@ def _verify_expected_output_folders(data_source_folder, results_target_folder):
         csv_reader = csv.reader(file)
         next(csv_reader, None)  # skip the headers
         for row in csv_reader:
-            enabled = src_tools.toBool[row[1].lower()]
+            if row:
+                enabled = src_tools.toBool[row[1].lower()]
 
-            if enabled is True:
-                city_folder = row[2]
-                result_folder = os.path.join(results_target_folder, city_folder)
-                enabled_target_folder.append(result_folder)
+                if enabled is True:
+                    city_folder = row[2]
+                    tile = row[3]
+                    result_folder = os.path.join(results_target_folder, city_folder,'preprocessed_data', tile)
+                    enabled_target_folder.append(result_folder)
 
     unique_target_folders = set(enabled_target_folder)
     expected_target_folder_count = len(unique_target_folders)
     actual_target_folder_count = 0
+    has_content = False
     for folder in unique_target_folders:
         out_directory = os.path.abspath(folder)
         if is_valid_output_directory(out_directory) is True:

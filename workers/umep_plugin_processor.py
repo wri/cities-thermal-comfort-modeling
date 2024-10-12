@@ -85,7 +85,8 @@ def run_plugin(task_index, method, folder_name_city_data, folder_name_tile_data,
         msg = f'{method_title} processing cancelled after {MAX_RETRY_COUNT} attempts.'
         _log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, '')
 
-    return return_code
+    runtime = _compute_time_diff_mins(start_time)
+    return return_code, runtime
 
 
 def _prepare_method_execution(method, city_data, tmpdirname, met_file_name=None, utc_offset=None):
@@ -223,6 +224,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Run specified method in the "UMEP for Processing" QGIS plugin.')
     parser.add_argument('--task_index', metavar='str', required=True, help='index from the processor config file')
+    parser.add_argument('--subtask_index', metavar='str', required=True, help='index for multi-part runs. only used for reporting')
     valid_methods = ['wall_height_aspect', 'skyview_factor', 'solweig_only', 'solweig_full']
     parser.add_argument('--method', metavar='str', choices=valid_methods, required=True, help='plugin method name')
     parser.add_argument('--folder_name_city_data', metavar='str', required=True, help='name of city folder')
@@ -234,8 +236,8 @@ if __name__ == "__main__":
     parser.add_argument('--utc_offset', metavar='int', required=False, help='local hour offset from utc')
     args = parser.parse_args()
 
-    return_code = run_plugin(args.task_index, args.method, args.folder_name_city_data, args.folder_name_tile_data,
+    return_code, runtime = run_plugin(args.task_index, args.method, args.folder_name_city_data, args.folder_name_tile_data,
                              args.source_data_path, args.target_path, args.met_file_name, args.utc_offset)
 
-    return_stdout = f'{{"Return_package": {{"task_index": {args.task_index}, "return_code": {return_code} }}}}'
+    return_stdout = f'{{"Return_package": {{"task_index": {args.task_index}, "subtask_index": {args.subtask_index}, "return_code": {return_code}, "runtime": {runtime} }}}}'
     print(return_stdout)

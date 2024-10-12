@@ -9,10 +9,11 @@ import logging
 
 from collections.abc import Iterable
 from workers.city_data import CityData
-from workers.tools import get_application_path
+from workers.tools import get_application_path, create_folder
 
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
+create_folder(os.path.abspath(os.path.join(get_application_path(), 'logs')))
 log_file_path = os.path.abspath(os.path.join(get_application_path(), 'logs', 'execution.log'))
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s\t%(levelname)s\t%(message)s',
@@ -48,16 +49,32 @@ def main(source_base_path, target_base_path):
 def start_processor(futures):
     # chunk size??
     from dask.distributed import Client
-    with Client(n_workers=int(0.5 * mp.cpu_count()),
-                      processes=False,
-                      threads_per_worker=2,
-                      memory_limit='2GB',
-                      asynchronous=False
-                      ) as client:
+    with Client(n_workers=int(0.9 * mp.cpu_count()),
+                threads_per_worker=1,
+                processes=False,
+                memory_limit='2GB',
+                asynchronous=False
+                ) as client:
         dc = dask.compute(*futures)
         # Client(threads_per_worker=2, n_workers=int(0.5 * mp.cpu_count()), processes=False, asynchronous=False)
 
+    all_passed, failed_tasks, failed_task_details =_parse_and_log_return_package(dc)
+
+    if not all_passed:
+        task_str = ','.join(map(str,failed_tasks))
+        count = len(failed_tasks)
+        msg =  f'FAILURE: There were {count} processing failure for tasks indices: ({task_str})'
+        _highlighted_print(msg)
+
+        for failed_run in failed_task_details:
+            _log_failure(failed_run, '')
+
+    return all_passed
+
+def _parse_and_log_return_package(dc):
+
     results = []
+    # serialize the return information - one way or another
     for obj in dc:
         if isinstance(obj, Iterable):
             for row in obj:
@@ -65,27 +82,24 @@ def start_processor(futures):
         else:
             results.append(obj)
 
+    # extract content from the return package and determine if there was a failure
     all_passed = True
-    failed_tasks = []
+    failed_task_ids = []
+    failed_task_details = []
     for row in results:
-        # print(f'\n {row}')
         if hasattr(row, 'stdout'):
-            ss = get_substring_sandwich(row.stdout, '{"Return_package":', "}}")
-            if ss is not None:
-                return_package = json.loads(ss)['Return_package']
-                if ss is None or return_package['return_code'] != 0:
-                    task_index = json.loads(ss)['Task_index']
-                    failed_tasks.append(task_index)
+            return_info = get_substring_sandwich(row.stdout, '{"Return_package":', "}}")
+            if return_info is not None:
+                return_package = json.loads(return_info)['Return_package']
+                if return_info is None or return_package['return_code'] != 0:
+                    task_index = return_package['task_index']
+                    subtask_index = return_package['subtask_index']
+                    runtime = return_package['runtime']
+                    failed_task_ids.append(task_index)
+                    failed_task_details.append(row)
                     all_passed = False
 
-
-    if not all_passed:
-        task_str = ','.join(failed_tasks)
-        count = len(failed_tasks)
-        msg =  f'FAILURE: There were {count} processing failure for tasks indices: ({task_str})'
-        _highlighted_print(msg)
-
-    return all_passed
+    return all_passed, failed_task_ids, failed_task_details
 
 def get_substring_sandwich(text, start_substring, end_substring):
     try:
@@ -117,11 +131,11 @@ def build_processing_graphs(source_base_path, target_base_path):
                 delayed_results.extend(dep_delayed_results)
                 solweig_delayed_results.extend(solweig_task_delayed_results)
             elif method == 'solweig_only':
-                delayed_result = _build_solweig_steps(task_index, method, city_folder_name,
+                delayed_result = _build_solweig_steps(task_index, 0, method, city_folder_name,
                                                       tile_folder_name, source_base_path, target_base_path)
                 delayed_results.append(delayed_result)
             else:
-                proc_array = _construct_proc_array(task_index, method, city_folder_name, tile_folder_name,
+                proc_array = _construct_proc_array(task_index, 0, method, city_folder_name, tile_folder_name,
                                       source_base_path, target_base_path)
                 delayed_result = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
                 delayed_results.append(delayed_result)
@@ -131,23 +145,23 @@ def build_processing_graphs(source_base_path, target_base_path):
 
 def _build_solweig_dependency(task_index, method, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path):
     dep_delayed_results = []
-    proc_array = _construct_proc_array(task_index, 'wall_height_aspect', folder_name_city_data, folder_name_tile_data,
-                                       source_base_path, target_base_path)
+    proc_array = _construct_proc_array(task_index, 0, 'wall_height_aspect', folder_name_city_data, folder_name_tile_data,
+                                       source_base_path, target_base_path, None, None)
     walls = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
     dep_delayed_results.append(walls)
 
-    proc_array = _construct_proc_array(task_index, 'skyview_factor', folder_name_city_data, folder_name_tile_data,
-                                       source_base_path, target_base_path)
+    proc_array = _construct_proc_array(task_index, 1, 'skyview_factor', folder_name_city_data, folder_name_tile_data,
+                                       source_base_path, target_base_path, None, None)
     skyview = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
     dep_delayed_results.append(skyview)
 
-    solweig_delayed_results = _build_solweig_steps(task_index, method, folder_name_city_data,
+    solweig_delayed_results = _build_solweig_steps(task_index, 2, method, folder_name_city_data,
                                                    folder_name_tile_data, source_base_path, target_base_path)
 
     return dep_delayed_results, solweig_delayed_results
 
 
-def _build_solweig_steps(task_index, method, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path):
+def _build_solweig_steps(task_index, subtask_index, method, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path):
     city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
 
     delayed_result = []
@@ -161,7 +175,7 @@ def _build_solweig_steps(task_index, method, folder_name_city_data, folder_name_
             met_file_name = config_row.met_file_name
             utc_offset = config_row.utc_offset
 
-            proc_array = _construct_proc_array(task_index, method, folder_name_city_data, folder_name_tile_data,
+            proc_array = _construct_proc_array(task_index, subtask_index, method, folder_name_city_data, folder_name_tile_data,
                                                source_base_path, target_base_path, met_file_name, utc_offset)
             solweig = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
             delayed_result.append(solweig)
@@ -171,9 +185,9 @@ def _build_solweig_steps(task_index, method, folder_name_city_data, folder_name_
     return delayed_result
 
 
-def _construct_proc_array(task_index, method, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path,
+def _construct_proc_array(task_index, subtask_index, method, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path,
                           met_file_name=None, utc_offset=None):
-    proc_array = ['python', SCRIPT_PATH, f'--task_index={task_index}', f'--method={method}',
+    proc_array = ['python', SCRIPT_PATH, f'--task_index={task_index}', f'--subtask_index={subtask_index}', f'--method={method}',
                   f'--folder_name_city_data={folder_name_city_data}',
                   f'--folder_name_tile_data={folder_name_tile_data}',
                   f'--source_data_path={source_base_path}', f'--target_path={target_base_path}',
@@ -226,7 +240,7 @@ def _verify_processing_conf(processing_config_df, source_base_path, target_base_
                 raise Exception(f"Invalid 'method' ({method}) on row {index} and possibly other rows. Valid values: {valid_methods}")
 
 
-def _log_other_failure(message, e_msg):
+def _log_failure(message, e_msg):
     _highlighted_print('Failure. See log file.')
     logging.critical(f"**** FAILED execution with '{message}' ({e_msg})")
 

@@ -7,6 +7,7 @@ dependencies:
   - python=3.12
 #  - ipykernel
 #  - python-dotenv
+  - matplotlib
   - qgis=3.34.11
   - scipy
   - numpy=1.26.4

@@ -48,6 +48,6 @@ def get_configurations():
     return qgis_home_path, qgis_plugin_path
 
 def get_application_path():
-    return Path(os.path.dirname(os.path.abspath(__file__))).parent
+    return str(Path(os.path.dirname(os.path.abspath(__file__))).parent)
 
 toBool = {'true': True, 'false': False}

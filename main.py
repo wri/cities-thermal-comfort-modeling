@@ -9,10 +9,11 @@ import logging
 
 from collections.abc import Iterable
 from workers.city_data import CityData
+from workers.tools import get_application_path
 
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
-log_file_path = os.path.join(os.path.dirname(os.getcwd()), 'logs', 'execution.log')
+log_file_path = os.path.abspath(os.path.join(get_application_path(), 'logs', 'execution.log'))
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s\t%(levelname)s\t%(message)s',
                     datefmt='%a_%Y_%b_%d_%H:%M:%S',
@@ -25,29 +26,36 @@ Guide to creating standalone app for calling QGIS: https://docs.qgis.org/3.16/en
 https://medium.com/@giovannigallon/how-i-automate-qgis-tasks-using-python-54df35d8d63f
 """
 
+SCRIPT_PATH = os.path.abspath(os.path.join(get_application_path(), 'workers', 'umep_plugin_processor.py'))
 PRE_SOLWEIG_FULL_PAUSE_TIME_SEC = 15
 
 def main(source_base_path, target_base_path):
     abs_source_base_path = os.path.abspath(source_base_path)
     abs_target_path = os.path.abspath(target_base_path)
     delayed_results, solweig_delayed_results = build_processing_graphs(abs_source_base_path, abs_target_path)
-    all_passed = start_processor(delayed_results)
+    delays_all_passed = start_processor(delayed_results)
 
     # wait for prior processing to complete
     time.sleep(PRE_SOLWEIG_FULL_PAUSE_TIME_SEC)
     # check that solweig completed
 
-    all_passed = start_processor(solweig_delayed_results)
+    solweig_delays_all_passed = start_processor(solweig_delayed_results)
+
+    return_code = 0 if (delays_all_passed and solweig_delays_all_passed) else 1
+    return return_code
 
 
 def start_processor(futures):
     # chunk size??
     from dask.distributed import Client
-    # time 4 > 1 > 3 > 2
-    Client(threads_per_worker=2, n_workers=int(0.5 * mp.cpu_count()), processes=False, asynchronous=False)
-    dc = dask.compute(*futures)
-    # dask.compute(*delayed_results, pure=False )
-
+    with Client(n_workers=int(0.5 * mp.cpu_count()),
+                      processes=False,
+                      threads_per_worker=2,
+                      memory_limit='2GB',
+                      asynchronous=False
+                      ) as client:
+        dc = dask.compute(*futures)
+        # Client(threads_per_worker=2, n_workers=int(0.5 * mp.cpu_count()), processes=False, asynchronous=False)
 
     results = []
     for obj in dc:
@@ -60,6 +68,7 @@ def start_processor(futures):
     all_passed = True
     failed_tasks = []
     for row in results:
+        # print(f'\n {row}')
         if hasattr(row, 'stdout'):
             ss = get_substring_sandwich(row.stdout, '{"Return_package":', "}}")
             if ss is not None:
@@ -93,7 +102,6 @@ def build_processing_graphs(source_base_path, target_base_path):
     processing_config_df = pd.read_csv(config_processing_file_path)
     _verify_processing_conf(processing_config_df, source_base_path, target_base_path)
 
-    script_path = os.path.abspath(os.path.join('..', 'workers', 'umep_plugin_processor.py'))
     delayed_results = []
     solweig_delayed_results = []
     for index, config_row in processing_config_df.iterrows():
@@ -109,13 +117,12 @@ def build_processing_graphs(source_base_path, target_base_path):
                 delayed_results.extend(dep_delayed_results)
                 solweig_delayed_results.extend(solweig_task_delayed_results)
             elif method == 'solweig_only':
-                delayed_result = _build_solweig_steps(script_path, task_index, method, city_folder_name,
-                                                               tile_folder_name, source_base_path, target_base_path)
+                delayed_result = _build_solweig_steps(task_index, method, city_folder_name,
+                                                      tile_folder_name, source_base_path, target_base_path)
                 delayed_results.append(delayed_result)
             else:
-                proc_array = ['python', script_path, f'--task_index={task_index}', f'--method={method}',
-                             f'--folder_name_city_data={city_folder_name}', f'--folder_name_tile_data={tile_folder_name}',
-                             f'--source_data_path={source_base_path}', f'--target_path={target_base_path}']
+                proc_array = _construct_proc_array(task_index, method, city_folder_name, tile_folder_name,
+                                      source_base_path, target_base_path)
                 delayed_result = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
                 delayed_results.append(delayed_result)
 
@@ -124,27 +131,23 @@ def build_processing_graphs(source_base_path, target_base_path):
 
 def _build_solweig_dependency(task_index, method, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path):
     dep_delayed_results = []
-
-    script_path = os.path.join('..', 'workers', 'umep_plugin_processor.py')
-    proc_array = ['python', script_path, f'--task_index={task_index}', '--method=wall_height_aspect',
-                  f'--folder_name_city_data={folder_name_city_data}', f'--folder_name_tile_data={folder_name_tile_data}',
-                  f'--source_data_path={source_base_path}', f'--target_path={target_base_path}']
+    proc_array = _construct_proc_array(task_index, 'wall_height_aspect', folder_name_city_data, folder_name_tile_data,
+                                       source_base_path, target_base_path)
     walls = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
     dep_delayed_results.append(walls)
 
-    proc_array = ['python', script_path, f'--task_index={task_index}', '--method=skyview_factor',
-                  f'--folder_name_city_data={folder_name_city_data}', f'--folder_name_tile_data={folder_name_tile_data}',
-                  f'--source_data_path={source_base_path}', f'--target_path={target_base_path}']
+    proc_array = _construct_proc_array(task_index, 'skyview_factor', folder_name_city_data, folder_name_tile_data,
+                                       source_base_path, target_base_path)
     skyview = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
     dep_delayed_results.append(skyview)
 
-    solweig_delayed_results = _build_solweig_steps(script_path, task_index, method, folder_name_city_data,
+    solweig_delayed_results = _build_solweig_steps(task_index, method, folder_name_city_data,
                                                    folder_name_tile_data, source_base_path, target_base_path)
 
     return dep_delayed_results, solweig_delayed_results
 
 
-def _build_solweig_steps(script_path, task_index, method, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path):
+def _build_solweig_steps(task_index, method, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path):
     city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
 
     delayed_result = []
@@ -158,16 +161,24 @@ def _build_solweig_steps(script_path, task_index, method, folder_name_city_data,
             met_file_name = config_row.met_file_name
             utc_offset = config_row.utc_offset
 
-            proc_array = ['python', script_path, f'--task_index={task_index}', f'--method={method}',
-                          f'--folder_name_city_data={folder_name_city_data}', f'--folder_name_tile_data={folder_name_tile_data}',
-                          f'--source_data_path={source_base_path}', f'--target_path={target_base_path}',
-                          f'--met_file_name={met_file_name}', f'--utc_offset={utc_offset}']
+            proc_array = _construct_proc_array(task_index, method, folder_name_city_data, folder_name_tile_data,
+                                               source_base_path, target_base_path, met_file_name, utc_offset)
             solweig = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
             delayed_result.append(solweig)
 
         if return_code != 0:
             break
     return delayed_result
+
+
+def _construct_proc_array(task_index, method, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path,
+                          met_file_name=None, utc_offset=None):
+    proc_array = ['python', SCRIPT_PATH, f'--task_index={task_index}', f'--method={method}',
+                  f'--folder_name_city_data={folder_name_city_data}',
+                  f'--folder_name_tile_data={folder_name_tile_data}',
+                  f'--source_data_path={source_base_path}', f'--target_path={target_base_path}',
+                  f'--met_file_name={met_file_name}', f'--utc_offset={utc_offset}']
+    return proc_array
 
 
 toBool = {'true': True, 'false': False}
@@ -227,11 +238,12 @@ def _highlighted_print(msg):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Run methods in the "UMEP for Processing" QGIS plugin.')
-    parser.add_argument('--data_source_folder', metavar='path', required=True,
+    parser.add_argument('--source_base_path', metavar='path', required=True,
                         help='the path to city-based source data')
-    parser.add_argument('--results_target_folder', metavar='path', required=True,
+    parser.add_argument('--target_base_path', metavar='path', required=True,
                         help='path to export results')
     args = parser.parse_args()
 
-    return_code = main(data_source_folder=args.data_source_folder, results_target_folder=args.results_target_folder)
+    return_code = main(source_base_path=args.source_base_path, target_base_path=args.target_base_path)
+
     print(return_code)

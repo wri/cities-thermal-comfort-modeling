@@ -4,16 +4,14 @@ import shutil
 import warnings
 from pathlib import Path
 from datetime import datetime
-from tools import remove_file, create_folder, remove_folder
+from tools import remove_file, create_folder, remove_folder, get_application_path
 from qgis_initializer import qgis_app_init
 from city_data import CityData
 
 import logging
-
-
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
-log_file_path = os.path.join(os.path.dirname(os.getcwd()), 'logs', 'execution.log')
+log_file_path = os.path.abspath(os.path.join(get_application_path(), 'logs', 'execution.log'))
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s\t%(levelname)s\t%(message)s',
                     datefmt='%a_%Y_%b_%d_%H:%M:%S',
@@ -23,8 +21,9 @@ logging.basicConfig(level=logging.INFO,
 MAX_RETRY_COUNT = 3
 
 
-def run_plugin(task_index, method, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path, met_file_name=None, utc_offset=None):
-    city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
+def run_plugin(task_index, method, folder_name_city_data, folder_name_tile_data, source_base_path, target_path, met_file_name=None, utc_offset=None):
+    print(f'Starting task:{task_index} method:{method} city_folder:{folder_name_city_data}')
+    city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_path)
     method_title = _assign_method_title(method)
 
     # TODO - Add checks for prerequite met data!!
@@ -61,14 +60,13 @@ def run_plugin(task_index, method, folder_name_city_data, folder_name_tile_data,
                 # Prepare target folder and transfer over the temporary results
                 try:
                     if method in ['solweig_only', 'solweig_full']:
-                        for temp_result_path, target_base_path in keepers.items():
-                            remove_folder(target_base_path)
-                            parent_folder = os.path.dirname(target_base_path)
-                            shutil.move(str(temp_result_path), str(parent_folder))
+                        for temp_result_path, target_path in keepers.items():
+                            remove_folder(target_path)
+                            shutil.move(str(temp_result_path), str(target_path))
                     else:
-                        for temp_result_path, target_base_path in keepers.items():
-                            remove_file(target_base_path)
-                            shutil.move(str(temp_result_path), str(target_base_path))
+                        for temp_result_path, target_path in keepers.items():
+                            remove_file(target_path)
+                            shutil.move(str(temp_result_path), str(target_path))
                 except Exception as e_msg:
                     msg = (f'{method_title} processing succeeded but could not create target folder or move files: {city_data.target_preprocessed_data_path}.')
                     _log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, e_msg)
@@ -224,16 +222,16 @@ def _compute_time_diff_mins(start_time):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Run specified method in the "UMEP for Processing" QGIS plugin.')
-    parser.add_argument('--task_index', metavar='str', required=True, help='blah')
+    parser.add_argument('--task_index', metavar='str', required=True, help='index from the processor config file')
     valid_methods = ['wall_height_aspect', 'skyview_factor', 'solweig_only', 'solweig_full']
-    parser.add_argument('--method', metavar='str', choices=valid_methods, required=True, help='blah')
-    parser.add_argument('--folder_name_city_data', metavar='str', required=True, help='the city name')
-    parser.add_argument('--folder_name_tile_data', metavar='str', required=True, help='the tile name')
-    parser.add_argument('--source_data_path', metavar='str', required=True, help='blah')
-    parser.add_argument('--target_path', metavar='str', required=True, help='blah')
+    parser.add_argument('--method', metavar='str', choices=valid_methods, required=True, help='plugin method name')
+    parser.add_argument('--folder_name_city_data', metavar='str', required=True, help='name of city folder')
+    parser.add_argument('--folder_name_tile_data', metavar='str', required=True, help='name of tile folder')
+    parser.add_argument('--source_data_path', metavar='path', required=True, help='folder with source data')
+    parser.add_argument('--target_path', metavar='path', required=True, help='folder that is to be populated')
 
-    parser.add_argument('--met_file_name', metavar='str', required=False, help='blah')
-    parser.add_argument('--utc_offset', metavar='str', required=False, help='blah')
+    parser.add_argument('--met_file_name', metavar='str', required=False, help='name of the meteorological file')
+    parser.add_argument('--utc_offset', metavar='int', required=False, help='local hour offset from utc')
     args = parser.parse_args()
 
     return_code = run_plugin(args.task_index, args.method, args.folder_name_city_data, args.folder_name_tile_data,

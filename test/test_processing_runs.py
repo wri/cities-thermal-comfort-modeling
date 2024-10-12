@@ -7,12 +7,14 @@ from test.tools import is_valid_output_directory
 
 def test_main():
     package_folder = os.path.dirname(os.getcwd())
-    data_source_folder = os.path.join(package_folder, 'sample_cities')
-    results_target_folder = os.path.join(package_folder, 'test', 'resources')
-    main(data_source_folder, results_target_folder)
+    source_base_path = os.path.join(package_folder, 'sample_cities')
+    target_base_path = os.path.join(package_folder, 'test', 'resources')
+    return_code = main(source_base_path, target_base_path)
 
-    has_valid_results = _verify_expected_output_folders(data_source_folder, results_target_folder)
+    has_valid_results = _verify_expected_output_folders(source_base_path, target_base_path)
+    assert return_code == 0
     assert has_valid_results
+
 
 
 def _verify_expected_output_folders(source_base_path, target_base_path):

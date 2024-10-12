@@ -11,7 +11,7 @@
 # from test.tools import is_valid_output_file, is_valid_output_directory
 #
 # SOURCE_PATH = os.path.join(os.path.dirname(os.getcwd()), 'sample_cities')
-# CITY_FOLDER_NAME = 'ZAF_Capetown_small_tile'
+# folder_name_city_data = 'ZAF_Capetown_small_tile'
 # from src_old.qgis_initializer import QgisHandler
 # QH = QgisHandler(0)
 # UMEP_PLUGIN = UmepProcessingQgisPlugins(QH.qgis_app)
@@ -29,27 +29,27 @@
 #     shutil.rmtree(temp_dir)
 #
 # def test_wall_height_aspect(startup_teardown):
-#     task_id = 'test_wall_dimensions'
+#     task_index = 'test_wall_dimensions'
 #     temp_dir = startup_teardown
-#     city_data = instantiate_city_data(CITY_FOLDER_NAME, 'tile1', SOURCE_PATH, temp_dir)
-#     return_code = UMEP_PLUGIN.generate_wall_height_aspect(task_id, city_data)
+#     city_data = instantiate_city_data(folder_name_city_data, 'tile1', SOURCE_PATH, temp_dir)
+#     return_code = UMEP_PLUGIN.generate_wall_height_aspect(task_index, city_data)
 #
-#     wallheight_path = city_data.wallheight_path
-#     wallaspect_path = city_data.wallaspect_path
-#     wall_height_file_exists = os.path.isfile(wallheight_path)
-#     wall_aspect_file_exists = os.path.isfile(wallaspect_path)
+#     target_wallheight_path = city_data.target_wallheight_path
+#     target_wallaspect_path = city_data.target_wallaspect.path
+#     wall_height_file_exists = os.path.isfile(target_wallheight_path)
+#     wall_aspect_file_exists = os.path.isfile(target_wallaspect_path)
 #
 #     assert return_code == 0
 #     assert wall_height_file_exists and wall_aspect_file_exists
 #
 #
 # def test_skyview_factor(startup_teardown):
-#     task_id = 'test_skyview_factor'
+#     task_index = 'test_skyview_factor'
 #     temp_dir = startup_teardown
-#     city_data = instantiate_city_data(CITY_FOLDER_NAME, 'tile1', SOURCE_PATH, temp_dir)
-#     return_code = UMEP_PLUGIN.generate_skyview_factor_files(task_id, city_data)
+#     city_data = instantiate_city_data(folder_name_city_data, 'tile1', SOURCE_PATH, temp_dir)
+#     return_code = UMEP_PLUGIN.generate_skyview_factor_files(task_index, city_data)
 #
-#     skyview_zip_path = city_data.svfszip_path
+#     skyview_zip_path = city_data.target_svfszip_path
 #     skyview_zip_exists = os.path.isfile(skyview_zip_path)
 #
 #     assert return_code == 0
@@ -59,21 +59,21 @@
 # # Prerequisites: The above tests for building dimensions and skview must be run prior to running this test
 # # since solweige depends on output from above tests.
 # def test_solweig_generator(startup_teardown):
-#     task_id = 'test_solweig'
+#     task_index = 'test_solweig'
 #     step = 0
 #     met_file_name = 'met_20jan2022.txt'
 #     utc_offset = 2
 #
 #     temp_dir = startup_teardown
-#     city_data = instantiate_city_data(CITY_FOLDER_NAME, 'tile1', SOURCE_PATH, temp_dir)
+#     city_data = instantiate_city_data(folder_name_city_data, 'tile1', SOURCE_PATH, temp_dir)
 #
-#     UMEP_PLUGIN.generate_wall_height_aspect(task_id, city_data)
-#     UMEP_PLUGIN.generate_skyview_factor_files(task_id, city_data)
-#     return_code = UMEP_PLUGIN.generate_solweig(task_id, step, city_data, met_file_name, utc_offset)
+#     UMEP_PLUGIN.generate_wall_height_aspect(task_index, city_data)
+#     UMEP_PLUGIN.generate_skyview_factor_files(task_index, city_data)
+#     return_code = UMEP_PLUGIN.generate_solweig(task_index, step, city_data, met_file_name, utc_offset)
 #
 #     # out_directory = os.path.join(city_data.target_tcm_results_path, Path(met_file_name).stem)
 #
-#     target_met_folder = os.path.join(city_data.target_tcm_results_path, Path(met_file_name).stem, city_data.tile_folder_name)
+#     target_met_folder = os.path.join(city_data.target_tcm_results_path, Path(met_file_name).stem, city_data.folder_name_tile_data)
 #     tmrt_average_file_path = os.path.join(target_met_folder, 'Tmrt_average.tif')
 #     tmrt_average_file_exists = os.path.isfile(tmrt_average_file_path)
 #
@@ -95,8 +95,8 @@
 # #     cdsm_tif = os.path.join(source_data_path, 'CDSM_KRbig.asc')
 # #     out_path = os.path.join(project_data_path, 'oneoff_test_results','Shadow_Results.tif')
 # #
-# #     task_id = 'test'
-# #     UPP.generate_aggregated_shadows(task_id, None, dsm_tif, cdsm_tif, start_year, start_month, start_day, number_of_days_in_run, out_path)
+# #     task_index = 'test'
+# #     UPP.generate_aggregated_shadows(task_index, None, dsm_tif, cdsm_tif, start_year, start_month, start_day, number_of_days_in_run, out_path)
 # #
 # #     assert is_valid_output_file(out_path) == True
 # #     out_folder = os.path.dirname(os.path.abspath(out_path))

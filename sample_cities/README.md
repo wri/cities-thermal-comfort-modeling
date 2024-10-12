@@ -1,11 +1,14 @@
 Folder contains a sample dataset for Captown, South Africa and a template for other cities.
 
-The umep_city_processing_registry.csv file controls execution of the city data through the processing system. 
+The .config_umep_city_processing.csv file controls execution of the city data through the processing system. 
 
 ## Columns:
-1. ***run_id*** = serial number
-1. ***enable*** = indicates whether row will be run. values: {True, False}
+1. ***enabled*** = indicates whether row will be run. values: {True, False}
 1. ***city_folder_name*** = name of the city subfolder in the source folder
-1. ***tile_name*** = name of the source tile in the city subfolder
-1. ***method*** = plugin method to run. values: {all, wall_height_aspect, skyview_factor, solweig}
+1. ***tile_folder_name*** = name of the source tile in the city subfolder
+1. ***method*** = plugin method to run. values: {wall_height_aspect, skyview_factor, solweig_only, solweig_full}
+
+## Methods explanation:
+***solweig_only*** indicates that only the solweig plugin will be called without building the prior datasets.
+***solweig_only*** indicates that the solweig plugin will be called after first building the prior datasets
 

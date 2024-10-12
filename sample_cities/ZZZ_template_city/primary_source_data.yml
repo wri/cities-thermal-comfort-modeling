@@ -1,6 +1,0 @@
---- # Source files used for processing
-dem_tif_filename: <name of dem file including .tif extension>
-dsm_tif_filename: <name of dsm file including .tif extension>
-veg_canopy_tif_filename: <name of vegetation-canopy file including .tif extension>
-landcover_tif_filename: <name of landcover file including .tif extension>
-

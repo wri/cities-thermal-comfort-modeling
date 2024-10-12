@@ -42,7 +42,7 @@ def remove_file(file_path):
 
 def get_configurations():
     application_path = get_application_path()
-    config_file = os.path.join(application_path, 'config.ini')
+    config_file = os.path.join(application_path, '.config.ini')
 
     config = configparser.ConfigParser()
     config.read(config_file)

@@ -2,111 +2,74 @@ import os
 import yaml
 from attr.converters import to_bool
 
-SOURCE_DATA_SUBFOLDER = "primary_source_data"
-SOURCE_MET_SUBFOLDER = "met_files"
-SOURCE_DATA_MAP = "primary_source_data.yml"
-GENERATED_DATA_ATTRIBUTES = 'data_processing_attributes.yml'
-GENERATED_PREPROCESSED_SUBFOLDER = 'preprocessed_data'
-GENERATED_WALL_HEIGHT_FILE = 'wallheight.tif'
-GENERATED_WALL_ASPECT_FILE = 'wallaspect.tif'
-GENERATED_SVF_ZIP_FILE = 'svfs.zip'
-GENERATED_TCM_SUBFOLDER = 'tcm_results'
-
 class CityData:
-    def __init__(self, source_base_path, target_base_path, city_folder_name, tile_folder_name,
-                 dem_file, dsm_file, veg_canopy_file, landcover_file,
-                 wall_height_file, wall_aspect_file, svfs_zip_file,
-                 wall_lower_limit_height, light_transmissivity, trunk_zone_height,
-                 leaf_start, leaf_end, conifer_trees, albedo_walls, albedo_ground, emis_walls, emis_ground,
-                 output_tmrt, output_sh
-                 ):
+    file_name_city_processing_config = '.config_city_processing.yml'
+    file_name_met_time_series_config = '.config_met_time_series.csv'
+    file_name_umep_city_processing_config = '.config_umep_city_processing.csv'
+    
+    folder_name_primary_source_data = 'primary_source_data'
+    folder_name_met_files = 'met_files'
+    folder_name_tcm_results = 'tcm_results'
+    folder_name_preprocessed_data = 'preprocessed_data'
+    
+    file_name_wall_height = 'wallheight.tif'
+    file_name_wall_aspect = 'wallaspect.tif'
+    file_name_svfs_zip = 'svfs.zip'
 
-        self.source_base_path = source_base_path
-        self.target_base_path = target_base_path
-        self.city_folder_name = city_folder_name
-        self.tile_folder_name = tile_folder_name
-
-        self.dem_file = dem_file
-        self.dsm_file = dsm_file
-        self.veg_canopy_file = veg_canopy_file
-        self.landcover_file = landcover_file
-
-        self.wall_height_file = wall_height_file
-        self.wall_aspect_file = wall_aspect_file
-        self.svfs_zip_file = svfs_zip_file
-
-        self.wall_lower_limit_height = wall_lower_limit_height
-        self.light_transmissivity = light_transmissivity
-        self.trunk_zone_height = trunk_zone_height
-        self.leaf_start = leaf_start
-        self.leaf_end = leaf_end
-        self.conifer_trees = conifer_trees
-        self.albedo_walls = albedo_walls
-        self.albedo_ground = albedo_ground
-        self.emis_walls = emis_walls
-        self.emis_ground = emis_ground
-        self.output_tmrt = output_tmrt
-        self.output_sh = output_sh
-
-        self.city_source_path = str(os.path.join(self.source_base_path, city_folder_name))
-        self.city_target_path = str(os.path.join(self.target_base_path, city_folder_name))
-
-        self.source_data_path = os.path.join(self.city_source_path, SOURCE_DATA_SUBFOLDER, self.tile_folder_name)
-        self.source_met_files_path = os.path.join(self.city_source_path, SOURCE_MET_SUBFOLDER)
-        self.target_preprocessed_data_path = os.path.join(self.city_target_path, GENERATED_PREPROCESSED_SUBFOLDER, self.tile_folder_name)
-        self.target_tcm_results_path = os.path.join(self.city_target_path, GENERATED_TCM_SUBFOLDER)
-
-        self.dem_path = os.path.join(self.source_data_path, self.dem_file)
-        self.dsm_path = os.path.join(self.source_data_path, self.dsm_file)
-        self.vegcanopy_path = os.path.join(self.source_data_path, self.veg_canopy_file)
-        self.landcover_path = os.path.join(self.source_data_path, self.landcover_file)
-
-        self.wallheight_path = os.path.join(self.target_preprocessed_data_path, self.wall_height_file)
-        self.wallaspect_path = os.path.join(self.target_preprocessed_data_path, self.wall_aspect_file)
-        self.svfszip_path = os.path.join(self.target_preprocessed_data_path, self.svfs_zip_file)
+    plugin_methods = ['all', 'wall_height_aspect', 'skyview_factor', 'solweig_only', 'solweig_full' ]
 
 
-def instantiate_city_data(city_folder_name, tile_folder_name, source_base_path, target_base_path):
-    city_source_path = str(os.path.join(source_base_path, city_folder_name))
-    source_data_map = os.path.join(city_source_path, SOURCE_DATA_MAP)
-    with open(source_data_map) as source_data_file_map:
-        try:
-            source_data_dict = yaml.safe_load(source_data_file_map)
-            dem_file = source_data_dict['dem_tif_filename']
-            dsm_file= source_data_dict['dsm_tif_filename']
-            veg_canopy_file = source_data_dict['veg_canopy_tif_filename']
-            landcover_file = source_data_dict['landcover_tif_filename']
-        except yaml.YAMLError as exc:
-            raise Exception('The %s file not found or improperly defined in %s' %
-                            (SOURCE_DATA_MAP, city_source_path))
+    def __new__(cls,  folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path):
+        obj = super().__new__(cls)
 
-    generated_data_atts = os.path.join(city_source_path, GENERATED_DATA_ATTRIBUTES)
-    with open(generated_data_atts) as generated_attributes:
-        try:
-            generated_atts_dict = yaml.safe_load(generated_attributes)
-            wall_lower_limit_height = generated_atts_dict['wall_height_aspect']['lower_limit_for_wall_height']
-            light_transmissivity = generated_atts_dict['skyview_factor']['transmissivity_of_light_through_vegetation']
-            trunk_zone_height = generated_atts_dict['skyview_factor']['trunk_zone_height']
-            leaf_start = generated_atts_dict['solweig']['leaf_start']
-            leaf_end = generated_atts_dict['solweig']['leaf_end']
-            conifer_trees = to_bool(generated_atts_dict['solweig']['conifer_trees'])
-            albedo_walls = generated_atts_dict['solweig']['albedo_walls']
-            albedo_ground = generated_atts_dict['solweig']['albedo_ground']
-            emis_walls = generated_atts_dict['solweig']['emis_walls']
-            emis_ground = generated_atts_dict['solweig']['emis_ground']
-            output_tmrt = to_bool(generated_atts_dict['solweig']['output_tmrt'])
-            output_sh= to_bool(generated_atts_dict['solweig']['output_sh'])
+        obj.folder_name_city_data = folder_name_city_data
+        obj.folder_name_tile_data = folder_name_tile_data
+        obj.source_base_path = source_base_path
+        obj.target_base_path = target_base_path
 
-        except yaml.YAMLError as exc:
-            raise Exception('The %s file not found or improperly defined in %s' %
-                            (GENERATED_DATA_ATTRIBUTES, generated_data_atts))
+        obj.source_city_data_path = str(os.path.join(source_base_path, folder_name_city_data))
+        city_configs = os.path.join(obj.source_city_data_path, cls.file_name_city_processing_config)
+        with open(city_configs, 'r') as stream:
+            try:
+                values = list(yaml.safe_load_all(stream))[0]
 
-    city_data = CityData(source_base_path, target_base_path, city_folder_name, tile_folder_name,
-                         dem_file, dsm_file, veg_canopy_file, landcover_file,
-                         GENERATED_WALL_HEIGHT_FILE, GENERATED_WALL_ASPECT_FILE, GENERATED_SVF_ZIP_FILE,
-                         wall_lower_limit_height, light_transmissivity, trunk_zone_height,
-                         leaf_start, leaf_end, conifer_trees, albedo_walls, albedo_ground, emis_walls, emis_ground,
-                         output_tmrt, output_sh
-                         )
+                method_attributes = values[0]
+                obj.wall_lower_limit_height = method_attributes['wall_height_aspect']['lower_limit_for_wall_height']
+                obj.light_transmissivity = method_attributes['skyview_factor']['transmissivity_of_light_through_vegetation']
+                obj.trunk_zone_height = method_attributes['skyview_factor']['trunk_zone_height']
+                obj.leaf_start = method_attributes['solweig']['leaf_start']
+                obj.leaf_end = method_attributes['solweig']['leaf_end']
+                obj.conifer_trees = to_bool(method_attributes['solweig']['conifer_trees'])
+                obj.albedo_walls = method_attributes['solweig']['albedo_walls']
+                obj.albedo_ground = method_attributes['solweig']['albedo_ground']
+                obj.emis_walls = method_attributes['solweig']['emis_walls']
+                obj.emis_ground = method_attributes['solweig']['emis_ground']
+                obj.output_tmrt = to_bool(method_attributes['solweig']['output_tmrt'])
+                obj.output_sh = to_bool(method_attributes['solweig']['output_sh'])
 
-    return city_data
+                file_names = values[1]
+                obj.dem_file = file_names['dem_tif_filename']
+                obj.dsm_file = file_names['dsm_tif_filename']
+                obj.veg_canopy_file = file_names['veg_canopy_tif_filename']
+                obj.landcover_file = file_names['landcover_tif_filename']
+
+            except yaml.YAMLError as e_msg:
+                raise Exception(f'The {cls.file_name_city_processing_config} file not found or improperly defined in {city_configs}. ({e_msg})')
+
+        obj.target_path_city_data = str(os.path.join(obj.target_base_path, folder_name_city_data))
+
+        obj.source_tile_data_path = os.path.join(obj.source_city_data_path, obj.folder_name_primary_source_data, obj.folder_name_tile_data)
+        obj.source_met_files_path = os.path.join(obj.source_city_data_path, obj.folder_name_met_files)
+        obj.target_preprocessed_data_path = os.path.join(obj.target_path_city_data, obj.folder_name_preprocessed_data, obj.folder_name_tile_data)
+        obj.target_tcm_results_path = os.path.join(obj.target_path_city_data, obj.folder_name_tcm_results)
+
+        obj.source_dem_path = os.path.join(obj.source_tile_data_path, obj.dem_file)
+        obj.source_dsm_path = os.path.join(obj.source_tile_data_path, obj.dsm_file)
+        obj.source_veg_canopy_path = os.path.join(obj.source_tile_data_path, obj.veg_canopy_file)
+        obj.source_land_cover_path = os.path.join(obj.source_tile_data_path, obj.landcover_file)
+
+        obj.target_wallheight_path = os.path.join(obj.target_preprocessed_data_path, obj.file_name_wall_height)
+        obj.target_wallaspect_path = os.path.join(obj.target_preprocessed_data_path, obj.file_name_wall_aspect)
+        obj.target_svfszip_path = os.path.join(obj.target_preprocessed_data_path, obj.file_name_svfs_zip)
+
+        return obj

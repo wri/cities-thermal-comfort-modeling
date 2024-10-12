@@ -1,8 +1,7 @@
-import csv
 import os
-
+import pandas as pd
+from workers.city_data import CityData
 from main import main
-from src_old import tools as src_tools, tools
 from test.tools import is_valid_output_directory
 
 
@@ -16,21 +15,18 @@ def test_main():
     assert has_valid_results
 
 
-def _verify_expected_output_folders(data_source_folder, results_target_folder):
+def _verify_expected_output_folders(source_base_path, target_base_path):
     enabled_target_folder = []
-    config_file = os.path.join(data_source_folder, 'umep_city_processing_registry.csv')
-    with open(config_file, mode='r') as file:
-        csv_reader = csv.reader(file)
-        next(csv_reader, None)  # skip the headers
-        for row in csv_reader:
-            if row:
-                enabled = src_tools.toBool[row[1].lower()]
-
-                if enabled is True:
-                    city_folder = row[2]
-                    tile = row[3]
-                    result_folder = os.path.join(results_target_folder, city_folder,'preprocessed_data', tile)
-                    enabled_target_folder.append(result_folder)
+    config_processing_file_path = str(os.path.join(source_base_path, CityData.file_name_umep_city_processing_config))
+    processing_config_df = pd.read_csv(config_processing_file_path)
+    for index, config_row in processing_config_df.iterrows():
+        enabled = bool(config_row.enabled)
+        if enabled:
+            folder_name_city_data = config_row.city_folder_name
+            folder_name_tile_data = config_row.tile_folder_name
+            city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
+            result_folder = city_data.target_preprocessed_data_path
+            enabled_target_folder.append(result_folder)
 
     unique_target_folders = set(enabled_target_folder)
     expected_target_folder_count = len(unique_target_folders)

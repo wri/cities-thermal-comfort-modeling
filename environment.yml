@@ -5,13 +5,14 @@ channels:
   - defaults
 dependencies:
   - python=3.12
-  - ipykernel
-  - python-dotenv
+#  - ipykernel
+#  - python-dotenv
   - qgis=3.34.11
   - scipy
   - numpy=1.26.4
   - conda-build
+  - dask[complete]=2023.11.0
   - pytest
-  - pip
-  - pip:
-    - git+https://github.com/wri/cities-cif@v0.1.2
+#  - pip
+#  - pip:
+#    - git+https://github.com/wri/cities-cif@v0.1.2

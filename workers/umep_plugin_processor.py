@@ -1,5 +1,6 @@
 import os
 import tempfile
+import time
 import shutil
 import warnings
 from pathlib import Path
@@ -19,7 +20,7 @@ logging.basicConfig(level=logging.INFO,
                     )
 
 MAX_RETRY_COUNT = 3
-
+RETRY_PAUSE_TIME_SEC = 10
 
 def run_plugin(task_index, method, folder_name_city_data, folder_name_tile_data, source_base_path, target_path, met_file_name=None, utc_offset=None):
     print(f'Starting task:{task_index} method:{method} city_folder:{folder_name_city_data}')
@@ -76,6 +77,8 @@ def run_plugin(task_index, method, folder_name_city_data, folder_name_tile_data,
             except Exception as e_msg:
                 msg = f'task:{task_index} {method_title} failure. Retrying. ({e_msg})'
                 _log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, e_msg)
+                if retry_count < MAX_RETRY_COUNT:
+                    time.sleep(RETRY_PAUSE_TIME_SEC)
                 return_code = 3
             retry_count += 1
 

@@ -28,7 +28,7 @@ https://medium.com/@giovannigallon/how-i-automate-qgis-tasks-using-python-54df35
 """
 
 SCRIPT_PATH = os.path.abspath(os.path.join(get_application_path(), 'workers', 'umep_plugin_processor.py'))
-PRE_SOLWEIG_FULL_PAUSE_TIME_SEC = 15
+PRE_SOLWEIG_FULL_PAUSE_TIME_SEC = 30
 
 def main(source_base_path, target_base_path):
     abs_source_base_path = os.path.abspath(source_base_path)

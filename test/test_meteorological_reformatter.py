@@ -1,6 +1,6 @@
 import pytest
 import os
-from src_old.met_file_reformatter import reformat
+from src.met_file_reformatter import reformat
 
 SOURCE_PATH = os.path.join(os.path.dirname(os.getcwd()), 'sample_cities')
 

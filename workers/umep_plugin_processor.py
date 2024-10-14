@@ -10,13 +10,15 @@ from qgis_initializer import qgis_app_init
 from city_data import CityData
 
 import logging
+LOG_FOLDER_PATH = os.path.abspath(os.path.join(get_application_path(), '.logs'))
+LOG_FILE_PATH = os.path.join(LOG_FOLDER_PATH, 'execution.log')
+create_folder(LOG_FOLDER_PATH)
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
-log_file_path = os.path.abspath(os.path.join(get_application_path(), 'logs', 'execution.log'))
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s\t%(levelname)s\t%(message)s',
                     datefmt='%a_%Y_%b_%d_%H:%M:%S',
-                    filename=log_file_path
+                    filename=LOG_FILE_PATH
                     )
 
 MAX_RETRY_COUNT = 3

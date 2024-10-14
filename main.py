@@ -5,21 +5,25 @@ import pandas as pd
 import dask
 import multiprocessing as mp
 import subprocess
-import logging
 
 from collections.abc import Iterable
+
+from src.source_quality_verifier import verify_fundamental_paths, verify_processing_config
 from workers.city_data import CityData
 from workers.tools import get_application_path, create_folder
 
+import logging
+LOG_FOLDER_PATH = os.path.abspath(os.path.join(get_application_path(), '.logs'))
+LOG_FILE_PATH = os.path.join(LOG_FOLDER_PATH, 'execution.log')
+create_folder(LOG_FOLDER_PATH)
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
-create_folder(os.path.abspath(os.path.join(get_application_path(), 'logs')))
-log_file_path = os.path.abspath(os.path.join(get_application_path(), 'logs', 'execution.log'))
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s\t%(levelname)s\t%(message)s',
                     datefmt='%a_%Y_%b_%d_%H:%M:%S',
-                    filename=log_file_path
+                    filename=LOG_FILE_PATH
                     )
+
 dask.config.set({'logging.distributed': 'warning'})
 
 """
@@ -30,21 +34,50 @@ https://medium.com/@giovannigallon/how-i-automate-qgis-tasks-using-python-54df35
 SCRIPT_PATH = os.path.abspath(os.path.join(get_application_path(), 'workers', 'umep_plugin_processor.py'))
 PRE_SOLWEIG_FULL_PAUSE_TIME_SEC = 30
 
-def main(source_base_path, target_base_path):
+
+def main(source_base_path, target_base_path, pre_check_option):
     abs_source_base_path = os.path.abspath(source_base_path)
     abs_target_path = os.path.abspath(target_base_path)
-    delayed_results, solweig_delayed_results = build_processing_graphs(abs_source_base_path, abs_target_path)
-    delays_all_passed = start_processor(delayed_results)
+    validate_basic_inputs(abs_source_base_path, abs_target_path)
 
-    # wait for prior processing to complete
-    time.sleep(PRE_SOLWEIG_FULL_PAUSE_TIME_SEC)
-    # check that solweig completed
+    processing_config_df = _build_source_dataframes(abs_source_base_path, abs_target_path)
+    validate_config_inputs(processing_config_df, abs_source_base_path, abs_target_path, pre_check_option)
 
-    solweig_delays_all_passed = start_processor(solweig_delayed_results)
+    if pre_check_option == 'no_pre_check':
+        delayed_results, solweig_delayed_results = _build_processing_graphs(processing_config_df, source_base_path, abs_target_path)
+        delays_all_passed = start_processor(delayed_results)
 
-    return_code = 0 if (delays_all_passed and solweig_delays_all_passed) else 1
-    return return_code
+        # wait for prior processing to complete
+        time.sleep(PRE_SOLWEIG_FULL_PAUSE_TIME_SEC)
+        # check that solweig completed
 
+        solweig_delays_all_passed = start_processor(solweig_delayed_results)
+
+        return_code = 0 if (delays_all_passed and solweig_delays_all_passed) else 1
+
+        return return_code
+    else:
+        return 0
+
+def validate_basic_inputs(source_base_path, target_path):
+    invalids = verify_fundamental_paths(source_base_path, target_path)
+    if invalids:
+        for invalid in invalids:
+            _highlighted_print(invalid)
+        raise Exception("Stopping due to invalid source/target folders.")
+
+def validate_config_inputs(processing_config_df, source_base_path, target_path, pre_check_option):
+    detailed_invalids = verify_processing_config(processing_config_df, source_base_path, target_path, pre_check_option)
+    if detailed_invalids:
+        for invalid in detailed_invalids:
+            _highlighted_print(invalid)
+        raise Exception("Stopping due to invalid configurations.")
+
+def _build_source_dataframes(source_base_path, target_base_path):
+    config_processing_file_path = str(os.path.join(source_base_path, CityData.file_name_umep_city_processing_config))
+    processing_config_df = pd.read_csv(config_processing_file_path)
+
+    return processing_config_df
 
 def start_processor(futures):
     # chunk size??
@@ -72,7 +105,6 @@ def start_processor(futures):
     return all_passed
 
 def _parse_and_log_return_package(dc):
-
     results = []
     # serialize the return information - one way or another
     for obj in dc:
@@ -88,7 +120,7 @@ def _parse_and_log_return_package(dc):
     failed_task_details = []
     for row in results:
         if hasattr(row, 'stdout'):
-            return_info = get_substring_sandwich(row.stdout, '{"Return_package":', "}}")
+            return_info = _get_substring_sandwich(row.stdout, '{"Return_package":', "}}")
             if return_info is not None:
                 return_package = json.loads(return_info)['Return_package']
                 if return_info is None or return_package['return_code'] != 0:
@@ -101,7 +133,7 @@ def _parse_and_log_return_package(dc):
 
     return all_passed, failed_task_ids, failed_task_details
 
-def get_substring_sandwich(text, start_substring, end_substring):
+def _get_substring_sandwich(text, start_substring, end_substring):
     try:
         start_index = text.index(start_substring) # + len(start_substring)
         end_index = text.index(end_substring, start_index) + len(end_substring)
@@ -109,13 +141,7 @@ def get_substring_sandwich(text, start_substring, end_substring):
     except ValueError:
         return None
 
-def build_processing_graphs(source_base_path, target_base_path):
-    config_processing_file_path = str(os.path.join(source_base_path, CityData.file_name_umep_city_processing_config))
-    _verify_fundamental_paths(source_base_path, target_base_path, config_processing_file_path)
-
-    processing_config_df = pd.read_csv(config_processing_file_path)
-    _verify_processing_conf(processing_config_df, source_base_path, target_base_path)
-
+def _build_processing_graphs(processing_config_df, source_base_path, target_base_path):
     delayed_results = []
     solweig_delayed_results = []
     for index, config_row in processing_config_df.iterrows():
@@ -198,48 +224,6 @@ def _construct_proc_array(task_index, subtask_index, method, folder_name_city_da
 toBool = {'true': True, 'false': False}
 
 
-def _verify_fundamental_paths(source_data_path, target_path, config_processing_file_path):
-    if _verify_path(source_data_path) is False:
-        msg = f'Invalid path: {source_data_path}'
-        raise Exception(msg)
-    elif _verify_path(target_path) is False:
-        msg = f'Invalid path: {target_path}'
-        raise Exception(msg)
-    elif _verify_path(config_processing_file_path) is False:
-        msg = f'Processing Registry file does not exist: {config_processing_file_path}'
-        raise Exception(msg)
-
-def _verify_path(path):
-    is_valid = os.path.exists(path)
-    return is_valid
-
-def _verify_processing_conf(processing_config_df, source_base_path, target_base_path):
-    for index, config_row in processing_config_df.iterrows():
-        enabled = str(config_row.enabled)
-        valid_enabled = ['true', 'false']
-        if enabled.lower() not in valid_enabled:
-            raise Exception(f"Invalid 'enable' value ({str(enabled)}) on row {index} and possibly other rows. Valid values: {valid_enabled}")
-
-        if bool(enabled):
-            folder_name_city_data = config_row.city_folder_name
-            city_path = os.path.join(source_base_path, folder_name_city_data)
-            if not os.path.isdir(city_path):
-                raise Exception(
-                    f"Invalid 'city_folder_name' value ({str(folder_name_city_data)}) on row {index} and possibly wrong on other rows using source path '{source_base_path}'.")
-
-            folder_name_tile_data = config_row.tile_folder_name
-            city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
-            source_tile_path = city_data.source_tile_data_path
-            if not os.path.isdir(source_tile_path):
-                raise Exception(
-                    f"Tile path ({str(source_tile_path)}) on row {index} does not exist and possibly wrong on other rows.")
-
-            method = config_row.method
-            valid_methods = CityData.plugin_methods
-            if method not in valid_methods:
-                raise Exception(f"Invalid 'method' ({method}) on row {index} and possibly other rows. Valid values: {valid_methods}")
-
-
 def _log_failure(message, e_msg):
     _highlighted_print('Failure. See log file.')
     logging.critical(f"**** FAILED execution with '{message}' ({e_msg})")
@@ -256,8 +240,13 @@ if __name__ == "__main__":
                         help='the path to city-based source data')
     parser.add_argument('--target_base_path', metavar='path', required=True,
                         help='path to export results')
+
+    valid_methods = ['no_pre_check', 'check_all', 'check_enabled_only']
+    parser.add_argument('--pre_check_option', metavar='str', choices=valid_methods, required=True,
+                        help=f'specifies type of configuration pre-check. Options are: {valid_methods}')
     args = parser.parse_args()
 
-    return_code = main(source_base_path=args.source_base_path, target_base_path=args.target_base_path)
+    return_code = main(source_base_path=args.source_base_path, target_base_path=args.target_base_path,
+                       pre_check_option=args.pre_check_option)
 
     print(return_code)

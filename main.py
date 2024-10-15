@@ -38,10 +38,10 @@ PRE_SOLWEIG_FULL_PAUSE_TIME_SEC = 30
 def main(source_base_path, target_base_path, pre_check_option):
     abs_source_base_path = os.path.abspath(source_base_path)
     abs_target_path = os.path.abspath(target_base_path)
-    _validate_basic_inputs(abs_source_base_path, abs_target_path)
+    return_code_basic = _validate_basic_inputs(abs_source_base_path, abs_target_path)
 
     processing_config_df = _build_source_dataframes(abs_source_base_path, abs_target_path)
-    _validate_config_inputs(processing_config_df, abs_source_base_path, abs_target_path, pre_check_option)
+    return_code_configs = _validate_config_inputs(processing_config_df, abs_source_base_path, abs_target_path, pre_check_option)
 
     if pre_check_option == 'no_pre_check':
         enabled_processing_tasks_df = processing_config_df[(processing_config_df['enabled'])]
@@ -61,7 +61,11 @@ def main(source_base_path, target_base_path, pre_check_option):
 
         return return_code
     else:
-        return 0
+        if return_code_basic == 0 and return_code_configs == 0:
+            print("\nPassed all validation checks")
+            return 0
+        else:
+            return -99
 
 def _report_results(enabled_processing_tasks_df, results_df, solweig_results_df):
     if solweig_results_df is not None:
@@ -101,6 +105,8 @@ def _validate_basic_inputs(source_base_path, target_path):
         for invalid in invalids:
             _highlighted_print(invalid)
         raise Exception("Stopping due to invalid source/target folders.")
+    else:
+        return 0
 
 def _validate_config_inputs(processing_config_df, source_base_path, target_path, pre_check_option):
     detailed_invalids = verify_processing_config(processing_config_df, source_base_path, target_path, pre_check_option)
@@ -108,6 +114,8 @@ def _validate_config_inputs(processing_config_df, source_base_path, target_path,
         for invalid in detailed_invalids:
             _highlighted_print(invalid)
         raise Exception("Stopping due to invalid configurations.")
+    else:
+        return 0
 
 def _build_source_dataframes(source_base_path, target_base_path):
     config_processing_file_path = str(os.path.join(source_base_path, CityData.file_name_umep_city_processing_config))

@@ -17,13 +17,23 @@ def test_main():
 
 def test_main_check_all():
     package_folder = os.path.dirname(os.getcwd())
+    source_base_path = os.path.join(package_folder, 'sample_cities')
+    target_base_path = os.path.join(package_folder, 'test', 'resources')
+
+    return_code = main(source_base_path, target_base_path, 'check_all')
+
+    assert return_code == 0
+
+
+def test_main_check_all_failure():
+    package_folder = os.path.dirname(os.getcwd())
     source_base_path = os.path.join(package_folder, 'missing_city')
     target_base_path = os.path.join(package_folder, 'test', 'resources')
 
     with pytest.raises(Exception):
         main(source_base_path, target_base_path, 'check_all')
 
-def test_main_check_enabled_only():
+def test_main_check_enabled_only_failure():
     package_folder = os.path.dirname(os.getcwd())
     source_base_path = os.path.join(package_folder, 'missing_city')
     target_base_path = os.path.join(package_folder, 'test', 'resources')

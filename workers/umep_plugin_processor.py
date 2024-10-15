@@ -24,14 +24,14 @@ logging.basicConfig(level=logging.INFO,
 MAX_RETRY_COUNT = 3
 RETRY_PAUSE_TIME_SEC = 10
 
-def run_plugin(task_index, method, folder_name_city_data, folder_name_tile_data, source_base_path, target_path, met_file_name=None, utc_offset=None):
-    print(f'Starting task:{task_index} method:{method} city_folder:{folder_name_city_data}')
+def run_plugin(task_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path, target_path, met_file_name=None, utc_offset=None):
+    start_time = datetime.now()
+
     city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_path)
-    method_title = _assign_method_title(method)
+    method_title = _assign_method_title(step_method)
+    _log_method_start(method_title, task_index, None, city_data.source_base_path)
 
     # TODO - Add checks for prerequite met data!!
-    start_time = datetime.now()
-    _log_method_start(method_title, task_index, None, city_data.source_base_path)
 
     # Initiate QGIS and UMEP processing
     try:
@@ -53,7 +53,7 @@ def run_plugin(task_index, method, folder_name_city_data, folder_name_tile_data,
     warnings.filterwarnings("ignore")
     with (tempfile.TemporaryDirectory() as tmpdirname):
         # Get the UMEP processing parameters and prepare for the method
-        input_params, umep_method_title, keepers = _prepare_method_execution(method, city_data, tmpdirname, met_file_name, utc_offset)
+        input_params, umep_method_title, keepers = _prepare_method_execution(step_method, city_data, tmpdirname, met_file_name, utc_offset)
 
         while retry_count < MAX_RETRY_COUNT and return_code != 0:
             try:
@@ -62,7 +62,7 @@ def run_plugin(task_index, method, folder_name_city_data, folder_name_tile_data,
 
                 # Prepare target folder and transfer over the temporary results
                 try:
-                    if method in ['solweig_only', 'solweig_full']:
+                    if step_method == 'solweig_only':
                         for temp_result_path, target_path in keepers.items():
                             remove_folder(target_path)
                             shutil.move(str(temp_result_path), str(target_path))
@@ -90,8 +90,8 @@ def run_plugin(task_index, method, folder_name_city_data, folder_name_tile_data,
         msg = f'{method_title} processing cancelled after {MAX_RETRY_COUNT} attempts.'
         _log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, '')
 
-    runtime = _compute_time_diff_mins(start_time)
-    return return_code, runtime
+    run_duration = _compute_time_diff_mins(start_time)
+    return return_code, start_time, run_duration
 
 
 def _prepare_method_execution(method, city_data, tmpdirname, met_file_name=None, utc_offset=None):
@@ -229,9 +229,9 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Run specified method in the "UMEP for Processing" QGIS plugin.')
     parser.add_argument('--task_index', metavar='str', required=True, help='index from the processor config file')
-    parser.add_argument('--subtask_index', metavar='str', required=True, help='index for multi-part runs. only used for reporting')
-    valid_methods = ['wall_height_aspect', 'skyview_factor', 'solweig_only', 'solweig_full']
-    parser.add_argument('--method', metavar='str', choices=valid_methods, required=True, help='plugin method name')
+    parser.add_argument('--step_index', metavar='str', required=True, help='index for multi-part runs. only used for reporting')
+    valid_methods = ['wall_height_aspect', 'skyview_factor', 'solweig_only']
+    parser.add_argument('--step_method', metavar='str', choices=valid_methods, required=True, help='plugin method name')
     parser.add_argument('--folder_name_city_data', metavar='str', required=True, help='name of city folder')
     parser.add_argument('--folder_name_tile_data', metavar='str', required=True, help='name of tile folder')
     parser.add_argument('--source_data_path', metavar='path', required=True, help='folder with source data')
@@ -241,8 +241,12 @@ if __name__ == "__main__":
     parser.add_argument('--utc_offset', metavar='int', required=False, help='local hour offset from utc')
     args = parser.parse_args()
 
-    return_code, runtime = run_plugin(args.task_index, args.method, args.folder_name_city_data, args.folder_name_tile_data,
+    return_code, start_time, run_duration = run_plugin(args.task_index, args.step_method, args.folder_name_city_data, args.folder_name_tile_data,
                              args.source_data_path, args.target_path, args.met_file_name, args.utc_offset)
 
-    return_stdout = f'{{"Return_package": {{"task_index": {args.task_index}, "subtask_index": {args.subtask_index}, "return_code": {return_code}, "runtime": {runtime} }}}}'
+    met_file_name_str = args.met_file_name if args.met_file_name != 'None' else 'N/A'
+    start_time_str = start_time.strftime('%Y_%m_%d_%H:%M:%S')
+    return_stdout = (f'{{"Return_package": {{"task_index": {args.task_index}, "step_index": {args.step_index}, \
+                     "step_method": "{args.step_method}", "met_file_name": "{met_file_name_str}", "return_code": {return_code}, \
+                     "start_time": "{start_time_str}", "run_duration": {run_duration}}}}}')
     print(return_stdout)

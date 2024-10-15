@@ -13,19 +13,24 @@ or
 `conda env update -f environment.yml`
 ~~~
 5. Determine paths to both QGIS and QGIS plugins and modify existing config.ini file as follows:
- a. Open QGIS app, enter the following in the python console, and determine paths to both QGIS app and QGIS plugins:
+   * Open QGIS app, enter the following in the python console, and determine paths to both QGIS app and QGIS plugins:
  ~~~
 import sys
 print(sys.path)
  ~~~
 6. environment_post_processing.bat file
- a. Activate the cities-thermal conda environment
- b. Update the environment_post_processing.bat file with the plugins path
- c. Execute the environment_post_processing.bat file
+   * Activate the cities-thermal conda environment 
+   * Update the environment_post_processing.bat file with the plugins path 
+   * Execute the environment_post_processing.bat file
 
-## Execution
+## Execution in Pycharm
 1. Create input dataset based on the ZZZ_template_city folder, providing source data, meteorological timeseries files, and configuration settings
 1. Configure runs of city data using the umep_city_processing_registry.csv file in the source folder located above the cities folders
 1. In PyCharm, run main.py specifying source/target folders
 
+## Execution from command prompt
+1. Run the _sample_run_main_pre_check.bat batch script with your modifications to verify the configurations files.
+1. Run the _sample_run_main.bat batch script with your modifications to process the configured tasks.
+   * Run reports are written to the .reports folder 
+   * Log files are written to the .logs folder
 

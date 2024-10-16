@@ -68,10 +68,8 @@ def main(source_base_path, target_base_path, pre_check_option):
             return -99
 
 def _report_results(enabled_processing_tasks_df, results_df, solweig_results_df):
-    if solweig_results_df is not None:
-        combined_results = pd.concat([results_df, solweig_results_df], ignore_index=True)
-    else:
-        combined_results = results_df
+    combined_results = results_df if solweig_results_df.empty else\
+        pd.concat([results_df, solweig_results_df], ignore_index=True)
 
     combined_results.sort_values(['task_index', 'step_index', 'met_file_name'], inplace=True)
 
@@ -132,6 +130,9 @@ def process_rows(futures):
                 memory_limit='2GB',
                 asynchronous=False
                 ) as client:
+
+        msg = f'*************Monitor processing at {client.dashboard_link}'
+        _log_info_msg(msg)
         dc = dask.compute(*futures)
 
     all_passed, results_df, failed_task_ids, failed_task_details =_parse_and_report_row_results(dc)
@@ -274,10 +275,12 @@ def _construct_proc_array(task_index, step_index, step_method, folder_name_city_
 toBool = {'true': True, 'false': False}
 
 
+def _log_info_msg(message):
+    logging.info(message)
+
 def _log_failure(message, e_msg):
     _highlighted_print('Failure. See log file.')
     logging.critical(f"**** FAILED execution with '{message}' ({e_msg})")
-
 
 def _highlighted_print(msg):
     print('\n\x1b[6;30;42m' + msg + '\x1b[0m')

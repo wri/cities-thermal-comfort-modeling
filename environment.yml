@@ -12,7 +12,7 @@ dependencies:
   - scipy
   - numpy=1.26.4
   - conda-build
-  - dask[complete]=2023.11.0
+  - dask[complete]=2024.8.2
   - pytest
 #  - pip
 #  - pip:

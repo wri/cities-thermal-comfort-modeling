@@ -25,12 +25,8 @@ def clean_folder(folder_path):
                     os.remove(file_path)  # Remove the file or link
                 elif os.path.isdir(file_path):
                     shutil.rmtree(file_path)  # Remove the directory and its contents
-            except Exception as e:
-                print(f'Failed to delete {file_path}. Reason: {e}')
-
-def verify_path(path):
-    is_valid = os.path.exists(path)
-    return is_valid
+            except Exception as e_msg:
+                print(f'Failed to delete {file_path}. Reason: {e_msg}')
 
 def remove_folder(folder_path):
     if os.path.isdir(folder_path):
@@ -42,7 +38,7 @@ def remove_file(file_path):
 
 def get_configurations():
     application_path = get_application_path()
-    config_file = os.path.join(application_path, 'config.ini')
+    config_file = os.path.join(application_path, '.config.ini')
 
     config = configparser.ConfigParser()
     config.read(config_file)
@@ -52,6 +48,6 @@ def get_configurations():
     return qgis_home_path, qgis_plugin_path
 
 def get_application_path():
-    return Path(os.path.dirname(os.path.abspath(__file__))).parent
+    return str(Path(os.path.dirname(os.path.abspath(__file__))).parent)
 
 toBool = {'true': True, 'false': False}

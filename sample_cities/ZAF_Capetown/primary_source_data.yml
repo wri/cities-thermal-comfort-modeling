@@ -1,6 +1,0 @@
---- # Source files used for processing
-dem_tif_filename: dem.tif
-dsm_tif_filename: dsm_ground_build.tif
-veg_canopy_tif_filename: tree_canopy.tif
-landcover_tif_filename: landcover.tif
-

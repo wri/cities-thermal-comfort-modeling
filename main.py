@@ -86,10 +86,10 @@ def _report_results(enabled_processing_tasks_df, results_df, solweig_results_df)
     create_folder(report_folder)
 
     report_date_str =  datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-    report_name = f'run_report_{report_date_str}.tsv'
+    report_name = f'run_report_{report_date_str}.html'
     report_file_path = os.path.join(report_folder, report_name)
 
-    reporting_df.to_csv(report_file_path, sep='\t')
+    reporting_df.to_html(report_file_path)
 
     return report_file_path
 

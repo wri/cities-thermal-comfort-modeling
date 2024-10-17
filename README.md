@@ -8,10 +8,12 @@
    * Copy your tile-folders of TIFF files into the source_data\primary_soure_data filder with one sub-folder per tile. See the sample_cities\ZAF_Capetown_small_tile folder for an example setup.
    * Copy your meteorological files into the source_data\met_files folder.
 1. Configuration
-   * In C:\CTCM_processing folder modify the .config_umep_city_processing.csv file to specify which city, tiles, and method should be run
+   * In C:\CTCM_processing folder modify the .config_umep_city_processing.csv file to specify which city, tiles, and method to run
+     * There are 4 possible method options, but the majority of the time choose "solweig_full". This option will first run the wall_height_aspect method, the skyview_factor method, and then the solweig method.
+     * The other three options allow runs of just wall_height_aspect, skyview_factor, or solweig_only
    * For each city:
      * In C:\CTCM_processing\<city_folder>\source_data modify the .config_city_processing.yml file to specify:
-        * methods attriubutes
+        * methods attributes
         * the names of source files stored in the primary_source_data\<tile> folders
      * In C:\CTCM_processing\<city_folder>\source_data modify the .config_met_time_series.csv file to specify the name(s) for meteorological files to be processes by the solweig method
 1. CTCM execution from the Windows command prompt:

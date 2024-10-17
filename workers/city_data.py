@@ -49,7 +49,7 @@ class CityData:
 
                 file_names = values[1]
                 obj.dem_file = file_names['dem_tif_filename']
-                obj.dsm_file = file_names['dsm_tif_filename']
+                obj.dsm_file = file_names['dsm_ground_build_tif_filename']
                 obj.veg_canopy_file = file_names['veg_canopy_tif_filename']
                 obj.landcover_file = file_names['landcover_tif_filename']
 

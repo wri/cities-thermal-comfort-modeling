@@ -14,6 +14,6 @@ dependencies:
   - conda-build
   - dask[complete]=2024.8.2
   - pytest
-#  - pip
-#  - pip:
-#    - git+https://github.com/wri/cities-cif@v0.1.2
+  - pip
+  - pip:
+    - git+https://github.com/wri/cities-cif@v0.1.2

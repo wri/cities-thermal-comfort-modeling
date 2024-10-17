@@ -18,6 +18,6 @@
 # Name of source files used for processing
 - FileNames:
   dem_tif_filename: <DEM_file_name>.tif
-  dsm_tif_filename: <DSM_file_name>.tif
+  dsm_ground_build_tif_filename: <DSM_file_name>.tif
   veg_canopy_tif_filename: <tree_canopy_file_name>.tif
   landcover_tif_filename: <landcover_file_name>.tif

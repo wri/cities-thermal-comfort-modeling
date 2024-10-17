@@ -3,6 +3,8 @@ import tempfile
 import time
 import shutil
 import warnings
+warnings.filterwarnings("ignore")
+
 from pathlib import Path
 from datetime import datetime
 from tools import remove_file, create_folder, remove_folder, get_application_path
@@ -50,7 +52,6 @@ def run_plugin(task_index, step_method, folder_name_city_data, folder_name_tile_
     e_msg = ''
     return_code = -999
     retry_count = 0
-    warnings.filterwarnings("ignore")
     with (tempfile.TemporaryDirectory() as tmpdirname):
         # Get the UMEP processing parameters and prepare for the method
         input_params, umep_method_title, keepers = _prepare_method_execution(step_method, city_data, tmpdirname, met_file_name, utc_offset)

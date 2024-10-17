@@ -5,8 +5,10 @@ import pandas as pd
 import dask
 import multiprocessing as mp
 import subprocess
-from datetime import datetime
+import warnings
+warnings.filterwarnings('ignore')
 
+from datetime import datetime
 from collections.abc import Iterable
 from src.source_quality_verifier import verify_fundamental_paths, verify_processing_config
 from workers.city_data import CityData

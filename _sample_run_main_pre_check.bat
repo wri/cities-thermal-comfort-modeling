@@ -1,6 +1,6 @@
 @echo off
 set source_base_path=".\sample_cities"
-set target_base_path=".\test\resources"
+set target_base_path=".\sample_cities"
 
 echo:
 echo Start run: %date% %time%

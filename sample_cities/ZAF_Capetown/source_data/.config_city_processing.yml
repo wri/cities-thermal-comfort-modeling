@@ -1,0 +1,23 @@
+# Configurable attribute values for method processing
+- MethodAttributes:
+  wall_height_aspect:
+    lower_limit_for_wall_height: 3
+  skyview_factor:
+    transmissivity_of_light_through_vegetation: 3
+    trunk_zone_height: 25
+  solweig:
+    leaf_start: 97
+    leaf_end: 300
+    conifer_trees: False
+    albedo_walls: 0.2
+    albedo_ground: 0.15
+    emis_walls: 0.9
+    emis_ground: 0.95
+    output_tmrt: True
+    output_sh: True
+# Name of source files used for processing
+- FileNames:
+  dem_tif_filename: dem.tif
+  dsm_tif_filename: dsm_ground_build.tif
+  veg_canopy_tif_filename: tree_canopy.tif
+  landcover_tif_filename: landcover.tif

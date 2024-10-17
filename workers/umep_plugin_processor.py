@@ -43,7 +43,7 @@ def run_plugin(task_index, step_method, folder_name_city_data, folder_name_tile_
         Processing.initialize()
         import processing
     except Exception as e_msg:
-        msg = f'{method_title} processing could not initalize UMEP processing'
+        msg = f'{method_title} processing could not initialize UMEP processing'
         _log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, e_msg)
         return 2
 

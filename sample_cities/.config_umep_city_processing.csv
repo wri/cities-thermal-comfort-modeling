@@ -1,6 +1,6 @@
 enabled,city_folder_name,tile_folder_name,method
 false,ZAF_Capetown_small_tile,tile1,wall_height_aspect
 true,ZAF_Capetown_small_tile,tile2,wall_height_aspect
-true,ZAF_Capetown_small_tile,tile3,solweig_full
+false,ZAF_Capetown_small_tile,tile3,solweig_full
 false,ZAF_Capetown,tile1,solweig_full
 

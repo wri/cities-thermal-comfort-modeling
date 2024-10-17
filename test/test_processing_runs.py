@@ -5,10 +5,11 @@ from main import main
 from test.tools import is_valid_output_directory
 import pytest
 
+
 def test_main():
     package_folder = os.path.dirname(os.getcwd())
     source_base_path = os.path.join(package_folder, 'sample_cities')
-    target_base_path = os.path.join(package_folder, 'test', 'resources')
+    target_base_path = os.path.join(package_folder, 'sample_cities')
     return_code = main(source_base_path, target_base_path, 'no_pre_check')
 
     has_valid_results = _verify_expected_output_folders(source_base_path, target_base_path)
@@ -18,7 +19,7 @@ def test_main():
 def test_main_check_all():
     package_folder = os.path.dirname(os.getcwd())
     source_base_path = os.path.join(package_folder, 'sample_cities')
-    target_base_path = os.path.join(package_folder, 'test', 'resources')
+    target_base_path = os.path.join(package_folder, 'sample_cities')
 
     return_code = main(source_base_path, target_base_path, 'check_all')
 
@@ -28,7 +29,7 @@ def test_main_check_all():
 def test_main_check_all_failure():
     package_folder = os.path.dirname(os.getcwd())
     source_base_path = os.path.join(package_folder, 'missing_city')
-    target_base_path = os.path.join(package_folder, 'test', 'resources')
+    target_base_path = os.path.join(package_folder, 'sample_cities')
 
     with pytest.raises(Exception):
         main(source_base_path, target_base_path, 'check_all')
@@ -36,7 +37,7 @@ def test_main_check_all_failure():
 def test_main_check_enabled_only_failure():
     package_folder = os.path.dirname(os.getcwd())
     source_base_path = os.path.join(package_folder, 'missing_city')
-    target_base_path = os.path.join(package_folder, 'test', 'resources')
+    target_base_path = os.path.join(package_folder, 'sample_cities')
 
     with pytest.raises(Exception):
         main(source_base_path, target_base_path, 'check_enabled_only')

@@ -7,22 +7,31 @@
    * Rename the copied ZZZ_template_copy folder to the names of the country and city for your dataset, such as "MEX_Monterrey". (This is "your folder" for below instructions.)
    * Copy your tile-folders of TIFF files into the source_data\primary_soure_data filder with one sub-folder per tile. See the sample_cities\ZAF_Capetown_small_tile folder for an example setup.
    * Copy your meteorological files into the source_data\met_files folder.
-1. Configuration
-   * In C:\CTCM_processing folder modify the .config_umep_city_processing.csv file to specify which city, tiles, and method to run
-     * There are 4 possible method options, but the majority of the time choose "solweig_full". This option will first run the wall_height_aspect method, the skyview_factor method, and then the solweig method.
-     * The other three options allow runs of just wall_height_aspect, skyview_factor, or solweig_only
-   * For each city:
-     * In C:\CTCM_processing\<city_folder>\source_data modify the .config_city_processing.yml file to specify:
+1. Configuration for a city
+   * In C:\CTCM_processing\<city_folder> folder:
+     * modify the .config_umep_city_processing.csv file to specify which tiles and UMEP method to run
+       * There are 4 possible method options, but the majority of the time choose "solweig_full". This option will first run the wall_height_aspect method, the skyview_factor method, and then the solweig method.
+       * The other three options allow runs of just wall_height_aspect, skyview_factor, or solweig_only
+   * In C:\CTCM_processing\<city_folder>\source_data folder:
+     * modify the .config_city_processing.yml file to specify:
         * methods attributes
         * the names of source files stored in the primary_source_data\<tile> folders
-     * In C:\CTCM_processing\<city_folder>\source_data modify the .config_met_time_series.csv file to specify the name(s) for meteorological files to be processes by the solweig method
+     * modify the .config_met_time_series.csv file to specify:
+       * the name(s) for meteorological files to be processes by the solweig method
 1. CTCM execution from the Windows command prompt:
-   * Execute the _sample_run_main_pre_check.bat batch script with your path modifications to validate the configurations files. 
-   * Execute the _sample_run_main.bat batch script with your path modifications to process the configured tasks.
+   * To practice:
+     * for execution of the ZAF_Capetown_small_file folder in the codebase:
+       * Execute the _sample_run_main_pre_check.bat batch script with your path modifications to validate the configurations files. 
+       * Execute the _sample_run_main.bat batch script with your path modifications to process the configured tasks.
+     * for execution of the ZAF_Capetown_small_file folder in the C:\CTCM_processing folder:
+       * Execute the _sample_run_main_CTM_processing.bat batch script with your path modifications to process the configured tasks.
+   * For your city:
+     * Copy and modify the _sample_run_main_CTM_processing.bat script to point to your source city.
 1. Post-execution
-   * Run reports are written to the .reports folder 
-   * Log files are written to the .logs folder
-   * Results are written the target path specified in the _sample_run_main.bat batch script
+   * Results of your run are written the target path specified in the batch script
+   * See run reports in the .reports folder 
+   * For details about any failures, see the log file(s) in the .logs folder
+   
 
 
 ## CTCM Deployment Instructions
@@ -51,7 +60,8 @@ print(sys.path)
 ~~~
    * Activate the cities-thermal conda environment
    * Execute the environment_post_processing.bat file
-8Create the empty C:\CTM_processing folder
+8. Create the C:\CTM_processing folder
+   * Copy the ZAF_Capetown_small_tile folder from the codebase into C:\CTM_processing folder.
 
 ### Execution in Pycharm
 1. Create input dataset based on the ZZZ_template_city folder, providing source data, meteorological timeseries files, and configuration settings

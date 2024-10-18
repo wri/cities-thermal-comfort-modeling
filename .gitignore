@@ -191,3 +191,5 @@ preprocessed_data/
 tcm_results/
 NOT_FOR_CHECKIN/
 
+# CIF
+data

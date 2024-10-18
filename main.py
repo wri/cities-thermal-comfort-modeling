@@ -5,8 +5,10 @@ import pandas as pd
 import dask
 import multiprocessing as mp
 import subprocess
-from datetime import datetime
+import warnings
+warnings.filterwarnings('ignore')
 
+from datetime import datetime
 from collections.abc import Iterable
 from src.source_quality_verifier import verify_fundamental_paths, verify_processing_config
 from workers.city_data import CityData
@@ -35,17 +37,17 @@ SCRIPT_PATH = os.path.abspath(os.path.join(get_application_path(), 'workers', 'u
 PRE_SOLWEIG_FULL_PAUSE_TIME_SEC = 30
 
 
-def main(source_base_path, target_base_path, pre_check_option):
+def main(source_base_path, target_base_path, city_folder_name, pre_check_option):
     abs_source_base_path = os.path.abspath(source_base_path)
     abs_target_path = os.path.abspath(target_base_path)
-    return_code_basic = _validate_basic_inputs(abs_source_base_path, abs_target_path)
+    return_code_basic = _validate_basic_inputs(abs_source_base_path, abs_target_path, city_folder_name)
 
-    processing_config_df = _build_source_dataframes(abs_source_base_path, abs_target_path)
-    return_code_configs = _validate_config_inputs(processing_config_df, abs_source_base_path, abs_target_path, pre_check_option)
+    processing_config_df = _build_source_dataframes(abs_source_base_path, city_folder_name)
+    return_code_configs = _validate_config_inputs(processing_config_df, abs_source_base_path, abs_target_path, city_folder_name, pre_check_option)
 
     if pre_check_option == 'no_pre_check':
         enabled_processing_tasks_df = processing_config_df[(processing_config_df['enabled'])]
-        delayed_results, solweig_delayed_results = _build_processing_graphs(enabled_processing_tasks_df, abs_source_base_path, abs_target_path)
+        delayed_results, solweig_delayed_results = _build_processing_graphs(enabled_processing_tasks_df, abs_source_base_path, abs_target_path, city_folder_name)
 
         # Task processing
         delays_all_passed, results_df = process_rows(delayed_results)
@@ -54,7 +56,7 @@ def main(source_base_path, target_base_path, pre_check_option):
         solweig_delays_all_passed, solweig_results_df = process_rows(solweig_delayed_results)
 
         # Write run_report
-        report_file_path = _report_results(enabled_processing_tasks_df, results_df, solweig_results_df)
+        report_file_path = _report_results(enabled_processing_tasks_df, results_df, solweig_results_df, city_folder_name)
         print(f'\nRun report written to {report_file_path}')
 
         return_code = 0 if (delays_all_passed and solweig_delays_all_passed) else 1
@@ -67,7 +69,7 @@ def main(source_base_path, target_base_path, pre_check_option):
         else:
             return -99
 
-def _report_results(enabled_processing_tasks_df, results_df, solweig_results_df):
+def _report_results(enabled_processing_tasks_df, results_df, solweig_results_df, city_folder_name):
     combined_results = results_df if solweig_results_df.empty else\
         pd.concat([results_df, solweig_results_df], ignore_index=True)
 
@@ -76,6 +78,7 @@ def _report_results(enabled_processing_tasks_df, results_df, solweig_results_df)
     merged = pd.merge(enabled_processing_tasks_df, combined_results, left_index=True, right_on='task_index',
                       how='outer')
     merged['run_status'] = merged['return_code'].apply(_evaluate_return_code)
+    merged['city_folder_name'] = city_folder_name
 
     reporting_df = merged.loc[:,
                    ['run_status', 'task_index', 'city_folder_name', 'tile_folder_name', 'method', 'step_index',
@@ -86,10 +89,10 @@ def _report_results(enabled_processing_tasks_df, results_df, solweig_results_df)
     create_folder(report_folder)
 
     report_date_str =  datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-    report_name = f'run_report_{report_date_str}.tsv'
+    report_name = f'run_report_{report_date_str}.html'
     report_file_path = os.path.join(report_folder, report_name)
 
-    reporting_df.to_csv(report_file_path, sep='\t')
+    reporting_df.to_html(report_file_path)
 
     return report_file_path
 
@@ -97,8 +100,8 @@ def _evaluate_return_code(return_code):
     return 'success' if return_code == 0 else 'FAILURE'
 
 
-def _validate_basic_inputs(source_base_path, target_path):
-    invalids = verify_fundamental_paths(source_base_path, target_path)
+def _validate_basic_inputs(source_base_path, target_path, city_folder_name):
+    invalids = verify_fundamental_paths(source_base_path, target_path, city_folder_name)
     if invalids:
         for invalid in invalids:
             _highlighted_print(invalid)
@@ -106,8 +109,8 @@ def _validate_basic_inputs(source_base_path, target_path):
     else:
         return 0
 
-def _validate_config_inputs(processing_config_df, source_base_path, target_path, pre_check_option):
-    detailed_invalids = verify_processing_config(processing_config_df, source_base_path, target_path, pre_check_option)
+def _validate_config_inputs(processing_config_df, source_base_path, target_path, city_folder_name, pre_check_option):
+    detailed_invalids = verify_processing_config(processing_config_df, source_base_path, target_path, city_folder_name, pre_check_option)
     if detailed_invalids:
         for invalid in detailed_invalids:
             _highlighted_print(invalid)
@@ -115,8 +118,8 @@ def _validate_config_inputs(processing_config_df, source_base_path, target_path,
     else:
         return 0
 
-def _build_source_dataframes(source_base_path, target_base_path):
-    config_processing_file_path = str(os.path.join(source_base_path, CityData.file_name_umep_city_processing_config))
+def _build_source_dataframes(source_base_path, city_folder_name):
+    config_processing_file_path = str(os.path.join(source_base_path, city_folder_name, CityData.file_name_umep_city_processing_config))
     processing_config_df = pd.read_csv(config_processing_file_path)
 
     return processing_config_df
@@ -194,12 +197,11 @@ def _get_inclusive_between_string(text, start_substring, end_substring):
     except ValueError:
         return None
 
-def _build_processing_graphs(enabled_processing_task_df, source_base_path, target_base_path):
+def _build_processing_graphs(enabled_processing_task_df, source_base_path, target_base_path, city_folder_name):
     delayed_results = []
     solweig_delayed_results = []
     for index, config_row in enabled_processing_task_df.iterrows():
         task_index = index
-        city_folder_name = config_row.city_folder_name
         tile_folder_name = config_row.tile_folder_name
         task_method = config_row.method
         if task_method == 'solweig_full':
@@ -293,6 +295,8 @@ if __name__ == "__main__":
                         help='the path to city-based source data')
     parser.add_argument('--target_base_path', metavar='path', required=True,
                         help='path to export results')
+    parser.add_argument('--city_folder_name', metavar='path', required=True,
+                        help='name of source city_folder')
 
     valid_methods = ['no_pre_check', 'check_all', 'check_enabled_only']
     parser.add_argument('--pre_check_option', metavar='str', choices=valid_methods, required=True,
@@ -300,6 +304,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     return_code = main(source_base_path=args.source_base_path, target_base_path=args.target_base_path,
-                       pre_check_option=args.pre_check_option)
+                       city_folder_name=args.city_folder_name, pre_check_option=args.pre_check_option)
 
     print(return_code)

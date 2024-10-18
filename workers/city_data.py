@@ -9,8 +9,8 @@ class CityData:
     
     folder_name_primary_source_data = 'primary_source_data'
     folder_name_met_files = 'met_files'
-    folder_name_tcm_results = 'tcm_results'
     folder_name_preprocessed_data = 'preprocessed_data'
+    folder_name_tcm_results = 'tcm_results'
     
     file_name_wall_height = 'wallheight.tif'
     file_name_wall_aspect = 'wallaspect.tif'
@@ -27,7 +27,7 @@ class CityData:
         obj.source_base_path = source_base_path
         obj.target_base_path = target_base_path
 
-        obj.source_city_data_path = str(os.path.join(source_base_path, folder_name_city_data))
+        obj.source_city_data_path = str(os.path.join(source_base_path, folder_name_city_data, 'source_data'))
         city_configs = os.path.join(obj.source_city_data_path, cls.file_name_city_processing_config)
         with open(city_configs, 'r') as stream:
             try:
@@ -49,19 +49,19 @@ class CityData:
 
                 file_names = values[1]
                 obj.dem_file = file_names['dem_tif_filename']
-                obj.dsm_file = file_names['dsm_tif_filename']
+                obj.dsm_file = file_names['dsm_ground_build_tif_filename']
                 obj.veg_canopy_file = file_names['veg_canopy_tif_filename']
                 obj.landcover_file = file_names['landcover_tif_filename']
 
             except yaml.YAMLError as e_msg:
                 raise Exception(f'The {cls.file_name_city_processing_config} file not found or improperly defined in {city_configs}. ({e_msg})')
 
-        obj.target_path_city_data = str(os.path.join(obj.target_base_path, folder_name_city_data))
+        obj.target_path_city_data = str(os.path.join(obj.target_base_path, folder_name_city_data, 'results_data'))
 
         obj.source_tile_data_path = os.path.join(obj.source_city_data_path, obj.folder_name_primary_source_data, obj.folder_name_tile_data)
         obj.source_met_files_path = os.path.join(obj.source_city_data_path, obj.folder_name_met_files)
         obj.target_preprocessed_data_path = os.path.join(obj.target_path_city_data, obj.folder_name_preprocessed_data, obj.folder_name_tile_data)
-        obj.target_tcm_results_path = os.path.join(obj.target_path_city_data, obj.folder_name_tcm_results)
+        obj.target_tcm_results_path = os.path.join(obj.target_path_city_data, obj.folder_name_tcm_results, obj.folder_name_tile_data)
 
         obj.source_dem_path = os.path.join(obj.source_tile_data_path, obj.dem_file)
         obj.source_dsm_path = os.path.join(obj.source_tile_data_path, obj.dsm_file)

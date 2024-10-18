@@ -4,20 +4,25 @@ from workers.city_data import CityData
 
 # valid_methods = ['no_pre_check', 'check_all', 'check_enabled_only']
 
-def verify_fundamental_paths(source_base_path, target_path):
+def verify_fundamental_paths(source_base_path, target_path, city_folder_name):
     invalids = []
     if _verify_path(source_base_path) is False:
-        msg = f'Invalid source path: {source_base_path}'
+        msg = f'Invalid source base path: {source_base_path}'
+        invalids.append(msg)
+
+    city_path = str(os.path.join(source_base_path, city_folder_name))
+    if _verify_path(city_path) is False:
+        msg = f'Invalid source city path: {city_path}'
         invalids.append(msg)
 
     if _verify_path(target_path) is False:
-        msg = f'Invalid target path: {target_path}'
+        msg = f'Invalid target base path: {target_path}'
         invalids.append(msg)
 
     if invalids:
         return invalids
 
-    config_processing_file_path = str(os.path.join(source_base_path, CityData.file_name_umep_city_processing_config))
+    config_processing_file_path = str(os.path.join(city_path, CityData.file_name_umep_city_processing_config))
     if _verify_path(config_processing_file_path) is False:
         msg = f'Processing registry file does not exist as: {config_processing_file_path}'
         invalids.append(msg)
@@ -29,7 +34,7 @@ def _verify_path(path):
     is_valid = os.path.exists(path)
     return is_valid
 
-def verify_processing_config(processing_config_df, source_base_path, target_base_path, pre_check_option):
+def verify_processing_config(processing_config_df, source_base_path, target_base_path, city_folder_name, pre_check_option):
     invalids = []
     for index, config_row in processing_config_df.iterrows():
         enabled = str(config_row.enabled)
@@ -40,18 +45,8 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
     for index, config_row in processing_config_df.iterrows():
         enabled = str(config_row.enabled)
         if bool(enabled) or pre_check_option == 'check_all':
-            folder_name_city_data = config_row.city_folder_name
-            city_path = os.path.join(source_base_path, folder_name_city_data)
-            if not os.path.isdir(city_path):
-                invalids.append(
-                    f"city folder: '{str(folder_name_city_data)}' on row {index} not found under '{source_base_path}'.")
-
-    for index, config_row in processing_config_df.iterrows():
-        enabled = str(config_row.enabled)
-        if bool(enabled) or pre_check_option == 'check_all':
-            folder_name_city_data = config_row.city_folder_name
             folder_name_tile_data = config_row.tile_folder_name
-            city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
+            city_data = CityData(city_folder_name, folder_name_tile_data, source_base_path, target_base_path)
             source_tile_path = city_data.source_tile_data_path
             if not os.path.isdir(source_tile_path):
                 invalids.append(
@@ -70,9 +65,8 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
         enabled = str(config_row.enabled)
         if bool(enabled) or pre_check_option == 'check_all':
             method = config_row.method
-            folder_name_city_data = config_row.city_folder_name
             folder_name_tile_data = config_row.tile_folder_name
-            city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
+            city_data = CityData(city_folder_name, folder_name_tile_data, source_base_path, target_base_path)
 
             prior_dsm = city_data.source_dsm_path
             if _verify_path(prior_dsm) is False:

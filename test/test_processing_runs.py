@@ -5,22 +5,25 @@ from main import main
 from test.tools import is_valid_output_directory
 import pytest
 
+
 def test_main():
     package_folder = os.path.dirname(os.getcwd())
     source_base_path = os.path.join(package_folder, 'sample_cities')
-    target_base_path = os.path.join(package_folder, 'test', 'resources')
-    return_code = main(source_base_path, target_base_path, 'no_pre_check')
+    target_base_path = os.path.join(package_folder, 'sample_cities')
+    source_city_folder_name = 'ZAF_Capetown_small_tile'
+    return_code = main(source_base_path, target_base_path, source_city_folder_name, 'no_pre_check')
 
-    has_valid_results = _verify_expected_output_folders(source_base_path, target_base_path)
+    has_valid_results = _verify_expected_output_folders(source_base_path, target_base_path, source_city_folder_name)
     assert return_code == 0
     assert has_valid_results
 
 def test_main_check_all():
     package_folder = os.path.dirname(os.getcwd())
     source_base_path = os.path.join(package_folder, 'sample_cities')
-    target_base_path = os.path.join(package_folder, 'test', 'resources')
+    target_base_path = os.path.join(package_folder, 'sample_cities')
+    source_city_folder_name = 'ZAF_Capetown_small_tile'
 
-    return_code = main(source_base_path, target_base_path, 'check_all')
+    return_code = main(source_base_path, target_base_path, source_city_folder_name, 'check_all')
 
     assert return_code == 0
 
@@ -28,30 +31,31 @@ def test_main_check_all():
 def test_main_check_all_failure():
     package_folder = os.path.dirname(os.getcwd())
     source_base_path = os.path.join(package_folder, 'missing_city')
-    target_base_path = os.path.join(package_folder, 'test', 'resources')
+    target_base_path = os.path.join(package_folder, 'sample_cities')
+    source_city_folder_name = 'ZAF_Capetown_small_tile'
 
     with pytest.raises(Exception):
-        main(source_base_path, target_base_path, 'check_all')
+        main(source_base_path, target_base_path, source_city_folder_name, 'check_all')
 
 def test_main_check_enabled_only_failure():
     package_folder = os.path.dirname(os.getcwd())
     source_base_path = os.path.join(package_folder, 'missing_city')
-    target_base_path = os.path.join(package_folder, 'test', 'resources')
+    target_base_path = os.path.join(package_folder, 'sample_cities')
+    source_city_folder_name = 'ZAF_Capetown_small_tile'
 
     with pytest.raises(Exception):
-        main(source_base_path, target_base_path, 'check_enabled_only')
+        main(source_base_path, target_base_path, source_city_folder_name, 'check_enabled_only')
 
 
-def _verify_expected_output_folders(source_base_path, target_base_path):
+def _verify_expected_output_folders(source_base_path, target_base_path, source_city_folder_name):
     enabled_target_folder = []
-    config_processing_file_path = str(os.path.join(source_base_path, CityData.file_name_umep_city_processing_config))
+    config_processing_file_path = str(os.path.join(source_base_path, source_city_folder_name, CityData.file_name_umep_city_processing_config))
     processing_config_df = pd.read_csv(config_processing_file_path)
     for index, config_row in processing_config_df.iterrows():
         enabled = bool(config_row.enabled)
         if enabled:
-            folder_name_city_data = config_row.city_folder_name
             folder_name_tile_data = config_row.tile_folder_name
-            city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
+            city_data = CityData(source_city_folder_name, folder_name_tile_data, source_base_path, target_base_path)
             result_folder = city_data.target_preprocessed_data_path
             enabled_target_folder.append(result_folder)
 

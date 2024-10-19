@@ -3,6 +3,8 @@ import tempfile
 import time
 import shutil
 import warnings
+warnings.filterwarnings("ignore")
+
 from pathlib import Path
 from datetime import datetime
 from src.tools import remove_file, create_folder, remove_folder, get_application_path
@@ -43,14 +45,13 @@ def run_plugin(task_index, step_method, folder_name_city_data, folder_name_tile_
         Processing.initialize()
         import processing
     except Exception as e_msg:
-        msg = f'{method_title} processing could not initalize UMEP processing'
+        msg = f'{method_title} processing could not initialize UMEP processing'
         _log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, e_msg)
         return 2
 
     e_msg = ''
     return_code = -999
     retry_count = 0
-    warnings.filterwarnings("ignore")
     with (tempfile.TemporaryDirectory() as tmpdirname):
         # Get the UMEP processing parameters and prepare for the method
         input_params, umep_method_title, keepers = _prepare_method_execution(step_method, city_data, tmpdirname, met_file_name, utc_offset)

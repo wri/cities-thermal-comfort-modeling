@@ -1,5 +1,5 @@
 from qgis.core import QgsApplication
-from tools import get_configurations
+from src.tools import get_configurations
 import sys
 
 def qgis_app_init():

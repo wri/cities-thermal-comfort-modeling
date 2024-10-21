@@ -61,6 +61,11 @@ def main(source_base_path, target_base_path, city_folder_name, pre_check_option)
 
         return_code = 0 if (delays_all_passed and solweig_delays_all_passed) else 1
 
+        if return_code == 0:
+            print("\nProcessing encountered no errors.")
+        else:
+            print("\nProcessing encountered errors.")
+
         return return_code
     else:
         if return_code_basic == 0 and return_code_configs == 0:

@@ -14,22 +14,29 @@
        * The other three options allow runs of just wall_height_aspect, skyview_factor, or solweig_only
    * In C:\CTCM_processing\<city_folder>\source_data folder:
      * modify the .config_city_processing.yml file to specify:
-        * methods attributes
-        * the names of source files stored in the primary_source_data\<tile> folders
+        * methods attributes (the file already contains default values which you may want to leave unaltered)
+        * the names of source files stored in the primary_source_data\<tile> folders. Note that the system assumes that all source tiff files in all tiles have the same name. 
      * modify the .config_met_time_series.csv file to specify:
        * the name(s) for meteorological files to be processes by the solweig method
-1. CTCM execution from the Windows command prompt:
-   * To practice:
-     * for execution of the ZAF_Capetown_small_file folder in the codebase:
-       * Execute the _sample_run_main_pre_check.bat batch script with your path modifications to validate the configurations files. 
-       * Execute the _sample_run_main.bat batch script with your path modifications to process the configured tasks.
-     * for execution of the ZAF_Capetown_small_file folder in the C:\CTCM_processing folder:
-       * Execute the _sample_run_main_CTM_processing.bat batch script with your path modifications to process the configured tasks.
-   * For your city:
-     * Copy and modify the _sample_run_main_CTM_processing.bat script to point to your source city.
+1. To practice running the system:
+    * First, run the following script to validate the configuration in the C:\CTCM_processing\ZAF_Capetown_small_tiles practice folde:
+      * Execute the _sample_run_CTM_processing_pre_check.bat batch script and confirm that it returned "Passed all validation checks"
+    * Second, run the following script to process data in the C:\CTCM_processing\ZAF_Capetown_small_tiles practice folder.
+      * Execute the _sample_run_CTM_processing.bat batch script and confirm that it returned "Processing encountered no errors." 
+      * Note that processing will take approximately 1 minute.
+2.To run the system for your data:
+   * Copy and modify batch files:
+     * Copy the _sample_run_CTM_processing_pre_check.bat file and name for your project area, such as _<my_city_name>_run_CTM_processing_pre_check.bat
+     * Copy the _sample_run_CTM_processing.bat file and name for your project area, such as _<my_city_name>_run_CTM_processing.bat.
+     * Edit both files to specify the city_folder name that you specified in "Configuration for a city" step above.
+   * Execute the pre-check script
+     *  Execute the _<my_city_name>_run_CTM_processing_pre_check.bat batch script and confirm that it returned "Passed all validation checks".
+   * Execute the processing script
+     * Execute the _<my_city_name>_run_CTM_processing.bat batch script and confirm that it returned "Processing encountered no errors."
+     * Note that processing may take an extended period of time even up to 2+ hours depending on the size of your dataset.
 1. Post-execution
-   * Results of your run are written the target path specified in the batch script
-   * See run reports in the .reports folder 
+   * Results of your run are written to the result_data folder under your target path specified in the batch script, such as C:\CTCM_processing\<my_city_name>\results_data
+   * To see a report of success/failure, see html file in the .reports folder for the time that you started your run. 
    * For details about any failures, see the log file(s) in the .logs folder
    
 
@@ -62,6 +69,12 @@ print(sys.path)
    * Execute the environment_post_processing.bat file
 8. Create the C:\CTM_processing folder
    * Copy the ZAF_Capetown_small_tile folder from the codebase into C:\CTM_processing folder.
+9. Confirm processing by running the test_processing_runs.py tests
+   * Note that the tests will show exceptions even though the tests pass
+10. Confirm processing using the C:\CTM_processing folder by executing the _sample_run_CTM_processing batch script.
+   * After execution completes, confirm that:
+     * The C:\CTCM_processing\ZAF_Capetown_small_tile folder contains the new C:\CTCM_processing\ZAF_Capetown_small_tile\results_data folder
+     * The result_data folder contains two subfolder with each of these folders containing subfolders.
 
 ### Execution in Pycharm
 1. Create input dataset based on the ZZZ_template_city folder, providing source data, meteorological timeseries files, and configuration settings

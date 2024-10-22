@@ -3,44 +3,43 @@
 ## How to use the CTCM framework for calling the UMEP QGIS Plugin and generating results
 1. Go to the C:\Users\Administrator\Github\cities-thermal-comfort-modeling folder
 1. Pre-execution configuration.
-   * Copy the ..\sample_cities\ZZZ_template_city folder (under sample_cities) into the c:\CTCM_processing folder.
-   * Rename the copied ZZZ_template_copy folder to the name of the country and city for your dataset, such as "MEX_Monterrey". (This is "your folder" for below instructions.)
-   * Copy the TIFF files for your city into the .\source_data\primary_source_data folder underneath the folder you created above.
-     * Separate your TIFF files by tiled area into folders named 'tile_001', 'tile_002', and so on.
-     * See the .\ZAF_Capetown_small_tile\source_data\primary_source_data folder for an example setup.
-   * Copy your meteorological files into the .\source_data\met_files folder.
-     * Note: Since you may currently not have meteorological data in the correct format for your city, copy over a file from the .\ZAF_Capetown_small_tile\source_data\met_files folder.
+   1. Copy the ..\sample_cities\ZZZ_template_city folder (under sample_cities) into the c:\CTCM_processing folder.
+   1. Rename the copied ZZZ_template_copy folder to the name of the country and city for your dataset, such as "MEX_Monterrey". (This is "your folder" for below instructions.)
+   1. Copy the TIFF files for your city into the .\source_data\primary_source_data folder underneath the folder you created above.
+      1. Separate your TIFF files by tiled area into folders named 'tile_001', 'tile_002', and so on.
+      1. See the .\ZAF_Capetown_small_tile\source_data\primary_source_data folder for an example setup.
+   1. Copy your meteorological files into the .\source_data\met_files folder.
+      1. Note: Since you may currently not have meteorological data in the correct format for your city, copy over a file from the .\ZAF_Capetown_small_tile\source_data\met_files folder.
 1. Configuration for a city
    * In C:\CTCM_processing\<city_folder> folder:
-     * modify the .config_umep_city_processing.csv file to specify which tiles and UMEP method to run
-       * There are 4 possible method options, but the majority of the time choose "solweig_full". This option will first run the wall_height_aspect method, the skyview_factor method, and then the solweig method.
-       * The other three options allow runs of just wall_height_aspect, skyview_factor, or solweig_only
-   * In C:\CTCM_processing\<city_folder>\source_data folder:
-     * modify the .config_city_processing.yml file to specify:
-        * methods attributes (the file already contains default values which you may want to leave unaltered)
-        * the names of source files stored in the primary_source_data\<tile> folders. Note that the system assumes that all source tiff files in all tiles have the same name. 
-     * modify the .config_met_time_series.csv file to specify:
-       * the name(s) for meteorological files to be processes by the solweig method
+   1. modify the .config_umep_city_processing.csv file to specify which tiles and UMEP method to run
+      1. There are 4 possible method options, but the majority of the time choose "solweig_full". This option will first run the wall_height_aspect method, the skyview_factor method, and then the solweig method.
+      1. The other three options allow runs of just wall_height_aspect, skyview_factor, or solweig_only
+   1. modify the .config_method_parameters.yml file to specify:
+      1. methods attributes (the file already contains default values which you may want to leave unaltered)
+      1. the names of source files stored in the primary_source_data\<tile> folders. Note that the system assumes that all source tiff files in all tiles have the same name. 
+   1. modify the .config_meteorological_parameters.csv file to specify:
+      1. the name(s) for meteorological files to be processes by the solweig method
 1. To practice running the system:
-    * First, run the following script to validate the configuration in the C:\CTCM_processing\ZAF_Capetown_small_tiles practice folde:
-      * Execute the _sample_run_CTM_processing_pre_check.bat batch script and confirm that it returned "Passed all validation checks"
-    * Second, run the following script to process data in the C:\CTCM_processing\ZAF_Capetown_small_tiles practice folder.
-      * Execute the _sample_run_CTM_processing.bat batch script and confirm that it returned "Processing encountered no errors." 
-      * Note that processing will take approximately 1 minute.
-2.To run the system for your data:
-   * Copy and modify batch files:
-     * Copy the _sample_run_CTM_processing_pre_check.bat file and name for your project area, such as _<my_city_name>_run_CTM_processing_pre_check.bat
-     * Copy the _sample_run_CTM_processing.bat file and name for your project area, such as _<my_city_name>_run_CTM_processing.bat.
-     * Edit both files to specify the city_folder name that you specified in "Configuration for a city" step above.
-   * Execute the pre-check script
-     *  Execute the _<my_city_name>_run_CTM_processing_pre_check.bat batch script and confirm that it returned "Passed all validation checks".
-   * Execute the processing script
-     * Execute the _<my_city_name>_run_CTM_processing.bat batch script and confirm that it returned "Processing encountered no errors."
-     * Note that processing may take an extended period of time even up to 2+ hours depending on the size of your dataset.
+   1. First, run the following script to validate the configuration in the C:\CTCM_processing\ZAF_Capetown_small_tiles practice folde:
+      1. Execute the _sample_run_CTM_processing_pre_check.bat batch script and confirm that it returned "Passed all validation checks"
+   1. Second, run the following script to process data in the C:\CTCM_processing\ZAF_Capetown_small_tiles practice folder.
+      1. Execute the _sample_run_CTM_processing.bat batch script and confirm that it returned "Processing encountered no errors." 
+      1. Note that processing will take approximately 1 minute.
+1. To run the system for your data:
+   1. Copy and modify batch files:
+      1. Copy the _sample_run_CTM_processing_pre_check.bat file and name for your project area, such as _<my_city_name>_run_CTM_processing_pre_check.bat
+      1. Copy the _sample_run_CTM_processing.bat file and name for your project area, such as _<my_city_name>_run_CTM_processing.bat.
+      1. Edit both files to specify the city_folder name that you specified in "Configuration for a city" step above.
+   1. Execute the pre-check script
+      1. Execute the _<my_city_name>_run_CTM_processing_pre_check.bat batch script and confirm that it returned "Passed all validation checks".
+   1. Execute the processing script
+      1. Execute the _<my_city_name>_run_CTM_processing.bat batch script and confirm that it returned "Processing encountered no errors."
+      1. Note that processing may take an extended period of time even up to 2+ hours depending on the size of your dataset.
 1. Post-execution
-   * Results of your run are written to the result_data folder under your target path specified in the batch script, such as C:\CTCM_processing\<my_city_name>\results_data
-   * To see a report of success/failure, see html file in the .reports folder for the time that you started your run. 
-   * For details about any failures, see the log file(s) in the .logs folder
+   1. Results of your run are written to the result_data folder under your target path specified in the batch script, such as C:\CTCM_processing\<my_city_name>\results_data
+   1. To see a report of success/failure, see html file in the .reports folder for the time that you started your run. 
+   1. For details about any failures, see the log file(s) in the .logs folder
    
 
 

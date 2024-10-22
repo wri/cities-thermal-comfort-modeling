@@ -249,8 +249,8 @@ def _build_solweig_only_steps(task_index, step_index, folder_name_city_data, fol
     city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
 
     delayed_result = []
-    config_met_time_series_path = str(os.path.join(city_data.source_city_data_path, city_data.file_name_met_time_series_config))
-    met_time_series_config_df = pd.read_csv(config_met_time_series_path)
+    config_meteorological_parameters_path = str(os.path.join(city_data.source_city_path, city_data.file_name_met_parameters_config))
+    met_time_series_config_df = pd.read_csv(config_meteorological_parameters_path)
 
     return_code = 0
     for index, config_row in met_time_series_config_df.iterrows():

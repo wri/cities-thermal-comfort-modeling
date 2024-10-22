@@ -4,8 +4,8 @@ from attr.converters import to_bool
 
 
 class CityData:
-    file_name_city_processing_config = '.config_city_processing.yml'
-    file_name_met_time_series_config = '.config_met_time_series.csv'
+    file_name_method_parameters_config = '.config_method_parameters.yml'
+    file_name_met_parameters_config = '.config_meteorological_parameters.csv'
     file_name_umep_city_processing_config = '.config_umep_city_processing.csv'
 
     folder_name_primary_source_data = 'primary_source_data'
@@ -27,8 +27,9 @@ class CityData:
         obj.source_base_path = source_base_path
         obj.target_base_path = target_base_path
 
-        obj.source_city_data_path = str(os.path.join(source_base_path, folder_name_city_data, 'source_data'))
-        city_configs = os.path.join(obj.source_city_data_path, cls.file_name_city_processing_config)
+        obj.source_city_path = str(os.path.join(source_base_path, folder_name_city_data))
+        obj.source_city_data_path = str(os.path.join(obj.source_city_path, 'source_data'))
+        city_configs = os.path.join(obj.source_city_path, cls.file_name_method_parameters_config)
         with open(city_configs, 'r') as stream:
             try:
                 values = list(yaml.safe_load_all(stream))[0]
@@ -56,7 +57,7 @@ class CityData:
 
             except yaml.YAMLError as e_msg:
                 raise Exception(
-                    f'The {cls.file_name_city_processing_config} file not found or improperly defined in {city_configs}. ({e_msg})')
+                    f'The {cls.file_name_method_parameters_config} file not found or improperly defined in {city_configs}. ({e_msg})')
 
         obj.target_path_city_data = str(os.path.join(obj.target_base_path, folder_name_city_data, 'results_data'))
 

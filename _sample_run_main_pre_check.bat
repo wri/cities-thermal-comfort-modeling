@@ -1,6 +1,6 @@
 @echo off
 set source_base_path=".\sample_cities"
-set target_base_path=".\sample_cities"
+set target_base_path=".\test\test_results"
 set city_folder_name="ZAF_Capetown_small_tile"
 set pre_check_option="check_all"
 

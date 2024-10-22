@@ -12,4 +12,3 @@ def qgis_app_init():
 
     return qgis_app
 
-

@@ -12,7 +12,7 @@ from datetime import datetime
 from collections.abc import Iterable
 from src.source_quality_verifier import verify_fundamental_paths, verify_processing_config
 from workers.city_data import CityData
-from workers.tools import get_application_path, create_folder
+from src.tools import get_application_path, create_folder
 
 import logging
 LOG_FOLDER_PATH = os.path.abspath(os.path.join(get_application_path(), '.logs'))

@@ -9,7 +9,7 @@ import pytest
 def test_main():
     package_folder = os.path.dirname(os.getcwd())
     source_base_path = os.path.join(package_folder, 'sample_cities')
-    target_base_path = os.path.join(package_folder, 'sample_cities')
+    target_base_path = os.path.join(package_folder, 'test', 'test_results')
     source_city_folder_name = 'ZAF_Capetown_small_tile'
     return_code = main(source_base_path, target_base_path, source_city_folder_name, 'no_pre_check')
 

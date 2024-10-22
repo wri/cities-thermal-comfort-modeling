@@ -1,6 +1,6 @@
 import os
-from workers.solweig_source_getter import get_cif_data
 from src.tools import get_application_path
+from workers.source_cif_data_downloader import get_cif_data
 
 
 def test1():

@@ -1,5 +1,5 @@
 import os
-from src.solweig_source_getter import get_cif_data
+from workers.solweig_source_getter import get_cif_data
 from src.tools import get_application_path
 
 

@@ -1,12 +1,15 @@
 # cities-thermal-comfort-modeling (CTCM) processing framework
 
 ## How to use the CTCM framework for calling the UMEP QGIS Plugin and generating results
+1. Go to the C:\Users\Administrator\Github\cities-thermal-comfort-modeling folder
 1. Pre-execution configuration.
-   * In following steps, yse the "c:\CTCM_processing" folder as location for all your data. 
-   * Copy the ZZZ_template_city folder (under sample_cities) into the CTCM_processing folder.
-   * Rename the copied ZZZ_template_copy folder to the names of the country and city for your dataset, such as "MEX_Monterrey". (This is "your folder" for below instructions.)
-   * Copy your tile-folders of TIFF files into the source_data\primary_soure_data filder with one sub-folder per tile. See the sample_cities\ZAF_Capetown_small_tile folder for an example setup.
-   * Copy your meteorological files into the source_data\met_files folder.
+   * Copy the ..\sample_cities\ZZZ_template_city folder (under sample_cities) into the c:\CTCM_processing folder.
+   * Rename the copied ZZZ_template_copy folder to the name of the country and city for your dataset, such as "MEX_Monterrey". (This is "your folder" for below instructions.)
+   * Copy the TIFF files for your city into the .\source_data\primary_source_data folder underneath the folder you created above.
+     * Separate your TIFF files by tiled area into folders named 'tile_001', 'tile_002', and so on.
+     * See the .\ZAF_Capetown_small_tile\source_data\primary_source_data folder for an example setup.
+   * Copy your meteorological files into the .\source_data\met_files folder.
+     * Note: Since you may currently not have meteorological data in the correct format for your city, copy over a file from the .\ZAF_Capetown_small_tile\source_data\met_files folder.
 1. Configuration for a city
    * In C:\CTCM_processing\<city_folder> folder:
      * modify the .config_umep_city_processing.csv file to specify which tiles and UMEP method to run

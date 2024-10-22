@@ -1,33 +1,45 @@
 import os
+import rioxarray
 import xarray as xr
-import xee
+# import xee
 import ee
+# import rasterio
+import geopandas as gpd
 from rasterio.enums import Resampling
-from src.tools import get_application_path, remove_file
+from src.tools import remove_file, create_folder
 from dask.diagnostics import ProgressBar
-
+from shapely.geometry import Polygon
 from city_metrix.layers import layer, Layer
+
 DEBUG = True
 
-def get_cif_data(aoi_name, aoi_url):
-    aoi_gdf = get_polygon_for_aoi(aoi_name, aoi_url)
+TREE_CANOPY_FILE_NAME = 'tree_canopy'
+BUILDING_FOOTPRINT_FILE_NAME = 'building_footprints'
+DSM_FILE_NAME = 'alos_dsm'
+DEM_FILE_NAME = 'nasa_dem'
+RESAMPLED_DEM_FILE_NAME = 'nasa_dem_1m'
+BUILDING_HEIGHT_FILE_NAME = 'building_height'
+LAND_COVER_FILE_NAME = 'land_cover'
 
-    get_lulc(aoi_name, aoi_gdf)
+def get_cif_data(target_path, folder_name_city_data, folder_name_tile_data, aoi_boundary):
+    tile_data_path = os.path.join(target_path, folder_name_city_data, 'source_data', 'primary_source_data', folder_name_tile_data)
 
-    get_canopy_height(aoi_name, aoi_gdf)
+    aoi_bounds = Polygon(aoi_boundary).bounds
 
-    aoi_OvertureBuildings = get_building_footprints(aoi_name, aoi_gdf)
-    aoi_AlosDSM = get_dsm(aoi_name, aoi_gdf)
-    aoi_NasaDEM, dem_1m = get_dem(aoi_name, aoi_gdf)
-    get_building_height(aoi_name, aoi_gdf, aoi_OvertureBuildings, aoi_AlosDSM, aoi_NasaDEM, dem_1m)
-    get_era5()
+    get_lulc(tile_data_path, aoi_bounds)
+    get_canopy_height(tile_data_path, aoi_bounds)
+    get_building_footprints(tile_data_path, aoi_bounds)
+    get_dsm(tile_data_path, aoi_bounds)
+    get_dem(tile_data_path, aoi_bounds)
+    get_building_height(tile_data_path)
+    # get_era5()
 
     return
 
 
-def get_lulc(aoi_name, aoi_gdf):
+def get_lulc(tile_data_path, aoi_bounds):
     # Load data
-    aoi_LULC = OpenUrban().get_data(aoi_gdf.total_bounds)
+    aoi_LULC = OpenUrban().get_data(aoi_bounds)
 
     # Get resolution of the data
     aoi_LULC.rio.resolution()
@@ -48,81 +60,67 @@ def get_lulc(aoi_name, aoi_gdf):
         print(f'There were no occurrences of the value {remove_value} found in data.')
 
     # Save data to file
-    save_raster_file(aoi_LULC_to_solweig, aoi_name, 'lulc')
-
-    # Check results
-    if DEBUG:
-        aoi_LULC_counts = aoi_LULC.groupby(aoi_LULC).count().to_dataframe()
-        print(aoi_LULC_counts)
-
-        aoi_LULC_to_solweig_counts = aoi_LULC_to_solweig.groupby(aoi_LULC_to_solweig).count().to_dataframe()
-        print(aoi_LULC_to_solweig_counts)
+    save_raster_file(aoi_LULC_to_solweig, tile_data_path, LAND_COVER_FILE_NAME)
 
 
 def count_occurrences(data, value):
     return data.where(data == value).count().item()
 
 
-def get_canopy_height(aoi_name, aoi_gdf):
+def get_canopy_height(tile_data_path, aoi_bounds):
     from city_metrix.layers import TreeCanopyHeight
 
     # Load layer
-    aoi_TreeCanopyHeight = TreeCanopyHeight().get_data(aoi_gdf.total_bounds)
+    aoi_TreeCanopyHeight = TreeCanopyHeight().get_data(aoi_bounds)
+    aoi_TreeCanopyHeight_float32 = aoi_TreeCanopyHeight.astype('float32')
 
-    # Save data to file
-    save_raster_file(aoi_TreeCanopyHeight.astype('float32'), aoi_name, 'TreeCanopyHeight')
+    save_raster_file(aoi_TreeCanopyHeight_float32, tile_data_path, TREE_CANOPY_FILE_NAME)
 
-    if DEBUG:
-        print_resolutions('TreeCanopyHeight', aoi_TreeCanopyHeight, None)
 
-def get_building_footprints(aoi_name, aoi_gdf):
+def get_building_footprints(tile_data_path, aoi_bounds):
     from city_metrix.layers import OvertureBuildings
 
-    # Load layer
-    aoi_OvertureBuildings = OvertureBuildings().get_data(aoi_gdf.total_bounds)
+    aoi_OvertureBuildings = OvertureBuildings().get_data(aoi_bounds)
 
-    # Get row and column count
-    # aoi_OvertureBuildings.shape
+    save_vector_file(aoi_OvertureBuildings, tile_data_path, BUILDING_FOOTPRINT_FILE_NAME)
 
-    # Save data to file
-    save_vector_file(aoi_OvertureBuildings, aoi_name, 'OvertureBuildings')
 
-    return aoi_OvertureBuildings
-
-def get_dsm(aoi_name, aoi_gdf):
+def get_dsm(tile_data_path, aoi_bounds):
     from city_metrix.layers import AlosDSM
 
-    aoi_AlosDSM = AlosDSM().get_data(aoi_gdf.total_bounds)
-    save_raster_file(aoi_AlosDSM, aoi_name, 'aoi_AlosDSM')
+    aoi_AlosDSM = AlosDSM().get_data(aoi_bounds)
+
+    save_raster_file(aoi_AlosDSM, tile_data_path, DSM_FILE_NAME)
 
     # resample to finer resolution of 1 meter
-    dsm_1m = resample_raster(aoi_AlosDSM, 1)
-    save_raster_file(dsm_1m, aoi_name, 'aoi_AlosDSM_1m')
+    # dsm_1m = resample_raster(aoi_AlosDSM, 1)
+    # save_raster_file(dsm_1m, aoi_name, 'aoi_AlosDSM_1m')
 
-    if DEBUG:
-        print_resolutions('AlosDSM', aoi_AlosDSM, dsm_1m)
 
-    return aoi_AlosDSM
-
-def get_dem(aoi_name, aoi_gdf):
+def get_dem(tile_data_path, aoi_bounds):
     from city_metrix.layers import NasaDEM
 
-    aoi_NasaDEM = NasaDEM().get_data(aoi_gdf.total_bounds)
-    save_raster_file(aoi_NasaDEM, aoi_name, 'aoi_NasaDEM')
+    aoi_NasaDEM = NasaDEM().get_data(aoi_bounds)
+
+    save_raster_file(aoi_NasaDEM, tile_data_path, DEM_FILE_NAME)
 
     # resample to finer resolution of 1 meter
     dem_1m = resample_raster(aoi_NasaDEM, 1)
-    save_raster_file(dem_1m, aoi_name, 'aoi_NasaDEM_1m')
 
-    if DEBUG:
-        print_resolutions('NasaDEM', aoi_NasaDEM, dem_1m)
+    save_raster_file(dem_1m, tile_data_path, RESAMPLED_DEM_FILE_NAME)
 
-    return aoi_NasaDEM, dem_1m
 
-def get_building_height(aoi_name, aoi_gdf, aoi_OvertureBuildings, aoi_AlosDSM, aoi_NasaDEM, dem_1m):
+def get_building_height(tile_data_path):
+    aoi_OvertureBuildings = read_vector_file(tile_data_path, BUILDING_FOOTPRINT_FILE_NAME)
+    aoi_AlosDSM = read_tiff_file(tile_data_path, DSM_FILE_NAME)
+    aoi_NasaDEM = read_tiff_file(tile_data_path, DEM_FILE_NAME)
+    aoi_NasaDEM_1m = read_tiff_file(tile_data_path, RESAMPLED_DEM_FILE_NAME)
+
+    # (aoi_name, aoi_gdf, aoi_OvertureBuildings, aoi_AlosDSM, aoi_NasaDEM, dem_1m):
     from exactextract import exact_extract
 
-    aoi_OvertureBuildings = aoi_OvertureBuildings.to_crs(aoi_AlosDSM.rio.crs)
+    target_crs = aoi_AlosDSM.rio.crs
+    aoi_OvertureBuildings = aoi_OvertureBuildings.to_crs(target_crs)
 
     # get maximum raster values for rasters intersecting the building footprints
     aoi_OvertureBuildings['AlosDSM_max'] = (
@@ -132,17 +130,14 @@ def get_building_height(aoi_name, aoi_gdf, aoi_OvertureBuildings, aoi_AlosDSM, a
     aoi_OvertureBuildings['height_max'] = (
             aoi_OvertureBuildings['AlosDSM_max'] - aoi_OvertureBuildings['NasaDEM_max'])
 
-    # Get row and column count
-    # aoi_OvertureBuildings.shape
-
     # Write to file
-    save_vector_file(aoi_OvertureBuildings, aoi_name, 'BuildingHeights')
+    save_vector_file(aoi_OvertureBuildings, tile_data_path, BUILDING_HEIGHT_FILE_NAME)
 
     # rasterize the building footprints
-    aoi_OvertureBuildings_raster = rasterize_polygon(aoi_OvertureBuildings, values=["height_max"], snap_to_raster=dem_1m)
+    aoi_OvertureBuildings_raster = rasterize_polygon(aoi_OvertureBuildings, values=["height_max"], snap_to_raster=aoi_NasaDEM_1m)
 
     # Save data to file
-    save_raster_file(aoi_OvertureBuildings_raster, aoi_name, 'aoi_building_height')
+    save_raster_file(aoi_OvertureBuildings_raster, tile_data_path, BUILDING_HEIGHT_FILE_NAME)
 
 def get_era5():
     return
@@ -171,61 +166,29 @@ def rasterize_polygon(gdf, values=["Value"], snap_to_raster=None):
 
     return feature_1m
 
-
-def save_vector_file(vector_geodataframe, aoi_name, file_name_qualifier):
-    file_path = f'{file_path_prefix(aoi_name)}-{file_name_qualifier}.geojson'
-    remove_file(file_path)
-    vector_geodataframe.to_file(file_path, driver='GeoJSON')
-    print(f'File saved to {file_path}')
-
-
-def save_raster_file(raster_data_array, aoi_name, file_name_qualifier):
-    file_path = f'{file_path_prefix(aoi_name)}-{file_name_qualifier}.tif'
+def save_raster_file(raster_data_array, tile_data_path, tiff_data_file_name):
+    create_folder(tile_data_path)
+    file_path = os.path.join(tile_data_path, f'{tiff_data_file_name}.tif')
     remove_file(file_path)
     raster_data_array.rio.to_raster(raster_path=file_path, driver="COG")
-    print(f'\nFile saved to {file_path}')
 
-def print_resolutions(dataset_name, source_xarray, resampled_array):
-    source_res = source_xarray.rio.resolution()
-    if resampled_array:
-        resampled_res = resampled_array.rio.resolution()
-    else:
-        resampled_res = 'N/A'
-    print(f'\nResolutions for {dataset_name}dataset: source_res:{source_res}, resampled_res:{resampled_res}')
 
-def get_polygon_for_aoi(aoi_name, aoi_url):
-    # load boundary
-    import geopandas as gpd
-
-    # If you are using an SSO account, you need to be authenticated first
-    # !aws sso login
-    aoi_gdf = gpd.read_file(aoi_url, driver='GeoJSON')
-
-    aoi_gdf = aoi_gdf.to_crs(epsg=4326)
-
-    ## Write to file
-    file_path = f'{file_path_prefix(aoi_name)}-boundary.geojson'
+def save_vector_file(vector_geodataframe, tile_data_path, tiff_data_file_name):
+    create_folder(tile_data_path)
+    file_path = os.path.join(tile_data_path, f'{tiff_data_file_name}.geojson')
     remove_file(file_path)
-    aoi_gdf.to_file(file_path, driver='GeoJSON')
-    print(f'\nAOI boundary saved to:{file_path}')
-
-    ## Get area in km2 of the city rounded to the nearest integer
-    # pseudo_mercator_proj = 3857
-    equal_earth_proj = 8857
-    sq_m_to_sq_km_factor = 10**6
-    aoi_gdf_area = aoi_gdf['geometry'].to_crs(epsg=equal_earth_proj).area/sq_m_to_sq_km_factor  # in km2
-    aoi_gdf_area = round(aoi_gdf_area.values[0], 3)
-    print(f'Area: {aoi_gdf_area} sqkm')
-
-    return aoi_gdf
+    vector_geodataframe.to_file(file_path, driver='GeoJSON')
 
 
-    ## Data folder
-def file_path_prefix(file_prefix):
-    app_path = get_application_path()
-    folder = str(os.path.join(app_path, 'data', file_prefix))
-    os.makedirs(folder, exist_ok=True)
-    return os.path.join(folder, file_prefix)
+def read_tiff_file(tile_data_path, file_name):
+    file_path = os.path.join(tile_data_path, f'{file_name}.tif')
+    raster_data = rioxarray.open_rasterio(file_path)
+    return raster_data
+
+def read_vector_file(tile_data_path, file_name):
+    file_path = os.path.join(tile_data_path, f'{file_name}.geojson')
+    vector_data = gpd.read_file(file_path)
+    return vector_data
 
 
 class OpenUrban(Layer):

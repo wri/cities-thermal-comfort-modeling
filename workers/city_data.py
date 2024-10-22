@@ -2,24 +2,24 @@ import os
 import yaml
 from attr.converters import to_bool
 
+
 class CityData:
     file_name_city_processing_config = '.config_city_processing.yml'
     file_name_met_time_series_config = '.config_met_time_series.csv'
     file_name_umep_city_processing_config = '.config_umep_city_processing.csv'
-    
+
     folder_name_primary_source_data = 'primary_source_data'
     folder_name_met_files = 'met_files'
     folder_name_preprocessed_data = 'preprocessed_data'
     folder_name_tcm_results = 'tcm_results'
-    
+
     file_name_wall_height = 'wallheight.tif'
     file_name_wall_aspect = 'wallaspect.tif'
     file_name_svfs_zip = 'svfs.zip'
 
-    plugin_methods = ['all', 'wall_height_aspect', 'skyview_factor', 'solweig_only', 'solweig_full' ]
+    plugin_methods = ['all', 'wall_height_aspect', 'skyview_factor', 'solweig_only', 'solweig_full']
 
-
-    def __new__(cls,  folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path):
+    def __new__(cls, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path):
         obj = super().__new__(cls)
 
         obj.folder_name_city_data = folder_name_city_data
@@ -35,7 +35,8 @@ class CityData:
 
                 method_attributes = values[0]
                 obj.wall_lower_limit_height = method_attributes['wall_height_aspect']['lower_limit_for_wall_height']
-                obj.light_transmissivity = method_attributes['skyview_factor']['transmissivity_of_light_through_vegetation']
+                obj.light_transmissivity = method_attributes['skyview_factor'][
+                    'transmissivity_of_light_through_vegetation']
                 obj.trunk_zone_height = method_attributes['skyview_factor']['trunk_zone_height']
                 obj.leaf_start = method_attributes['solweig']['leaf_start']
                 obj.leaf_end = method_attributes['solweig']['leaf_end']
@@ -54,13 +55,16 @@ class CityData:
                 obj.landcover_file = file_names['landcover_tif_filename']
 
             except yaml.YAMLError as e_msg:
-                raise Exception(f'The {cls.file_name_city_processing_config} file not found or improperly defined in {city_configs}. ({e_msg})')
+                raise Exception(
+                    f'The {cls.file_name_city_processing_config} file not found or improperly defined in {city_configs}. ({e_msg})')
 
         obj.target_path_city_data = str(os.path.join(obj.target_base_path, folder_name_city_data, 'results_data'))
 
-        obj.source_tile_data_path = os.path.join(obj.source_city_data_path, obj.folder_name_primary_source_data, obj.folder_name_tile_data)
+        obj.source_tile_data_path = os.path.join(obj.source_city_data_path, obj.folder_name_primary_source_data,
+                                                 obj.folder_name_tile_data)
         obj.source_met_files_path = os.path.join(obj.source_city_data_path, obj.folder_name_met_files)
-        obj.target_preprocessed_data_path = os.path.join(obj.target_path_city_data, obj.folder_name_preprocessed_data, obj.folder_name_tile_data)
+        obj.target_preprocessed_data_path = os.path.join(obj.target_path_city_data, obj.folder_name_preprocessed_data,
+                                                         obj.folder_name_tile_data)
         obj.target_tcm_results_path = os.path.join(obj.target_path_city_data, obj.folder_name_tcm_results)
 
         obj.source_dem_path = os.path.join(obj.source_tile_data_path, obj.dem_file)

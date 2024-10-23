@@ -61,7 +61,7 @@
 # def test_solweig_generator(startup_teardown):
 #     task_index = 'test_solweig'
 #     step = 0
-#     met_file_name = 'met_20jan2022.txt'
+#     met_filename = 'met_20jan2022.txt'
 #     utc_offset = 2
 #
 #     temp_dir = startup_teardown
@@ -69,11 +69,11 @@
 #
 #     UMEP_PLUGIN.generate_wall_height_aspect(task_index, city_data)
 #     UMEP_PLUGIN.generate_skyview_factor_files(task_index, city_data)
-#     return_code = UMEP_PLUGIN.generate_solweig(task_index, step, city_data, met_file_name, utc_offset)
+#     return_code = UMEP_PLUGIN.generate_solweig(task_index, step, city_data, met_filename, utc_offset)
 #
-#     # out_directory = os.path.join(city_data.target_tcm_results_path, Path(met_file_name).stem)
+#     # out_directory = os.path.join(city_data.target_tcm_results_path, Path(met_filename).stem)
 #
-#     target_met_folder = os.path.join(city_data.target_tcm_results_path, Path(met_file_name).stem, city_data.folder_name_tile_data)
+#     target_met_folder = os.path.join(city_data.target_tcm_results_path, Path(met_filename).stem, city_data.folder_name_tile_data)
 #     tmrt_average_file_path = os.path.join(target_met_folder, 'Tmrt_average.tif')
 #     tmrt_average_file_exists = os.path.isfile(tmrt_average_file_path)
 #

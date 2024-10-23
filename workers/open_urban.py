@@ -17,6 +17,7 @@ class OpenUrban(Layer):
             ulu = ee.ImageCollection(dataset
                                      .filterBounds(ee.Geometry.BBox(*bbox))
                                      .select(self.band)
+                                     .max()
                                      .reduce(ee.Reducer.firstNonNull())
                                      .rename('lulc')
                                      )

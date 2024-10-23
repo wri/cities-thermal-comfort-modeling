@@ -49,7 +49,7 @@ def test_main_check_enabled_only_failure():
 
 def _verify_expected_output_folders(source_base_path, target_base_path, source_city_folder_name):
     enabled_target_folder = []
-    config_processing_file_path = str(os.path.join(source_base_path, source_city_folder_name, CityData.file_name_umep_city_processing_config))
+    config_processing_file_path = str(os.path.join(source_base_path, source_city_folder_name, CityData.filename_umep_city_processing_config))
     processing_config_df = pd.read_csv(config_processing_file_path)
     for index, config_row in processing_config_df.iterrows():
         enabled = bool(config_row.enabled)

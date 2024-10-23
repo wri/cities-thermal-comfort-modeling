@@ -22,7 +22,7 @@ def verify_fundamental_paths(source_base_path, target_path, city_folder_name):
     if invalids:
         return invalids
 
-    config_processing_file_path = str(os.path.join(city_path, CityData.file_name_umep_city_processing_config))
+    config_processing_file_path = str(os.path.join(city_path, CityData.filename_umep_city_processing_config))
     if _verify_path(config_processing_file_path) is False:
         msg = f'Processing registry file does not exist as: {config_processing_file_path}'
         invalids.append(msg)
@@ -40,7 +40,7 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
         enabled = str(config_row.enabled)
         valid_enabled = ['true', 'false']
         if enabled.lower() not in valid_enabled:
-            invalids.append(f"Invalid enabled value ({str(enabled)}) on row {index}. Valid values: {valid_enabled}")
+            invalids.append(f"Invalid enabled value ({str(enabled)}) on row {index} in .config_umep_city_processing.csv. Valid values: {valid_enabled}")
 
     for index, config_row in processing_config_df.iterrows():
         enabled = str(config_row.enabled)
@@ -50,7 +50,7 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
             source_tile_path = city_data.source_tile_data_path
             if not os.path.isdir(source_tile_path):
                 invalids.append(
-                    f"tile folder ({str(folder_name_tile_data)}) on row {index} not found under '{source_base_path}'.")
+                    f"tile folder ({str(folder_name_tile_data)}) on row {index} of .config_umep_city_processing.csv not found under '{source_base_path}'.")
 
     for index, config_row in processing_config_df.iterrows():
         enabled = str(config_row.enabled)
@@ -58,7 +58,7 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
             method = config_row.method
             valid_methods = CityData.plugin_methods
             if method not in valid_methods:
-                invalids.append(f"Invalid 'method' ({method}) on row {index}. Valid values: {valid_methods}")
+                invalids.append(f"Invalid 'method' ({method}) on row {index} in .config_umep_city_processing.csv. Valid values: {valid_methods}")
 
     # check file dependencies
     for index, config_row in processing_config_df.iterrows():
@@ -70,37 +70,47 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
 
             prior_dsm = city_data.source_dsm_path
             if _verify_path(prior_dsm) is False:
-                msg = f'Required source file: {prior_dsm} not found for row {index}.'
+                msg = f'Required source file: {prior_dsm} not found for row {index} in .config_umep_city_processing.csv.'
                 invalids.append(msg)
 
             if method in ['skyview_factor', 'solweig_full', 'solweig_only']:
                 prior_veg_canopy = city_data.source_veg_canopy_path
                 if _verify_path(prior_veg_canopy) is False:
-                    msg = f'Required source file: {prior_veg_canopy} not found for method: {method} on row {index}.'
+                    msg = f'Required source file: {prior_veg_canopy} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                     invalids.append(msg)
 
             if method in ['solweig_only', 'solweig_full']:
                 prior_land_cover = city_data.source_land_cover_path
                 prior_dem = city_data.source_dem_path
                 if _verify_path(prior_land_cover) is False:
-                    msg = f'Required source file: {prior_land_cover} not found for method: {method} on row {index}.'
+                    msg = f'Required source file: {prior_land_cover} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                     invalids.append(msg)
                 if _verify_path(prior_dem) is False:
-                    msg = f'Required source file: {prior_dem} not found for method: {method} on row {index}.'
+                    msg = f'Required source file: {prior_dem} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                     invalids.append(msg)
+                for met_file_row in city_data.met_files:
+                    met_file = met_file_row.get('filename')
+                    met_filepath = os.path.join(city_data.source_met_files_path, met_file)
+                    if _verify_path(met_filepath) is False:
+                        msg = f'Required meteorological file: {met_filepath} not found for method: {method} in .config_method_parameters.yml.'
+                        invalids.append(msg)
+                    utc_offset = met_file_row.get('utc_offset')
+                    if not -24 <= utc_offset <= 24:
+                        msg = f'UTC range for: {met_file} not in range for 24-hour offsets as specified in .config_method_parameters.yml.'
+                        invalids.append(msg)
 
             if method in ['solweig_only']:
                 prior_svfszip = city_data.target_svfszip_path
                 prior_wallheight = city_data.target_wallheight_path
                 prior_wallaspect = city_data.target_wallaspect_path
                 if _verify_path(prior_svfszip) is False:
-                    msg = f'Required source file: {prior_svfszip} currently not found for method: {method} on row {index}.'
+                    msg = f'Required source file: {prior_svfszip} currently not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                     invalids.append(msg)
                 if _verify_path(prior_wallheight) is False:
-                    msg = f'Required source file: {prior_wallheight} currently not found for method: {method} on row {index}.'
+                    msg = f'Required source file: {prior_wallheight} currently not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                     invalids.append(msg)
                 if _verify_path(prior_wallaspect) is False:
-                    msg = f'Required source file: {prior_wallaspect} currently not found for method: {method} on row {index}.'
+                    msg = f'Required source file: {prior_wallaspect} currently not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                     invalids.append(msg)
 
     return invalids

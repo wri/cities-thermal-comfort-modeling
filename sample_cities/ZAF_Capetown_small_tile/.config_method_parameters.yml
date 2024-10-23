@@ -15,8 +15,14 @@
     emis_ground: 0.95
     output_tmrt: True
     output_sh: True
+# Names of meteorological files used for SOLWEIG processing
+- MetFiles:
+  - filename: met_20jan2022.txt
+    utc_offset: 2
+  - filename: met_22jan2022.txt
+    utc_offset: 2
 # Name of source files used for processing
-- FileNames:
+- Tifffilenames:
   dem_tif_filename: dem.tif
   dsm_ground_build_tif_filename: dsm_ground_build.tif
   veg_canopy_tif_filename: tree_canopy.tif

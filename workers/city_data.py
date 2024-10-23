@@ -4,18 +4,18 @@ from attr.converters import to_bool
 
 
 class CityData:
-    file_name_method_parameters_config = '.config_method_parameters.yml'
-    file_name_met_parameters_config = '.config_meteorological_parameters.csv'
-    file_name_umep_city_processing_config = '.config_umep_city_processing.csv'
+    filename_method_parameters_config = '.config_method_parameters.yml'
+    filename_met_parameters_config = '.config_meteorological_parameters.csv'
+    filename_umep_city_processing_config = '.config_umep_city_processing.csv'
 
     folder_name_primary_source_data = 'primary_source_data'
     folder_name_met_files = 'met_files'
     folder_name_preprocessed_data = 'preprocessed_data'
     folder_name_tcm_results = 'tcm_results'
 
-    file_name_wall_height = 'wallheight.tif'
-    file_name_wall_aspect = 'wallaspect.tif'
-    file_name_svfs_zip = 'svfs.zip'
+    filename_wall_height = 'wallheight.tif'
+    filename_wall_aspect = 'wallaspect.tif'
+    filename_svfs_zip = 'svfs.zip'
 
     plugin_methods = ['all', 'wall_height_aspect', 'skyview_factor', 'solweig_only', 'solweig_full']
 
@@ -29,7 +29,7 @@ class CityData:
 
         obj.source_city_path = str(os.path.join(source_base_path, folder_name_city_data))
         obj.source_city_data_path = str(os.path.join(obj.source_city_path, 'source_data'))
-        city_configs = os.path.join(obj.source_city_path, cls.file_name_method_parameters_config)
+        city_configs = os.path.join(obj.source_city_path, cls.filename_method_parameters_config)
         with open(city_configs, 'r') as stream:
             try:
                 values = list(yaml.safe_load_all(stream))[0]
@@ -49,15 +49,17 @@ class CityData:
                 obj.output_tmrt = to_bool(method_attributes['solweig']['output_tmrt'])
                 obj.output_sh = to_bool(method_attributes['solweig']['output_sh'])
 
-                file_names = values[1]
-                obj.dem_file = file_names['dem_tif_filename']
-                obj.dsm_file = file_names['dsm_ground_build_tif_filename']
-                obj.veg_canopy_file = file_names['veg_canopy_tif_filename']
-                obj.landcover_file = file_names['landcover_tif_filename']
+                obj.met_files = values[1].get('MetFiles')
+
+                filenames = values[2]
+                obj.dem_file = filenames['dem_tif_filename']
+                obj.dsm_file = filenames['dsm_ground_build_tif_filename']
+                obj.veg_canopy_file = filenames['veg_canopy_tif_filename']
+                obj.landcover_file = filenames['landcover_tif_filename']
 
             except yaml.YAMLError as e_msg:
                 raise Exception(
-                    f'The {cls.file_name_method_parameters_config} file not found or improperly defined in {city_configs}. ({e_msg})')
+                    f'The {cls.filename_method_parameters_config} file not found or improperly defined in {city_configs}. ({e_msg})')
 
         obj.target_path_city_data = str(os.path.join(obj.target_base_path, folder_name_city_data, 'results_data'))
 
@@ -73,8 +75,8 @@ class CityData:
         obj.source_veg_canopy_path = os.path.join(obj.source_tile_data_path, obj.veg_canopy_file)
         obj.source_land_cover_path = os.path.join(obj.source_tile_data_path, obj.landcover_file)
 
-        obj.target_wallheight_path = os.path.join(obj.target_preprocessed_data_path, obj.file_name_wall_height)
-        obj.target_wallaspect_path = os.path.join(obj.target_preprocessed_data_path, obj.file_name_wall_aspect)
-        obj.target_svfszip_path = os.path.join(obj.target_preprocessed_data_path, obj.file_name_svfs_zip)
+        obj.target_wallheight_path = os.path.join(obj.target_preprocessed_data_path, obj.filename_wall_height)
+        obj.target_wallaspect_path = os.path.join(obj.target_preprocessed_data_path, obj.filename_wall_aspect)
+        obj.target_svfszip_path = os.path.join(obj.target_preprocessed_data_path, obj.filename_svfs_zip)
 
         return obj

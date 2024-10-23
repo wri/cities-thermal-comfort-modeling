@@ -21,9 +21,10 @@
     utc_offset: <n>
   - filename: <met_filename_2>.txt
     utc_offset: <n>
-# Name of source files used for processing
+# Name of source files used for processing. All tiles must use the same file names.
+# Note that the names below are the recommended names, but you can specify different ones.
 - Tifffilenames:
-  dem_tif_filename: <DEM_filename>.tif
-  dsm_ground_build_tif_filename: <DSM_filename>.tif
-  veg_canopy_tif_filename: <tree_canopy_filename>.tif
-  landcover_tif_filename: <landcover_filename>.tif
+  dem_tif_filename: dem.tif
+  dsm_ground_build_tif_filename: dsm_ground_build.tif
+  veg_canopy_tif_filename: tree_canopy.tif
+  landcover_tif_filename: landcover.tif

@@ -1,4 +1,7 @@
-# This folder contains two sub-folders and three configuration files:
+# This folder contains two sub-folders and two configuration files:
+
+## Template:
+See the ZZZ_template_city folder for a template of a city folder
 
 ## Folders:
 1. **source_data\met_files** - contains time-series of meteorological data
@@ -10,5 +13,5 @@
    * Also indicates whether processing is enabled and the method to use for processing.
 2. **source_data\config_method_parameters.yml**
    * Specification of non-default input parameters for pre-processors and SOLWEIG methods.
+   * List of meteorological time-series files in the met_files folder and UTC_offset in hours.
    * Mapping of data-type to name of TIF file in the source_data folder. Note: all file of a type must have the same name in all tiles.
-1. **source_data\config_meteorological_parameters.csv** - List of meteorological time-series files in the met_files folder, input parameters, and whether the time-series is enabled for execution.

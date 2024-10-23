@@ -66,7 +66,7 @@ def main(source_base_path, target_base_path, city_folder_name, pre_check_option)
         if return_code == 0:
             print("\nProcessing encountered no errors.")
         else:
-            print("\nProcessing encountered errors.")
+            _highlighted_print('Processing encountered no errors. See log file.')
 
         return return_code
     else:
@@ -74,6 +74,7 @@ def main(source_base_path, target_base_path, city_folder_name, pre_check_option)
             print("\nPassed all validation checks")
             return 0
         else:
+            _highlighted_print('Pre-check encountered errors.')
             return -99
 
 def _report_results(enabled_processing_tasks_df, results_df, solweig_results_df, city_folder_name):

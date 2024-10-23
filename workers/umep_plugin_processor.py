@@ -26,7 +26,7 @@ logging.basicConfig(level=logging.INFO,
 MAX_RETRY_COUNT = 3
 RETRY_PAUSE_TIME_SEC = 10
 
-def run_plugin(task_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path, target_path, met_file_name=None, utc_offset=None):
+def run_plugin(task_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path, target_path, met_filename=None, utc_offset=None):
     start_time = datetime.now()
 
     city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_path)
@@ -54,8 +54,9 @@ def run_plugin(task_index, step_method, folder_name_city_data, folder_name_tile_
     retry_count = 0
     with (tempfile.TemporaryDirectory() as tmpdirname):
         # Get the UMEP processing parameters and prepare for the method
-        input_params, umep_method_title, keepers = _prepare_method_execution(step_method, city_data, tmpdirname, met_file_name, utc_offset)
+        input_params, umep_method_title, keepers = _prepare_method_execution(step_method, city_data, tmpdirname, met_filename, utc_offset)
 
+        b = 2
         while retry_count < MAX_RETRY_COUNT and return_code != 0:
             try:
                 # Run the UMEP plugin!!
@@ -95,14 +96,14 @@ def run_plugin(task_index, step_method, folder_name_city_data, folder_name_tile_
     return return_code, start_time, run_duration
 
 
-def _prepare_method_execution(method, city_data, tmpdirname, met_file_name=None, utc_offset=None):
+def _prepare_method_execution(method, city_data, tmpdirname, met_filename=None, utc_offset=None):
     keepers = {}
 
     if method == 'wall_height_aspect':
         create_folder(city_data.target_preprocessed_data_path)
 
-        temp_target_wallheight_path = os.path.join(tmpdirname, city_data.file_name_wall_height)
-        temp_target_wallaspect_path = os.path.join(tmpdirname, city_data.file_name_wall_aspect)
+        temp_target_wallheight_path = os.path.join(tmpdirname, city_data.filename_wall_height)
+        temp_target_wallaspect_path = os.path.join(tmpdirname, city_data.filename_wall_aspect)
         input_params = {
             'INPUT': city_data.source_dsm_path,
             'INPUT_LIMIT': city_data.wall_lower_limit_height,
@@ -131,10 +132,10 @@ def _prepare_method_execution(method, city_data, tmpdirname, met_file_name=None,
         umep_method_title = 'umep:Urban Geometry: Sky View Factor'
         keepers[temp_svfs_file_with_extension] = city_data.target_svfszip_path
     else:
-        source_met_file_path = os.path.join(city_data.source_met_files_path, met_file_name)
-        temp_met_folder = os.path.join(tmpdirname, Path(met_file_name).stem, city_data.folder_name_tile_data)
+        source_met_file_path = os.path.join(city_data.source_met_files_path, met_filename)
+        temp_met_folder = os.path.join(tmpdirname, Path(met_filename).stem, city_data.folder_name_tile_data)
         create_folder(temp_met_folder)
-        target_met_folder = os.path.join(city_data.target_tcm_results_path, Path(met_file_name).stem, city_data.folder_name_tile_data)
+        target_met_folder = os.path.join(city_data.target_tcm_results_path, Path(met_filename).stem, city_data.folder_name_tile_data)
         input_params = {
             "INPUT_DSM": city_data.source_dsm_path,
             "INPUT_SVF": city_data.target_svfszip_path,
@@ -238,16 +239,16 @@ if __name__ == "__main__":
     parser.add_argument('--source_data_path', metavar='path', required=True, help='folder with source data')
     parser.add_argument('--target_path', metavar='path', required=True, help='folder that is to be populated')
 
-    parser.add_argument('--met_file_name', metavar='str', required=False, help='name of the meteorological file')
+    parser.add_argument('--met_filename', metavar='str', required=False, help='name of the meteorological file')
     parser.add_argument('--utc_offset', metavar='int', required=False, help='local hour offset from utc')
     args = parser.parse_args()
 
     return_code, start_time, run_duration = run_plugin(args.task_index, args.step_method, args.folder_name_city_data, args.folder_name_tile_data,
-                             args.source_data_path, args.target_path, args.met_file_name, args.utc_offset)
+                             args.source_data_path, args.target_path, args.met_filename, args.utc_offset)
 
-    met_file_name_str = args.met_file_name if args.met_file_name != 'None' else 'N/A'
+    met_filename_str = args.met_filename if args.met_filename != 'None' else 'N/A'
     start_time_str = start_time.strftime('%Y_%m_%d_%H:%M:%S')
     return_stdout = (f'{{"Return_package": {{"task_index": {args.task_index}, "step_index": {args.step_index}, \
-                     "step_method": "{args.step_method}", "met_file_name": "{met_file_name_str}", "return_code": {return_code}, \
+                     "step_method": "{args.step_method}", "met_filename": "{met_filename_str}", "return_code": {return_code}, \
                      "start_time": "{start_time_str}", "run_duration": {run_duration}}}}}')
     print(return_stdout)

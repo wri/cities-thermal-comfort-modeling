@@ -45,6 +45,8 @@ def main(source_base_path, target_base_path, city_folder_name, pre_check_option)
     processing_config_df = _build_source_dataframes(abs_source_base_path, city_folder_name)
     return_code_configs = _validate_config_inputs(processing_config_df, abs_source_base_path, abs_target_path, city_folder_name, pre_check_option)
 
+
+
     if pre_check_option == 'no_pre_check':
         enabled_processing_tasks_df = processing_config_df[(processing_config_df['enabled'])]
         delayed_results, solweig_delayed_results = _build_processing_graphs(enabled_processing_tasks_df, abs_source_base_path, abs_target_path, city_folder_name)
@@ -78,7 +80,7 @@ def _report_results(enabled_processing_tasks_df, results_df, solweig_results_df,
     combined_results = results_df if solweig_results_df.empty else\
         pd.concat([results_df, solweig_results_df], ignore_index=True)
 
-    combined_results.sort_values(['task_index', 'step_index', 'met_file_name'], inplace=True)
+    combined_results.sort_values(['task_index', 'step_index', 'met_filename'], inplace=True)
 
     merged = pd.merge(enabled_processing_tasks_df, combined_results, left_index=True, right_on='task_index',
                       how='outer')
@@ -87,7 +89,7 @@ def _report_results(enabled_processing_tasks_df, results_df, solweig_results_df,
 
     reporting_df = merged.loc[:,
                    ['run_status', 'task_index', 'city_folder_name', 'tile_folder_name', 'method', 'step_index',
-                    'step_method', 'met_file_name',
+                    'step_method', 'met_filename',
                     'return_code', 'start_time', 'run_duration']]
 
     report_folder = os.path.join(get_application_path(), '.reports')
@@ -124,7 +126,7 @@ def _validate_config_inputs(processing_config_df, source_base_path, target_path,
         return 0
 
 def _build_source_dataframes(source_base_path, city_folder_name):
-    config_processing_file_path = str(os.path.join(source_base_path, city_folder_name, CityData.file_name_umep_city_processing_config))
+    config_processing_file_path = str(os.path.join(source_base_path, city_folder_name, CityData.filename_umep_city_processing_config))
     processing_config_df = pd.read_csv(config_processing_file_path)
 
     return processing_config_df
@@ -167,7 +169,7 @@ def _parse_and_report_row_results(dc):
             results.append(obj)
 
     # extract content from the return package and determine if there was a failure
-    results_df = pd.DataFrame(columns=['task_index', 'step_index', 'step_method', 'met_file_name', 'return_code', 'start_time', 'run_duration'])
+    results_df = pd.DataFrame(columns=['task_index', 'step_index', 'step_method', 'met_filename', 'return_code', 'start_time', 'run_duration'])
     all_passed = True
     failed_task_ids = []
     failed_task_details = []
@@ -179,12 +181,12 @@ def _parse_and_report_row_results(dc):
                 task_index = return_package['task_index']
                 step_index = return_package['step_index']
                 step_method = return_package['step_method']
-                met_file_name = return_package['met_file_name']
+                met_filename = return_package['met_filename']
                 return_code = return_package['return_code']
                 start_time = return_package['start_time']
                 run_duration = return_package['run_duration']
 
-                new_row = [task_index, step_index, step_method, met_file_name, return_code, start_time, run_duration]
+                new_row = [task_index, step_index, step_method, met_filename, return_code, start_time, run_duration]
                 results_df.loc[len(results_df.index)] = new_row
 
                 if return_code != 0:
@@ -249,33 +251,24 @@ def _build_solweig_only_steps(task_index, step_index, folder_name_city_data, fol
     city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
 
     delayed_result = []
-    config_meteorological_parameters_path = str(os.path.join(city_data.source_city_path, city_data.file_name_met_parameters_config))
-    met_time_series_config_df = pd.read_csv(config_meteorological_parameters_path)
+    for met_file in city_data.met_files:
+        met_filename = met_file.get('filename')
+        utc_offset = met_file.get('utc_offset')
 
-    return_code = 0
-    for index, config_row in met_time_series_config_df.iterrows():
-        enabled = bool(config_row.enabled)
-        if enabled:
-            met_file_name = config_row.met_file_name
-            utc_offset = config_row.utc_offset
-
-            proc_array = _construct_proc_array(task_index, step_index, 'solweig_only', folder_name_city_data, folder_name_tile_data,
-                                               source_base_path, target_base_path, met_file_name, utc_offset)
-            solweig = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
-            delayed_result.append(solweig)
-
-        if return_code != 0:
-            break
+        proc_array = _construct_proc_array(task_index, step_index, 'solweig_only', folder_name_city_data, folder_name_tile_data,
+                                           source_base_path, target_base_path, met_filename, utc_offset)
+        solweig = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
+        delayed_result.append(solweig)
     return delayed_result
 
 
 def _construct_proc_array(task_index, step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path,
-                          met_file_name=None, utc_offset=None):
+                          met_filename=None, utc_offset=None):
     proc_array = ['python', SCRIPT_PATH, f'--task_index={task_index}', f'--step_index={step_index}', f'--step_method={step_method}',
                   f'--folder_name_city_data={folder_name_city_data}',
                   f'--folder_name_tile_data={folder_name_tile_data}',
                   f'--source_data_path={source_base_path}', f'--target_path={target_base_path}',
-                  f'--met_file_name={met_file_name}', f'--utc_offset={utc_offset}']
+                  f'--met_filename={met_filename}', f'--utc_offset={utc_offset}']
     return proc_array
 
 

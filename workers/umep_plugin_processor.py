@@ -12,28 +12,19 @@ from qgis_initializer import qgis_app_init
 from city_data import CityData
 
 import logging
-LOG_FOLDER_PATH = os.path.abspath(os.path.join(get_application_path(), '.logs'))
-LOG_FILE_PATH = os.path.join(LOG_FOLDER_PATH, 'execution.log')
-create_folder(LOG_FOLDER_PATH)
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s\t%(levelname)s\t%(message)s',
-                    datefmt='%a_%Y_%b_%d_%H:%M:%S',
-                    filename=LOG_FILE_PATH
-                    )
 
 MAX_RETRY_COUNT = 3
 RETRY_PAUSE_TIME_SEC = 10
 
-def run_plugin(task_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path, target_path, met_filename=None, utc_offset=None):
+def run_plugin(task_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path, met_filename=None, utc_offset=None):
     start_time = datetime.now()
+    _start_logging(target_base_path, folder_name_city_data)
 
-    city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_path)
+    city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
     method_title = _assign_method_title(step_method)
     _log_method_start(method_title, task_index, None, city_data.source_base_path)
-
-    # TODO - Add checks for prerequite met data!!
 
     # Initiate QGIS and UMEP processing
     try:
@@ -65,13 +56,13 @@ def run_plugin(task_index, step_method, folder_name_city_data, folder_name_tile_
                 # Prepare target folder and transfer over the temporary results
                 try:
                     if step_method == 'solweig_only':
-                        for temp_result_path, target_path in keepers.items():
-                            remove_folder(target_path)
-                            shutil.move(str(temp_result_path), str(target_path))
+                        for temp_result_path, target_base_path in keepers.items():
+                            remove_folder(target_base_path)
+                            shutil.move(str(temp_result_path), str(target_base_path))
                     else:
-                        for temp_result_path, target_path in keepers.items():
-                            remove_file(target_path)
-                            shutil.move(str(temp_result_path), str(target_path))
+                        for temp_result_path, target_base_path in keepers.items():
+                            remove_file(target_base_path)
+                            shutil.move(str(temp_result_path), str(target_base_path))
                 except Exception as e_msg:
                     msg = (f'{method_title} processing succeeded but could not create target folder or move files: {city_data.target_preprocessed_data_path}.')
                     _log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, e_msg)
@@ -92,9 +83,19 @@ def run_plugin(task_index, step_method, folder_name_city_data, folder_name_tile_
         msg = f'{method_title} processing cancelled after {MAX_RETRY_COUNT} attempts.'
         _log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, '')
 
-    run_duration = _compute_time_diff_mins(start_time)
-    return return_code, start_time, run_duration
+    run_duration_min = _compute_time_diff_mins(start_time)
+    return return_code, start_time, run_duration_min
 
+def _start_logging(target_base_path, city_folder_name):
+    results_subfolder = CityData.folder_name_results
+    log_folder_path = str(os.path.join(target_base_path, city_folder_name, results_subfolder, '.logs'))
+    create_folder(log_folder_path)
+    log_file_path = os.path.join(log_folder_path, 'execution.log')
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s\t%(levelname)s\t%(message)s',
+                        datefmt='%a_%Y_%b_%d_%H:%M:%S',
+                        filename=log_file_path
+                        )
 
 def _prepare_method_execution(method, city_data, tmpdirname, met_filename=None, utc_offset=None):
     keepers = {}
@@ -243,12 +244,12 @@ if __name__ == "__main__":
     parser.add_argument('--utc_offset', metavar='int', required=False, help='local hour offset from utc')
     args = parser.parse_args()
 
-    return_code, start_time, run_duration = run_plugin(args.task_index, args.step_method, args.folder_name_city_data, args.folder_name_tile_data,
+    return_code, start_time, run_duration_min = run_plugin(args.task_index, args.step_method, args.folder_name_city_data, args.folder_name_tile_data,
                              args.source_data_path, args.target_path, args.met_filename, args.utc_offset)
 
     met_filename_str = args.met_filename if args.met_filename != 'None' else 'N/A'
     start_time_str = start_time.strftime('%Y_%m_%d_%H:%M:%S')
     return_stdout = (f'{{"Return_package": {{"task_index": {args.task_index}, "step_index": {args.step_index}, \
                      "step_method": "{args.step_method}", "met_filename": "{met_filename_str}", "return_code": {return_code}, \
-                     "start_time": "{start_time_str}", "run_duration": {run_duration}}}}}')
+                     "start_time": "{start_time_str}", "run_duration_min": {run_duration_min}}}}}')
     print(return_stdout)

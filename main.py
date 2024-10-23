@@ -15,16 +15,8 @@ from workers.city_data import CityData
 from src.tools import get_application_path, create_folder
 
 import logging
-LOG_FOLDER_PATH = os.path.abspath(os.path.join(get_application_path(), '.logs'))
-LOG_FILE_PATH = os.path.join(LOG_FOLDER_PATH, 'execution.log')
-create_folder(LOG_FOLDER_PATH)
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s\t%(levelname)s\t%(message)s',
-                    datefmt='%a_%Y_%b_%d_%H:%M:%S',
-                    filename=LOG_FILE_PATH
-                    )
 
 dask.config.set({'logging.distributed': 'warning'})
 
@@ -39,17 +31,19 @@ PRE_SOLWEIG_FULL_PAUSE_TIME_SEC = 30
 
 def main(source_base_path, target_base_path, city_folder_name, pre_check_option):
     abs_source_base_path = os.path.abspath(source_base_path)
-    abs_target_path = os.path.abspath(target_base_path)
-    return_code_basic = _validate_basic_inputs(abs_source_base_path, abs_target_path, city_folder_name)
+    abs_target_base_path = os.path.abspath(target_base_path)
+    return_code_basic = _validate_basic_inputs(abs_source_base_path, abs_target_base_path, city_folder_name)
 
     processing_config_df = _build_source_dataframes(abs_source_base_path, city_folder_name)
-    return_code_configs = _validate_config_inputs(processing_config_df, abs_source_base_path, abs_target_path, city_folder_name, pre_check_option)
+    return_code_configs = _validate_config_inputs(processing_config_df, abs_source_base_path, abs_target_base_path, city_folder_name, pre_check_option)
 
-
+    # TODO - Add checks for prerequite met data, such as consistent CRS
 
     if pre_check_option == 'no_pre_check':
+        _start_logging(abs_target_base_path, city_folder_name)
+
         enabled_processing_tasks_df = processing_config_df[(processing_config_df['enabled'])]
-        delayed_results, solweig_delayed_results = _build_processing_graphs(enabled_processing_tasks_df, abs_source_base_path, abs_target_path, city_folder_name)
+        delayed_results, solweig_delayed_results = _build_processing_graphs(enabled_processing_tasks_df, abs_source_base_path, abs_target_base_path, city_folder_name)
 
         # Task processing
         delays_all_passed, results_df = process_rows(delayed_results)
@@ -58,7 +52,7 @@ def main(source_base_path, target_base_path, city_folder_name, pre_check_option)
         solweig_delays_all_passed, solweig_results_df = process_rows(solweig_delayed_results)
 
         # Write run_report
-        report_file_path = _report_results(enabled_processing_tasks_df, results_df, solweig_results_df, city_folder_name)
+        report_file_path = _report_results(enabled_processing_tasks_df, results_df, solweig_results_df, abs_target_base_path, city_folder_name)
         print(f'\nRun report written to {report_file_path}')
 
         return_code = 0 if (delays_all_passed and solweig_delays_all_passed) else 1
@@ -77,7 +71,18 @@ def main(source_base_path, target_base_path, city_folder_name, pre_check_option)
             _highlighted_print('Pre-check encountered errors.')
             return -99
 
-def _report_results(enabled_processing_tasks_df, results_df, solweig_results_df, city_folder_name):
+def _start_logging(target_base_path, city_folder_name):
+    results_subfolder = CityData.folder_name_results
+    log_folder_path = str(os.path.join(target_base_path, city_folder_name, results_subfolder, '.logs'))
+    create_folder(log_folder_path)
+    log_file_path = os.path.join(log_folder_path, 'execution.log')
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s\t%(levelname)s\t%(message)s',
+                        datefmt='%a_%Y_%b_%d_%H:%M:%S',
+                        filename=log_file_path
+                        )
+
+def _report_results(enabled_processing_tasks_df, results_df, solweig_results_df, target_base_path, city_folder_name):
     combined_results = results_df if solweig_results_df.empty else\
         pd.concat([results_df, solweig_results_df], ignore_index=True)
 
@@ -91,9 +96,10 @@ def _report_results(enabled_processing_tasks_df, results_df, solweig_results_df,
     reporting_df = merged.loc[:,
                    ['run_status', 'task_index', 'city_folder_name', 'tile_folder_name', 'method', 'step_index',
                     'step_method', 'met_filename',
-                    'return_code', 'start_time', 'run_duration']]
+                    'return_code', 'start_time', 'run_duration_min']]
 
-    report_folder = os.path.join(get_application_path(), '.reports')
+    results_subfolder = CityData.folder_name_results
+    report_folder = str(os.path.join(target_base_path, city_folder_name, results_subfolder, '.run_reports'))
     create_folder(report_folder)
 
     report_date_str =  datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
@@ -170,7 +176,7 @@ def _parse_and_report_row_results(dc):
             results.append(obj)
 
     # extract content from the return package and determine if there was a failure
-    results_df = pd.DataFrame(columns=['task_index', 'step_index', 'step_method', 'met_filename', 'return_code', 'start_time', 'run_duration'])
+    results_df = pd.DataFrame(columns=['task_index', 'step_index', 'step_method', 'met_filename', 'return_code', 'start_time', 'run_duration_min'])
     all_passed = True
     failed_task_ids = []
     failed_task_details = []
@@ -185,9 +191,9 @@ def _parse_and_report_row_results(dc):
                 met_filename = return_package['met_filename']
                 return_code = return_package['return_code']
                 start_time = return_package['start_time']
-                run_duration = return_package['run_duration']
+                run_duration_min = return_package['run_duration_min']
 
-                new_row = [task_index, step_index, step_method, met_filename, return_code, start_time, run_duration]
+                new_row = [task_index, step_index, step_method, met_filename, return_code, start_time, run_duration_min]
                 results_df.loc[len(results_df.index)] = new_row
 
                 if return_code != 0:

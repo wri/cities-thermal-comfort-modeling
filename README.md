@@ -41,8 +41,8 @@
       1. Note that processing may take an extended period of time even up to 2+ hours depending on the size of your dataset.
 1. Post-execution
    1. Results of your run are written to the result_data folder under your target path specified in the batch script, such as C:\CTCM_processing\<my_city_name>\results_data
-   1. To see a report of success/failure, see html file in the .reports folder for the time that you started your run. 
-   1. For details about any failures, see the log file(s) in the .logs folder
+   1. To see a report of success/failure, see html file in the .results_data\.run_reports folder for the time that you started your run. 
+   1. For details about any failures, see the log file(s) in the .results_data\.logs folder
    
 
 

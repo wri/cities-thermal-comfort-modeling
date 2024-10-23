@@ -10,6 +10,7 @@ class CityData:
 
     folder_name_primary_source_data = 'primary_source_data'
     folder_name_met_files = 'met_files'
+    folder_name_results = 'results_data'
     folder_name_preprocessed_data = 'preprocessed_data'
     folder_name_tcm_results = 'tcm_results'
 
@@ -61,7 +62,7 @@ class CityData:
                 raise Exception(
                     f'The {cls.filename_method_parameters_config} file not found or improperly defined in {city_configs}. ({e_msg})')
 
-        obj.target_path_city_data = str(os.path.join(obj.target_base_path, folder_name_city_data, 'results_data'))
+        obj.target_path_city_data = str(os.path.join(obj.target_base_path, folder_name_city_data, cls.folder_name_results))
 
         obj.source_tile_data_path = os.path.join(obj.source_city_data_path, obj.folder_name_primary_source_data,
                                                  obj.folder_name_tile_data)

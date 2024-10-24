@@ -66,20 +66,31 @@ print(sys.path)
 6. Copy the environment_post_processing_sample.bat file and rename as environment_post_processing.bat
    * Substitute <qgis_plugin_path> with the path determined above.
 7. Use Conda with the environment.yml file to configure the Conda environment.
-   * 
 ~~~
 'conda env create -f environment.yml`
 ~~~
    * Activate the cities-thermal conda environment
    * Execute the environment_post_processing.bat file
 8. Create the C:\CTM_processing folder
-   * Copy the ZAF_Capetown_small_tile folder from the codebase into C:\CTM_processing folder.
-9. Confirm processing by running the test_processing_runs.py tests
+   * Copy the ZAF_Capetown_small_tile and ZZZ_template_city folders from the codebase into C:\CTM_processing folder.
+   * Copy the _sample_run_CTM_processing_pre_check.bat and _sample_run_CTM_processing.bat
+     * Modify both batch files to include path to the main.py module.
+9. Create a batch file for navigating to the C:\CTM_processing folder and starting the conda environment.
+   * Create the "gotcm.bat" file in some directory such as C:\Users\Administrator\Documents\Batches with following content:
+     ~~~
+     cd C:\CTCM_processing
+     conda activate cities-thermal
+     ~~~
+   * Add location of the batch file to the system path
+10. Confirm processing by running the test_processing_runs.py tests in the local repository code
    * Note that the tests will show exceptions even though the tests pass
-10. Confirm processing using the C:\CTM_processing folder by executing the _sample_run_CTM_processing batch script.
-   * After execution completes, confirm that:
+11. Confirm processing using the C:\CTM_processing folder
+   * in windows command prompt, execute "gotcm" to go to the processing folder and start the conda environment.
+   * Execute the _sample_run_CTM_processing_pre_check.bat batch script and ensure that no errors are report.
+   * Execute the _sample_run_CTM_processing:
      * The C:\CTCM_processing\ZAF_Capetown_small_tile folder contains the new C:\CTCM_processing\ZAF_Capetown_small_tile\results_data folder
-     * The result_data folder contains two subfolder with each of these folders containing subfolders.
+     * The result_data folder contains two subfolders with each of these folders containing subfolders.
+     * The result_data folder also contains the .logs and .run_reports folders.
 
 ### Execution in Pycharm
 1. Create input dataset based on the ZZZ_template_city folder, providing source data, meteorological timeseries files, and configuration settings

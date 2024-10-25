@@ -56,7 +56,7 @@ class CityData:
                 obj.dem_file = filenames['dem_tif_filename']
                 obj.dsm_file = filenames['dsm_ground_build_tif_filename']
                 obj.veg_canopy_file = filenames['veg_canopy_tif_filename']
-                obj.landcover_file = filenames['landcover_tif_filename']
+                obj.landcover_file = filenames['lulc_tif_filename']
 
             except yaml.YAMLError as e_msg:
                 raise Exception(

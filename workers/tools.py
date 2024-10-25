@@ -1,6 +1,5 @@
 import shutil
 import os
-import configparser
 from pathlib import Path
 
 def initialize_scratch_folder(folder_path):
@@ -12,7 +11,6 @@ def initialize_scratch_folder(folder_path):
 def create_folder(folder_path):
     if not os.path.isdir(folder_path):
         os.makedirs(folder_path)
-
 
 def clean_folder(folder_path):
     if os.path.isdir(folder_path):
@@ -37,6 +35,8 @@ def remove_file(file_path):
         os.remove(file_path)
 
 def get_configurations():
+    import configparser
+
     application_path = get_application_path()
     config_file = os.path.join(application_path, '.config.ini')
 
@@ -51,3 +51,29 @@ def get_application_path():
     return str(Path(os.path.dirname(os.path.abspath(__file__))).parent)
 
 toBool = {'true': True, 'false': False}
+
+def save_raster_file(raster_data_array, tile_data_path, tiff_data_FILENAME):
+    create_folder(tile_data_path)
+    file_path = os.path.join(tile_data_path, f'{tiff_data_FILENAME}.tif')
+    remove_file(file_path)
+    raster_data_array.rio.to_raster(raster_path=file_path, driver="COG")
+
+
+def save_vector_file(vector_geodataframe, tile_data_path, tiff_data_FILENAME):
+    create_folder(tile_data_path)
+    file_path = os.path.join(tile_data_path, f'{tiff_data_FILENAME}.geojson')
+    remove_file(file_path)
+    vector_geodataframe.to_file(file_path, driver='GeoJSON')
+
+
+def read_tiff_file(tile_data_path, filename):
+    import rioxarray
+    file_path = os.path.join(tile_data_path, f'{filename}.tif')
+    raster_data = rioxarray.open_rasterio(file_path)
+    return raster_data
+
+def read_vector_file(tile_data_path, filename):
+    import geopandas as gpd
+    file_path = os.path.join(tile_data_path, f'{filename}.geojson')
+    vector_data = gpd.read_file(file_path)
+    return vector_data

@@ -64,16 +64,3 @@ def save_vector_file(vector_geodataframe, tile_data_path, tiff_data_FILENAME):
     file_path = os.path.join(tile_data_path, f'{tiff_data_FILENAME}.geojson')
     remove_file(file_path)
     vector_geodataframe.to_file(file_path, driver='GeoJSON')
-
-
-def read_tiff_file(tile_data_path, filename):
-    import rioxarray
-    file_path = os.path.join(tile_data_path, f'{filename}.tif')
-    raster_data = rioxarray.open_rasterio(file_path)
-    return raster_data
-
-def read_vector_file(tile_data_path, filename):
-    import geopandas as gpd
-    file_path = os.path.join(tile_data_path, f'{filename}.geojson')
-    vector_data = gpd.read_file(file_path)
-    return vector_data

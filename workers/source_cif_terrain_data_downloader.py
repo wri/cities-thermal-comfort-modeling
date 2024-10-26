@@ -4,17 +4,13 @@ from rasterio.enums import Resampling
 from dask.diagnostics import ProgressBar
 from shapely.geometry import Polygon
 import geopandas as gp
+import numpy as np
 from workers.tools import save_raster_file, save_vector_file
 
+TARGET_DEM_FILENAME = 'nasa_dem_1m'
 TARGET_DSM_BUILDING_FILENAME = 'dsm_ground_build'
-TARGET_RESAMPLED_DEM_FILENAME = 'nasa_dem'
 
 DEBUG = False
-DEBUG_DSM_FILENAME = 'alos_dsm'
-DEBUG_RESAMPLED_DSM_FILENAME = 'alos_dsm_1m'
-DEBUG_DEM_FILENAME = 'nasa_dem'
-DEBUG_OPEN_BUILDING_FOOTPRINT_FILENAME = 'open_building_footprints'
-DEBUG_BUILDING_FOOTPRINT_FILENAME = 'building_footprints'
 
 
 def get_cif_data(target_path, folder_name_city_data, folder_name_tile_data, aoi_boundary):
@@ -24,27 +20,12 @@ def get_cif_data(target_path, folder_name_city_data, folder_name_tile_data, aoi_
     d = {'geometry': [Polygon(aoi_boundary)]}
     aoi_gdf = gp.GeoDataFrame(d, crs="EPSG:4326")
 
-    alos_dsm_1m = get_dsm(tile_data_path, aoi_gdf)
     nasa_dem_1m = get_dem(tile_data_path, aoi_gdf)
+    alos_dsm_1m = get_dsm(tile_data_path, aoi_gdf)
     overture_buildings = get_building_footprints(tile_data_path, aoi_gdf)
     get_building_height(tile_data_path, overture_buildings, alos_dsm_1m, nasa_dem_1m)
 
     return
-
-
-def get_dsm(tile_data_path, aoi_gdf):
-    from city_metrix.layers import AlosDSM
-
-    alos_dsm = AlosDSM().get_data(aoi_gdf.total_bounds)
-    if DEBUG:
-        save_raster_file(alos_dsm, tile_data_path, DEBUG_DSM_FILENAME)
-
-    # resample to finer resolution of 1 meter
-    alos_dsm_1m = resample_raster(alos_dsm, 1)
-    if DEBUG:
-        save_raster_file(alos_dsm_1m, tile_data_path, DEBUG_RESAMPLED_DSM_FILENAME)
-
-    return alos_dsm_1m
 
 
 def get_dem(tile_data_path, aoi_gdf):
@@ -52,13 +33,28 @@ def get_dem(tile_data_path, aoi_gdf):
 
     nasa_dem = NasaDEM().get_data(aoi_gdf.total_bounds)
     if DEBUG:
-        save_raster_file(nasa_dem, tile_data_path, DEBUG_DEM_FILENAME)
+        save_raster_file(nasa_dem, tile_data_path, 'debug_nasa_dem')
 
     # resample to finer resolution of 1 meter
     nasa_dem_1m = resample_raster(nasa_dem, 1)
-    save_raster_file(nasa_dem_1m, tile_data_path, TARGET_RESAMPLED_DEM_FILENAME)
+    save_raster_file(nasa_dem_1m, tile_data_path, TARGET_DEM_FILENAME)
 
     return nasa_dem_1m
+
+
+def get_dsm(tile_data_path, aoi_gdf):
+    from city_metrix.layers import AlosDSM
+
+    alos_dsm = AlosDSM().get_data(aoi_gdf.total_bounds)
+    if DEBUG:
+        save_raster_file(alos_dsm, tile_data_path, 'debug_alos_dsm')
+
+    # resample to finer resolution of 1 meter
+    alos_dsm_1m = resample_raster(alos_dsm, 1)
+    if DEBUG:
+        save_raster_file(alos_dsm_1m, tile_data_path, 'debug_alos_dsm_1m')
+
+    return alos_dsm_1m
 
 
 def get_building_footprints(tile_data_path, aoi_gdf):
@@ -66,18 +62,12 @@ def get_building_footprints(tile_data_path, aoi_gdf):
 
     overture_buildings = OvertureBuildings().get_data(aoi_gdf.total_bounds)
     if DEBUG:
-        save_vector_file(overture_buildings, tile_data_path, DEBUG_BUILDING_FOOTPRINT_FILENAME)
+        save_vector_file(overture_buildings, tile_data_path, 'debug_building_footprints')
 
     return overture_buildings
 
 
 def get_building_height(tile_data_path, overture_buildings, alos_dsm_1m, nasa_dem_1m):
-    # Below reads are for use during debugging
-    # AlosDSM = read_tiff_file(tile_data_path, DSM_FILENAME)
-    # AlosDSM_1m = read_tiff_file(tile_data_path, RESAMPLED_DSM_FILENAME)
-    # NasaDEM = read_tiff_file(tile_data_path, DEM_FILENAME)
-    # NasaDEM_1m = read_tiff_file(tile_data_path, RESAMPLED_DEM_FILENAME)
-
     from exactextract import exact_extract
 
     # re-apply crs
@@ -103,17 +93,38 @@ def get_building_height(tile_data_path, overture_buildings, alos_dsm_1m, nasa_de
     # TODO Prototype for building-height refinement
     # prototype_refinement_building_height_estimates(overture_buildings)
 
-    if DEBUG:
-        save_vector_file(overture_buildings, tile_data_path, TARGET_DSM_BUILDING_FILENAME)
-
-    # rasterize the building footprints
-    overture_buildings = overture_buildings.drop(['AlosDSM_max', 'NasaDEM_max', 'NasaDEM_min', 'Height_diff'], axis=1)
     overture_buildings_raster = rasterize_polygons(overture_buildings, values=["height_estimate"],
                                                    snap_to_raster=nasa_dem_1m)
+    if DEBUG:
+        save_raster_file(overture_buildings_raster, tile_data_path, 'debug_raw_building_footprints')
+
+    composite_bldg_dem = combind_building_and_dem(nasa_dem_1m, overture_buildings_raster, target_crs)
 
     # Save data to file
-    save_raster_file(overture_buildings_raster, tile_data_path, TARGET_DSM_BUILDING_FILENAME)
+    save_raster_file(composite_bldg_dem, tile_data_path, TARGET_DSM_BUILDING_FILENAME)
 
+
+def combind_building_and_dem(dem, buildings, target_crs):
+    coords_dict = {dim: dem.coords[dim].values for dim in dem.dims}
+
+    # Conver to ndarray in order to mask and combine layers
+    dem_nda = dem.to_numpy()
+    bldg_nda = buildings.to_dataarray().to_numpy().reshape(dem_nda.shape)
+
+    # Mask of building cells
+    mask = (bldg_nda != -9999) & (~np.isnan(bldg_nda))
+
+    # Mask buildings onto DEM
+    dem_nda[mask] = bldg_nda[mask]
+
+    #Conver resuls into DataArray and re-add coordinates and CRS
+    composite_xa = xr.DataArray(dem_nda,
+                      dims = ["y","x"],
+                      coords = coords_dict
+                      )
+    composite_xa.rio.write_crs(target_crs, inplace=True)
+
+    return composite_xa
 
 def resample_raster(xarray, resolution_m):
     resampled_array = xarray.rio.reproject(
@@ -133,7 +144,7 @@ def rasterize_polygons(gdf, values=["Value"], snap_to_raster=None):
             vector_data=gdf,
             measurements=values,
             like=snap_to_raster,
-            fill=0
+            # fill=0
         )
 
     return feature_1m
@@ -200,3 +211,4 @@ def prototype_refinement_building_height_estimates(overture_bldgs):
         overture_bldgs['inferred_height']
     overture_bldgs.loc[overture_bldgs['best_guess_height'].isnull(), 'best_guess_height'] = (
                 other_typical_floors * floor_height)
+

@@ -1,7 +1,4 @@
 import os
-import xarray as xr
-from rasterio.enums import Resampling
-from dask.diagnostics import ProgressBar
 from shapely.geometry import Polygon
 import geopandas as gp
 from workers.tools import save_raster_file, save_vector_file

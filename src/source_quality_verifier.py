@@ -74,9 +74,9 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
                 invalids.append(msg)
 
             if method in ['skyview_factor', 'solweig_full', 'solweig_only']:
-                prior_veg_canopy = city_data.source_veg_canopy_path
-                if _verify_path(prior_veg_canopy) is False:
-                    msg = f'Required source file: {prior_veg_canopy} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
+                prior_tree_canopy = city_data.source_tree_canopy_path
+                if _verify_path(prior_tree_canopy) is False:
+                    msg = f'Required source file: {prior_tree_canopy} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                     invalids.append(msg)
 
             if method in ['solweig_only', 'solweig_full']:

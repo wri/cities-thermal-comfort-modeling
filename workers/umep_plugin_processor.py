@@ -64,7 +64,7 @@ def run_plugin(task_index, step_method, folder_name_city_data, folder_name_tile_
                             remove_file(target_base_path)
                             shutil.move(str(temp_result_path), str(target_base_path))
                 except Exception as e_msg:
-                    msg = (f'{method_title} processing succeeded but could not create target folder or move files: {city_data.target_preprocessed_data_path}.')
+                    msg = (f'{method_title} processing succeeded but could not create target folder or move files: {city_data.target_tile_data_path}.')
                     _log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, e_msg)
                     return 1
 
@@ -101,7 +101,7 @@ def _prepare_method_execution(method, city_data, tmpdirname, met_filename=None, 
     keepers = {}
 
     if method == 'wall_height_aspect':
-        create_folder(city_data.target_preprocessed_data_path)
+        create_folder(city_data.target_tile_data_path)
 
         temp_target_wallheight_path = os.path.join(tmpdirname, city_data.filename_wall_height)
         temp_target_wallaspect_path = os.path.join(tmpdirname, city_data.filename_wall_aspect)
@@ -116,13 +116,13 @@ def _prepare_method_execution(method, city_data, tmpdirname, met_filename=None, 
         keepers[temp_target_wallaspect_path] = city_data.target_wallaspect_path
 
     elif method == 'skyview_factor':
-        create_folder(city_data.target_preprocessed_data_path)
+        create_folder(city_data.target_tile_data_path)
 
         temp_svfs_file_no_extension = os.path.join(tmpdirname, Path(city_data.target_svfszip_path).stem)
         temp_svfs_file_with_extension = os.path.join(tmpdirname, os.path.basename(city_data.target_svfszip_path))
         input_params = {
             'INPUT_DSM': city_data.source_dsm_path,
-            'INPUT_CDSM': city_data.source_veg_canopy_path,
+            'INPUT_CDSM': city_data.source_tree_canopy_path,
             'TRANS_VEG': 3,
             'INPUT_TDSM': None,
             'INPUT_THEIGHT': 25,
@@ -142,7 +142,7 @@ def _prepare_method_execution(method, city_data, tmpdirname, met_filename=None, 
             "INPUT_SVF": city_data.target_svfszip_path,
             "INPUT_HEIGHT": city_data.target_wallheight_path,
             "INPUT_ASPECT": city_data.target_wallaspect_path,
-            "INPUT_CDSM": city_data.source_veg_canopy_path,
+            "INPUT_CDSM": city_data.source_tree_canopy_path,
             "TRANS_VEG": 3,
             "LEAF_START": city_data.leaf_start,
             "LEAF_END": city_data.leaf_end,

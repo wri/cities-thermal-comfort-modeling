@@ -56,7 +56,7 @@ def _verify_expected_output_folders(source_base_path, target_base_path, source_c
         if enabled:
             folder_name_tile_data = config_row.tile_folder_name
             city_data = CityData(source_city_folder_name, folder_name_tile_data, source_base_path, target_base_path)
-            result_folder = city_data.target_preprocessed_data_path
+            result_folder = city_data.target_tile_data_path
             enabled_target_folder.append(result_folder)
 
     unique_target_folders = set(enabled_target_folder)

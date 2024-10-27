@@ -5,39 +5,43 @@ from dask.diagnostics import ProgressBar
 from shapely.geometry import Polygon
 import geopandas as gp
 import numpy as np
-from workers.tools import save_raster_file, save_vector_file
 
-TARGET_DEM_FILENAME = 'nasa_dem_1m'
-TARGET_DSM_BUILDING_FILENAME = 'dsm_ground_build'
+from workers.city_data import CityData
+from workers.tools import save_tiff_file, save_geojson_file
 
 DEBUG = False
 
-
-def get_cif_data(target_path, folder_name_city_data, folder_name_tile_data, aoi_boundary):
-    tile_data_path = os.path.join(target_path, folder_name_city_data, 'source_data', 'primary_source_data',
-                                  folder_name_tile_data)
+def get_cif_data(output_base_path, folder_name_city_data, folder_name_tile_data, aoi_boundary,
+                 retrieve_dem=False, retrieve_dsm=False):
+    city_data = CityData(folder_name_city_data, folder_name_tile_data, output_base_path, None)
+    tile_data_path = city_data.source_tile_data_path
 
     d = {'geometry': [Polygon(aoi_boundary)]}
     aoi_gdf = gp.GeoDataFrame(d, crs="EPSG:4326")
 
-    nasa_dem_1m = get_dem(tile_data_path, aoi_gdf)
-    alos_dsm_1m = get_dsm(tile_data_path, aoi_gdf)
-    overture_buildings = get_building_footprints(tile_data_path, aoi_gdf)
-    get_building_height(tile_data_path, overture_buildings, alos_dsm_1m, nasa_dem_1m)
+    nasa_dem_1m = None
+    if retrieve_dem or retrieve_dsm:
+        nasa_dem_1m = get_dem(tile_data_path, aoi_gdf, retrieve_dem)
+
+    if retrieve_dsm:
+        alos_dsm_1m = get_dsm(tile_data_path, aoi_gdf)
+        overture_buildings = get_building_footprints(tile_data_path, aoi_gdf)
+        get_building_height(tile_data_path, overture_buildings, alos_dsm_1m, nasa_dem_1m)
 
     return
 
 
-def get_dem(tile_data_path, aoi_gdf):
+def get_dem(tile_data_path, aoi_gdf, retrieve_dem):
     from city_metrix.layers import NasaDEM
 
     nasa_dem = NasaDEM().get_data(aoi_gdf.total_bounds)
     if DEBUG:
-        save_raster_file(nasa_dem, tile_data_path, 'debug_nasa_dem')
+        save_tiff_file(nasa_dem, tile_data_path, 'debug_nasa_dem')
 
     # resample to finer resolution of 1 meter
     nasa_dem_1m = resample_raster(nasa_dem, 1)
-    save_raster_file(nasa_dem_1m, tile_data_path, TARGET_DEM_FILENAME)
+    if retrieve_dem:
+        save_tiff_file(nasa_dem_1m, tile_data_path, CityData.filename_cif_dem)
 
     return nasa_dem_1m
 
@@ -47,12 +51,12 @@ def get_dsm(tile_data_path, aoi_gdf):
 
     alos_dsm = AlosDSM().get_data(aoi_gdf.total_bounds)
     if DEBUG:
-        save_raster_file(alos_dsm, tile_data_path, 'debug_alos_dsm')
+        save_tiff_file(alos_dsm, tile_data_path, 'debug_alos_dsm')
 
     # resample to finer resolution of 1 meter
     alos_dsm_1m = resample_raster(alos_dsm, 1)
     if DEBUG:
-        save_raster_file(alos_dsm_1m, tile_data_path, 'debug_alos_dsm_1m')
+        save_tiff_file(alos_dsm_1m, tile_data_path, 'debug_alos_dsm_1m')
 
     return alos_dsm_1m
 
@@ -62,7 +66,7 @@ def get_building_footprints(tile_data_path, aoi_gdf):
 
     overture_buildings = OvertureBuildings().get_data(aoi_gdf.total_bounds)
     if DEBUG:
-        save_vector_file(overture_buildings, tile_data_path, 'debug_building_footprints')
+        save_geojson_file(overture_buildings, tile_data_path, 'debug_building_footprints')
 
     return overture_buildings
 
@@ -96,15 +100,15 @@ def get_building_height(tile_data_path, overture_buildings, alos_dsm_1m, nasa_de
     overture_buildings_raster = rasterize_polygons(overture_buildings, values=["height_estimate"],
                                                    snap_to_raster=nasa_dem_1m)
     if DEBUG:
-        save_raster_file(overture_buildings_raster, tile_data_path, 'debug_raw_building_footprints')
+        save_tiff_file(overture_buildings_raster, tile_data_path, 'debug_raw_building_footprints')
 
-    composite_bldg_dem = combind_building_and_dem(nasa_dem_1m, overture_buildings_raster, target_crs)
+    composite_bldg_dem = combine_building_and_dem(nasa_dem_1m, overture_buildings_raster, target_crs)
 
     # Save data to file
-    save_raster_file(composite_bldg_dem, tile_data_path, TARGET_DSM_BUILDING_FILENAME)
+    save_tiff_file(composite_bldg_dem, tile_data_path, CityData.filename_cif_dsm_ground_build)
 
 
-def combind_building_and_dem(dem, buildings, target_crs):
+def combine_building_and_dem(dem, buildings, target_crs):
     coords_dict = {dim: dem.coords[dim].values for dim in dem.dims}
 
     # Conver to ndarray in order to mask and combine layers

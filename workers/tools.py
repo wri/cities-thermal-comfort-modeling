@@ -52,15 +52,15 @@ def get_application_path():
 
 toBool = {'true': True, 'false': False}
 
-def save_raster_file(raster_data_array, tile_data_path, tiff_data_FILENAME):
+def save_tiff_file(raster_data_array, tile_data_path, tiff_data_FILENAME):
     create_folder(tile_data_path)
-    file_path = os.path.join(tile_data_path, f'{tiff_data_FILENAME}.tif')
+    file_path = os.path.join(tile_data_path, tiff_data_FILENAME)
     remove_file(file_path)
     raster_data_array.rio.to_raster(raster_path=file_path, driver="COG")
 
 
-def save_vector_file(vector_geodataframe, tile_data_path, tiff_data_FILENAME):
+def save_geojson_file(vector_geodataframe, tile_data_path, tiff_data_FILENAME):
     create_folder(tile_data_path)
-    file_path = os.path.join(tile_data_path, f'{tiff_data_FILENAME}.geojson')
+    file_path = os.path.join(tile_data_path, tiff_data_FILENAME)
     remove_file(file_path)
     vector_geodataframe.to_file(file_path, driver='GeoJSON')

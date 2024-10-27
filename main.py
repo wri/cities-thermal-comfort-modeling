@@ -117,18 +117,22 @@ def _evaluate_return_code(return_code):
 def _validate_basic_inputs(source_base_path, target_path, city_folder_name):
     invalids = verify_fundamental_paths(source_base_path, target_path, city_folder_name)
     if invalids:
+        print('\n')
+        _highlighted_print('------------ Invalid source/target folders ------------ ')
         for invalid in invalids:
-            _highlighted_print(invalid)
-        raise Exception("Stopping due to invalid source/target folders.")
+            print(invalid)
+        raise Exception("Stopped processing due to invalid source/target folders.")
     else:
         return 0
 
 def _validate_config_inputs(processing_config_df, source_base_path, target_path, city_folder_name, pre_check_option):
     detailed_invalids = verify_processing_config(processing_config_df, source_base_path, target_path, city_folder_name, pre_check_option)
     if detailed_invalids:
+        print('\n')
+        _highlighted_print('------------ Invalid configurations ------------ ')
         for invalid in detailed_invalids:
-            _highlighted_print(invalid)
-        raise Exception("Stopping due to invalid configurations.")
+            print(invalid)
+        raise Exception("Stopped processing due to invalid configurations.")
     else:
         return 0
 

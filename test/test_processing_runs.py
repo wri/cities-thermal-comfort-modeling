@@ -37,6 +37,17 @@ def test_main_check_all_failure():
     with pytest.raises(Exception):
         main(source_base_path, target_base_path, source_city_folder_name, 'check_all')
 
+
+def test_main_check_invalid_configs():
+    package_folder = os.path.dirname(os.getcwd())
+    source_base_path = os.path.join(package_folder, 'sample_cities')
+    target_base_path = os.path.join(package_folder, 'sample_cities')
+    source_city_folder_name = 'XXX_Invalid_city'
+
+    with pytest.raises(Exception):
+        main(source_base_path, target_base_path, source_city_folder_name, 'check_all')
+
+
 def test_main_check_enabled_only_failure():
     package_folder = os.path.dirname(os.getcwd())
     source_base_path = os.path.join(package_folder, 'missing_city')

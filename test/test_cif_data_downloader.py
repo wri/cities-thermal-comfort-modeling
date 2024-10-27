@@ -38,6 +38,8 @@ def test_get_cif_non_terrain_data():
         expected_file = os.path.join(tile_data_path, CityData.filename_cif_tree_canopy)
         assert is_valid_output_file(expected_file)
 
+    remove_non_terrain_files(retrieve_era5, retrieve_lulc, retrieve_tree_canopy)
+
 
 def test_get_cif_terrain_data():
     retrieve_dem = True
@@ -54,6 +56,8 @@ def test_get_cif_terrain_data():
     if retrieve_dsm:
         expected_file =  os.path.join(tile_data_path, CityData.filename_cif_dsm_ground_build)
         assert is_valid_output_file(expected_file)
+
+    remove_terrain_files(retrieve_dem, retrieve_dsm)
 
 
 def remove_non_terrain_files(retrieve_era5, retrieve_lulc, retrieve_tree_canopy):

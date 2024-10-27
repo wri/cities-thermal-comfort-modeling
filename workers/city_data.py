@@ -38,8 +38,8 @@ class CityData:
         obj.source_city_data_path = str(os.path.join(obj.source_city_path, 'source_data'))
 
         city_configs = os.path.join(obj.source_city_path, cls.filename_method_parameters_config)
-        with open(city_configs, 'r') as stream:
-            try:
+        try:
+            with open(city_configs, 'r') as stream:
                 values = list(yaml.safe_load_all(stream))[0]
 
                 method_attributes = values[0]
@@ -60,23 +60,27 @@ class CityData:
                 obj.met_files = values[1].get('MetFiles')
 
                 filenames = values[2]
-                obj.dem_file = filenames['dem_tif_filename']
-                obj.dsm_file = filenames['dsm_ground_build_tif_filename']
-                obj.tree_canopy_file = filenames['tree_canopy_tif_filename']
-                obj.landcover_file = filenames['lulc_tif_filename']
+                obj.dem_tif_filename = filenames['dem_tif_filename']
+                obj.dsm_tif_filename = filenames['dsm_tif_filename']
+                obj.tree_canopy_tif_filename = filenames['tree_canopy_tif_filename']
+                obj.lulc_tif_filename = filenames['lulc_tif_filename']
 
-            except yaml.YAMLError as e_msg:
-                raise Exception(
-                    f'The {cls.filename_method_parameters_config} file not found or improperly defined in {city_configs}. ({e_msg})')
+                cif_processing = values[3]
+                obj.retrieve_cif_dem_file = to_bool(cif_processing['retrieve_cif_dem_file'])
+                obj.retrieve_cif_dsm_file = to_bool(cif_processing['retrieve_cif_dsm_file'])
+                obj.retrieve_cif_tree_canopy_file = to_bool(cif_processing['retrieve_cif_tree_canopy_file'])
+                obj.retrieve_cif_lulc_file = to_bool(cif_processing['retrieve_cif_lulc_file'])
 
+        except Exception as e_msg:
+            raise Exception(f'The {cls.filename_method_parameters_config} file not found or improperly defined in {city_configs}. (Error: {e_msg})')
 
         obj.source_tile_data_path = os.path.join(obj.source_city_data_path, obj.folder_name_primary_source_data,
                                                  obj.folder_name_tile_data)
         obj.source_met_files_path = os.path.join(obj.source_city_data_path, obj.folder_name_met_files)
-        obj.source_dem_path = os.path.join(obj.source_tile_data_path, obj.dem_file)
-        obj.source_dsm_path = os.path.join(obj.source_tile_data_path, obj.dsm_file)
-        obj.source_tree_canopy_path = os.path.join(obj.source_tile_data_path, obj.tree_canopy_file)
-        obj.source_land_cover_path = os.path.join(obj.source_tile_data_path, obj.landcover_file)
+        obj.source_dem_path = os.path.join(obj.source_tile_data_path, obj.dem_tif_filename)
+        obj.source_dsm_path = os.path.join(obj.source_tile_data_path, obj.dsm_tif_filename)
+        obj.source_tree_canopy_path = os.path.join(obj.source_tile_data_path, obj.tree_canopy_tif_filename)
+        obj.source_land_cover_path = os.path.join(obj.source_tile_data_path, obj.lulc_tif_filename)
 
         if target_base_path:
             obj.target_path_city_data = str(os.path.join(obj.target_base_path, folder_name_city_data, cls.folder_name_results))

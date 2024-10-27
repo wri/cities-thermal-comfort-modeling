@@ -26,14 +26,14 @@
 # Standard filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif
 - CustomTiffFilenames:
   dem_tif_filename: dem.tif
-  dsm_ground_build_tif_filename: dsm_ground_build.tif
+  dsm_tif_filename: dsm_ground_build.tif
   tree_canopy_tif_filename: tree_canopy.tif
   lulc_tif_filename: lulc.tif
 # Specify whether standard source-files will be retrieved from the CIF system. All four file mappings must be specified here.
 # Specify "True" for CIF retrieval and "False" for no CIF retrieval in quotes.
 # Retrieved filenames: cif_dem.tif, cif_dsm_ground_build.tif, cif_tree_canopy.tif, cif_lulc.tif
 - RetrieveTiffFileFromCIF:
-  dem_tif_filename: "False"
-  dsm_ground_build_tif_filename: "False"
-  tree_canopy_tif_filename: "False"
-  lulc_tif_filename: "False"
+  retrieve_cif_dem_file: "False"
+  retrieve_cif_dsm_file: "False"
+  retrieve_cif_tree_canopy_file: "False"
+  retrieve_cif_lulc_file: "False"

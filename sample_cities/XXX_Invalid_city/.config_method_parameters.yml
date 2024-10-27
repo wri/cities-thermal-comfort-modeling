@@ -25,7 +25,7 @@
 # All four file mappings must be specified here. Specify None for file name where custom file is not available for processing.
 # Standard filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif
 - CustomTiffFilenames:
-  dem_tif_filename: dem.tif
+  dem_tif_filename: None
   dsm_tif_filename: dsm_ground_build.tif
   tree_canopy_tif_filename: tree_canopy.tif
   lulc_tif_filename: lulc.tif
@@ -34,6 +34,6 @@
 # Retrieved filenames: cif_dem.tif, cif_dsm_ground_build.tif, cif_tree_canopy.tif, cif_lulc.tif
 - RetrieveTiffFileFromCIF:
   retrieve_cif_dem_file: "False"
-  retrieve_cif_dsm_file: "False"
+  retrieve_cif_dsm_file: "True"
   retrieve_cif_tree_canopy_file: "False"
   retrieve_cif_lulc_file: "False"

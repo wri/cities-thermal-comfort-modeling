@@ -40,33 +40,27 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
         enabled = str(config_row.enabled)
         valid_enabled = ['true', 'false']
         if enabled.lower() not in valid_enabled:
-            invalids.append(f"Invalid enabled value ({str(enabled)}) on row {index} in .config_umep_city_processing.csv. Valid values: {valid_enabled}")
+            invalids.append(f"Invalid 'enabled' column ({str(enabled)}) on row {index} in .config_umep_city_processing.csv. Valid values: {valid_enabled}")
 
     for index, config_row in processing_config_df.iterrows():
         enabled = str(config_row.enabled)
         if bool(enabled) or pre_check_option == 'check_all':
             folder_name_tile_data = config_row.tile_folder_name
-            city_data = CityData(city_folder_name, folder_name_tile_data, source_base_path, target_base_path)
+            try:
+                city_data = CityData(city_folder_name, folder_name_tile_data, source_base_path, target_base_path)
+            except Exception as e_msg:
+                invalids.append(e_msg)
+                break
+
             source_tile_path = city_data.source_tile_data_path
             if not os.path.isdir(source_tile_path):
                 invalids.append(
-                    f"tile folder ({str(folder_name_tile_data)}) on row {index} of .config_umep_city_processing.csv not found under '{source_base_path}'.")
+                    f"Tile folder ({str(folder_name_tile_data)}) on row {index} of .config_umep_city_processing.csv not found under '{source_base_path}'.")
 
-    for index, config_row in processing_config_df.iterrows():
-        enabled = str(config_row.enabled)
-        if bool(enabled) or pre_check_option == 'check_all':
             method = config_row.method
             valid_methods = CityData.plugin_methods
             if method not in valid_methods:
-                invalids.append(f"Invalid 'method' ({method}) on row {index} in .config_umep_city_processing.csv. Valid values: {valid_methods}")
-
-    # check file dependencies
-    for index, config_row in processing_config_df.iterrows():
-        enabled = str(config_row.enabled)
-        if bool(enabled) or pre_check_option == 'check_all':
-            method = config_row.method
-            folder_name_tile_data = config_row.tile_folder_name
-            city_data = CityData(city_folder_name, folder_name_tile_data, source_base_path, target_base_path)
+                invalids.append(f"Invalid 'method' column ({method}) on row {index} in .config_umep_city_processing.csv. Valid values: {valid_methods}")
 
             prior_dsm = city_data.source_dsm_path
             if _verify_path(prior_dsm) is False:
@@ -112,6 +106,23 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
                 if _verify_path(prior_wallaspect) is False:
                     msg = f'Required source file: {prior_wallaspect} currently not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                     invalids.append(msg)
+
+            if ((city_data.dem_tif_filename != 'None' and city_data.retrieve_cif_dem_file) or
+                (city_data.dem_tif_filename == 'None' and not city_data.retrieve_cif_dem_file)):
+                msg = f'Inconsistency in specification of dem_tif_filename and retrieve_cif_dem_file.'
+                invalids.append(msg)
+            if ((city_data.dsm_tif_filename != 'None' and city_data.retrieve_cif_dsm_file) or
+                (city_data.dsm_tif_filename == 'None' and not city_data.retrieve_cif_dsm_file)):
+                msg = f'Inconsistency in specification of dsm_tif_filename and retrieve_cif_dsm_file.'
+                invalids.append(msg)
+            if ((city_data.tree_canopy_tif_filename != 'None' and city_data.retrieve_cif_tree_canopy_file) or
+                (city_data.tree_canopy_tif_filename == 'None' and not city_data.retrieve_cif_tree_canopy_file)):
+                msg = f'Inconsistency in specification of tree_canopy_tif_filename and retrieve_cif_tree_canopy_file.'
+                invalids.append(msg)
+            if ((city_data.lulc_tif_filename != 'None' and city_data.retrieve_cif_lulc_file) or
+                (city_data.lulc_tif_filename == 'None' and not city_data.retrieve_cif_lulc_file)):
+                msg = f'Inconsistency in specification of lulc_tif_filename and retrieve_cif_lulc_file.'
+                invalids.append(msg)
 
     return invalids
 

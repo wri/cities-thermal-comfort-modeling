@@ -7,7 +7,7 @@ warnings.filterwarnings("ignore")
 
 from pathlib import Path
 from datetime import datetime
-from tools import remove_file, create_folder, remove_folder, get_application_path
+from tools import remove_file, create_folder, remove_folder, get_application_path, compute_time_diff_mins
 from qgis_initializer import qgis_app_init
 from city_data import CityData
 
@@ -47,7 +47,6 @@ def run_plugin(task_index, step_method, folder_name_city_data, folder_name_tile_
         # Get the UMEP processing parameters and prepare for the method
         input_params, umep_method_title, keepers = _prepare_method_execution(step_method, city_data, tmpdirname, met_filename, utc_offset)
 
-        b = 2
         while retry_count < MAX_RETRY_COUNT and return_code != 0:
             try:
                 # Run the UMEP plugin!!
@@ -83,7 +82,7 @@ def run_plugin(task_index, step_method, folder_name_city_data, folder_name_tile_
         msg = f'{method_title} processing cancelled after {MAX_RETRY_COUNT} attempts.'
         _log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, '')
 
-    run_duration_min = _compute_time_diff_mins(start_time)
+    run_duration_min = compute_time_diff_mins(start_time)
     return return_code, start_time, run_duration_min
 
 def _start_logging(target_base_path, city_folder_name):
@@ -208,7 +207,7 @@ def _log_method_start(method, task_index, step, source_base_path):
 
 
 def _log_method_completion(start_time, method, task_index, step, source_base_path):
-    runtime = _compute_time_diff_mins(start_time)
+    runtime = compute_time_diff_mins(start_time)
     if step is None:
         logging.info(f"task:{task_index}\tFinished '{method}', runtime:{runtime} mins\tconfig:'{source_base_path}'")
     else:
@@ -217,22 +216,18 @@ def _log_method_completion(start_time, method, task_index, step, source_base_pat
 
 def _log_method_failure(start_time, feature, task_index, step, source_base_path, e_msg):
     print('Method failure. See log file.')
-    runtime = _compute_time_diff_mins(start_time)
+    runtime = compute_time_diff_mins(start_time)
     if step is None:
         logging.error(f"task:{task_index}\t**** FAILED execution of '{feature}' after runtime:{runtime} mins\tconfig:'{source_base_path}'({e_msg})")
     else:
         logging.error(f"task:{task_index}\t**** FAILED execution of '{feature}' fpr met_series:{step} after runtime:{runtime} mins\tconfig:'{source_base_path}'({e_msg})")
 
 
-def _compute_time_diff_mins(start_time):
-    return round(((datetime.now() - start_time).seconds)/60, 1)
-
-
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Run specified method in the "UMEP for Processing" QGIS plugin.')
     parser.add_argument('--task_index', metavar='str', required=True, help='index from the processor config file')
-    parser.add_argument('--step_index', metavar='str', required=True, help='index for multi-part runs. only used for reporting')
+    parser.add_argument('--step_index', metavar='str', required=True, help='index for multi-part runs. Only used for reporting')
     valid_methods = ['wall_height_aspect', 'skyview_factor', 'solweig_only']
     parser.add_argument('--step_method', metavar='str', choices=valid_methods, required=True, help='plugin method name')
     parser.add_argument('--folder_name_city_data', metavar='str', required=True, help='name of city folder')

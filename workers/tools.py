@@ -1,5 +1,6 @@
 import shutil
 import os
+from datetime import datetime
 from pathlib import Path
 
 def initialize_scratch_folder(folder_path):
@@ -64,3 +65,6 @@ def save_geojson_file(vector_geodataframe, tile_data_path, tiff_data_FILENAME):
     file_path = os.path.join(tile_data_path, tiff_data_FILENAME)
     remove_file(file_path)
     vector_geodataframe.to_file(file_path, driver='GeoJSON')
+
+def compute_time_diff_mins(start_time):
+    return round(((datetime.now() - start_time).seconds)/60, 1)

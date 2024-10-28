@@ -6,7 +6,7 @@ from test.tools import is_valid_output_directory
 import pytest
 
 
-def test_main():
+def test_custom_city():
     package_folder = os.path.dirname(os.getcwd())
     source_base_path = os.path.join(package_folder, 'sample_cities')
     target_base_path = os.path.join(package_folder, 'test', 'test_results')
@@ -17,7 +17,20 @@ def test_main():
     assert return_code == 0
     assert has_valid_results
 
-def test_main_check_all():
+
+def test_cif_city():
+    package_folder = os.path.dirname(os.getcwd())
+    source_base_path = os.path.join(package_folder, 'sample_cities')
+    target_base_path = os.path.join(package_folder, 'test', 'test_results')
+    source_city_folder_name = 'NLD_Amsterdam'
+    return_code = main(source_base_path, target_base_path, source_city_folder_name, 'no_pre_check')
+
+    has_valid_results = _verify_expected_output_folders(source_base_path, target_base_path, source_city_folder_name)
+    assert return_code == 0
+    assert has_valid_results
+
+
+def test_custom_city_check_all():
     package_folder = os.path.dirname(os.getcwd())
     source_base_path = os.path.join(package_folder, 'sample_cities')
     target_base_path = os.path.join(package_folder, 'sample_cities')

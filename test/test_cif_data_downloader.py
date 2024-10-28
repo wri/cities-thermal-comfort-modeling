@@ -1,76 +1,78 @@
 import os
+
+import shapely
+
 from src.tools import get_application_path
 from test.tools import is_valid_output_file
 from workers.city_data import CityData
-from workers.source_cif_non_terrain_data_downloader import get_cif_data as get_other_data
-from workers.source_cif_terrain_data_downloader import get_cif_data as get_terrain_data
+from workers.source_cif_data_downloader import get_cif_data
 from workers.tools import clean_folder, remove_file
 
-aoi_boundary = [(4.901190775092289, 52.37520954271636), (4.901190775092289, 52.37197831356116),
-                (4.908300489273159, 52.37197831356116), (4.908300489273159, 52.37520954271636),
-                (4.901190775092289, 52.37520954271636)]
+min_lon = 4.901190775092289
+min_lat = 52.37197831356116
+max_lon = 4.908300489273159
+max_lat = 52.37520954271636
+aoi_boundary = str(shapely.box(min_lon, min_lat, max_lon, max_lat))
 
 app_path = get_application_path()
-out_base_path = str(os.path.join(app_path, 'sample_cities'))
+output_base_path = str(os.path.join(app_path, 'sample_cities'))
 folder_name_city_data = 'NLD_Amsterdam'
 folder_name_tile_data = 'tile_001'
-city_data = CityData(folder_name_city_data, folder_name_tile_data, out_base_path, None)
+city_data = CityData(folder_name_city_data, folder_name_tile_data, output_base_path, None)
 tile_data_path = city_data.source_tile_data_path
+test_task_id = -1
 
 def test_get_cif_non_terrain_data():
-    retrieve_era5 = False
-    retrieve_lulc = True
-    retrieve_tree_canopy = True
+    # feature_list = ['era5', 'lulc', 'tree_canopy']
+    feature_list = ['lulc', 'tree_canopy']
+    features = ','.join(feature_list)
 
-    remove_non_terrain_files(retrieve_era5, retrieve_lulc, retrieve_tree_canopy)
-    get_other_data(out_base_path, folder_name_city_data, folder_name_tile_data, aoi_boundary,
-                   retrieve_era5, retrieve_lulc, retrieve_tree_canopy)
+    remove_output_files(feature_list)
+    get_cif_data(test_task_id, output_base_path, folder_name_city_data, folder_name_tile_data, aoi_boundary, features)
 
-    if retrieve_era5:
-        expected_file = os.path.join(tile_data_path, CityData.filename_cif_era5)
+    # if 'era5' in feature_list:
+    #     expected_file = os.path.join(tile_data_path, CityData)
+    #     assert is_valid_output_file(expected_file)
+
+    if 'lulc' in feature_list:
+        expected_file = os.path.join(tile_data_path, city_data.lulc_tif_filename)
         assert is_valid_output_file(expected_file)
 
-    if retrieve_lulc:
-        expected_file = os.path.join(tile_data_path, CityData.filename_cif_lulc)
+    if 'tree_canopy' in feature_list:
+        expected_file = os.path.join(tile_data_path, city_data.tree_canopy_tif_filename)
         assert is_valid_output_file(expected_file)
 
-    if retrieve_tree_canopy:
-        expected_file = os.path.join(tile_data_path, CityData.filename_cif_tree_canopy)
-        assert is_valid_output_file(expected_file)
-
-    remove_non_terrain_files(retrieve_era5, retrieve_lulc, retrieve_tree_canopy)
+    # remove_output_files(feature_list)
 
 
 def test_get_cif_terrain_data():
-    retrieve_dem = True
-    retrieve_dsm = True
+    feature_list = ['dem', 'dsm']
+    features = ','.join(feature_list)
 
-    remove_terrain_files(retrieve_dem, retrieve_dsm)
-    get_terrain_data(out_base_path, folder_name_city_data, folder_name_tile_data, aoi_boundary,
-                     retrieve_dem, retrieve_dsm)
+    remove_output_files(feature_list)
+    get_cif_data(test_task_id, output_base_path, folder_name_city_data, folder_name_tile_data, aoi_boundary, features)
 
-    if retrieve_dem:
-        expected_file =  os.path.join(tile_data_path, CityData.filename_cif_dem)
+    if 'dem' in feature_list:
+        expected_file =  os.path.join(tile_data_path, city_data.dem_tif_filename)
         assert is_valid_output_file(expected_file)
 
-    if retrieve_dsm:
-        expected_file =  os.path.join(tile_data_path, CityData.filename_cif_dsm_ground_build)
+    if 'dsm' in feature_list:
+        expected_file =  os.path.join(tile_data_path, city_data.dsm_tif_filename)
         assert is_valid_output_file(expected_file)
 
-    remove_terrain_files(retrieve_dem, retrieve_dsm)
+    # remove_output_files(feature_list)
 
 
-def remove_non_terrain_files(retrieve_era5, retrieve_lulc, retrieve_tree_canopy):
-    if retrieve_era5:
-        remove_file(os.path.join(tile_data_path, city_data.filename_cif_era5))
-    if retrieve_lulc:
-        remove_file(os.path.join(tile_data_path, city_data.filename_cif_lulc))
-    if retrieve_tree_canopy:
-        remove_file(os.path.join(tile_data_path, city_data.filename_cif_tree_canopy))
+def remove_output_files(feature_list):
+    # if 'era5' in feature_list:
+    #     remove_file(os.path.join(tile_data_path, city_data))
+    if 'lulc' in feature_list:
+        remove_file(os.path.join(tile_data_path, city_data.lulc_tif_filename))
+    if 'tree_canopy' in feature_list:
+        remove_file(os.path.join(tile_data_path, city_data.tree_canopy_tif_filename))
+    if 'dem' in feature_list:
+        remove_file(os.path.join(tile_data_path, city_data.dem_tif_filename))
+    if 'dsm' in feature_list:
+        remove_file(os.path.join(tile_data_path, city_data.dsm_tif_filename))
 
 
-def remove_terrain_files(retrieve_dem, retrieve_dsm):
-    if retrieve_dem:
-        remove_file(os.path.join(tile_data_path, city_data.filename_cif_dem))
-    if retrieve_dsm:
-        remove_file(os.path.join(tile_data_path, city_data.filename_cif_dsm_ground_build))

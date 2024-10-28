@@ -34,6 +34,7 @@ def _verify_path(path):
     is_valid = os.path.exists(path)
     return is_valid
 
+
 def verify_processing_config(processing_config_df, source_base_path, target_base_path, city_folder_name, pre_check_option):
     invalids = []
     for index, config_row in processing_config_df.iterrows():
@@ -63,23 +64,23 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
                 invalids.append(f"Invalid 'method' column ({method}) on row {index} in .config_umep_city_processing.csv. Valid values: {valid_methods}")
 
             prior_dsm = city_data.source_dsm_path
-            if _verify_path(prior_dsm) is False:
+            if _verify_path(prior_dsm) is False and prior_dsm != 'None':
                 msg = f'Required source file: {prior_dsm} not found for row {index} in .config_umep_city_processing.csv.'
                 invalids.append(msg)
 
             if method in ['skyview_factor', 'solweig_full', 'solweig_only']:
                 prior_tree_canopy = city_data.source_tree_canopy_path
-                if _verify_path(prior_tree_canopy) is False:
+                if _verify_path(prior_tree_canopy) is False and prior_tree_canopy != 'None':
                     msg = f'Required source file: {prior_tree_canopy} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                     invalids.append(msg)
 
             if method in ['solweig_only', 'solweig_full']:
                 prior_land_cover = city_data.source_land_cover_path
                 prior_dem = city_data.source_dem_path
-                if _verify_path(prior_land_cover) is False:
+                if _verify_path(prior_land_cover) is False and prior_land_cover != 'None':
                     msg = f'Required source file: {prior_land_cover} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                     invalids.append(msg)
-                if _verify_path(prior_dem) is False:
+                if _verify_path(prior_dem) is False and prior_dem != 'None':
                     msg = f'Required source file: {prior_dem} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                     invalids.append(msg)
                 for met_file_row in city_data.met_files:
@@ -106,23 +107,6 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
                 if _verify_path(prior_wallaspect) is False:
                     msg = f'Required source file: {prior_wallaspect} currently not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                     invalids.append(msg)
-
-            if ((city_data.dem_tif_filename != 'None' and city_data.retrieve_cif_dem_file) or
-                (city_data.dem_tif_filename == 'None' and not city_data.retrieve_cif_dem_file)):
-                msg = f'Inconsistency in specification of dem_tif_filename and retrieve_cif_dem_file.'
-                invalids.append(msg)
-            if ((city_data.dsm_tif_filename != 'None' and city_data.retrieve_cif_dsm_file) or
-                (city_data.dsm_tif_filename == 'None' and not city_data.retrieve_cif_dsm_file)):
-                msg = f'Inconsistency in specification of dsm_tif_filename and retrieve_cif_dsm_file.'
-                invalids.append(msg)
-            if ((city_data.tree_canopy_tif_filename != 'None' and city_data.retrieve_cif_tree_canopy_file) or
-                (city_data.tree_canopy_tif_filename == 'None' and not city_data.retrieve_cif_tree_canopy_file)):
-                msg = f'Inconsistency in specification of tree_canopy_tif_filename and retrieve_cif_tree_canopy_file.'
-                invalids.append(msg)
-            if ((city_data.lulc_tif_filename != 'None' and city_data.retrieve_cif_lulc_file) or
-                (city_data.lulc_tif_filename == 'None' and not city_data.retrieve_cif_lulc_file)):
-                msg = f'Inconsistency in specification of lulc_tif_filename and retrieve_cif_lulc_file.'
-                invalids.append(msg)
 
     return invalids
 

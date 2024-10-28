@@ -22,18 +22,20 @@
   - filename: <met_filename_2>.txt
     utc_offset: <n>
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
-# All four file mappings must be specified here. Specify None for file name where custom file is not available for processing.
-# Standard filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif
+# All four file mappings must be specified here. Specify None for filename where custom file is not available for processing.
+# Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif
+# Auto-generated filenames from CIF: cif_dem.tif, cif_dsm_ground_build.tif, cif_tree_canopy.tif, cif_lulc.tif
 - CustomTiffFilenames:
   dem_tif_filename: dem.tif
   dsm_tif_filename: dsm_ground_build.tif
   tree_canopy_tif_filename: tree_canopy.tif
   lulc_tif_filename: lulc.tif
-# Specify whether standard source-files will be retrieved from the CIF system. All four file mappings must be specified here.
-# Specify "True" for CIF retrieval and "False" for no CIF retrieval in quotes.
-# Retrieved filenames: cif_dem.tif, cif_dsm_ground_build.tif, cif_tree_canopy.tif, cif_lulc.tif
-- RetrieveTiffFileFromCIF:
-  retrieve_cif_dem_file: "False"
-  retrieve_cif_dsm_file: "False"
-  retrieve_cif_tree_canopy_file: "False"
-  retrieve_cif_lulc_file: "False"
+# Long/lat bounds of processing area
+- ProcessingArea:
+  min_lon: <>
+  min_lat: <>
+  max_lon: <>
+  max_lat: <>
+  tile_id: all
+#  tile_edge_length_m:
+#  tile_buff_m:

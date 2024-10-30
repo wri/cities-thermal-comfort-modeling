@@ -1,21 +1,25 @@
 import os
-import time
-import json
-import pandas as pd
-import dask
-import multiprocessing as mp
-import subprocess
-import warnings
+from pathlib import Path
 
+import dask
+import subprocess
+import multiprocessing as mp
+import warnings
+import pandas as pd
 import shapely
+import rasterio
+from pyproj import Transformer
+
+from job_handler.config_validator import _validate_basic_inputs
+from job_handler.graph_builder import _build_source_dataframes, _get_aoi_dimensions, _get_cif_features
+from job_handler.reporter import _parse_row_results, _report_results
+from src.src_tools import create_folder
+from workers.tile_processor import process_tile
+from workers.worker_tools import get_application_path
 
 warnings.filterwarnings('ignore')
 
-from datetime import datetime
-from collections.abc import Iterable
-from src.source_quality_verifier import verify_fundamental_paths, verify_processing_config
-from workers.city_data import CityData, parse_filenames_config, parse_processing_areas_config
-from src.tools import get_application_path, create_folder
+from workers.city_data import CityData
 
 import logging
 for handler in logging.root.handlers[:]:
@@ -28,8 +32,7 @@ Guide to creating standalone app for calling QGIS: https://docs.qgis.org/3.16/en
 https://medium.com/@giovannigallon/how-i-automate-qgis-tasks-using-python-54df35d8d63f
 """
 
-CIF_DATA_MODULE_PATH = os.path.abspath(os.path.join(get_application_path(), 'workers', 'source_cif_data_downloader.py'))
-PLUGIN_MODULE_PATH = os.path.abspath(os.path.join(get_application_path(), 'workers', 'umep_plugin_processor.py'))
+TILE_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(get_application_path(), 'workers', 'tile_processor.py'))
 PRE_SOLWEIG_FULL_PAUSE_TIME_SEC = 30
 
 
@@ -48,36 +51,124 @@ def main(source_base_path, target_base_path, city_folder_name, pre_check_option)
 
         # build plugin graph
         enabled_processing_tasks_df = processing_config_df[(processing_config_df['enabled'])]
-        pre_proc_delayed_results, delayed_results, solweig_delayed_results = (
-            _build_processing_graphs(enabled_processing_tasks_df, abs_source_base_path, abs_target_base_path, city_folder_name))
 
-        # Pre=processing
-        pre_proc_delays_all_passed, pre_proc_results_df = _process_rows(pre_proc_delayed_results)
-        # Task processing
-        delays_all_passed, results_df = _process_rows(delayed_results)
-        # wait for prior processing to complete
-        time.sleep(PRE_SOLWEIG_FULL_PAUSE_TIME_SEC)
-        solweig_delays_all_passed, solweig_results_df = _process_rows(solweig_delayed_results)
+        combined_results_df = pd.DataFrame(
+            columns=['status', 'task_index', 'tile', 'step_index', 'step_method', 'met_filename', 'return_code',
+                     'start_time', 'run_duration_min'])
+        combined_delays_passed = []
 
-        # Write run_report
-        report_file_path = _report_results(enabled_processing_tasks_df, pre_proc_results_df, results_df, solweig_results_df, abs_target_base_path, city_folder_name)
-        print(f'\nRun report written to {report_file_path}')
+        futures = []
+        for index, config_row in enabled_processing_tasks_df.iterrows():
+            task_index = index
+            task_method = config_row.method
+            source_city_path = str(os.path.join(source_base_path, city_folder_name))
+            custom_file_names, has_no_custom_features, cif_features = _get_cif_features(source_city_path)
 
-        return_code = 0 if (pre_proc_delays_all_passed and delays_all_passed and solweig_delays_all_passed) else 1
+            if has_no_custom_features:
+                fishnet = _get_aoi_dimensions(source_base_path, city_folder_name)
 
-        if return_code == 0:
-            print("\nProcessing encountered no errors.")
-        else:
-            _highlighted_print('Processing encountered no errors. See log file.')
+                for index, cell in fishnet.iterrows():
+                    cell_bounds = cell.geometry.bounds
+                    tile_boundary = str(shapely.box(cell_bounds[0], cell_bounds[1], cell_bounds[2], cell_bounds[3]))
 
-        return return_code
+                    tile_id = str(index+1).zfill(3)
+                    tile_folder_name = f'tile_{tile_id}'
+
+                    proc_array = _construct_pre_proc_array(task_index, task_method, source_base_path, target_base_path, city_folder_name,
+                                              tile_folder_name, cif_features, tile_boundary, None)
+                    delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
+                    futures.append(delay_tile_array)
+            else:
+                existing_tiles = _get_existing_tiles(source_city_path, custom_file_names)
+                for tile_folder_name, tile_dimensions in existing_tiles.items():
+                    tile_boundary = tile_dimensions[0]
+                    tile_resolution = tile_dimensions[1]
+
+                    proc_array = _construct_pre_proc_array(task_index, task_method, source_base_path, target_base_path, city_folder_name,
+                                              tile_folder_name, cif_features, tile_boundary, tile_resolution)
+                    delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
+                    futures.append(delay_tile_array)
+
+            # TODO consider processing every nth tile and return just those results
+            delays_all_passed, results_df = _process_rows(futures)
+
+            combined_results_df = pd.concat([combined_results_df, results_df])
+            combined_delays_passed.append(delays_all_passed)
+
+            # Write run_report
+            report_file_path = _report_results(enabled_processing_tasks_df, combined_results_df, abs_target_base_path, city_folder_name)
+            print(f'\nRun report written to {report_file_path}')
+
+            return_code = 0 if all(combined_delays_passed) else 1
+
+            if return_code == 0:
+                print("\nProcessing encountered no errors.")
+            else:
+                _highlighted_print('Processing encountered errors. See log file.')
+
+            return return_code
     else:
-        if return_code_basic == 0 and return_code_configs == 0:
+        if return_code_basic == 0: # and return_code_configs == 0:
             print("\nPassed all validation checks")
             return 0
         else:
             _highlighted_print('Pre-check encountered errors.')
             return -99
+
+def _get_existing_tiles(source_city_path, custom_file_names):
+    tiles_folders = str(os.path.join(source_city_path, CityData.folder_name_source_data, CityData.folder_name_primary_source_data))
+
+    tile_sizes = {}
+    for dir_obj in Path(tiles_folders).iterdir():
+        if dir_obj.is_dir() and os.path.basename(dir_obj).startswith('tile_'):
+            tile_path = os.path.join(tiles_folders, dir_obj)
+            tile_name = os.path.basename(tile_path)
+            for file_obj in Path(tile_path).iterdir():
+                if file_obj.name in custom_file_names and file_obj.is_file() and Path(file_obj).suffix == '.tif':
+                    # get bounds for first tiff file found in folder, assuming all other geotiffs have same bounds
+                    tile_boundary, avg_res = _get_geobounds_of_geotiff_file(file_obj)
+                    tile_sizes[tile_name] = [tile_boundary, avg_res]
+                    break
+        continue
+
+    return tile_sizes
+
+
+def _get_geobounds_of_geotiff_file(file_path):
+    with rasterio.open(file_path) as dataset:
+        bounds = dataset.bounds
+        min_x = bounds.left
+        min_y = bounds.bottom
+        max_x = bounds.right
+        max_y = bounds.top
+
+        source_crs = dataset.crs.data.get('init')
+        if source_crs != 'epsg:4326':
+            transformer = Transformer.from_crs(source_crs, "EPSG:4326")
+            sw_coord = transformer.transform(min_x, min_y)
+            ne_coord = transformer.transform(max_x, max_y)
+            tile_boundary = str(shapely.box(sw_coord[1], sw_coord[0], ne_coord[1], ne_coord[0]))
+        else:
+            tile_boundary = str(shapely.box(min_x, min_y, max_x, max_y))
+
+        xy_res = dataset.res
+        avg_res = int(round((dataset.res[0] + dataset.res[1])/2, 0))
+        return tile_boundary, avg_res
+
+def _construct_pre_proc_array(task_index, task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name, cif_features, tile_boundary, tile_resolution):
+    proc_array = ['python', TILE_PROCESSING_MODULE_PATH,
+                  f'--task_index={task_index}',
+                  f'--task_method={task_method}',
+                  f'--source_base_path={source_base_path}',
+                  f'--target_base_path={target_base_path}',
+                  f'--city_folder_name={city_folder_name}',
+                  f'--tile_folder_name={tile_folder_name}',
+                  f'--cif_features={cif_features}',
+                  f'--tile_boundary={tile_boundary}',
+                  f'--tile_resolution={tile_resolution}',
+                  ]
+
+    return proc_array
 
 def _start_logging(target_base_path, city_folder_name):
     results_subfolder = CityData.folder_name_results
@@ -89,66 +180,6 @@ def _start_logging(target_base_path, city_folder_name):
                         datefmt='%a_%Y_%b_%d_%H:%M:%S',
                         filename=log_file_path
                         )
-
-def _report_results(enabled_processing_tasks_df, pre_proc_results_df, results_df, solweig_results_df, target_base_path, city_folder_name):
-    combined_results = results_df if solweig_results_df.empty else\
-        pd.concat([pre_proc_results_df, results_df, solweig_results_df], ignore_index=True)
-
-    combined_results.sort_values(['task_index', 'step_index', 'met_filename'], inplace=True)
-
-    merged = pd.merge(enabled_processing_tasks_df, combined_results, left_index=True, right_on='task_index',
-                      how='outer')
-    merged['run_status'] = merged['return_code'].apply(_evaluate_return_code)
-    merged['city_folder_name'] = city_folder_name
-
-    reporting_df = merged.loc[:,
-                   ['run_status', 'task_index', 'city_folder_name', 'tile_folder_name', 'method', 'step_index',
-                    'step_method', 'met_filename',
-                    'return_code', 'start_time', 'run_duration_min']]
-
-    results_subfolder = CityData.folder_name_results
-    report_folder = str(os.path.join(target_base_path, city_folder_name, results_subfolder, '.run_reports'))
-    create_folder(report_folder)
-
-    report_date_str =  datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-    report_name = f'run_report_{report_date_str}.html'
-    report_file_path = os.path.join(report_folder, report_name)
-
-    reporting_df.to_html(report_file_path)
-
-    return report_file_path
-
-def _evaluate_return_code(return_code):
-    return 'success' if return_code == 0 else 'FAILURE'
-
-
-def _validate_basic_inputs(source_base_path, target_path, city_folder_name):
-    invalids = verify_fundamental_paths(source_base_path, target_path, city_folder_name)
-    if invalids:
-        print('\n')
-        _highlighted_print('------------ Invalid source/target folders ------------ ')
-        for invalid in invalids:
-            print(invalid)
-        raise Exception("Stopped processing due to invalid source/target folders.")
-    else:
-        return 0
-
-def _validate_config_inputs(processing_config_df, source_base_path, target_path, city_folder_name, pre_check_option):
-    detailed_invalids = verify_processing_config(processing_config_df, source_base_path, target_path, city_folder_name, pre_check_option)
-    if detailed_invalids:
-        print('\n')
-        _highlighted_print('------------ Invalid configurations ------------ ')
-        for invalid in detailed_invalids:
-            print(invalid)
-        raise Exception("Stopped processing due to invalid configurations.")
-    else:
-        return 0
-
-def _build_source_dataframes(source_base_path, city_folder_name):
-    config_processing_file_path = str(os.path.join(source_base_path, city_folder_name, CityData.filename_umep_city_processing_config))
-    processing_config_df = pd.read_csv(config_processing_file_path)
-
-    return processing_config_df
 
 def _process_rows(futures):
     if futures:
@@ -165,7 +196,7 @@ def _process_rows(futures):
             _log_info_msg(msg)
             dc = dask.compute(*futures)
 
-        all_passed, results_df, failed_task_ids, failed_task_details =_parse_and_report_row_results(dc)
+        all_passed, results_df, failed_task_ids, failed_task_details =_parse_row_results(dc)
 
         if not all_passed:
             task_str = ','.join(map(str,failed_task_ids))
@@ -179,168 +210,6 @@ def _process_rows(futures):
         return all_passed, results_df
     else:
         return True, None
-
-def _parse_and_report_row_results(dc):
-    results = []
-    # serialize the return information - one way or another
-    for obj in dc:
-        if isinstance(obj, Iterable):
-            for row in obj:
-                results.append(row)
-        else:
-            results.append(obj)
-
-    # extract content from the return package and determine if there was a failure
-    results_df = pd.DataFrame(columns=['task_index', 'step_index', 'step_method', 'met_filename', 'return_code', 'start_time', 'run_duration_min'])
-    all_passed = True
-    failed_task_ids = []
-    failed_task_details = []
-    for row in results:
-        if hasattr(row, 'stdout'):
-            return_info = _get_inclusive_between_string(row.stdout, '{"Return_package":', "}}")
-            if return_info:
-                return_package = json.loads(return_info)['Return_package']
-                task_index = return_package['task_index']
-                step_index = return_package['step_index']
-                step_method = return_package['step_method']
-                met_filename = return_package['met_filename']
-                return_code = return_package['return_code']
-                start_time = return_package['start_time']
-                run_duration_min = return_package['run_duration_min']
-
-                new_row = [task_index, step_index, step_method, met_filename, return_code, start_time, run_duration_min]
-                results_df.loc[len(results_df.index)] = new_row
-
-                if return_code != 0:
-                    failed_task_ids.append(task_index)
-                    failed_task_details.append(row)
-                    all_passed = False
-
-    return all_passed, results_df, failed_task_ids, failed_task_details
-
-def _get_inclusive_between_string(text, start_substring, end_substring):
-    try:
-        start_index = text.index(start_substring)
-        end_index = text.index(end_substring, start_index) + len(end_substring)
-        return text[start_index:end_index]
-    except ValueError:
-        return None
-
-def _build_processing_graphs(enabled_processing_task_df, source_base_path, target_base_path, city_folder_name):
-    pre_proc_delayed_results = []
-    delayed_results = []
-    solweig_delayed_results = []
-    for index, config_row in enabled_processing_task_df.iterrows():
-        task_index = index
-        tile_folder_name = config_row.tile_folder_name
-        task_method = config_row.method
-
-        pre_proc_array = _build_pre_processing_steps(task_index, 0, source_base_path, city_folder_name, tile_folder_name)
-        if pre_proc_array:
-            pre_delayed_result = dask.delayed(subprocess.run)(pre_proc_array, capture_output=True, text=True)
-            pre_proc_delayed_results.append(pre_delayed_result)
-
-        if task_method == 'solweig_full':
-            dep_delayed_results, solweig_task_delayed_results = \
-                _build_solweig_full_dependency(task_index, city_folder_name, tile_folder_name, source_base_path, target_base_path)
-            delayed_results.extend(dep_delayed_results)
-            solweig_delayed_results.extend(solweig_task_delayed_results)
-        elif task_method == 'solweig_only':
-            delayed_result = _build_solweig_only_steps(task_index, 1, city_folder_name,
-                                                       tile_folder_name, source_base_path, target_base_path)
-            delayed_results.append(delayed_result)
-        else:
-            proc_array = _construct_proc_array(task_index, 1, task_method, city_folder_name, tile_folder_name,
-                                  source_base_path, target_base_path)
-            delayed_result = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
-            delayed_results.append(delayed_result)
-
-    return pre_proc_delayed_results, delayed_results, solweig_delayed_results
-
-
-def _build_pre_processing_steps(task_index, step_index, source_base_path, city_folder_name, tile_folder_name):
-    source_city_path = str(os.path.join(source_base_path, city_folder_name))
-    features = _get_features(source_city_path)
-
-    if features:
-        min_lon, min_lat, max_lon, max_lat = \
-            parse_processing_areas_config(source_city_path, CityData.filename_method_parameters_config)
-
-        aoi_boundary = str(shapely.box(min_lon, min_lat, max_lon, max_lat))
-
-        pre_processing_delayed_results = \
-            _construct_pre_proc_array(task_index, step_index, city_folder_name, tile_folder_name, source_base_path, aoi_boundary, features)
-
-        return pre_processing_delayed_results
-    else:
-        return None
-
-def _get_features(source_city_path):
-    dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename, feature_list =\
-        parse_filenames_config(source_city_path, CityData.filename_method_parameters_config)
-
-    if feature_list:
-        features = ','.join(feature_list)
-
-        return  features
-    else:
-        return None
-
-def _construct_pre_proc_array(task_index, step_index, folder_name_city_data, folder_name_tile_data, output_base_path, aoi_boundary, features):
-    proc_array = ['python', CIF_DATA_MODULE_PATH,
-                  f'--task_index={task_index}', f'--step_index={step_index}',
-                  f'--output_base_path={output_base_path}',
-                  f'--folder_name_city_data={folder_name_city_data}',
-                  f'--folder_name_tile_data={folder_name_tile_data}',
-                  f'--aoi_boundary={aoi_boundary}',
-                  f'--features={features}'
-                  ]
-    return proc_array
-
-
-def _build_solweig_full_dependency(task_index, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path):
-    dep_delayed_results = []
-    proc_array = _construct_proc_array(task_index, 1, 'wall_height_aspect', folder_name_city_data, folder_name_tile_data,
-                                       source_base_path, target_base_path, None, None)
-    walls = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
-    dep_delayed_results.append(walls)
-
-    proc_array = _construct_proc_array(task_index, 2, 'skyview_factor', folder_name_city_data, folder_name_tile_data,
-                                       source_base_path, target_base_path, None, None)
-    skyview = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
-    dep_delayed_results.append(skyview)
-
-    solweig_delayed_results = _build_solweig_only_steps(task_index, 3, folder_name_city_data,
-                                                        folder_name_tile_data, source_base_path, target_base_path)
-
-    return dep_delayed_results, solweig_delayed_results
-
-
-def _build_solweig_only_steps(task_index, step_index, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path):
-    city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
-
-    delayed_result = []
-    for met_file in city_data.met_files:
-        met_filename = met_file.get('filename')
-        utc_offset = met_file.get('utc_offset')
-
-        proc_array = _construct_proc_array(task_index, step_index, 'solweig_only', folder_name_city_data, folder_name_tile_data,
-                                           source_base_path, target_base_path, met_filename, utc_offset)
-        solweig = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
-        delayed_result.append(solweig)
-    return delayed_result
-
-
-def _construct_proc_array(task_index, step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path,
-                          met_filename=None, utc_offset=None):
-    proc_array = ['python', PLUGIN_MODULE_PATH,
-                  f'--task_index={task_index}', f'--step_index={step_index}', f'--step_method={step_method}',
-                  f'--folder_name_city_data={folder_name_city_data}',
-                  f'--folder_name_tile_data={folder_name_tile_data}',
-                  f'--source_data_path={source_base_path}', f'--target_path={target_base_path}',
-                  f'--met_filename={met_filename}', f'--utc_offset={utc_offset}']
-    return proc_array
-
 
 toBool = {'true': True, 'false': False}
 

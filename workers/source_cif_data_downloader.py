@@ -7,44 +7,46 @@ import numpy as np
 from datetime import datetime
 
 from workers.city_data import CityData
-from workers.tools import save_tiff_file, save_geojson_file, compute_time_diff_mins
+from workers.worker_tools import compute_time_diff_mins, save_tiff_file, save_geojson_file, log_method_failure
 
 # Unify the layers on the same resolution
-LULC_RESOLUTION = 1
+DEFAULT_LULC_RESOLUTION = 1
 DEBUG = False
 
-def get_cif_data(output_base_path, folder_name_city_data, tile_id, aoi_boundary, features):
+def get_cif_data(task_index, output_base_path, folder_name_city_data, tile_id, features, tile_boundary, tile_resolution=None):
     start_time = datetime.now()
 
     city_data = CityData(folder_name_city_data, tile_id, output_base_path, None)
     tile_data_path = city_data.source_tile_data_path
 
-    d = {'geometry': [shapely.wkt.loads(aoi_boundary)]}
+    d = {'geometry': [shapely.wkt.loads(tile_boundary)]}
     aoi_gdf = gp.GeoDataFrame(d, crs="EPSG:4326")
 
     feature_list = features.split(',')
+
+    output_resolution = int(tile_resolution) if tile_resolution is not None else DEFAULT_LULC_RESOLUTION
 
     result_flags = []
     if 'era5' in feature_list:
         get_era5(aoi_gdf)
 
     if 'lulc' in feature_list:
-        this_success = get_lulc(city_data, tile_data_path, aoi_gdf)
+        this_success = get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution)
         result_flags.append(this_success)
 
     if 'tree_canopy' in feature_list:
-        this_success = get_tree_canopy_height(city_data, tile_data_path, aoi_gdf)
+        this_success = get_tree_canopy_height(city_data, tile_data_path, aoi_gdf, output_resolution)
         result_flags.append(this_success)
 
     if 'dem' in feature_list or 'dsm' in feature_list:
         retrieve_dem = True if 'dem' in feature_list else False
-        this_success, nasa_dem_1m = get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem)
+        this_success, nasa_dem_1m = get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution)
         result_flags.append(this_success)
     else:
         nasa_dem_1m = None
 
     if 'dsm' in feature_list:
-        this_success, alos_dsm_1m = get_dsm(tile_data_path, aoi_gdf)
+        this_success, alos_dsm_1m = get_dsm(tile_data_path, aoi_gdf, output_resolution)
         result_flags.append(this_success)
         this_success, overture_buildings = get_building_footprints(tile_data_path, aoi_gdf)
         result_flags.append(this_success)
@@ -54,7 +56,16 @@ def get_cif_data(output_base_path, folder_name_city_data, tile_id, aoi_boundary,
     run_duration_min = compute_time_diff_mins(start_time)
     return_code = 0 if all(result_flags) else 1
 
-    return return_code, start_time, run_duration_min
+    run_duration_min = compute_time_diff_mins(start_time)
+
+    met_filename_str = 'N/A'
+    step_method = 'retrieve_cif_data'
+    start_time_str = start_time.strftime('%Y_%m_%d_%H:%M:%S')
+    return_stdout = (f'{{"task_index": {task_index}, "tile": "{tile_id}", "step_index": {0}, '
+                     f'"step_method": "{step_method}", "met_filename": "{met_filename_str}", "return_code": {return_code}, '
+                     f'"start_time": "{start_time_str}", "run_duration_min": {run_duration_min}}}')
+
+    return return_stdout
 
 
 def get_era5(aoi_gdf):
@@ -62,7 +73,7 @@ def get_era5(aoi_gdf):
 
     aoi_era_5 = era_5_met_preprocessing(aoi_gdf.total_bounds)
 
-def get_lulc(city_data, tile_data_path, aoi_gdf):
+def get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution):
     try:
         from workers.open_urban import OpenUrban, reclass_map
 
@@ -87,12 +98,17 @@ def get_lulc(city_data, tile_data_path, aoi_gdf):
         else:
             print(f'There were no occurrences of the value {remove_value} found in data.')
 
+        if output_resolution != DEFAULT_LULC_RESOLUTION:
+            lulc_to_solweig_class = resample_categorical_raster(lulc_to_solweig_class, output_resolution)
+
         # Save data to file
         save_tiff_file(lulc_to_solweig_class, tile_data_path, city_data.lulc_tif_filename)
 
         return True
 
     except Exception as e_msg:
+        msg = f'Lulc processing cancelled due to failure.'
+        log_method_failure(datetime.now(), msg, None, None, city_data.source_base_path, '')
         return False
 
 
@@ -100,45 +116,51 @@ def count_occurrences(data, value):
     return data.where(data == value).count().item()
 
 
-def get_tree_canopy_height(city_data, tile_data_path, aoi_gdf):
+def get_tree_canopy_height(city_data, tile_data_path, aoi_gdf, output_resolution):
     try:
         from city_metrix.layers import TreeCanopyHeight
 
         # Load layer
-        tree_canopy_height = TreeCanopyHeight(spatial_resolution=LULC_RESOLUTION).get_data(aoi_gdf.total_bounds)
+        tree_canopy_height = TreeCanopyHeight(spatial_resolution=output_resolution).get_data(aoi_gdf.total_bounds)
         tree_canopy_height_float32 = tree_canopy_height.astype('float32')
         save_tiff_file(tree_canopy_height_float32, tile_data_path, city_data.tree_canopy_tif_filename)
 
         return True
 
     except Exception as e_msg:
+        msg = f'Tree-canopy processing cancelled due to failure.'
+        log_method_failure(datetime.now(), msg, None, None, city_data.source_base_path, '')
         return False
 
-def get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem):
+def get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution):
     try:
         from city_metrix.layers import NasaDEM
 
-        nasa_dem_1m = NasaDEM(spatial_resolution=LULC_RESOLUTION).get_data(aoi_gdf.total_bounds)
+        nasa_dem_1m = NasaDEM(spatial_resolution=output_resolution).get_data(aoi_gdf.total_bounds)
         if retrieve_dem:
             save_tiff_file(nasa_dem_1m, tile_data_path, city_data.dem_tif_filename)
 
         return True, nasa_dem_1m
 
     except Exception as e_msg:
+        msg = f'DEM processing cancelled due to failure.'
+        log_method_failure(datetime.now(), msg, None, None, city_data.source_base_path, '')
         return False, None
 
 
-def get_dsm(tile_data_path, aoi_gdf):
+def get_dsm(tile_data_path, aoi_gdf, output_resolution):
     try:
         from city_metrix.layers import AlosDSM
 
-        alos_dsm_1m = AlosDSM(spatial_resolution=LULC_RESOLUTION).get_data(aoi_gdf.total_bounds)
+        alos_dsm_1m = AlosDSM(spatial_resolution=output_resolution).get_data(aoi_gdf.total_bounds)
         if DEBUG:
             save_tiff_file(alos_dsm_1m, tile_data_path, 'debug_alos_dsm_1m.tif')
 
         return True, alos_dsm_1m
 
     except Exception as e_msg:
+        msg = f'DSM processing cancelled due to failure.'
+        log_method_failure(datetime.now(), msg, None, None, None, '')
         return False, None
 
 
@@ -153,6 +175,8 @@ def get_building_footprints(tile_data_path, aoi_gdf):
         return True, overture_buildings
 
     except Exception as e_msg:
+        msg = f'Building-footprint processing cancelled due to failure.'
+        log_method_failure(datetime.now(), msg, None, None, None, '')
         return False, None
 
 
@@ -195,6 +219,8 @@ def get_building_height_dsm(city_data, tile_data_path, overture_buildings, alos_
         return True
 
     except Exception as e_msg:
+        msg = f'Building DSM processing cancelled due to failure.'
+        log_method_failure(datetime.now(), msg, None, None, None, '')
         return False
 
 def combine_building_and_dem(dem, buildings, target_crs):
@@ -219,11 +245,11 @@ def combine_building_and_dem(dem, buildings, target_crs):
 
     return composite_xa
 
-def resample_raster(xarray, resolution_m):
+def resample_categorical_raster(xarray, resolution_m):
     resampled_array = xarray.rio.reproject(
         dst_crs=xarray.rio.crs,
         resolution=resolution_m,
-        resampling=Resampling.bilinear
+        resampling=Resampling.nearest
     )
     return resampled_array
 
@@ -304,29 +330,3 @@ def prototype_refinement_building_height_estimates(overture_bldgs):
         overture_bldgs['inferred_height']
     overture_bldgs.loc[overture_bldgs['best_guess_height'].isnull(), 'best_guess_height'] = (
                 other_typical_floors * floor_height)
-
-
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description='Retrieve selected features from CIF.')
-    parser.add_argument('--task_index', metavar='str', required=True, help='index from the processor config file')
-    parser.add_argument('--step_index', metavar='str', required=True, help='index for multi-part runs. Only used for reporting')
-    parser.add_argument('--output_base_path', metavar='path', required=True, help='folder for source data')
-    parser.add_argument('--folder_name_city_data', metavar='str', required=True, help='name of city folder')
-    parser.add_argument('--folder_name_tile_data', metavar='str', required=True, help='name of tile folder')
-    parser.add_argument('--aoi_boundary', metavar='str', required=True, help='geographic boundary')
-    parser.add_argument('--features', metavar='str', required=True, help='coma-delimited list of features')
-
-    args = parser.parse_args()
-
-    return_code, start_time, run_duration_min = \
-        get_cif_data(args.output_base_path, args.folder_name_city_data, args.folder_name_tile_data, args.aoi_boundary, args.features)
-
-    start_time_str = start_time.strftime('%Y_%m_%d_%H:%M:%S')
-    step_method = 'retrieve_cif_data'
-    met_filename_str = 'TODO'
-    return_stdout = (f'{{"Return_package": {{"task_index": {args.task_index}, "step_index": {args.step_index}, \
-                     "step_method": "{step_method}", "met_filename": "{met_filename_str}", "return_code": {return_code}, \
-                     "start_time": "{start_time_str}", "run_duration_min": {run_duration_min}}}}}')
-
-    print(return_stdout)

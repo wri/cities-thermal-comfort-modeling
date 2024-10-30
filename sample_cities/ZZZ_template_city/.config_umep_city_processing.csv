@@ -1,5 +1,2 @@
-enabled,tile_folder_name,method
-true,<tile_name>,solweig_full
-true,<tile_name>,solweig_full
-
-
+enabled,method,start_tile_id,end_tile_id
+true,solweig_full,*,*

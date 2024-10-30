@@ -4,9 +4,10 @@ import shapely
 
 from src.tools import get_application_path
 from test.tools import is_valid_output_file
+
+from src.src_tools import remove_file
 from workers.city_data import CityData
 from workers.source_cif_data_downloader import get_cif_data
-from workers.tools import clean_folder, remove_file
 
 min_lon = 4.901190775092289
 min_lat = 52.37197831356116
@@ -20,7 +21,7 @@ folder_name_city_data = 'NLD_Amsterdam'
 folder_name_tile_data = 'tile_001'
 city_data = CityData(folder_name_city_data, folder_name_tile_data, output_base_path, None)
 tile_data_path = city_data.source_tile_data_path
-test_task_id = -1
+test_task_index = -1
 
 def test_get_cif_non_terrain_data():
     # feature_list = ['era5', 'lulc', 'tree_canopy']
@@ -28,7 +29,7 @@ def test_get_cif_non_terrain_data():
     features = ','.join(feature_list)
 
     remove_output_files(feature_list)
-    get_cif_data(test_task_id, output_base_path, folder_name_city_data, folder_name_tile_data, aoi_boundary, features)
+    get_cif_data(test_task_index, output_base_path, folder_name_city_data, folder_name_tile_data, aoi_boundary, features)
 
     # if 'era5' in feature_list:
     #     expected_file = os.path.join(tile_data_path, CityData)
@@ -50,7 +51,7 @@ def test_get_cif_terrain_data():
     features = ','.join(feature_list)
 
     remove_output_files(feature_list)
-    get_cif_data(test_task_id, output_base_path, folder_name_city_data, folder_name_tile_data, aoi_boundary, features)
+    get_cif_data(test_task_index, output_base_path, folder_name_city_data, folder_name_tile_data, aoi_boundary, features)
 
     if 'dem' in feature_list:
         expected_file =  os.path.join(tile_data_path, city_data.dem_tif_filename)

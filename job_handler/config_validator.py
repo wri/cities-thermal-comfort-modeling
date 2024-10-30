@@ -1,3 +1,4 @@
+
 import os
 import pandas as pd
 from workers.city_data import CityData
@@ -59,7 +60,7 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
                     f"Tile folder ({str(folder_name_tile_data)}) on row {index} of .config_umep_city_processing.csv not found under '{source_base_path}'.")
 
             method = config_row.method
-            valid_methods = CityData.plugin_methods
+            valid_methods = CityData.processing_methods
             if method not in valid_methods:
                 invalids.append(f"Invalid 'method' column ({method}) on row {index} in .config_umep_city_processing.csv. Valid values: {valid_methods}")
 
@@ -110,3 +111,27 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
 
     return invalids
 
+def _validate_basic_inputs(source_base_path, target_path, city_folder_name):
+    invalids = verify_fundamental_paths(source_base_path, target_path, city_folder_name)
+    if invalids:
+        print('\n')
+        _highlighted_print('------------ Invalid source/target folders ------------ ')
+        for invalid in invalids:
+            print(invalid)
+        raise Exception("Stopped processing due to invalid source/target folders.")
+    else:
+        return 0
+
+def _validate_config_inputs(processing_config_df, source_base_path, target_path, city_folder_name, pre_check_option):
+    detailed_invalids = verify_processing_config(processing_config_df, source_base_path, target_path, city_folder_name, pre_check_option)
+    if detailed_invalids:
+        print('\n')
+        _highlighted_print('------------ Invalid configurations ------------ ')
+        for invalid in detailed_invalids:
+            print(invalid)
+        raise Exception("Stopped processing due to invalid configurations.")
+    else:
+        return 0
+
+def _highlighted_print(msg):
+    print('\n\x1b[6;30;42m' + msg + '\x1b[0m')

@@ -30,12 +30,13 @@
   dsm_tif_filename: dsm_ground_build.tif
   tree_canopy_tif_filename: tree_canopy.tif
   lulc_tif_filename: lulc.tif
-# Long/lat bounds of processing area
-- ProcessingArea:
-  min_lon: 1
-  min_lat: 1
-  max_lon: 1.1
-  max_lat: 1.1
-  tile_id: all
+# New processing area. If any custom files are specified above (i.e. not None), then the system will not construct
+# a new tile grid and will instead use the existing one. In that case, values below can be None
+- NewProcessingArea:
+  min_lon: None
+  min_lat: None
+  max_lon: None
+  max_lat: None
+  cell_size: None
 #  tile_edge_length_m:
 #  tile_buff_m:

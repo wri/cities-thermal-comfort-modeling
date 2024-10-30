@@ -1,7 +1,9 @@
 import shutil
 import os
+import logging
 from datetime import datetime
 from pathlib import Path
+
 
 def initialize_scratch_folder(folder_path):
     if os.path.isdir(folder_path):
@@ -53,6 +55,7 @@ def get_application_path():
 
 toBool = {'true': True, 'false': False}
 
+
 def save_tiff_file(raster_data_array, tile_data_path, tiff_data_FILENAME):
     create_folder(tile_data_path)
     file_path = os.path.join(tile_data_path, tiff_data_FILENAME)
@@ -68,3 +71,28 @@ def save_geojson_file(vector_geodataframe, tile_data_path, tiff_data_FILENAME):
 
 def compute_time_diff_mins(start_time):
     return round(((datetime.now() - start_time).seconds)/60, 1)
+
+
+def log_method_start(method, task_index, step, source_base_path):
+    if step is None:
+        logging.info(f"task:{task_index}\tStarting '{method}'\tconfig:'{source_base_path}')")
+    else:
+        logging.info(f"task:{task_index}\tStarting '{method}' for met_series:{step}\tconfig:'{source_base_path}'")
+
+
+def log_method_completion(start_time, method, task_index, step, source_base_path):
+    runtime = compute_time_diff_mins(start_time)
+    if step is None:
+        logging.info(f"task:{task_index}\tFinished '{method}', runtime:{runtime} mins\tconfig:'{source_base_path}'")
+    else:
+        logging.info(f"task:{task_index}\tFinished '{method}' for met_series:{step}, runtime:{runtime} mins\tconfig:'{source_base_path}'")
+
+
+def log_method_failure(start_time, feature, task_index, step, source_base_path, e_msg):
+    print('Method failure. See log file.')
+    runtime = compute_time_diff_mins(start_time)
+    if step is None:
+        logging.error(f"task:{task_index}\t**** FAILED execution of '{feature}' after runtime:{runtime} mins\tconfig:'{source_base_path}'({e_msg})")
+    else:
+        logging.error(f"task:{task_index}\t**** FAILED execution of '{feature}' fpr met_series:{step} after runtime:{runtime} mins\tconfig:'{source_base_path}'({e_msg})")
+

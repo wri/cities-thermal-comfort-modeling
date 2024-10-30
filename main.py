@@ -7,13 +7,11 @@ import multiprocessing as mp
 import warnings
 import pandas as pd
 import shapely
-import rasterio
-from pyproj import Transformer
 
-from job_handler.config_validator import _validate_basic_inputs
+from job_handler.config_validator import _validate_basic_inputs, _validate_config_inputs
 from job_handler.graph_builder import _build_source_dataframes, _get_aoi_dimensions, _get_cif_features
 from job_handler.reporter import _parse_row_results, _report_results
-from src.src_tools import create_folder
+from src.src_tools import create_folder, _get_existing_tiles
 from workers.tile_processor import process_tile
 from workers.worker_tools import get_application_path
 
@@ -42,7 +40,7 @@ def main(source_base_path, target_base_path, city_folder_name, pre_check_option)
     return_code_basic = _validate_basic_inputs(abs_source_base_path, abs_target_base_path, city_folder_name)
 
     processing_config_df = _build_source_dataframes(abs_source_base_path, city_folder_name)
-    # return_code_configs = _validate_config_inputs(processing_config_df, abs_source_base_path, abs_target_base_path, city_folder_name, pre_check_option)
+    return_code_configs = _validate_config_inputs(processing_config_df, abs_source_base_path, abs_target_base_path, city_folder_name, pre_check_option)
 
     # TODO - Add checks for prerequite met data, such as consistent CRS
 
@@ -61,6 +59,7 @@ def main(source_base_path, target_base_path, city_folder_name, pre_check_option)
         for index, config_row in enabled_processing_tasks_df.iterrows():
             task_index = index
             task_method = config_row.method
+
             source_city_path = str(os.path.join(source_base_path, city_folder_name))
             custom_file_names, has_no_custom_features, cif_features = _get_cif_features(source_city_path)
 
@@ -79,7 +78,9 @@ def main(source_base_path, target_base_path, city_folder_name, pre_check_option)
                     delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
                     futures.append(delay_tile_array)
             else:
-                existing_tiles = _get_existing_tiles(source_city_path, custom_file_names)
+                start_tile_id = config_row.start_tile_id
+                end_tile_id = config_row.end_tile_id
+                existing_tiles = _get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_tile_id)
                 for tile_folder_name, tile_dimensions in existing_tiles.items():
                     tile_boundary = tile_dimensions[0]
                     tile_resolution = tile_dimensions[1]
@@ -108,52 +109,12 @@ def main(source_base_path, target_base_path, city_folder_name, pre_check_option)
 
             return return_code
     else:
-        if return_code_basic == 0: # and return_code_configs == 0:
+        if return_code_basic == 0 and return_code_configs == 0:
             print("\nPassed all validation checks")
             return 0
         else:
             _highlighted_print('Pre-check encountered errors.')
             return -99
-
-def _get_existing_tiles(source_city_path, custom_file_names):
-    tiles_folders = str(os.path.join(source_city_path, CityData.folder_name_source_data, CityData.folder_name_primary_source_data))
-
-    tile_sizes = {}
-    for dir_obj in Path(tiles_folders).iterdir():
-        if dir_obj.is_dir() and os.path.basename(dir_obj).startswith('tile_'):
-            tile_path = os.path.join(tiles_folders, dir_obj)
-            tile_name = os.path.basename(tile_path)
-            for file_obj in Path(tile_path).iterdir():
-                if file_obj.name in custom_file_names and file_obj.is_file() and Path(file_obj).suffix == '.tif':
-                    # get bounds for first tiff file found in folder, assuming all other geotiffs have same bounds
-                    tile_boundary, avg_res = _get_geobounds_of_geotiff_file(file_obj)
-                    tile_sizes[tile_name] = [tile_boundary, avg_res]
-                    break
-        continue
-
-    return tile_sizes
-
-
-def _get_geobounds_of_geotiff_file(file_path):
-    with rasterio.open(file_path) as dataset:
-        bounds = dataset.bounds
-        min_x = bounds.left
-        min_y = bounds.bottom
-        max_x = bounds.right
-        max_y = bounds.top
-
-        source_crs = dataset.crs.data.get('init')
-        if source_crs != 'epsg:4326':
-            transformer = Transformer.from_crs(source_crs, "EPSG:4326")
-            sw_coord = transformer.transform(min_x, min_y)
-            ne_coord = transformer.transform(max_x, max_y)
-            tile_boundary = str(shapely.box(sw_coord[1], sw_coord[0], ne_coord[1], ne_coord[0]))
-        else:
-            tile_boundary = str(shapely.box(min_x, min_y, max_x, max_y))
-
-        xy_res = dataset.res
-        avg_res = int(round((dataset.res[0] + dataset.res[1])/2, 0))
-        return tile_boundary, avg_res
 
 def _construct_pre_proc_array(task_index, task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name, cif_features, tile_boundary, tile_resolution):
     proc_array = ['python', TILE_PROCESSING_MODULE_PATH,

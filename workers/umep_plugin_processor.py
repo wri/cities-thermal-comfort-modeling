@@ -7,9 +7,10 @@ warnings.filterwarnings("ignore")
 
 from pathlib import Path
 from datetime import datetime
-from tools import remove_file, create_folder, remove_folder, get_application_path
-from qgis_initializer import qgis_app_init
-from city_data import CityData
+from workers.worker_tools import remove_file, remove_folder, compute_time_diff_mins, create_folder, log_method_failure, \
+    log_method_start, log_method_completion
+from workers.qgis_initializer import qgis_app_init
+from workers.city_data import CityData
 
 import logging
 for handler in logging.root.handlers[:]:
@@ -18,27 +19,28 @@ for handler in logging.root.handlers[:]:
 MAX_RETRY_COUNT = 3
 RETRY_PAUSE_TIME_SEC = 10
 
-def run_plugin(task_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path, met_filename=None, utc_offset=None):
+
+# Initiate QGIS and UMEP processing
+try:
+    qgis_app = qgis_app_init()
+    from processing_umep.processing_umep import ProcessingUMEPProvider
+    umep_provider = ProcessingUMEPProvider()
+    qgis_app.processingRegistry().addProvider(umep_provider)
+    from processing.core.Processing import Processing
+    Processing.initialize()
+    import processing
+except Exception as e_msg:
+    msg = 'Processing could not initialize UMEP processing'
+    log_method_failure(datetime.now(), msg, None, None, None, e_msg)
+    # return
+
+def run_plugin(task_index, step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path, met_filename=None, utc_offset=None):
     start_time = datetime.now()
     _start_logging(target_base_path, folder_name_city_data)
 
     city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
     method_title = _assign_method_title(step_method)
-    _log_method_start(method_title, task_index, None, city_data.source_base_path)
-
-    # Initiate QGIS and UMEP processing
-    try:
-        qgis_app = qgis_app_init()
-        from processing_umep.processing_umep import ProcessingUMEPProvider
-        umep_provider = ProcessingUMEPProvider()
-        qgis_app.processingRegistry().addProvider(umep_provider)
-        from processing.core.Processing import Processing
-        Processing.initialize()
-        import processing
-    except Exception as e_msg:
-        msg = f'{method_title} processing could not initialize UMEP processing'
-        _log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, e_msg)
-        return 2
+    log_method_start(method_title, task_index, None, city_data.source_base_path)
 
     e_msg = ''
     return_code = -999
@@ -47,7 +49,6 @@ def run_plugin(task_index, step_method, folder_name_city_data, folder_name_tile_
         # Get the UMEP processing parameters and prepare for the method
         input_params, umep_method_title, keepers = _prepare_method_execution(step_method, city_data, tmpdirname, met_filename, utc_offset)
 
-        b = 2
         while retry_count < MAX_RETRY_COUNT and return_code != 0:
             try:
                 # Run the UMEP plugin!!
@@ -64,27 +65,34 @@ def run_plugin(task_index, step_method, folder_name_city_data, folder_name_tile_
                             remove_file(target_base_path)
                             shutil.move(str(temp_result_path), str(target_base_path))
                 except Exception as e_msg:
-                    msg = (f'{method_title} processing succeeded but could not create target folder or move files: {city_data.target_preprocessed_data_path}.')
-                    _log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, e_msg)
+                    msg = (f'{method_title} processing succeeded but could not create target folder or move files: {city_data.target_tile_data_path}.')
+                    log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, e_msg)
                     return 1
 
                 return_code = 0
             except Exception as e_msg:
                 msg = f'task:{task_index} {method_title} failure. Retrying. ({e_msg})'
-                _log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, e_msg)
+                log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, e_msg)
                 if retry_count < MAX_RETRY_COUNT:
                     time.sleep(RETRY_PAUSE_TIME_SEC)
                 return_code = 3
             retry_count += 1
 
     if return_code == 0:
-        _log_method_completion(start_time, method_title, task_index, None, city_data.source_base_path)
+        log_method_completion(start_time, method_title, task_index, None, city_data.source_base_path)
     else:
         msg = f'{method_title} processing cancelled after {MAX_RETRY_COUNT} attempts.'
-        _log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, '')
+        log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, '')
 
-    run_duration_min = _compute_time_diff_mins(start_time)
-    return return_code, start_time, run_duration_min
+    run_duration_min = compute_time_diff_mins(start_time)
+
+    met_filename_str = met_filename if met_filename != 'None' else 'N/A'
+    start_time_str = start_time.strftime('%Y_%m_%d_%H:%M:%S')
+    return_stdout = (f'{{"task_index": {task_index}, "tile": "{folder_name_tile_data}", "step_index": {step_index}, '
+                     f'"step_method": "{step_method}", "met_filename": "{met_filename_str}", "return_code": {return_code}, '
+                     f'"start_time": "{start_time_str}", "run_duration_min": {run_duration_min}}}')
+
+    return return_stdout
 
 def _start_logging(target_base_path, city_folder_name):
     results_subfolder = CityData.folder_name_results
@@ -101,7 +109,7 @@ def _prepare_method_execution(method, city_data, tmpdirname, met_filename=None, 
     keepers = {}
 
     if method == 'wall_height_aspect':
-        create_folder(city_data.target_preprocessed_data_path)
+        create_folder(city_data.target_tile_data_path)
 
         temp_target_wallheight_path = os.path.join(tmpdirname, city_data.filename_wall_height)
         temp_target_wallaspect_path = os.path.join(tmpdirname, city_data.filename_wall_aspect)
@@ -116,13 +124,13 @@ def _prepare_method_execution(method, city_data, tmpdirname, met_filename=None, 
         keepers[temp_target_wallaspect_path] = city_data.target_wallaspect_path
 
     elif method == 'skyview_factor':
-        create_folder(city_data.target_preprocessed_data_path)
+        create_folder(city_data.target_tile_data_path)
 
         temp_svfs_file_no_extension = os.path.join(tmpdirname, Path(city_data.target_svfszip_path).stem)
         temp_svfs_file_with_extension = os.path.join(tmpdirname, os.path.basename(city_data.target_svfszip_path))
         input_params = {
             'INPUT_DSM': city_data.source_dsm_path,
-            'INPUT_CDSM': city_data.source_veg_canopy_path,
+            'INPUT_CDSM': city_data.source_tree_canopy_path,
             'TRANS_VEG': 3,
             'INPUT_TDSM': None,
             'INPUT_THEIGHT': 25,
@@ -142,7 +150,7 @@ def _prepare_method_execution(method, city_data, tmpdirname, met_filename=None, 
             "INPUT_SVF": city_data.target_svfszip_path,
             "INPUT_HEIGHT": city_data.target_wallheight_path,
             "INPUT_ASPECT": city_data.target_wallaspect_path,
-            "INPUT_CDSM": city_data.source_veg_canopy_path,
+            "INPUT_CDSM": city_data.source_tree_canopy_path,
             "TRANS_VEG": 3,
             "LEAF_START": city_data.leaf_start,
             "LEAF_END": city_data.leaf_end,
@@ -200,56 +208,29 @@ def _assign_method_title(method):
     return method_title
 
 
-def _log_method_start(method, task_index, step, source_base_path):
-    if step is None:
-        logging.info(f"task:{task_index}\tStarting '{method}'\tconfig:'{source_base_path}')")
-    else:
-        logging.info(f"task:{task_index}\tStarting '{method}' for met_series:{step}\tconfig:'{source_base_path}'")
 
-
-def _log_method_completion(start_time, method, task_index, step, source_base_path):
-    runtime = _compute_time_diff_mins(start_time)
-    if step is None:
-        logging.info(f"task:{task_index}\tFinished '{method}', runtime:{runtime} mins\tconfig:'{source_base_path}'")
-    else:
-        logging.info(f"task:{task_index}\tFinished '{method}' for met_series:{step}, runtime:{runtime} mins\tconfig:'{source_base_path}'")
-
-
-def _log_method_failure(start_time, feature, task_index, step, source_base_path, e_msg):
-    print('Method failure. See log file.')
-    runtime = _compute_time_diff_mins(start_time)
-    if step is None:
-        logging.error(f"task:{task_index}\t**** FAILED execution of '{feature}' after runtime:{runtime} mins\tconfig:'{source_base_path}'({e_msg})")
-    else:
-        logging.error(f"task:{task_index}\t**** FAILED execution of '{feature}' fpr met_series:{step} after runtime:{runtime} mins\tconfig:'{source_base_path}'({e_msg})")
-
-
-def _compute_time_diff_mins(start_time):
-    return round(((datetime.now() - start_time).seconds)/60, 1)
-
-
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description='Run specified method in the "UMEP for Processing" QGIS plugin.')
-    parser.add_argument('--task_index', metavar='str', required=True, help='index from the processor config file')
-    parser.add_argument('--step_index', metavar='str', required=True, help='index for multi-part runs. only used for reporting')
-    valid_methods = ['wall_height_aspect', 'skyview_factor', 'solweig_only']
-    parser.add_argument('--step_method', metavar='str', choices=valid_methods, required=True, help='plugin method name')
-    parser.add_argument('--folder_name_city_data', metavar='str', required=True, help='name of city folder')
-    parser.add_argument('--folder_name_tile_data', metavar='str', required=True, help='name of tile folder')
-    parser.add_argument('--source_data_path', metavar='path', required=True, help='folder with source data')
-    parser.add_argument('--target_path', metavar='path', required=True, help='folder that is to be populated')
-
-    parser.add_argument('--met_filename', metavar='str', required=False, help='name of the meteorological file')
-    parser.add_argument('--utc_offset', metavar='int', required=False, help='local hour offset from utc')
-    args = parser.parse_args()
-
-    return_code, start_time, run_duration_min = run_plugin(args.task_index, args.step_method, args.folder_name_city_data, args.folder_name_tile_data,
-                             args.source_data_path, args.target_path, args.met_filename, args.utc_offset)
-
-    met_filename_str = args.met_filename if args.met_filename != 'None' else 'N/A'
-    start_time_str = start_time.strftime('%Y_%m_%d_%H:%M:%S')
-    return_stdout = (f'{{"Return_package": {{"task_index": {args.task_index}, "step_index": {args.step_index}, \
-                     "step_method": "{args.step_method}", "met_filename": "{met_filename_str}", "return_code": {return_code}, \
-                     "start_time": "{start_time_str}", "run_duration_min": {run_duration_min}}}}}')
-    print(return_stdout)
+# if __name__ == "__main__":
+#     import argparse
+#     parser = argparse.ArgumentParser(description='Run specified method in the "UMEP for Processing" QGIS plugin.')
+#     parser.add_argument('--task_index', metavar='str', required=True, help='index from the processor config file')
+#     parser.add_argument('--step_index', metavar='str', required=True, help='index for multi-part runs. Only used for reporting')
+#     valid_methods = ['wall_height_aspect', 'skyview_factor', 'solweig_only']
+#     parser.add_argument('--step_method', metavar='str', choices=valid_methods, required=True, help='plugin method name')
+#     parser.add_argument('--folder_name_city_data', metavar='str', required=True, help='name of city folder')
+#     parser.add_argument('--folder_name_tile_data', metavar='str', required=True, help='name of tile folder')
+#     parser.add_argument('--source_data_path', metavar='path', required=True, help='folder with source data')
+#     parser.add_argument('--target_path', metavar='path', required=True, help='folder that is to be populated')
+#
+#     parser.add_argument('--met_filename', metavar='str', required=False, help='name of the meteorological file')
+#     parser.add_argument('--utc_offset', metavar='int', required=False, help='local hour offset from utc')
+#     args = parser.parse_args()
+#
+#     return_code, start_time, run_duration_min = run_plugin(args.task_index, args.step_method, args.folder_name_city_data, args.folder_name_tile_data,
+#                              args.source_data_path, args.target_path, args.met_filename, args.utc_offset)
+#
+#     met_filename_str = args.met_filename if args.met_filename != 'None' else 'N/A'
+#     start_time_str = start_time.strftime('%Y_%m_%d_%H:%M:%S')
+#     return_stdout = (f'{{"Return_package": {{"task_index": {args.task_index}, "step_index": {args.step_index}, \
+#                      "step_method": "{args.step_method}", "met_filename": "{met_filename_str}", "return_code": {return_code}, \
+#                      "start_time": "{start_time_str}", "run_duration_min": {run_duration_min}}}}}')
+#     print(return_stdout)

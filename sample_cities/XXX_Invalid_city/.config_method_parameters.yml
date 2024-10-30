@@ -17,12 +17,12 @@
     output_sh: True
 # Names of meteorological files used for SOLWEIG processing
 - MetFiles:
-  - filename: <met_filename_1>.txt
-    utc_offset: <n>
-  - filename: <met_filename_2>.txt
-    utc_offset: <n>
-# Custom source-files that were independently created and will replace standard files pulled from CIF system.
-# All four file mappings must be specified here. Specify None for filename where custom file is not available for processing.
+  - filename: met_20jan2022.txt
+    utc_offset: 2
+  - filename: met_22jan2022.txt
+    utc_offset: 2
+# Mapping to name of custom TIFF source file or specify None where custom file is not available for processing.
+# If None is specified, then the system will auto-generate a TIFF file from CIF.
 # Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif
 # Auto-generated filenames from CIF: cif_dem.tif, cif_dsm_ground_build.tif, cif_tree_canopy.tif, cif_lulc.tif
 - CustomTiffFilenames:

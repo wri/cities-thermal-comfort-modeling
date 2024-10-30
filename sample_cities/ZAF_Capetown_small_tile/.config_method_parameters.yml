@@ -21,9 +21,22 @@
     utc_offset: 2
   - filename: met_22jan2022.txt
     utc_offset: 2
-# Name of source files used for processing
-- Tifffilenames:
+# Custom source-files that were independently created and will replace standard files pulled from CIF system.
+# All four file mappings must be specified here. Specify None for filename where custom file is not available for processing.
+# Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif
+# Auto-generated filenames from CIF: cif_dem.tif, cif_dsm_ground_build.tif, cif_tree_canopy.tif, cif_lulc.tif
+- CustomTiffFilenames:
   dem_tif_filename: dem.tif
-  dsm_ground_build_tif_filename: dsm_ground_build.tif
-  veg_canopy_tif_filename: tree_canopy.tif
-  landcover_tif_filename: landcover.tif
+  dsm_tif_filename: dsm_ground_build.tif
+  tree_canopy_tif_filename: tree_canopy.tif
+  lulc_tif_filename: lulc.tif
+# New processing area. If any custom files are specified above (i.e. not None), then the system will not construct
+# a new tile grid and will instead use the existing one. In that case, values below can be None
+- NewProcessingArea:
+  min_lon: None
+  min_lat: None
+  max_lon: None
+  max_lat: None
+  cell_size: None
+#  tile_edge_length_m:
+#  tile_buff_m:

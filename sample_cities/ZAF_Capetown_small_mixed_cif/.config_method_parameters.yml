@@ -17,10 +17,8 @@
     output_sh: True
 # Names of meteorological files used for SOLWEIG processing
 - MetFiles:
-  - filename: <met_filename_1>.txt
-    utc_offset: <n>
-  - filename: <met_filename_2>.txt
-    utc_offset: <n>
+  - filename: met_20jan2022.txt
+    utc_offset: 2
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
 # All four file mappings must be specified here. Specify None for filename where custom file is not available for processing.
 # Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif
@@ -29,7 +27,7 @@
   dem_tif_filename: None
   dsm_tif_filename: dsm_ground_build.tif
   tree_canopy_tif_filename: tree_canopy.tif
-  lulc_tif_filename: lulc.tif
+  lulc_tif_filename: None
 # New processing area. If any custom files are specified above (i.e. not None), then the system will not construct
 # a new tile grid and will instead use the existing one. In that case, values below can be None
 - NewProcessingArea:

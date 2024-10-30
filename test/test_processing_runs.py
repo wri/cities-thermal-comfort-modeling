@@ -6,6 +6,17 @@ from workers.city_data import CityData
 from main import main
 import pytest
 
+# def test_big():
+#     package_folder = os.path.dirname(os.getcwd())
+#     source_base_path = os.path.join(package_folder, 'sample_cities')
+#     target_base_path = os.path.join(package_folder, 'test', 'test_results')
+#     source_city_folder_name = 'MEX_Monterrey'
+#     return_code = main(source_base_path, target_base_path, source_city_folder_name, 'no_pre_check')
+#
+#     has_valid_results = _verify_expected_output_folders(source_base_path, target_base_path, source_city_folder_name)
+#     assert return_code == 0
+#     assert has_valid_results
+
 
 def test_custom_city():
     package_folder = os.path.dirname(os.getcwd())

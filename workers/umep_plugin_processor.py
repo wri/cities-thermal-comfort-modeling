@@ -20,20 +20,6 @@ MAX_RETRY_COUNT = 3
 RETRY_PAUSE_TIME_SEC = 10
 
 
-# Initiate QGIS and UMEP processing
-try:
-    qgis_app = qgis_app_init()
-    from processing_umep.processing_umep import ProcessingUMEPProvider
-    umep_provider = ProcessingUMEPProvider()
-    qgis_app.processingRegistry().addProvider(umep_provider)
-    from processing.core.Processing import Processing
-    Processing.initialize()
-    import processing
-except Exception as e_msg:
-    msg = 'Processing could not initialize UMEP processing'
-    log_method_failure(datetime.now(), msg, None, None, None, e_msg)
-    # return
-
 def run_plugin(task_index, step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path, met_filename=None, utc_offset=None):
     start_time = datetime.now()
     _start_logging(target_base_path, folder_name_city_data)
@@ -41,6 +27,20 @@ def run_plugin(task_index, step_index, step_method, folder_name_city_data, folde
     city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
     method_title = _assign_method_title(step_method)
     log_method_start(method_title, task_index, None, city_data.source_base_path)
+
+    # Initiate QGIS and UMEP processing
+    try:
+        qgis_app = qgis_app_init()
+        from processing_umep.processing_umep import ProcessingUMEPProvider
+        umep_provider = ProcessingUMEPProvider()
+        qgis_app.processingRegistry().addProvider(umep_provider)
+        from processing.core.Processing import Processing
+        Processing.initialize()
+        import processing
+    except Exception as e_msg:
+        msg = 'Processing could not initialize UMEP processing'
+        log_method_failure(datetime.now(), msg, None, None, None, e_msg)
+        # return
 
     e_msg = ''
     return_code = -999

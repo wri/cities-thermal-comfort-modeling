@@ -43,7 +43,7 @@
 1. You must update the batch files for your project name. You will also need to updated the paths if you moved to a different location
 1. You may want to first run the unmodified sample_run_CTM_processing_pre_check and sample_run_CTM_processing scripts if you want to practice running the system without your own data.
 
-#### Post-Execution
+### Post-Execution
    1. Results of your run are written to the result_data folder under your target path specified in the batch script, such as C:\CTCM_processing\<my_city_name>\results_data
    1. To see a report of success/failure, see html files in the .results_data\.run_reports of your targe folder for the time that you started your run. 
    1. For details about any failures, see the log file(s) in the .results_data\.logs of your target folder

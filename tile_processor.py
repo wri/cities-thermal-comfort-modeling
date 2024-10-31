@@ -1,5 +1,4 @@
 import time
-
 from workers.city_data import CityData
 from workers.source_cif_data_downloader import get_cif_data
 
@@ -71,6 +70,7 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
     result_json = f'{{"Return_package": [{result_str}]}}'
 
     return result_json
+
 
 if __name__ == "__main__":
     import argparse

@@ -58,7 +58,7 @@ def _get_inclusive_between_string(text, start_substring, end_substring):
         return None
 
 def _report_results(enabled_processing_tasks_df, results_df, target_base_path, city_folder_name):
-    results_df.sort_values(['task_index', 'step_index', 'met_filename'], inplace=True)
+    results_df.sort_values(['task_index', 'tile', 'step_index', 'met_filename'], inplace=True)
 
     merged = pd.merge(enabled_processing_tasks_df, results_df, left_index=True, right_on='task_index',
                       how='outer')

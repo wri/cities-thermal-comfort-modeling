@@ -30,13 +30,14 @@
   dsm_tif_filename: dsm_ground_build.tif
   tree_canopy_tif_filename: tree_canopy.tif
   lulc_tif_filename: lulc.tif
-# New processing area. If any custom files are specified above (i.e. not None), then the system will not construct
-# a new tile grid and will instead use the existing one. In that case, values below can be None
-- NewProcessingArea:
+# New processing Area of Interest. If any custom files are specified above (i.e. not None), then the system will not construct
+# a new tile grid and will instead use the existing one. In that case, coordinate values below can be None.
+# If you don't want to subdivide the AOI, specify None for sub_division_cell_size.
+- NewProcessingAOI:
   min_lon: None
   min_lat: None
   max_lon: None
   max_lat: None
-  cell_size: None
+  sub_division_cell_size: None
 #  tile_edge_length_m:
 #  tile_buff_m:

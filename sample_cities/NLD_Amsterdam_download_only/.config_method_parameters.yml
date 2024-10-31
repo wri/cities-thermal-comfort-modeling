@@ -25,17 +25,17 @@
 # Auto-generated filenames from CIF: cif_dem.tif, cif_dsm_ground_build.tif, cif_tree_canopy.tif, cif_lulc.tif
 - CustomTiffFilenames:
   dem_tif_filename: None
-  dsm_tif_filename: dsm_ground_build.tif
-  tree_canopy_tif_filename: tree_canopy.tif
+  dsm_tif_filename: None
+  tree_canopy_tif_filename: None
   lulc_tif_filename: None
 # New processing Area of Interest. If any custom files are specified above (i.e. not None), then the system will not construct
 # a new tile grid and will instead use the existing one. In that case, coordinate values below can be None.
 # If you don't want to subdivide the AOI, specify None for sub_division_cell_size.
 - NewProcessingAOI:
-  min_lon: None
-  min_lat: None
-  max_lon: None
-  max_lat: None
+  min_lon: 4.901190775092289
+  min_lat: 52.37197831356116
+  max_lon: 4.908300489273159
+  max_lat: 52.37520954271636
   sub_division_cell_size: None
 #  tile_edge_length_m:
 #  tile_buff_m:

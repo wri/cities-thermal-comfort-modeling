@@ -14,8 +14,8 @@
 1. Configuration for a city
    * In your C:\CTCM_processing\<city_folder> folder:
    1. modify the .config_umep_city_processing.csv file to specify which tiles and UMEP method to run
-      1. There are 4 possible method options, but the majority of the time choose "solweig_full". This option will first generate files needed for solweig and then the solweig plugin.
-      1. Note: The other three options allow runs of just wall_height_aspect, skyview_factor, or solweig_only in case you want to separately run each plugin.
+      1. There are 5 possible method options, but the majority of the time choose "solweig_full". This option will first generate files needed for solweig and then the solweig plugin.
+      1. Note: The other four options allow runs of specific methods (cif_download_only, wall_height_aspect, skyview_factor, solweig_only) in case you want to separately run each method.
    1. modify the .config_method_parameters.yml file to specify:
       1. methods attributes (the file already contains default values which you may want to leave unaltered)
       1. the name(s) for meteorological files to be processes by the solweig method

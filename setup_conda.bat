@@ -7,4 +7,4 @@ echo Switching back to cities-thermal env
 call conda activate cities-thermal
 
 echo Adding plugins 
-call environment_post_processing_local.bat
+call environment_post_processing.bat

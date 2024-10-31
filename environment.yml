@@ -13,6 +13,8 @@ dependencies:
   - numpy=1.26.4
   - conda-build
   - dask[complete]=2024.8.2
+  - rasterio
+  - rioxarray
   - pytest
   - pip
   - pip:

@@ -1,4 +1,5 @@
 import xarray as xr
+from IPython.core.application import base_flags
 from rasterio.enums import Resampling
 from dask.diagnostics import ProgressBar
 import shapely.wkt
@@ -13,7 +14,7 @@ from workers.worker_tools import compute_time_diff_mins, save_tiff_file, save_ge
 DEFAULT_LULC_RESOLUTION = 1
 DEBUG = False
 
-def get_cif_data(task_index, output_base_path, folder_name_city_data, tile_id, features, tile_boundary, tile_resolution=None):
+def get_cif_data(task_index, output_base_path, folder_name_city_data, tile_id, features, tile_boundary, tile_resolution='None'):
     start_time = datetime.now()
 
     city_data = CityData(folder_name_city_data, tile_id, output_base_path, None)
@@ -24,33 +25,36 @@ def get_cif_data(task_index, output_base_path, folder_name_city_data, tile_id, f
 
     feature_list = features.split(',')
 
-    output_resolution = int(tile_resolution) if tile_resolution is not None else DEFAULT_LULC_RESOLUTION
+    if tile_resolution is None or tile_resolution == 'None':
+        output_resolution = DEFAULT_LULC_RESOLUTION
+    else:
+        output_resolution = int(tile_resolution)
 
     result_flags = []
     if 'era5' in feature_list:
-        get_era5(aoi_gdf)
+        _get_era5(aoi_gdf)
 
     if 'lulc' in feature_list:
-        this_success = get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution)
+        this_success = _get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution)
         result_flags.append(this_success)
 
     if 'tree_canopy' in feature_list:
-        this_success = get_tree_canopy_height(city_data, tile_data_path, aoi_gdf, output_resolution)
+        this_success = _get_tree_canopy_height(city_data, tile_data_path, aoi_gdf, output_resolution)
         result_flags.append(this_success)
 
     if 'dem' in feature_list or 'dsm' in feature_list:
         retrieve_dem = True if 'dem' in feature_list else False
-        this_success, nasa_dem_1m = get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution)
+        this_success, nasa_dem = _get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution)
         result_flags.append(this_success)
     else:
-        nasa_dem_1m = None
+        nasa_dem = None
 
     if 'dsm' in feature_list:
-        this_success, alos_dsm_1m = get_dsm(tile_data_path, aoi_gdf, output_resolution)
+        this_success, alos_dsm = _get_dsm(tile_data_path, aoi_gdf, output_resolution)
         result_flags.append(this_success)
-        this_success, overture_buildings = get_building_footprints(tile_data_path, aoi_gdf)
+        this_success, overture_buildings = _get_building_footprints(tile_data_path, aoi_gdf)
         result_flags.append(this_success)
-        this_success = get_building_height_dsm(city_data, tile_data_path, overture_buildings, alos_dsm_1m, nasa_dem_1m)
+        this_success = _get_building_height_dsm(city_data, tile_data_path, overture_buildings, alos_dsm, nasa_dem)
         result_flags.append(this_success)
 
     run_duration_min = compute_time_diff_mins(start_time)
@@ -68,12 +72,12 @@ def get_cif_data(task_index, output_base_path, folder_name_city_data, tile_id, f
     return return_stdout
 
 
-def get_era5(aoi_gdf):
+def _get_era5(aoi_gdf):
     from city_metrix.metrics import era_5_met_preprocessing
 
     aoi_era_5 = era_5_met_preprocessing(aoi_gdf.total_bounds)
 
-def get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution):
+def _get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution):
     try:
         from workers.open_urban import OpenUrban, reclass_map
 
@@ -89,17 +93,17 @@ def get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution):
 
         # Remove zeros
         remove_value = 0
-        count = count_occurrences(lulc_to_solweig_class, remove_value)
+        count = _count_occurrences(lulc_to_solweig_class, remove_value)
         if count > 0:
             print(f'Found {count} occurrences of the value {remove_value}. Removing...')
             lulc_to_solweig_class = lulc_to_solweig_class.where(lulc_to_solweig_class != remove_value, drop=True)
-            count = count_occurrences(lulc_to_solweig_class, remove_value)
+            count = _count_occurrences(lulc_to_solweig_class, remove_value)
             print(f'There are {count} occurrences of the value {remove_value} after removing.')
         else:
             print(f'There were no occurrences of the value {remove_value} found in data.')
 
         if output_resolution != DEFAULT_LULC_RESOLUTION:
-            lulc_to_solweig_class = resample_categorical_raster(lulc_to_solweig_class, output_resolution)
+            lulc_to_solweig_class = _resample_categorical_raster(lulc_to_solweig_class, output_resolution)
 
         # Save data to file
         save_tiff_file(lulc_to_solweig_class, tile_data_path, city_data.lulc_tif_filename)
@@ -112,11 +116,11 @@ def get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution):
         return False
 
 
-def count_occurrences(data, value):
+def _count_occurrences(data, value):
     return data.where(data == value).count().item()
 
 
-def get_tree_canopy_height(city_data, tile_data_path, aoi_gdf, output_resolution):
+def _get_tree_canopy_height(city_data, tile_data_path, aoi_gdf, output_resolution):
     try:
         from city_metrix.layers import TreeCanopyHeight
 
@@ -132,15 +136,15 @@ def get_tree_canopy_height(city_data, tile_data_path, aoi_gdf, output_resolution
         log_method_failure(datetime.now(), msg, None, None, city_data.source_base_path, '')
         return False
 
-def get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution):
+def _get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution):
     try:
         from city_metrix.layers import NasaDEM
 
-        nasa_dem_1m = NasaDEM(spatial_resolution=output_resolution).get_data(aoi_gdf.total_bounds)
+        nasa_dem = NasaDEM(spatial_resolution=output_resolution).get_data(aoi_gdf.total_bounds)
         if retrieve_dem:
-            save_tiff_file(nasa_dem_1m, tile_data_path, city_data.dem_tif_filename)
+            save_tiff_file(nasa_dem, tile_data_path, city_data.dem_tif_filename)
 
-        return True, nasa_dem_1m
+        return True, nasa_dem
 
     except Exception as e_msg:
         msg = f'DEM processing cancelled due to failure.'
@@ -148,15 +152,15 @@ def get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution)
         return False, None
 
 
-def get_dsm(tile_data_path, aoi_gdf, output_resolution):
+def _get_dsm(tile_data_path, aoi_gdf, output_resolution):
     try:
         from city_metrix.layers import AlosDSM
 
-        alos_dsm_1m = AlosDSM(spatial_resolution=output_resolution).get_data(aoi_gdf.total_bounds)
+        alos_dsm = AlosDSM(spatial_resolution=output_resolution).get_data(aoi_gdf.total_bounds)
         if DEBUG:
-            save_tiff_file(alos_dsm_1m, tile_data_path, 'debug_alos_dsm_1m.tif')
+            save_tiff_file(alos_dsm, tile_data_path, 'debug_alos_dsm.tif')
 
-        return True, alos_dsm_1m
+        return True, alos_dsm
 
     except Exception as e_msg:
         msg = f'DSM processing cancelled due to failure.'
@@ -164,7 +168,7 @@ def get_dsm(tile_data_path, aoi_gdf, output_resolution):
         return False, None
 
 
-def get_building_footprints(tile_data_path, aoi_gdf):
+def _get_building_footprints(tile_data_path, aoi_gdf):
     try:
         from city_metrix.layers import OvertureBuildings
 
@@ -180,39 +184,41 @@ def get_building_footprints(tile_data_path, aoi_gdf):
         return False, None
 
 
-def get_building_height_dsm(city_data, tile_data_path, overture_buildings, alos_dsm_1m, nasa_dem_1m):
+def _get_building_height_dsm(city_data, tile_data_path, overture_buildings, alos_dsm, nasa_dem):
     try:
         from exactextract import exact_extract
 
         # re-apply crs
-        target_crs = alos_dsm_1m.rio.crs
+        target_crs = alos_dsm.rio.crs
         overture_buildings = overture_buildings.to_crs(target_crs)
+
+        base_dtm = _create_base_dtm(alos_dsm, nasa_dem)
 
         # Determine extreme height ranges using the 1-meter terrain models. The higher resolution smooths the surface
         # where it changes abruptly from a tall structure to lower ones and generally improves estimates.
         overture_buildings['AlosDSM_max'] = (
-            exact_extract(alos_dsm_1m, overture_buildings, ["max"], output='pandas')['max'])
-        overture_buildings['NasaDEM_max'] = (
-            exact_extract(nasa_dem_1m, overture_buildings, ["max"], output='pandas')['max'])
-        overture_buildings['NasaDEM_min'] = (
-            exact_extract(nasa_dem_1m, overture_buildings, ["min"], output='pandas')['min'])
+            exact_extract(alos_dsm, overture_buildings, ["max"], output='pandas')['max'])
+        overture_buildings['BaseDTM_max'] = (
+            exact_extract(nasa_dem, overture_buildings, ["max"], output='pandas')['max'])
+        overture_buildings['BaseDTM_min'] = (
+            exact_extract(nasa_dem, overture_buildings, ["min"], output='pandas')['min'])
 
         overture_buildings['Height_diff'] = (
-                overture_buildings['AlosDSM_max'] - overture_buildings['NasaDEM_min'])
-        overture_buildings['height_estimate'] = (
-                overture_buildings['Height_diff'] + overture_buildings['NasaDEM_max'])
+                overture_buildings['AlosDSM_max'] - overture_buildings['BaseDTM_min'])
+        overture_buildings['Elevation_estimate'] = (
+                overture_buildings['Height_diff'] + overture_buildings['BaseDTM_max'])
 
-        overture_buildings['height_estimate'] = round(overture_buildings['height_estimate'], 0)
+        overture_buildings['Elevation_estimate'] = round(overture_buildings['Elevation_estimate'], 0)
 
         # TODO Prototype for building-height refinement
-        # prototype_refinement_building_height_estimates(overture_buildings)
+        # prototype_refinement_building_Elevation_estimates(overture_buildings)
 
-        overture_buildings_raster = rasterize_polygons(overture_buildings, values=["height_estimate"],
-                                                       snap_to_raster=nasa_dem_1m)
+        overture_buildings_raster = _rasterize_polygons(overture_buildings, values=["Elevation_estimate"],
+                                                        snap_to_raster=nasa_dem)
         if DEBUG:
             save_tiff_file(overture_buildings_raster, tile_data_path, 'debug_raw_building_footprints.tif')
 
-        composite_bldg_dem = combine_building_and_dem(nasa_dem_1m, overture_buildings_raster, target_crs)
+        composite_bldg_dem = _combine_building_and_dem(nasa_dem, overture_buildings_raster, target_crs)
 
         # Save data to file
         save_tiff_file(composite_bldg_dem, tile_data_path, city_data.dsm_tif_filename)
@@ -223,7 +229,12 @@ def get_building_height_dsm(city_data, tile_data_path, overture_buildings, alos_
         log_method_failure(datetime.now(), msg, None, None, None, '')
         return False
 
-def combine_building_and_dem(dem, buildings, target_crs):
+def _create_base_dtm(dsm, dem):
+    min_raster = np.minimum(dsm, dem)
+    return min_raster
+
+
+def _combine_building_and_dem(dem, buildings, target_crs):
     coords_dict = {dim: dem.coords[dim].values for dim in dem.dims}
 
     # Conver to ndarray in order to mask and combine layers
@@ -245,7 +256,7 @@ def combine_building_and_dem(dem, buildings, target_crs):
 
     return composite_xa
 
-def resample_categorical_raster(xarray, resolution_m):
+def _resample_categorical_raster(xarray, resolution_m):
     resampled_array = xarray.rio.reproject(
         dst_crs=xarray.rio.crs,
         resolution=resolution_m,
@@ -254,7 +265,7 @@ def resample_categorical_raster(xarray, resolution_m):
     return resampled_array
 
 
-def rasterize_polygons(gdf, values=["Value"], snap_to_raster=None):
+def _rasterize_polygons(gdf, values=["Value"], snap_to_raster=None):
     from geocube.api.core import make_geocube
     if gdf.empty:
         feature_1m = xr.zeros_like(snap_to_raster)
@@ -269,7 +280,7 @@ def rasterize_polygons(gdf, values=["Value"], snap_to_raster=None):
     return feature_1m
 
 
-def prototype_refinement_building_height_estimates(overture_bldgs):
+def prototype_refinement_building_Elevation_estimates(overture_bldgs):
     # TODO This function is an initial exploration of using OSM tags to refine estimate of building height.
     # TODO Results are moderately successful for Amsterdam, but could be improved with additional building-height data.
     '''
@@ -314,18 +325,18 @@ def prototype_refinement_building_height_estimates(overture_bldgs):
     overture_bldgs.loc[
         (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'school'), 'inferred_height'] = \
         (school_typical_floors * floor_height)
-    overture_bldgs['guessed_height'] = overture_bldgs['inferred_height'] + overture_bldgs['NasaDEM_min']
+    overture_bldgs['guessed_height'] = overture_bldgs['inferred_height'] + overture_bldgs['BaseDTM_min']
 
     overture_bldgs.loc[overture_bldgs['height'].notnull(), 'best_guess_height'] = overture_bldgs['height']
     overture_bldgs.loc[((overture_bldgs['best_guess_height'].isnull()) & (
         overture_bldgs['guessed_height'].isnull())), 'best_guess_height'] = \
-        overture_bldgs['height_estimate']
+        overture_bldgs['Elevation_estimate']
     overture_bldgs.loc[(
-                (overture_bldgs['best_guess_height'].isnull()) & (overture_bldgs['height_estimate'].notnull()) & (
+                (overture_bldgs['best_guess_height'].isnull()) & (overture_bldgs['Elevation_estimate'].notnull()) & (
             overture_bldgs['guessed_height'].notnull())), 'best_guess_height'] = \
-        0.6 * overture_bldgs['height_estimate'] + 0.4 * overture_bldgs['guessed_height']
+        0.6 * overture_bldgs['Elevation_estimate'] + 0.4 * overture_bldgs['guessed_height']
     overture_bldgs.loc[(
-                (overture_bldgs['best_guess_height'].isnull()) & (overture_bldgs['height_estimate'].isnull()) & (
+                (overture_bldgs['best_guess_height'].isnull()) & (overture_bldgs['Elevation_estimate'].isnull()) & (
             overture_bldgs['inferred_height'].notnull())), 'best_guess_height'] = \
         overture_bldgs['inferred_height']
     overture_bldgs.loc[overture_bldgs['best_guess_height'].isnull(), 'best_guess_height'] = (

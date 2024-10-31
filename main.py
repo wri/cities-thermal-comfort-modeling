@@ -9,10 +9,9 @@ import pandas as pd
 import shapely
 
 from job_handler.config_validator import _validate_basic_inputs, _validate_config_inputs
-from job_handler.graph_builder import _build_source_dataframes, _get_aoi_dimensions, _get_cif_features
+from job_handler.graph_builder import _build_source_dataframes, _get_aoi_fishnet, get_cif_features
 from job_handler.reporter import _parse_row_results, _report_results
-from src.src_tools import create_folder, _get_existing_tiles
-from workers.tile_processor import process_tile
+from src.src_tools import create_folder, _get_geobounds_of_geotiff_file, get_existing_tiles
 from workers.worker_tools import get_application_path
 
 warnings.filterwarnings('ignore')
@@ -61,10 +60,10 @@ def main(source_base_path, target_base_path, city_folder_name, pre_check_option)
             task_method = config_row.method
 
             source_city_path = str(os.path.join(source_base_path, city_folder_name))
-            custom_file_names, has_no_custom_features, cif_features = _get_cif_features(source_city_path)
+            custom_file_names, has_custom_features, cif_features = get_cif_features(source_city_path)
 
-            if has_no_custom_features:
-                fishnet = _get_aoi_dimensions(source_base_path, city_folder_name)
+            if not has_custom_features:
+                fishnet = _get_aoi_fishnet(source_base_path, city_folder_name)
 
                 for index, cell in fishnet.iterrows():
                     cell_bounds = cell.geometry.bounds
@@ -80,7 +79,7 @@ def main(source_base_path, target_base_path, city_folder_name, pre_check_option)
             else:
                 start_tile_id = config_row.start_tile_id
                 end_tile_id = config_row.end_tile_id
-                existing_tiles = _get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_tile_id)
+                existing_tiles = get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_tile_id)
                 for tile_folder_name, tile_dimensions in existing_tiles.items():
                     tile_boundary = tile_dimensions[0]
                     tile_resolution = tile_dimensions[1]
@@ -171,6 +170,7 @@ def _process_rows(futures):
         return all_passed, results_df
     else:
         return True, None
+
 
 toBool = {'true': True, 'false': False}
 

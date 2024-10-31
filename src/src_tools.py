@@ -58,7 +58,7 @@ def get_application_path():
 
 toBool = {'true': True, 'false': False}
 
-def _get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_tile_id):
+def get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_tile_id):
     tiles_folders = str(os.path.join(source_city_path, CityData.folder_name_source_data, CityData.folder_name_primary_source_data))
 
     tile_sizes = {}
@@ -66,8 +66,13 @@ def _get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_
         if dir_obj.is_dir() and os.path.basename(dir_obj).startswith('tile_'):
             tile_path = os.path.join(tiles_folders, dir_obj)
             tile_name = os.path.basename(tile_path)
-            # TODO need more robust solution fro start/end
-            if tile_name in [start_tile_id, end_tile_id]:
+
+            if start_tile_id == '*' or end_tile_id == '*':
+                tile_range = []
+            else:
+                tile_range = _get_tile_range(start_tile_id, end_tile_id)
+
+            if not tile_range or tile_name in tile_range:
                 for file_obj in Path(tile_path).iterdir():
                     if file_obj.name in custom_file_names and file_obj.is_file() and Path(file_obj).suffix == '.tif':
                         # get bounds for first tiff file found in folder, assuming all other geotiffs have same bounds
@@ -77,6 +82,17 @@ def _get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_
         continue
 
     return tile_sizes
+
+def _get_tile_range(start_tile_id, end_tile_id):
+    t_len = len('tile_')
+    start_id = int(start_tile_id[t_len:])
+    end_id = int(end_tile_id[t_len:])
+    tile_range = []
+    for x in range(start_id, end_id+1):
+        pad_x = str(x).zfill(3)
+        tile_name = f'tile_{pad_x}'
+        tile_range.append(tile_name)
+    return tile_range
 
 def _get_geobounds_of_geotiff_file(file_path):
     with rasterio.open(file_path) as dataset:

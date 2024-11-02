@@ -4,9 +4,6 @@ from job_handler.graph_builder import get_cif_features
 from src.src_tools import get_existing_tiles
 from workers.city_data import CityData, parse_filenames_config, parse_processing_areas_config
 
-
-# valid_methods = ['no_pre_check', 'check_all', 'check_enabled_only']
-
 def verify_fundamental_paths(source_base_path, target_path, city_folder_name):
     invalids = []
     if _verify_path(source_base_path) is False:
@@ -82,7 +79,7 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
                 invalids.append(msg)
         else:
             for tile_folder_name, tile_dimensions in existing_tiles.items():
-                if bool(enabled) or pre_check_option == 'check_all':
+                if bool(enabled) or pre_check_option == 'pre_check_all':
                     try:
                         city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
                     except Exception as e_msg:

@@ -11,7 +11,7 @@ import pytest
 #     source_base_path = os.path.join(package_folder, 'sample_cities')
 #     target_base_path = os.path.join(package_folder, 'test', 'test_results')
 #     source_city_folder_name = 'MEX_Monterrey'
-#     return_code = start_processing(source_base_path, target_base_path, source_city_folder_name, 'no_pre_check')
+#     return_code = start_processing(source_base_path, target_base_path, source_city_folder_name, 'run_pipeline')
 #
 #     has_valid_results = _verify_expected_output_folders(source_base_path, target_base_path, source_city_folder_name)
 #     assert return_code == 0
@@ -23,7 +23,7 @@ def test_custom_city():
     source_base_path = os.path.join(package_folder, 'sample_cities')
     target_base_path = os.path.join(package_folder, 'test', 'test_results')
     source_city_folder_name = 'ZAF_Capetown_small_tile'
-    return_code = start_processing(source_base_path, target_base_path, source_city_folder_name, 'no_pre_check')
+    return_code = start_processing(source_base_path, target_base_path, source_city_folder_name, 'run_pipeline')
 
     has_valid_results = _verify_expected_output_folders(source_base_path, target_base_path, source_city_folder_name)
     assert return_code == 0
@@ -35,7 +35,7 @@ def test_cif_city():
     source_base_path = os.path.join(package_folder, 'sample_cities')
     target_base_path = os.path.join(package_folder, 'test', 'test_results')
     source_city_folder_name = 'NLD_Amsterdam'
-    return_code = start_processing(source_base_path, target_base_path, source_city_folder_name, 'no_pre_check')
+    return_code = start_processing(source_base_path, target_base_path, source_city_folder_name, 'run_pipeline')
 
     has_valid_results = _verify_expected_output_folders(source_base_path, target_base_path, source_city_folder_name)
     assert return_code == 0
@@ -47,7 +47,7 @@ def test_mixed_cif_city():
     source_base_path = os.path.join(package_folder, 'sample_cities')
     target_base_path = os.path.join(package_folder, 'test', 'test_results')
     source_city_folder_name = 'ZAF_Capetown_small_mixed_cif'
-    return_code = start_processing(source_base_path, target_base_path, source_city_folder_name, 'no_pre_check')
+    return_code = start_processing(source_base_path, target_base_path, source_city_folder_name, 'run_pipeline')
 
     has_valid_results = _verify_expected_output_folders(source_base_path, target_base_path, source_city_folder_name)
     assert return_code == 0
@@ -58,7 +58,7 @@ def test_download_only_cif_city():
     source_base_path = os.path.join(package_folder, 'sample_cities')
     target_base_path = os.path.join(package_folder, 'test', 'test_results')
     source_city_folder_name = 'NLD_Amsterdam_download_only'
-    return_code = start_processing(source_base_path, target_base_path, source_city_folder_name, 'no_pre_check')
+    return_code = start_processing(source_base_path, target_base_path, source_city_folder_name, 'run_pipeline')
 
     assert return_code == 0
 
@@ -68,7 +68,7 @@ def test_cif_city_check():
     source_base_path = os.path.join(package_folder, 'sample_cities')
     target_base_path = os.path.join(package_folder, 'test', 'test_results')
     source_city_folder_name = 'NLD_Amsterdam'
-    return_code = start_processing(source_base_path, target_base_path, source_city_folder_name, 'check_all')
+    return_code = start_processing(source_base_path, target_base_path, source_city_folder_name, 'pre_check_all')
 
     has_valid_results = _verify_expected_output_folders(source_base_path, target_base_path, source_city_folder_name)
     assert return_code == 0
@@ -81,7 +81,7 @@ def test_custom_city_check_all():
     target_base_path = os.path.join(package_folder, 'sample_cities')
     source_city_folder_name = 'ZAF_Capetown_small_tile'
 
-    return_code = start_processing(source_base_path, target_base_path, source_city_folder_name, 'check_all')
+    return_code = start_processing(source_base_path, target_base_path, source_city_folder_name, 'pre_check_all')
 
     assert return_code == 0
 
@@ -93,7 +93,7 @@ def test_main_check_all_failure():
     source_city_folder_name = 'ZAF_Capetown_small_tile'
 
     with pytest.raises(Exception):
-        start_processing(source_base_path, target_base_path, source_city_folder_name, 'check_all')
+        start_processing(source_base_path, target_base_path, source_city_folder_name, 'pre_check_all')
 
 
 def test_main_check_invalid_configs():
@@ -103,7 +103,7 @@ def test_main_check_invalid_configs():
     source_city_folder_name = 'XXX_Invalid_city'
 
     with pytest.raises(Exception):
-        start_processing(source_base_path, target_base_path, source_city_folder_name, 'check_all')
+        start_processing(source_base_path, target_base_path, source_city_folder_name, 'pre_check_all')
 
 
 def test_main_check_enabled_only_failure():

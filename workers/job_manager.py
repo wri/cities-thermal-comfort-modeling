@@ -119,7 +119,7 @@ def _process_rows(futures):
     if futures:
         # chunk size??
         from dask.distributed import Client
-        with Client(n_workers=int(mp.cpu_count()),
+        with Client(n_workers=int(mp.cpu_count() - 1),
                     threads_per_worker=1,
                     processes=False,
                     memory_limit='2GB',
@@ -147,10 +147,6 @@ def _process_rows(futures):
         return all_passed, results_df
     else:
         return True, None
-
-
-toBool = {'true': True, 'false': False}
-
 
 def _log_info_msg(message):
     logging.info(message)

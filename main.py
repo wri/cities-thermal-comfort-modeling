@@ -9,17 +9,24 @@ Guide to creating standalone app for calling QGIS: https://docs.qgis.org/3.16/en
 https://medium.com/@giovannigallon/how-i-automate-qgis-tasks-using-python-54df35d8d63f
 """
 
-def start_processing(source_base_path, target_base_path, city_folder_name, pre_check_option):
+def start_processing(source_base_path, target_base_path, city_folder_name, processing_option):
     abs_source_base_path = os.path.abspath(source_base_path)
     abs_target_base_path = os.path.abspath(target_base_path)
     return_code_basic = _validate_basic_inputs(abs_source_base_path, abs_target_base_path, city_folder_name)
 
     processing_config_df = _build_source_dataframes(abs_source_base_path, city_folder_name)
-    return_code_configs = _validate_config_inputs(processing_config_df, abs_source_base_path, abs_target_base_path, city_folder_name, pre_check_option)
+
+    if processing_option == 'run_pipeline':
+        precheck_option = 'pre_check'
+    else:
+        precheck_option = processing_option
+
+    return_code_configs = _validate_config_inputs(processing_config_df, abs_source_base_path, abs_target_base_path,
+                                                  city_folder_name, precheck_option)
 
     # TODO - Add checks for prerequite met data, such as consistent CRS
 
-    if pre_check_option == 'no_pre_check':
+    if processing_option == 'run_pipeline':
         return_code, return_str = start_jobs(abs_source_base_path, abs_target_base_path, city_folder_name, processing_config_df)
 
         if return_code == 0:
@@ -49,11 +56,11 @@ if __name__ == "__main__":
     parser.add_argument('--city_folder_name', metavar='path', required=True,
                         help='name of source city_folder')
 
-    valid_methods = ['no_pre_check', 'check_all', 'check_enabled_only']
-    parser.add_argument('--pre_check_option', metavar='str', choices=valid_methods, required=True,
+    valid_methods = ['run_pipeline', 'pre_check_all', 'pre_check']
+    parser.add_argument('--processing_option', metavar='str', choices=valid_methods, required=True,
                         help=f'specifies type of configuration pre-check. Options are: {valid_methods}')
     args = parser.parse_args()
 
-    return_code = start_processing(args.source_base_path, args.target_base_path, args.city_folder_name, args.pre_check_option)
+    return_code = start_processing(args.source_base_path, args.target_base_path, args.city_folder_name, args.processing_option)
 
     print(f'return code: {return_code}')

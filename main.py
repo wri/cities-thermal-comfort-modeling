@@ -200,4 +200,4 @@ if __name__ == "__main__":
 
     return_code = start_processing(args.source_base_path, args.target_base_path, args.city_folder_name, args.pre_check_option)
 
-    print(return_code)
+    print(f'return code: {return_code}')

@@ -2,7 +2,7 @@ import sys
 
 def qgis_app_init():
     from qgis.core import QgsApplication
-    from workers.worker_tools import get_configurations
+    from worker_tools import get_configurations
 
     qgis_home_path, qgis_plugin_path = get_configurations()
     sys.path.append(qgis_plugin_path)

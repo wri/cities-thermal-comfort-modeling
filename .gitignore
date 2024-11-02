@@ -190,6 +190,8 @@ fabric.properties
 preprocessed_data/
 tcm_results/
 NOT_FOR_CHECKIN/
+.local*
+_local*
 
 # CIF
 data

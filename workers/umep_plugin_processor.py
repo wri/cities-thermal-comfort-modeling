@@ -7,10 +7,10 @@ warnings.filterwarnings("ignore")
 
 from pathlib import Path
 from datetime import datetime
-from workers.worker_tools import remove_file, remove_folder, compute_time_diff_mins, create_folder, log_method_failure, \
+from worker_tools import remove_file, remove_folder, compute_time_diff_mins, create_folder, log_method_failure, \
     log_method_start, log_method_completion
-from workers.qgis_initializer import qgis_app_init
-from workers.city_data import CityData
+from qgis_initializer import qgis_app_init
+from city_data import CityData
 
 import logging
 for handler in logging.root.handlers[:]:

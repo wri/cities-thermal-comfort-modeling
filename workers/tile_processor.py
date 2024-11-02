@@ -1,12 +1,12 @@
 import time
-from workers.city_data import CityData
-from workers.source_cif_data_downloader import get_cif_data
+from city_data import CityData
+from source_cif_data_downloader import get_cif_data
 
 PROCESSING_PAUSE_TIME_SEC = 30
 
 def process_tile(task_index, task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
                  cif_features, tile_boundary, tile_resolution):
-    from workers.umep_plugin_processor import run_plugin
+    from umep_plugin_processor import run_plugin
 
     def _execute_retrieve_cif_data(task_idx, source_path, folder_city, folder_tile, features, boundary, resolution):
         cif_stdout = \

@@ -7,8 +7,8 @@ import geopandas as gp
 import numpy as np
 from datetime import datetime
 
-from workers.city_data import CityData
-from workers.worker_tools import compute_time_diff_mins, save_tiff_file, save_geojson_file, log_method_failure
+from city_data import CityData
+from worker_tools import compute_time_diff_mins, save_tiff_file, save_geojson_file, log_method_failure
 
 # Unify the layers on the same resolution
 DEFAULT_LULC_RESOLUTION = 1

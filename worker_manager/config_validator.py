@@ -1,6 +1,6 @@
 import os
 
-from job_handler.graph_builder import get_cif_features
+from worker_manager.graph_builder import get_cif_features
 from src.src_tools import get_existing_tiles
 from workers.city_data import CityData, parse_filenames_config, parse_processing_areas_config
 
@@ -10,7 +10,7 @@ def verify_fundamental_paths(source_base_path, target_path, city_folder_name):
         msg = f'Invalid source base path: {source_base_path}'
         invalids.append(msg)
 
-    city_path = str(os.path.join(source_base_path, city_folder_name))
+    city_path = os.path.join(source_base_path, city_folder_name)
     if _verify_path(city_path) is False:
         msg = f'Invalid source city path: {city_path}'
         invalids.append(msg)

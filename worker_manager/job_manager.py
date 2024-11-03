@@ -6,8 +6,8 @@ import pandas as pd
 import shapely
 import dask
 
-from job_handler.graph_builder import _get_aoi_fishnet, get_cif_features
-from job_handler.reporter import _parse_row_results, _report_results
+from worker_manager.graph_builder import _get_aoi_fishnet, get_cif_features
+from worker_manager.reporter import _parse_row_results, _report_results
 from src.src_tools import create_folder, get_existing_tiles
 from workers.worker_tools import get_application_path
 from workers.city_data import CityData
@@ -128,10 +128,10 @@ def _process_rows(futures):
 
             msg = f'*************Monitor processing at {client.dashboard_link}'
             _log_info_msg(msg)
-            try:
-                dc = dask.compute(*futures)
-            except Exception as e_msg:
-                _log_info_msg(e_msg)
+            # try:
+            dc = dask.compute(*futures)
+            # except Exception as e_msg:
+            #     _log_info_msg(e_msg)
 
         all_passed, results_df, failed_task_ids, failed_task_details =_parse_row_results(dc)
 

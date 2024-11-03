@@ -1,7 +1,8 @@
 import os
-from job_handler.config_validator import _validate_basic_inputs, _validate_config_inputs
-from job_handler.graph_builder import _build_source_dataframes
-from workers.job_manager import start_jobs
+
+from worker_manager.config_validator import _validate_basic_inputs, _validate_config_inputs
+from worker_manager.graph_builder import _build_source_dataframes
+from worker_manager.job_manager import start_jobs
 
 
 """
@@ -25,7 +26,6 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
                                                   city_folder_name, precheck_option)
 
     # TODO - Add checks for prerequite met data, such as consistent CRS
-
     if processing_option == 'run_pipeline':
         return_code, return_str = start_jobs(abs_source_base_path, abs_target_base_path, city_folder_name, processing_config_df)
 

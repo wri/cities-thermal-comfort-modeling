@@ -32,12 +32,11 @@
   lulc_tif_filename: lulc.tif
 # New processing Area of Interest. If any custom files are specified above (i.e. not None), then the system will not construct
 # a new tile grid and will instead use the existing one. In that case, coordinate values below can be None.
-# If you don't want to subdivide the AOI, specify None for sub_division_cell_size.
+# If you don't want to subdivide the AOI, specify None for tile_side_size_meters.
 - NewProcessingAOI:
   min_lon: None
   min_lat: None
   max_lon: None
   max_lat: None
-  sub_division_cell_size: None
-#  tile_edge_length_m:
+  tile_side_size_meters: None
 #  tile_buff_m:

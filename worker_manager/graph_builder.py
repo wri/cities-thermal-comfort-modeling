@@ -20,18 +20,18 @@ def _build_source_dataframes(source_base_path, city_folder_name):
 def _get_aoi_fishnet(source_base_path, city_folder_name):
     source_city_path = str(os.path.join(source_base_path, city_folder_name))
 
-    min_lon, min_lat, max_lon, max_lat, sub_division_cell_size = \
+    min_lon, min_lat, max_lon, max_lat, tile_side_size_meters = \
         parse_processing_areas_config(source_city_path, CityData.filename_method_parameters_config)
 
     # aoi_boundary = str(shapely.box(min_lon, min_lat, max_lon, max_lat))
 
     from city_metrix.layers.layer import create_fishnet_grid
-    if sub_division_cell_size is None or sub_division_cell_size == 'None':
+    if tile_side_size_meters is None or tile_side_size_meters == 'None':
         lon_diff = max_lon - min_lon
         lat_diff = max_lat - min_lat
-        sub_division_cell_size = lon_diff if lon_diff > lat_diff else lat_diff
+        tile_side_size_meters = lon_diff if lon_diff > lat_diff else lat_diff
 
-    fishnet = create_fishnet_grid(min_lon, min_lat, max_lon, max_lat, sub_division_cell_size)
+    fishnet = create_fishnet_grid(min_lon, min_lat, max_lon, max_lat, tile_side_size_meters)
 
     return fishnet
 

@@ -60,7 +60,7 @@ class CityData:
          has_custom_features, feature_list) =(
             parse_filenames_config(obj.source_city_path, cls.filename_method_parameters_config))
 
-        obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat, sub_division_cell_size = \
+        obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat, tile_side_size_meters = \
             parse_processing_areas_config(obj.source_city_path, cls.filename_method_parameters_config)
 
         obj.source_tile_data_path = os.path.join(obj.source_city_data_path, obj.folder_name_primary_source_data,
@@ -134,10 +134,10 @@ def parse_processing_areas_config(source_city_path, filename_method_parameters_c
             min_lat = processing_area['min_lat']
             max_lon = processing_area['max_lon']
             max_lat = processing_area['max_lat']
-            sub_division_cell_size = processing_area['sub_division_cell_size']
+            tile_side_size_meters = processing_area['tile_side_size_meters']
 
     except Exception as e_msg:
         raise Exception(
             f'The {filename_method_parameters_config} file not found or improperly defined in {city_configs}. (Error: {e_msg})')
 
-    return min_lon, min_lat, max_lon, max_lat, sub_division_cell_size
+    return min_lon, min_lat, max_lon, max_lat, tile_side_size_meters

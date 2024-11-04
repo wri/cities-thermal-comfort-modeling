@@ -1,5 +1,9 @@
+import math
 import os
 import pandas as pd
+from shapely import Point
+
+
 from workers.city_data import parse_processing_areas_config, CityData, parse_filenames_config
 
 def _build_source_dataframes(source_base_path, city_folder_name):
@@ -16,15 +20,33 @@ def _get_aoi_fishnet(source_base_path, city_folder_name):
         parse_processing_areas_config(source_city_path, CityData.filename_method_parameters_config)
 
     if tile_side_meters is None or tile_side_meters == 'None':
-        lon_diff = max_lon - min_lon
-        lat_diff = max_lat - min_lat
-        tile_side_meters = lon_diff if lon_diff > lat_diff else lat_diff
+        ns = _get_distance_between_points(min_lon, min_lat, min_lon, max_lat)
+        ew = _get_distance_between_points(min_lon, min_lat, max_lon, min_lat)
+        tile_side_meters = ns if ns > ew else ew
+        tile_buffer_meters = 0
+    elif tile_buffer_meters is None or tile_buffer_meters == 'None':
+        tile_buffer_meters = 0
 
     from city_metrix.layers.layer import create_fishnet_grid
     fishnet = create_fishnet_grid(min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters)
 
     return fishnet
 
+def _get_distance_between_points(lon1, lat1, lon2, lat2):
+    # Convert decimal degrees to radians
+    lon1, lat1, lon2, lat2 = map(math.radians, [lon1, lat1, lon2, lat2])
+
+    # Haversine formula
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
+    c = 2 * math.asin(math.sqrt(a))
+
+    # Global average radius of Earth in kilometers.
+    r = 6371000
+
+    # Calculate the result
+    return c * r
 
 def get_cif_features(source_city_path):
     dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename, has_custom_features, cif_feature_list =\

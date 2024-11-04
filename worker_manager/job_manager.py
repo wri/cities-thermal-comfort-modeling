@@ -122,8 +122,6 @@ def _write_tile_grid(tile_grid, target_base_path, city_folder_name):
     projected_gdf.to_file(file_path, driver='GeoJSON')
 
 
-
-
 def _construct_pre_proc_array(task_index, task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name, cif_features, tile_boundary, tile_resolution):
     proc_array = ['python', TILE_PROCESSING_MODULE_PATH,
                   f'--task_index={task_index}',
@@ -139,6 +137,7 @@ def _construct_pre_proc_array(task_index, task_method, source_base_path, target_
 
     return proc_array
 
+
 def _start_logging(target_base_path, city_folder_name):
     results_subfolder = CityData.folder_name_results
     log_folder_path = str(os.path.join(target_base_path, city_folder_name, results_subfolder, '.logs'))
@@ -149,6 +148,7 @@ def _start_logging(target_base_path, city_folder_name):
                         datefmt='%a_%Y_%b_%d_%H:%M:%S',
                         filename=log_file_path
                         )
+
 
 def _process_rows(futures):
     if futures:
@@ -167,7 +167,6 @@ def _process_rows(futures):
 
             # TODO implement progress bar
             dc = dask.compute(*futures)
-
 
         all_passed, results_df, failed_task_ids, failed_task_details =_parse_row_results(dc)
 

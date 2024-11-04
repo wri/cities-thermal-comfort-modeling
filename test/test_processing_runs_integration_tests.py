@@ -2,6 +2,7 @@ import os
 import pandas as pd
 
 from main import start_processing
+from src.src_tools import remove_folder, clean_folder
 from test.testing_tools import is_valid_output_directory
 from workers.city_data import CityData
 import pytest
@@ -12,6 +13,9 @@ def test_custom_city():
     source_base_path = os.path.join(package_folder, 'sample_cities')
     target_base_path = os.path.join(package_folder, 'test', 'test_results')
     source_city_folder_name = 'ZAF_Capetown_small_tile'
+    target = os.path.join(target_base_path, source_city_folder_name, CityData.folder_name_results)
+    clean_folder(target)
+
     return_code = start_processing(source_base_path, target_base_path, source_city_folder_name, 'run_pipeline')
 
     has_valid_results = _verify_expected_output_folders(source_base_path, target_base_path, source_city_folder_name)
@@ -24,6 +28,11 @@ def test_cif_city():
     source_base_path = os.path.join(package_folder, 'sample_cities')
     target_base_path = os.path.join(package_folder, 'test', 'test_results')
     source_city_folder_name = 'NLD_Amsterdam'
+    source = os.path.join(source_base_path, source_city_folder_name, CityData.folder_name_source_data, CityData.folder_name_primary_source_data)
+    target = os.path.join(target_base_path, source_city_folder_name, CityData.folder_name_results)
+    clean_folder(source)
+    clean_folder(target)
+
     return_code = start_processing(source_base_path, target_base_path, source_city_folder_name, 'run_pipeline')
 
     has_valid_results = _verify_expected_output_folders(source_base_path, target_base_path, source_city_folder_name)
@@ -36,17 +45,25 @@ def test_mixed_cif_city():
     source_base_path = os.path.join(package_folder, 'sample_cities')
     target_base_path = os.path.join(package_folder, 'test', 'test_results')
     source_city_folder_name = 'ZAF_Capetown_small_mixed_cif'
+    remove_folder(os.path.join(target_base_path, source_city_folder_name))
+
     return_code = start_processing(source_base_path, target_base_path, source_city_folder_name, 'run_pipeline')
 
     has_valid_results = _verify_expected_output_folders(source_base_path, target_base_path, source_city_folder_name)
     assert return_code == 0
     assert has_valid_results
 
+
 def test_download_only_cif_city():
     package_folder = os.path.dirname(os.getcwd())
     source_base_path = os.path.join(package_folder, 'sample_cities')
     target_base_path = os.path.join(package_folder, 'test', 'test_results')
     source_city_folder_name = 'NLD_Amsterdam_download_only'
+    source = os.path.join(source_base_path, source_city_folder_name, CityData.folder_name_source_data, CityData.folder_name_primary_source_data)
+    target = os.path.join(target_base_path, source_city_folder_name)
+    remove_folder(source)
+    remove_folder(target)
+
     return_code = start_processing(source_base_path, target_base_path, source_city_folder_name, 'run_pipeline')
 
     assert return_code == 0

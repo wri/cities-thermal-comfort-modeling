@@ -36,5 +36,5 @@
   min_lat: 52.37197831356116
   max_lon: 4.908300489273159
   max_lat: 52.37520954271636
-  tile_side_meters: 1000
-  tile_buffer_meters: 200
+  tile_side_meters: None
+  tile_buffer_meters: None

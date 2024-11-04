@@ -74,14 +74,23 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
                 msg = f'If there are no custom source tif files, then values in NewProcessingAOI section must be defined in {CityData.filename_method_parameters_config}'
                 invalids.append(msg)
 
-            if tile_side_meters < 500:
-                msg = f"Requested tile_side_meters cannot be less than 500 meters in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
-                invalids.append(msg)
-
             if (tile_side_meters != None and tile_side_meters != 'None' and
                     _is_tile_wider_than_half_aoi_side(min_lat, min_lon, max_lat, max_lon, tile_side_meters)):
                 msg = f"Requested tile_side_meters cannot be larger than half the AOI side length in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
                 invalids.append(msg)
+
+            if tile_side_meters != None and tile_side_meters != 'None' and tile_side_meters < 100:
+                msg = f"Requested tile_side_meters cannot be less than 100 meters in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
+                invalids.append(msg)
+
+            if tile_side_meters != None and tile_side_meters != 'None' and int(tile_side_meters) <= 10:
+                msg = f"Both tile_side_meters must be greater than 10 in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
+                invalids.append(msg)
+
+            if tile_buffer_meters != None and tile_buffer_meters != 'None' and int(tile_buffer_meters) <= 10:
+                msg = f"Both tile_buffer_meters must be greater than 10 in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
+                invalids.append(msg)
+
         else:
             for tile_folder_name, tile_dimensions in existing_tiles.items():
                 if bool(enabled) or pre_check_option == 'pre_check_all':
@@ -92,23 +101,23 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
                         break
 
                     prior_dsm = city_data.source_dsm_path
-                    if _verify_path(prior_dsm) is False and prior_dsm != 'None':
+                    if 'dsm' not in cif_features and _verify_path(prior_dsm) is False and prior_dsm != 'None':
                         msg = f'Required source file: {prior_dsm} not found for row {index} in .config_umep_city_processing.csv.'
                         invalids.append(msg)
 
                     if method in CityData.processing_methods:
                         prior_tree_canopy = city_data.source_tree_canopy_path
-                        if _verify_path(prior_tree_canopy) is False and prior_tree_canopy != 'None':
+                        if 'tree_canopy' not in cif_features and _verify_path(prior_tree_canopy) is False and prior_tree_canopy != 'None':
                             msg = f'Required source file: {prior_tree_canopy} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                             invalids.append(msg)
 
                     if method in ['solweig_only', 'solweig_full']:
                         prior_land_cover = city_data.source_land_cover_path
                         prior_dem = city_data.source_dem_path
-                        if _verify_path(prior_land_cover) is False and prior_land_cover != 'None':
+                        if 'lulc' not in cif_features and _verify_path(prior_land_cover) is False and prior_land_cover != 'None':
                             msg = f'Required source file: {prior_land_cover} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                             invalids.append(msg)
-                        if _verify_path(prior_dem) is False and prior_dem != 'None':
+                        if 'dem' not in cif_features and _verify_path(prior_dem) is False and prior_dem != 'None':
                             msg = f'Required source file: {prior_dem} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                             invalids.append(msg)
                         for met_file_row in city_data.met_files:

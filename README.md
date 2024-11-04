@@ -37,9 +37,8 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
          1. If you want the system to automatically retrieve a tiff base file, instead specify None for the specific files.
            * **Note**: the system assumes that all source tiff files in all tiles have the same name.
          1. You can also specify a combination of None for some files and the name of the custom file if you want to provide some customer files and also have the system automatically retrieve others from CIF.
-      1. the bounding coordinates of your area of interest and whether you want the AOI to be tiled into smaller sub-cells.
+      1. the bounding coordinates of your area of interest and whether you want the AOI to be tiled into smaller sub-cells and buffered.
          * **Note**: These values are only used if you want to automatically retrieve base data from CIF.
-         * **Note**: the cell-size value currently currently must specified in geographic degrees but will later be updated to meters.
 
 ### Running the system
    1. Open a Windows command prompt

@@ -1,3 +1,4 @@
+import math
 import os
 
 from worker_manager.graph_builder import get_cif_features
@@ -66,16 +67,20 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
             parse_filenames_config(source_city_path, CityData.filename_method_parameters_config)
 
         if not has_custom_features:
-            min_lon, min_lat, max_lon, max_lat, sub_division_cell_size = \
+            min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters = \
                 parse_processing_areas_config(source_city_path, CityData.filename_method_parameters_config)
-            lon_diff = max_lon - min_lon
-            lat_diff = max_lat - min_lat
-            max_bounds_side_size = lon_diff if lon_diff > lat_diff else lat_diff
+
             if not isinstance(min_lon, float) or not isinstance(min_lat, float) or not isinstance(max_lon, float) or not isinstance(max_lat, float):
                 msg = f'If there are no custom source tif files, then values in NewProcessingAOI section must be defined in {CityData.filename_method_parameters_config}'
                 invalids.append(msg)
-            if sub_division_cell_size != None and sub_division_cell_size != 'None' and sub_division_cell_size > max_bounds_side_size:
-                msg = f"Requested sub_division_cell_size cannot be larger than the boundary size in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
+
+            if tile_side_meters < 500:
+                msg = f"Requested tile_side_meters cannot be less than 500 meters in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
+                invalids.append(msg)
+
+            if (tile_side_meters != None and tile_side_meters != 'None' and
+                    _is_tile_wider_than_half_aoi_side(min_lat, min_lon, max_lat, max_lon, tile_side_meters)):
+                msg = f"Requested tile_side_meters cannot be larger than half the AOI side length in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
                 invalids.append(msg)
         else:
             for tile_folder_name, tile_dimensions in existing_tiles.items():
@@ -133,6 +138,17 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
 
     return invalids
 
+def _is_tile_wider_than_half_aoi_side(min_lat, min_lon, max_lat, max_lon, tile_side_meters):
+    center_lat = (min_lat + max_lat) / 2
+    lon_degree_offset, lat_degree_offset = offset_meters_to_geographic_degrees(center_lat, tile_side_meters)
+
+    is_tile_wider_than_half = False
+    if (lon_degree_offset > (max_lon - min_lon)/2) or (lat_degree_offset > (max_lat - min_lat)/2):
+        is_tile_wider_than_half = True
+
+    return is_tile_wider_than_half
+
+
 def _validate_basic_inputs(source_base_path, target_path, city_folder_name):
     invalids = verify_fundamental_paths(source_base_path, target_path, city_folder_name)
     if invalids:
@@ -157,3 +173,12 @@ def _validate_config_inputs(processing_config_df, source_base_path, target_path,
 
 def _highlighted_print(msg):
     print('\n\x1b[6;30;42m' + msg + '\x1b[0m')
+
+def offset_meters_to_geographic_degrees(decimal_latitude, length_m):
+    earth_radius_m = 6378137
+    rad = 180/math.pi
+
+    lon_degree_offset = abs((length_m / (earth_radius_m * math.cos(math.pi*decimal_latitude/180))) * rad)
+    lat_degree_offset = abs((length_m / earth_radius_m) * rad)
+
+    return lon_degree_offset, lat_degree_offset

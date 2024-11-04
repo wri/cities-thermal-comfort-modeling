@@ -3,8 +3,11 @@ import subprocess
 import multiprocessing as mp
 import warnings
 import pandas as pd
+import geopandas as gpd
 import shapely
+from shapely import wkt
 import dask
+from shapely import Polygon
 
 from worker_manager.graph_builder import _get_aoi_fishnet, get_cif_features
 from worker_manager.reporter import _parse_row_results, _report_results
@@ -44,6 +47,10 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
             start_tile_id = config_row.start_tile_id
             end_tile_id = config_row.end_tile_id
             existing_tiles = get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_tile_id)
+
+            _write_tile_grid(existing_tiles, target_base_path, city_folder_name)
+
+            print(f'\nProcessing over {len(existing_tiles)} existing tiles..')
             for tile_folder_name, tile_dimensions in existing_tiles.items():
                 tile_boundary = tile_dimensions[0]
                 tile_resolution = tile_dimensions[1]
@@ -55,7 +62,9 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
                 futures.append(delay_tile_array)
         else:
             fishnet = _get_aoi_fishnet(source_base_path, city_folder_name)
+            _write_tile_grid(fishnet, target_base_path, city_folder_name)
 
+            print(f'\nCreating data for {fishnet.geometry.size} new tiles..')
             for index, cell in fishnet.iterrows():
                 cell_bounds = cell.geometry.bounds
                 tile_boundary = str(shapely.box(cell_bounds[0], cell_bounds[1], cell_bounds[2], cell_bounds[3]))
@@ -88,7 +97,31 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
             return_str = 'Processing encountered errors. See log file.'
     
         return return_code, return_str
-    
+
+def _write_tile_grid(tile_grid, target_base_path, city_folder_name):
+    if isinstance(tile_grid,dict):
+        # tiles = pd.DataFrame(tile_grid.items())
+        modified_tile_grid = pd.DataFrame(columns=['id', 'geometry'])
+        for key, value in tile_grid.items():
+            poly = wkt.loads(value[0])
+            modified_tile_grid.loc[len(modified_tile_grid)] = [key, poly]
+    else:
+        # TODO figure out how to retain the index
+        if 'fishnet_geometry' in tile_grid.columns:
+            modified_tile_grid = tile_grid.drop(columns='fishnet_geometry', axis=1)
+        else:
+            modified_tile_grid = tile_grid
+    projected_gdf = gpd.GeoDataFrame(modified_tile_grid, crs='EPSG:4326')
+
+    target_file_name = 'tile_grid.geojson'
+    target_path = str(os.path.join(target_base_path, city_folder_name, CityData.folder_name_results,
+                            CityData.folder_name_preprocessed_data))
+    create_folder(target_path)
+    file_path = os.path.join(target_path, target_file_name)
+
+    projected_gdf.to_file(file_path, driver='GeoJSON')
+
+
 def _construct_pre_proc_array(task_index, task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name, cif_features, tile_boundary, tile_resolution):
     proc_array = ['python', TILE_PROCESSING_MODULE_PATH,
                   f'--task_index={task_index}',
@@ -104,6 +137,7 @@ def _construct_pre_proc_array(task_index, task_method, source_base_path, target_
 
     return proc_array
 
+
 def _start_logging(target_base_path, city_folder_name):
     results_subfolder = CityData.folder_name_results
     log_folder_path = str(os.path.join(target_base_path, city_folder_name, results_subfolder, '.logs'))
@@ -115,9 +149,10 @@ def _start_logging(target_base_path, city_folder_name):
                         filename=log_file_path
                         )
 
+
 def _process_rows(futures):
     if futures:
-        # chunk size??
+        # TODO chunk size??
         from dask.distributed import Client
         with Client(n_workers=int(mp.cpu_count() - 1),
                     threads_per_worker=1,
@@ -127,11 +162,11 @@ def _process_rows(futures):
                     ) as client:
 
             msg = f'*************Monitor processing at {client.dashboard_link}'
+            print(msg)
             _log_info_msg(msg)
-            # try:
+
+            # TODO implement progress bar
             dc = dask.compute(*futures)
-            # except Exception as e_msg:
-            #     _log_info_msg(e_msg)
 
         all_passed, results_df, failed_task_ids, failed_task_details =_parse_row_results(dc)
 

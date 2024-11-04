@@ -37,20 +37,23 @@ def get_cif_data(task_index, output_base_path, folder_name_city_data, tile_id, f
     for group in random_group:
         # wait random length of time to help reduce contention and GEE throttling
         wait_time = random.uniform(10, 30)
-        time.sleep(wait_time)
 
-        if group == 1 and 'era5' in feature_list:
-            _get_era5(aoi_gdf)
-
-        if group == 2 and 'lulc' in feature_list:
-            this_success = _get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution)
-            result_flags.append(this_success)
-
-        if group == 3 and 'tree_canopy' in feature_list:
-            this_success = _get_tree_canopy_height(city_data, tile_data_path, aoi_gdf, output_resolution)
-            result_flags.append(this_success)
-
-        if group == 4:
+        if group == 1:
+            if 'era5' in feature_list:
+                time.sleep(wait_time)
+                _get_era5(aoi_gdf)
+        elif group == 2:
+            if 'lulc' in feature_list:
+                time.sleep(wait_time)
+                this_success = _get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution)
+                result_flags.append(this_success)
+        elif group == 3:
+            if 'tree_canopy' in feature_list:
+                time.sleep(wait_time)
+                this_success = _get_tree_canopy_height(city_data, tile_data_path, aoi_gdf, output_resolution)
+                result_flags.append(this_success)
+        elif group == 4:
+            time.sleep(wait_time)
             if 'dem' in feature_list or 'dsm' in feature_list:
                 retrieve_dem = True if 'dem' in feature_list else False
                 this_success, nasa_dem = _get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution)

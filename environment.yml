@@ -15,9 +15,9 @@ dependencies:
   - dask[complete]=2024.8.2
   - rasterio
   - rioxarray
+  - cdsapi
   - pytest
   - pip
   - pip:
-    - git+https://github.com/wri/cities-cif@CIF-293-Set-tile-size-in-meters-for-fishnet-functions
-#    - git+https://github.com/wri/cities-cif@main
+    - git+https://github.com/wri/cities-cif@main
  #   - git+https://github.com/wri/cities-cif@v0.1.2

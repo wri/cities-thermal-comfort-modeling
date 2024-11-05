@@ -1,2 +1,2 @@
 enabled,method,start_tile_id,end_tile_id
-true,solweig_full,*,*
+true,cif_download_only,*,*

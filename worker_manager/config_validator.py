@@ -79,8 +79,8 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
                 msg = f"Requested tile_side_meters cannot be larger than half the AOI side length in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
                 invalids.append(msg)
 
-            if tile_side_meters != None and tile_side_meters != 'None' and tile_side_meters < 100:
-                msg = f"Requested tile_side_meters cannot be less than 100 meters in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
+            if tile_side_meters != None and tile_side_meters != 'None' and tile_side_meters < 200:
+                msg = f"Requested tile_side_meters cannot be less than 200 meters in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
                 invalids.append(msg)
 
             if tile_side_meters != None and tile_side_meters != 'None' and int(tile_side_meters) <= 10:

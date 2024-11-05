@@ -1,8 +1,6 @@
 import math
 import os
 import pandas as pd
-from shapely import Point
-
 
 from workers.city_data import parse_processing_areas_config, CityData, parse_filenames_config
 
@@ -28,7 +26,8 @@ def _get_aoi_fishnet(source_base_path, city_folder_name):
         tile_buffer_meters = 0
 
     from city_metrix.layers.layer import create_fishnet_grid
-    fishnet = create_fishnet_grid(min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters)
+    fishnet = create_fishnet_grid(min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters,
+                                  tile_units_in_degrees=False)
 
     return fishnet
 

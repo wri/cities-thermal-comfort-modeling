@@ -18,6 +18,9 @@ class CityData:
     filename_wall_aspect = 'wallaspect.tif'
     filename_svfs_zip = 'svfs.zip'
 
+    filename_era5 = 'met_era5_hottest_days.txt'
+    method_name_era5_download = '<download_era5>'
+
     processing_methods = ['cif_download_only', 'wall_height_aspect', 'skyview_factor', 'solweig_only', 'solweig_full']
 
     def __new__(cls, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path):
@@ -50,6 +53,7 @@ class CityData:
                 obj.emis_ground = method_attributes['solweig']['emis_ground']
                 obj.output_tmrt = to_bool(method_attributes['solweig']['output_tmrt'])
                 obj.output_sh = to_bool(method_attributes['solweig']['output_sh'])
+                obj.sampling_local_hours = method_attributes['solweig']['sampling_local_hours']
 
                 obj.met_files = values[1].get('MetFiles')
 
@@ -60,25 +64,40 @@ class CityData:
          has_custom_features, feature_list) =(
             parse_filenames_config(obj.source_city_path, cls.filename_method_parameters_config))
 
-        obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat, tile_side_meters, tile_buffer_meters = \
+        obj.utc_offset, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat, tile_side_meters, tile_buffer_meters = \
             parse_processing_areas_config(obj.source_city_path, cls.filename_method_parameters_config)
 
-        obj.source_tile_data_path = os.path.join(obj.source_city_data_path, obj.folder_name_primary_source_data,
-                                                 obj.folder_name_tile_data)
+        if folder_name_tile_data:
+            obj.source_tile_data_path = os.path.join(obj.source_city_data_path, obj.folder_name_primary_source_data,
+                                                     obj.folder_name_tile_data)
+            obj.source_dem_path = os.path.join(obj.source_tile_data_path, obj.dem_tif_filename)
+            obj.source_dsm_path = os.path.join(obj.source_tile_data_path, obj.dsm_tif_filename)
+            obj.source_tree_canopy_path = os.path.join(obj.source_tile_data_path, obj.tree_canopy_tif_filename)
+            obj.source_land_cover_path = os.path.join(obj.source_tile_data_path, obj.lulc_tif_filename)
+        else:
+            obj.source_tile_data_path = None
+            obj.source_dem_path = None
+            obj.source_dsm_path = None
+            obj.source_tree_canopy_path = None
+            obj.source_land_cover_path = None
+
         obj.source_met_files_path = os.path.join(obj.source_city_data_path, obj.folder_name_met_files)
-        obj.source_dem_path = os.path.join(obj.source_tile_data_path, obj.dem_tif_filename)
-        obj.source_dsm_path = os.path.join(obj.source_tile_data_path, obj.dsm_tif_filename)
-        obj.source_tree_canopy_path = os.path.join(obj.source_tile_data_path, obj.tree_canopy_tif_filename)
-        obj.source_land_cover_path = os.path.join(obj.source_tile_data_path, obj.lulc_tif_filename)
 
         if target_base_path:
             obj.target_path_city_data = str(os.path.join(obj.target_base_path, folder_name_city_data, cls.folder_name_results))
-            obj.target_tile_data_path = os.path.join(obj.target_path_city_data, obj.folder_name_preprocessed_data,
-                                                             obj.folder_name_tile_data)
             obj.target_tcm_results_path = os.path.join(obj.target_path_city_data, obj.folder_name_tcm_results)
-            obj.target_wallheight_path = os.path.join(obj.target_tile_data_path, obj.filename_wall_height)
-            obj.target_wallaspect_path = os.path.join(obj.target_tile_data_path, obj.filename_wall_aspect)
-            obj.target_svfszip_path = os.path.join(obj.target_tile_data_path, obj.filename_svfs_zip)
+
+            if obj.folder_name_tile_data:
+                obj.target_tile_data_path = os.path.join(obj.target_path_city_data, obj.folder_name_preprocessed_data,
+                                                                 obj.folder_name_tile_data)
+                obj.target_wallheight_path = os.path.join(obj.target_tile_data_path, obj.filename_wall_height)
+                obj.target_wallaspect_path = os.path.join(obj.target_tile_data_path, obj.filename_wall_aspect)
+                obj.target_svfszip_path = os.path.join(obj.target_tile_data_path, obj.filename_svfs_zip)
+            else:
+                obj.target_tile_data_path = None
+                obj.target_wallheight_path = None
+                obj.target_wallaspect_path = None
+                obj.target_svfszip_path = None
 
         return obj
 
@@ -130,6 +149,7 @@ def parse_processing_areas_config(source_city_path, filename_method_parameters_c
             values = list(yaml.safe_load_all(stream))[0]
 
             processing_area = values[3]
+            utc_offset = processing_area['utc_offset']
             min_lon = processing_area['min_lon']
             min_lat = processing_area['min_lat']
             max_lon = processing_area['max_lon']
@@ -141,4 +161,4 @@ def parse_processing_areas_config(source_city_path, filename_method_parameters_c
         raise Exception(
             f'The {filename_method_parameters_config} file not found or improperly defined in {city_configs}. (Error: {e_msg})')
 
-    return min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters
+    return utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters

@@ -6,14 +6,14 @@ import geopandas as gp
 import numpy as np
 import random
 import time
-from datetime import datetime
 
+from datetime import datetime, timedelta
 from city_data import CityData
 from worker_tools import compute_time_diff_mins, save_tiff_file, save_geojson_file, log_method_failure
 
 # Unify the layers on the same resolution
 DEFAULT_LULC_RESOLUTION = 1
-DEBUG = False
+DEBUG = True
 
 def get_cif_data(task_index, output_base_path, folder_name_city_data, tile_id, features, tile_boundary, tile_resolution='None'):
     start_time = datetime.now()
@@ -33,26 +33,22 @@ def get_cif_data(task_index, output_base_path, folder_name_city_data, tile_id, f
 
     result_flags = []
     # randomize retrieval to reduce contention against GEE
-    random_group= _generate_unique_random_list(1, 4, 4)
+    random_group= _generate_unique_random_list(1, 3, 3)
     for group in random_group:
         # wait random length of time to help reduce contention and GEE throttling
         wait_time = random.uniform(10, 30)
 
         if group == 1:
-            if 'era5' in feature_list:
-                time.sleep(wait_time)
-                _get_era5(aoi_gdf)
-        elif group == 2:
             if 'lulc' in feature_list:
                 time.sleep(wait_time)
                 this_success = _get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution)
                 result_flags.append(this_success)
-        elif group == 3:
+        elif group == 2:
             if 'tree_canopy' in feature_list:
                 time.sleep(wait_time)
                 this_success = _get_tree_canopy_height(city_data, tile_data_path, aoi_gdf, output_resolution)
                 result_flags.append(this_success)
-        elif group == 4:
+        elif group == 3:
             time.sleep(wait_time)
             if 'dem' in feature_list or 'dsm' in feature_list:
                 retrieve_dem = True if 'dem' in feature_list else False
@@ -93,10 +89,6 @@ def _random_list(in_list):
     random.shuffle(in_list)
     return in_list
 
-def _get_era5(aoi_gdf):
-    from city_metrix.metrics import era_5_met_preprocessing
-
-    aoi_era_5 = era_5_met_preprocessing(aoi_gdf.total_bounds)
 
 def _get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution):
     try:

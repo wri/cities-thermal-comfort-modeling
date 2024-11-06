@@ -67,7 +67,7 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
             parse_filenames_config(source_city_path, CityData.filename_method_parameters_config)
 
         if not has_custom_features:
-            min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters = \
+            utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters = \
                 parse_processing_areas_config(source_city_path, CityData.filename_method_parameters_config)
 
             if not isinstance(min_lon, float) or not isinstance(min_lat, float) or not isinstance(max_lon, float) or not isinstance(max_lat, float):
@@ -123,13 +123,13 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
                         for met_file_row in city_data.met_files:
                             met_file = met_file_row.get('filename')
                             met_filepath = os.path.join(city_data.source_met_files_path, met_file)
-                            if _verify_path(met_filepath) is False:
+                            if met_file != '<download_era5>' and _verify_path(met_filepath) is False:
                                 msg = f'Required meteorological file: {met_filepath} not found for method: {method} in .config_method_parameters.yml.'
                                 invalids.append(msg)
-                            utc_offset = met_file_row.get('utc_offset')
-                            if not -24 <= utc_offset <= 24:
-                                msg = f'UTC range for: {met_file} not in range for 24-hour offsets as specified in .config_method_parameters.yml.'
-                                invalids.append(msg)
+                        utc_offset = city_data.utc_offset
+                        if not -24 <= utc_offset <= 24:
+                            msg = f'UTC-offset for: {met_file} not in -24 to 24 hours range as specified in .config_method_parameters.yml.'
+                            invalids.append(msg)
 
                     if method in ['solweig_only']:
                         prior_svfszip = city_data.target_svfszip_path

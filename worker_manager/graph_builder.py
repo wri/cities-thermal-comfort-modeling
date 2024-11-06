@@ -2,6 +2,7 @@ import math
 import os
 import pandas as pd
 
+from src.src_tools import coordinates_to_bbox
 from workers.city_data import parse_processing_areas_config, CityData, parse_filenames_config
 
 def _build_source_dataframes(source_base_path, city_folder_name):
@@ -11,11 +12,24 @@ def _build_source_dataframes(source_base_path, city_folder_name):
     return processing_config_df
 
 
-def _get_aoi_fishnet(source_base_path, city_folder_name):
+def _get_aoi(source_base_path, city_folder_name):
     source_city_path = str(os.path.join(source_base_path, city_folder_name))
 
-    min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters = \
+    utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters = \
         parse_processing_areas_config(source_city_path, CityData.filename_method_parameters_config)
+
+    aoi_boundary = coordinates_to_bbox(min_lon, min_lat, max_lon, max_lat)
+
+    return aoi_boundary, tile_side_meters, tile_buffer_meters, utc_offset
+
+
+def _get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters):
+    bounds = aoi_boundary.bounds
+
+    min_lon = bounds[0]
+    min_lat = bounds[1]
+    max_lon = bounds[2]
+    max_lat = bounds[3]
 
     if tile_side_meters is None or tile_side_meters == 'None':
         ns = _get_distance_between_points(min_lon, min_lat, min_lon, max_lat)

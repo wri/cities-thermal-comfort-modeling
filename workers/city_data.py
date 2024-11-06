@@ -19,7 +19,7 @@ class CityData:
     filename_svfs_zip = 'svfs.zip'
 
     filename_era5 = 'met_era5_hottest_days.txt'
-    method_name_era5_download = 'download_era5'
+    method_name_era5_download = '<download_era5>'
 
     processing_methods = ['cif_download_only', 'wall_height_aspect', 'skyview_factor', 'solweig_only', 'solweig_full']
 

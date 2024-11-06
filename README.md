@@ -33,7 +33,7 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
    1. Modify the four sections of the .config_method_parameters.yml file to specify:
       1. methods attributes (the file already contains default values which you may want to leave unaltered)
       1. the name(s) for meteorological file(s) to be processed by the solweig method.
-         * Enter "download_era5" if you instead or also want the system to automatically download ERA5 data into a file named "met_era5_hottest_days.txt"
+         * Enter "<download_era5>" if you instead or also want the system to automatically download ERA5 data into a file named "met_era5_hottest_days.txt"
            *  **TIP**: On the next run, you can enter the file name met_era5_hottest_days.txt to avoid the download from ERA5 since the file is already on the system
       1. the names of source files stored in the primary_source_data tile folders.
          1. If you want the system to automatically retrieve a tiff base file, instead specify None for the specific files.

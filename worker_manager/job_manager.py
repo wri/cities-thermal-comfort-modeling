@@ -217,7 +217,7 @@ def _process_rows(futures):
                     asynchronous=False
                     ) as client:
 
-            msg = f'*************Monitor processing at {client.dashboard_link}'
+            msg = f'*************See processing dashboard at {client.dashboard_link}'
             print(msg)
             _log_info_msg(msg)
 

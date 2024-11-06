@@ -123,7 +123,7 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
                         for met_file_row in city_data.met_files:
                             met_file = met_file_row.get('filename')
                             met_filepath = os.path.join(city_data.source_met_files_path, met_file)
-                            if met_file != 'download_era5' and _verify_path(met_filepath) is False:
+                            if met_file != '<download_era5>' and _verify_path(met_filepath) is False:
                                 msg = f'Required meteorological file: {met_filepath} not found for method: {method} in .config_method_parameters.yml.'
                                 invalids.append(msg)
                         utc_offset = city_data.utc_offset

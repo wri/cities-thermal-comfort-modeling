@@ -15,11 +15,11 @@
     emis_ground: 0.95
     output_tmrt: True
     output_sh: True
-# Names of meteorological files used for SOLWEIG processing
-# Specify met_era5_hottest_days.txt if you want the system to automatically download era5 data
+# Names of meteorological files used by SOLWEIG method in "UMEP for Processing" plugin.
+# Specify custom files or "download_era5" to trigger automatic download of ERA5 data to file named met_era5_hottest_days.txt
 - MetFiles:
   - filename: met_20jan2022.txt
-  - filename: met_era5_hottest_days.txt
+  - filename: download_era5
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
 # All four file mappings must be specified here. Specify None for filename where custom file is not available for processing.
 # Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif
@@ -29,8 +29,8 @@
   dsm_tif_filename: None
   tree_canopy_tif_filename: None
   lulc_tif_filename: None
-# New processing Area of Interest. If any custom files are specified above (i.e. not None), then the system will not construct
-# a new tile grid and will instead use the existing one. In that case, coordinate values below can be None.
+# Processing Area of Interest used for tile construction and ERA5-data download. If any custom files
+# are specified above, then the system will not construct a new tile grid and will instead use the existing one.
 # If you don't want to subdivide the AOI, specify None for tile_side_meters and tile_buffer_meters.
 - ProcessingAOI:
   utc_offset: 2

@@ -40,19 +40,19 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
     combined_delays_passed = []
 
     city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
-    has_era_met_download = any_value_matches_in_dict_list(city_data.met_files, city_data.filename_era5)
+    has_era_met_download = any_value_matches_in_dict_list(city_data.met_files, 'download_era5')
 
     # meteorological data
-    # if has_era_met_download:
-    #     proc_array = _construct_met_proc_array(-1, source_base_path, city_folder_name, aoi_boundary)
-    #     delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
-    #     met_futures = []
-    #     met_futures.append(delay_tile_array)
-    #     met_delays_all_passed, met_results_df = _process_rows(met_futures)
-    #     out_list.extend(met_results_df)
-    #
-    #     combined_results_df = pd.concat([combined_results_df, met_results_df])
-    #     combined_delays_passed.append(met_delays_all_passed)
+    if has_era_met_download:
+        proc_array = _construct_met_proc_array(-1, source_base_path, city_folder_name, aoi_boundary, utc_offset)
+        delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
+        met_futures = []
+        met_futures.append(delay_tile_array)
+        met_delays_all_passed, met_results_df = _process_rows(met_futures)
+        out_list.extend(met_results_df)
+
+        combined_results_df = pd.concat([combined_results_df, met_results_df])
+        combined_delays_passed.append(met_delays_all_passed)
 
     # build plugin graph
     enabled_processing_tasks_df = processing_config_df[(processing_config_df['enabled'])]
@@ -130,10 +130,9 @@ def any_value_matches_in_dict_list(dict_list, target_string):
 
 def _write_tile_grid(tile_grid, target_base_path, city_folder_name):
     if isinstance(tile_grid,dict):
-        # tiles = pd.DataFrame(tile_grid.items())
         modified_tile_grid = pd.DataFrame(columns=['id', 'geometry'])
         for key, value in tile_grid.items():
-            poly = wkt.loads(value[0])
+            poly = wkt.loads(str(value[0]))
             modified_tile_grid.loc[len(modified_tile_grid)] = [key, poly]
     else:
         # TODO figure out how to retain the index
@@ -152,12 +151,13 @@ def _write_tile_grid(tile_grid, target_base_path, city_folder_name):
     projected_gdf.to_file(file_path, driver='GeoJSON')
 
 
-def _construct_met_proc_array(task_index, source_base_path, city_folder_name, aoi_boundary):
+def _construct_met_proc_array(task_index, source_base_path, city_folder_name, aoi_boundary, utc_offset):
     proc_array = ['python', MET_PROCESSING_MODULE_PATH,
                   f'--task_index={task_index}',
                   f'--source_base_path={source_base_path}',
                   f'--city_folder_name={city_folder_name}',
-                  f'--aoi_boundary={str(aoi_boundary)}'
+                  f'--aoi_boundary={str(aoi_boundary)}',
+                  f'--utc_offset={utc_offset}'
                   ]
 
     return proc_array

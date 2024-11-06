@@ -32,13 +32,18 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
            * solweig_full - this option runs cif-download (where needed), wall_height_aspect, skyview_factor, and finally solweig_only
    1. Modify the four sections of the .config_method_parameters.yml file to specify:
       1. methods attributes (the file already contains default values which you may want to leave unaltered)
-      1. the name(s) for meteorological files to be processed by the solweig method
+      1. the name(s) for meteorological file(s) to be processed by the solweig method.
+         * Enter "download_era5" if you instead or also want the system to automatically download ERA5 data into a file named "met_era5_hottest_days.txt"
+           *  **TIP**: On the next run, you can enter the file name met_era5_hottest_days.txt to avoid the download from ERA5 since the file is already on the system
       1. the names of source files stored in the primary_source_data tile folders.
          1. If you want the system to automatically retrieve a tiff base file, instead specify None for the specific files.
            * **Note**: the system assumes that all source tiff files in all tiles have the same name.
          1. You can also specify a combination of None for some files and the name of the custom file if you want to provide some customer files and also have the system automatically retrieve others from CIF.
-      1. the bounding coordinates of your area of interest and whether you want the AOI to be tiled into smaller sub-cells and buffered.
-         * **Note**: These values are only used if you want to automatically retrieve base data from CIF.
+      1. Area-of-Interest parameters:
+         1. the utc offset in hours
+         1. the bounding coordinates of the area of interest
+         1. tile-side-length in meters or None depending on whether you want the area sub-tiled
+         1. tile-buffer length in meters or None depending on whether you want the constructed tiles to be buffered
 
 ### Running the system
    1. Open a Windows command prompt

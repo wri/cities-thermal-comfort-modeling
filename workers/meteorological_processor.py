@@ -1,36 +1,26 @@
-import xarray as xr
-from rasterio.enums import Resampling
-from dask.diagnostics import ProgressBar
 import shapely.wkt
 import geopandas as gp
-import numpy as np
-import random
-import time
 import os
 
-from pathlib import Path
 from datetime import datetime, timedelta
 from city_data import CityData
-from worker_tools import compute_time_diff_mins, save_tiff_file, save_geojson_file, log_method_failure
-from workers.worker_tools import remove_file
+from worker_tools import compute_time_diff_mins, remove_file
 
 MET_NULL_VALUE = -999
 TARGET_HEADING =  '%iy id it imin qn qh qe qs qf U RH Tair press rain kdown snow ldown fcld wuh xsmd lai kdiff kdir wdir'
 
-# ERA_MET_FILE_NAME = 'met_era5_hottest_days.txt'
-
-def get_met_data(task_index, source_base_path, folder_name_city_data, aoi_boundary):
+def get_met_data(task_index, source_base_path, folder_name_city_data, aoi_boundary, utc_offset):
     start_time = datetime.now()
 
     d = {'geometry': [shapely.wkt.loads(aoi_boundary)]}
     aoi_gdf = gp.GeoDataFrame(d, crs="EPSG:4326")
 
-    result_flags = []
-    _get_era5(aoi_gdf, source_base_path, folder_name_city_data)
+    # Retrieve and write ERA5 data
+    return_code = _get_era5(aoi_gdf, source_base_path, folder_name_city_data, utc_offset)
 
+    # Wrap up results
     step_method = 'met'
     met_filename = CityData.filename_era5
-    return_code = 0 if all(result_flags) else 1
     start_time_str = start_time.strftime('%Y_%m_%d_%H:%M:%S')
     run_duration_min = compute_time_diff_mins(start_time)
     return_stdout = (f'{{"task_index": {task_index}, "tile": "None", "step_index": {0}, '
@@ -42,13 +32,13 @@ def get_met_data(task_index, source_base_path, folder_name_city_data, aoi_bounda
     return result_json
 
 
-def _get_era5(aoi_gdf, output_base_path, folder_name_city_data):
+def _get_era5(aoi_gdf, output_base_path, folder_name_city_data, utc_offset):
     from city_metrix.metrics import era_5_met_preprocessing
 
-    max_count = 3
+    # Attempt to download data with up to 3 tries
     count = 0
     aoi_era_5 = None
-    while count < max_count:
+    while count < 3:
         try:
             aoi_era_5 = era_5_met_preprocessing(aoi_gdf)
             break
@@ -58,26 +48,30 @@ def _get_era5(aoi_gdf, output_base_path, folder_name_city_data):
     if aoi_era_5 is None:
         raise Exception('failed to retrieve era5 data')
 
-    utc_offset = 2
-    met_filename = CityData.filename_era5
-    target_file_path = os.path.join(output_base_path, folder_name_city_data, CityData.folder_name_source_data, CityData.folder_name_met_files, met_filename)
+    # round all numbers to two decimal places, which is the precision needed by the model
+    aoi_era_5 = aoi_era_5.round(2)
 
-
+    # Reformat into target format
+    int_utc_offset = int(utc_offset)
     reformatted_data = []
     reformatted_data.append(TARGET_HEADING)
     for index, row in aoi_era_5.iterrows():
-        reformatted_data.append(_reformat_line(row, utc_offset))
+        reformatted_data.append(_reformat_line(row, int_utc_offset))
 
-
+    # Write results to text file
+    met_filename = CityData.filename_era5
+    target_file_path = os.path.join(output_base_path, folder_name_city_data, CityData.folder_name_source_data,
+                                    CityData.folder_name_met_files, met_filename)
     remove_file(target_file_path)
     with open(target_file_path, 'w') as file:
         for row in reformatted_data:
             file.write('%s\n' % row)
 
-    b=2
+    return 0
+
 
 def _reformat_line(line, utc_offset):
-    local_datetime = line['time']  # , utc_offset)
+    local_datetime = _string_to_datetime(str(line['time']), utc_offset)
     lat = line['lat']
     lon = line['lon']
     temp = line['temp']
@@ -127,10 +121,16 @@ def _reformat_line(line, utc_offset):
     return new_line
 
 def _standardize_string(value):
-    return MET_NULL_VALUE if value == '' else value
+    if value == '':
+        str_value = MET_NULL_VALUE
+    else:
+        str_value = f"{value:.2f}"
+    return str_value
+
 
 def _day_of_year(date_time):
     return (date_time - datetime(date_time.year, 1, 1)).days + 1
+
 
 def _string_to_datetime(utc_datetime_string, utc_offset):
     utc_datetime = datetime.strptime(utc_datetime_string, '%Y-%m-%d %H:%M:%S')
@@ -146,9 +146,10 @@ if __name__ == "__main__":
     parser.add_argument('--source_base_path', metavar='path', required=True, help='folder for source data')
     parser.add_argument('--city_folder_name', metavar='str', required=True, help='name of city folder')
     parser.add_argument('--aoi_boundary', metavar='str', required=True, help='geographic boundary of the AOI')
+    parser.add_argument('--utc_offset', metavar='str', required=True, help='hour offset from utc')
 
     args = parser.parse_args()
 
-    result_json = get_met_data(args.task_index, args.source_base_path, args.city_folder_name, args.aoi_boundary)
+    result_json = get_met_data(args.task_index, args.source_base_path, args.city_folder_name, args.aoi_boundary, args.utc_offset)
 
     print(result_json)

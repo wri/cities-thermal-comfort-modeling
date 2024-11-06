@@ -18,7 +18,10 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
 
         out_list = []
         for met_file in city_data.met_files:
-            met_filename = met_file.get('filename')
+            if met_file.get('filename') == CityData.method_name_era5_download:
+                met_filename = CityData.filename_era5
+            else:
+                met_filename = met_file.get('filename')
 
             solweig_stdout = run_plugin(task_idx, step_index, 'solweig_only', folder_city,
                                      folder_tile, source_path, target_path, met_filename, utc_offset)

@@ -19,6 +19,7 @@ class CityData:
     filename_svfs_zip = 'svfs.zip'
 
     filename_era5 = 'met_era5_hottest_days.txt'
+    method_name_era5_download = 'download_era5'
 
     processing_methods = ['cif_download_only', 'wall_height_aspect', 'skyview_factor', 'solweig_only', 'solweig_full']
 
@@ -52,6 +53,7 @@ class CityData:
                 obj.emis_ground = method_attributes['solweig']['emis_ground']
                 obj.output_tmrt = to_bool(method_attributes['solweig']['output_tmrt'])
                 obj.output_sh = to_bool(method_attributes['solweig']['output_sh'])
+                obj.sampling_local_hours = method_attributes['solweig']['sampling_local_hours']
 
                 obj.met_files = values[1].get('MetFiles')
 

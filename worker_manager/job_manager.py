@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import multiprocessing as mp
 import warnings
@@ -40,11 +41,14 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
     combined_delays_passed = []
 
     city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
-    has_era_met_download = any_value_matches_in_dict_list(city_data.met_files, 'download_era5')
 
+    _write_config_files(source_base_path, target_base_path, city_folder_name)
+
+    has_era_met_download = any_value_matches_in_dict_list(city_data.met_files, CityData.method_name_era5_download)
     # meteorological data
     if has_era_met_download:
-        proc_array = _construct_met_proc_array(-1, source_base_path, city_folder_name, aoi_boundary, utc_offset)
+        sampling_local_hours = city_data.sampling_local_hours
+        proc_array = _construct_met_proc_array(-1, source_base_path, city_folder_name, aoi_boundary, utc_offset, sampling_local_hours)
         delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
         met_futures = []
         met_futures.append(delay_tile_array)
@@ -127,6 +131,14 @@ def any_value_matches_in_dict_list(dict_list, target_string):
             return True
     return False
 
+def _write_config_files(source_base_path, target_base_path, city_folder_name):
+    source_yml_config = os.path.join(source_base_path, city_folder_name, CityData.filename_method_parameters_config)
+    source_csv_config = os.path.join(source_base_path, city_folder_name, CityData.filename_umep_city_processing_config)
+    target_yml_config = os.path.join(target_base_path, city_folder_name, CityData.folder_name_results, CityData.filename_method_parameters_config)
+    target_csv_config = os.path.join(target_base_path, city_folder_name, CityData.folder_name_results, CityData.filename_umep_city_processing_config)
+    shutil.copyfile(source_yml_config, target_yml_config)
+    shutil.copyfile(source_csv_config, target_csv_config)
+
 
 def _write_tile_grid(tile_grid, target_base_path, city_folder_name):
     if isinstance(tile_grid,dict):
@@ -151,13 +163,14 @@ def _write_tile_grid(tile_grid, target_base_path, city_folder_name):
     projected_gdf.to_file(file_path, driver='GeoJSON')
 
 
-def _construct_met_proc_array(task_index, source_base_path, city_folder_name, aoi_boundary, utc_offset):
+def _construct_met_proc_array(task_index, source_base_path, city_folder_name, aoi_boundary, utc_offset, sampling_local_hours):
     proc_array = ['python', MET_PROCESSING_MODULE_PATH,
                   f'--task_index={task_index}',
                   f'--source_base_path={source_base_path}',
                   f'--city_folder_name={city_folder_name}',
                   f'--aoi_boundary={str(aoi_boundary)}',
-                  f'--utc_offset={utc_offset}'
+                  f'--utc_offset={utc_offset}',
+                  f'--sampling_local_hours={sampling_local_hours}'
                   ]
 
     return proc_array

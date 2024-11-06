@@ -107,6 +107,11 @@ print(sys.path)
      * The result_data folder contains two subfolders with each of these folders containing subfolders.
      * The result_data folder also contains the .logs and .run_reports folders.
 
+### CIF setup
+1. Download and install gcloud https://dl.google.com/dl/cloudsdk/channels/rapid/GoogleCloudSDKInstaller.exe but don't sign in
+2. Add Environmental per https://github.com/wri/cities-cif?tab=readme-ov-file#credentials
+2. ERA5 data api creds to home directory per https://cds.climate.copernicus.eu/how-to-api
+
 ### Execution in Pycharm
 1. Create input dataset based on the ZZZ_template_city folder, providing source data, meteorological timeseries files, and configuration settings
 1. Configure runs of city data using the .config_umep_city_processing.csv file in the source folder located above the cities folders

@@ -5,7 +5,7 @@ from source_cif_data_downloader import get_cif_data
 PROCESSING_PAUSE_TIME_SEC = 30
 
 def process_tile(task_index, task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
-                 cif_features, tile_boundary, tile_resolution):
+                 cif_features, tile_boundary, tile_resolution, utc_offset):
     from umep_plugin_processor import run_plugin
 
     def _execute_retrieve_cif_data(task_idx, source_path, folder_city, folder_tile, features, boundary, resolution):
@@ -19,7 +19,6 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
         out_list = []
         for met_file in city_data.met_files:
             met_filename = met_file.get('filename')
-            utc_offset = met_file.get('utc_offset')
 
             solweig_stdout = run_plugin(task_idx, step_index, 'solweig_only', folder_city,
                                      folder_tile, source_path, target_path, met_filename, utc_offset)
@@ -44,6 +43,7 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
         return out_list
 
     return_stdouts = []
+
     if cif_features != 'None' and cif_features != '':
         return_val = _execute_retrieve_cif_data(task_index, source_base_path, city_folder_name, tile_folder_name,
                                    cif_features, tile_boundary, tile_resolution)
@@ -84,11 +84,12 @@ if __name__ == "__main__":
     parser.add_argument('--cif_features', metavar='str', required=True, help='coma-delimited list of cif features to retrieve')
     parser.add_argument('--tile_boundary', metavar='str', required=True, help='geographic boundary of tile')
     parser.add_argument('--tile_resolution', metavar='str', required=True, help='resolution of tile in m.')
+    parser.add_argument('--utc_offset', metavar='str', required=True, help='hour offset from utc')
 
     args = parser.parse_args()
 
     return_stdout =process_tile(args.task_index, args.task_method, args.source_base_path, args.target_base_path,
                                 args.city_folder_name, args.tile_folder_name, args.cif_features, args.tile_boundary,
-                                args.tile_resolution)
+                                args.tile_resolution, args.utc_offset)
 
     print(return_stdout)

@@ -16,9 +16,10 @@
     output_tmrt: True
     output_sh: True
 # Names of meteorological files used for SOLWEIG processing
+# Specify met_era5_hottest_days.txt if you want the system to automatically download era5 data
 - MetFiles:
   - filename: met_20jan2022.txt
-    utc_offset: 2
+  - filename: met_era5_hottest_days.txt
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
 # All four file mappings must be specified here. Specify None for filename where custom file is not available for processing.
 # Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif
@@ -31,7 +32,8 @@
 # New processing Area of Interest. If any custom files are specified above (i.e. not None), then the system will not construct
 # a new tile grid and will instead use the existing one. In that case, coordinate values below can be None.
 # If you don't want to subdivide the AOI, specify None for tile_side_meters and tile_buffer_meters.
-- NewProcessingAOI:
+- ProcessingAOI:
+  utc_offset: 2
   min_lon: 4.9011
   min_lat: 52.3719
   max_lon: 4.9183

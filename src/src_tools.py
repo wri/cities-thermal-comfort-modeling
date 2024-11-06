@@ -34,13 +34,16 @@ def clean_folder(folder_path):
             except Exception as e_msg:
                 print(f'Failed to delete {file_path}. Reason: {e_msg}')
 
+
 def remove_folder(folder_path):
     if os.path.isdir(folder_path):
         shutil.rmtree(folder_path)
 
+
 def remove_file(file_path):
     if os.path.isfile(file_path):
         os.remove(file_path)
+
 
 def get_configurations():
     application_path = get_application_path()
@@ -53,10 +56,13 @@ def get_configurations():
 
     return qgis_home_path, qgis_plugin_path
 
+
 def get_application_path():
     return str(Path(os.path.dirname(os.path.abspath(__file__))).parent)
 
+
 toBool = {'true': True, 'false': False}
+
 
 def get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_tile_id):
     tiles_folders = str(os.path.join(source_city_path, CityData.folder_name_source_data, CityData.folder_name_primary_source_data))
@@ -83,6 +89,7 @@ def get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_t
 
     return tile_sizes
 
+
 def _get_tile_range(start_tile_id, end_tile_id):
     t_len = len('tile_')
     start_id = int(start_tile_id[t_len:])
@@ -93,6 +100,7 @@ def _get_tile_range(start_tile_id, end_tile_id):
         tile_name = f'tile_{pad_x}'
         tile_range.append(tile_name)
     return tile_range
+
 
 def _get_geobounds_of_geotiff_file(file_path):
     with rasterio.open(file_path) as dataset:
@@ -107,10 +115,14 @@ def _get_geobounds_of_geotiff_file(file_path):
             transformer = Transformer.from_crs(source_crs, "EPSG:4326")
             sw_coord = transformer.transform(min_x, min_y)
             ne_coord = transformer.transform(max_x, max_y)
-            tile_boundary = str(shapely.box(sw_coord[1], sw_coord[0], ne_coord[1], ne_coord[0]))
+            tile_boundary = coordinates_to_bbox(sw_coord[1], sw_coord[0], ne_coord[1], ne_coord[0])
         else:
-            tile_boundary = str(shapely.box(min_x, min_y, max_x, max_y))
+            tile_boundary = coordinates_to_bbox(min_x, min_y, max_x, max_y)
 
-        xy_res = dataset.res
         avg_res = int(round((dataset.res[0] + dataset.res[1])/2, 0))
         return tile_boundary, avg_res
+
+
+def coordinates_to_bbox(min_x, min_y, max_x, max_y):
+    tile_boundary = shapely.box(min_x, min_y, max_x, max_y)
+    return tile_boundary

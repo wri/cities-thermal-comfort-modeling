@@ -67,7 +67,7 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
             parse_filenames_config(source_city_path, CityData.filename_method_parameters_config)
 
         if not has_custom_features:
-            min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters = \
+            utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters = \
                 parse_processing_areas_config(source_city_path, CityData.filename_method_parameters_config)
 
             if not isinstance(min_lon, float) or not isinstance(min_lat, float) or not isinstance(max_lon, float) or not isinstance(max_lat, float):

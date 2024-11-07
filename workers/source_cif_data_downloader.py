@@ -13,7 +13,7 @@ from worker_tools import compute_time_diff_mins, save_tiff_file, save_geojson_fi
 
 # Unify the layers on the same resolution
 DEFAULT_LULC_RESOLUTION = 1
-DEBUG = True
+DEBUG = False
 
 def get_cif_data(task_index, output_base_path, folder_name_city_data, tile_id, features, tile_boundary, tile_resolution='None'):
     start_time = datetime.now()

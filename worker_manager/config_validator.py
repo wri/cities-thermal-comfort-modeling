@@ -1,6 +1,7 @@
+import math
 import os
 
-from job_handler.graph_builder import get_cif_features
+from worker_manager.graph_builder import get_cif_features
 from src.src_tools import get_existing_tiles
 from workers.city_data import CityData, parse_filenames_config, parse_processing_areas_config
 
@@ -10,7 +11,7 @@ def verify_fundamental_paths(source_base_path, target_path, city_folder_name):
         msg = f'Invalid source base path: {source_base_path}'
         invalids.append(msg)
 
-    city_path = str(os.path.join(source_base_path, city_folder_name))
+    city_path = os.path.join(source_base_path, city_folder_name)
     if _verify_path(city_path) is False:
         msg = f'Invalid source city path: {city_path}'
         invalids.append(msg)
@@ -66,17 +67,30 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
             parse_filenames_config(source_city_path, CityData.filename_method_parameters_config)
 
         if not has_custom_features:
-            min_lon, min_lat, max_lon, max_lat, sub_division_cell_size = \
+            utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters = \
                 parse_processing_areas_config(source_city_path, CityData.filename_method_parameters_config)
-            lon_diff = max_lon - min_lon
-            lat_diff = max_lat - min_lat
-            max_bounds_side_size = lon_diff if lon_diff > lat_diff else lat_diff
+
             if not isinstance(min_lon, float) or not isinstance(min_lat, float) or not isinstance(max_lon, float) or not isinstance(max_lat, float):
                 msg = f'If there are no custom source tif files, then values in NewProcessingAOI section must be defined in {CityData.filename_method_parameters_config}'
                 invalids.append(msg)
-            if sub_division_cell_size != None and sub_division_cell_size != 'None' and sub_division_cell_size > max_bounds_side_size:
-                msg = f"Requested sub_division_cell_size cannot be larger than the boundary size in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
+
+            if (tile_side_meters != None and tile_side_meters != 'None' and
+                    _is_tile_wider_than_half_aoi_side(min_lat, min_lon, max_lat, max_lon, tile_side_meters)):
+                msg = f"Requested tile_side_meters cannot be larger than half the AOI side length in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
                 invalids.append(msg)
+
+            if tile_side_meters != None and tile_side_meters != 'None' and tile_side_meters < 200:
+                msg = f"Requested tile_side_meters cannot be less than 200 meters in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
+                invalids.append(msg)
+
+            if tile_side_meters != None and tile_side_meters != 'None' and int(tile_side_meters) <= 10:
+                msg = f"Both tile_side_meters must be greater than 10 in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
+                invalids.append(msg)
+
+            if tile_buffer_meters != None and tile_buffer_meters != 'None' and int(tile_buffer_meters) <= 10:
+                msg = f"Both tile_buffer_meters must be greater than 10 in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
+                invalids.append(msg)
+
         else:
             for tile_folder_name, tile_dimensions in existing_tiles.items():
                 if bool(enabled) or pre_check_option == 'pre_check_all':
@@ -87,35 +101,35 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
                         break
 
                     prior_dsm = city_data.source_dsm_path
-                    if _verify_path(prior_dsm) is False and prior_dsm != 'None':
+                    if 'dsm' not in cif_features and _verify_path(prior_dsm) is False and prior_dsm != 'None':
                         msg = f'Required source file: {prior_dsm} not found for row {index} in .config_umep_city_processing.csv.'
                         invalids.append(msg)
 
                     if method in CityData.processing_methods:
                         prior_tree_canopy = city_data.source_tree_canopy_path
-                        if _verify_path(prior_tree_canopy) is False and prior_tree_canopy != 'None':
+                        if 'tree_canopy' not in cif_features and _verify_path(prior_tree_canopy) is False and prior_tree_canopy != 'None':
                             msg = f'Required source file: {prior_tree_canopy} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                             invalids.append(msg)
 
                     if method in ['solweig_only', 'solweig_full']:
                         prior_land_cover = city_data.source_land_cover_path
                         prior_dem = city_data.source_dem_path
-                        if _verify_path(prior_land_cover) is False and prior_land_cover != 'None':
+                        if 'lulc' not in cif_features and _verify_path(prior_land_cover) is False and prior_land_cover != 'None':
                             msg = f'Required source file: {prior_land_cover} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                             invalids.append(msg)
-                        if _verify_path(prior_dem) is False and prior_dem != 'None':
+                        if 'dem' not in cif_features and _verify_path(prior_dem) is False and prior_dem != 'None':
                             msg = f'Required source file: {prior_dem} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                             invalids.append(msg)
                         for met_file_row in city_data.met_files:
                             met_file = met_file_row.get('filename')
                             met_filepath = os.path.join(city_data.source_met_files_path, met_file)
-                            if _verify_path(met_filepath) is False:
+                            if met_file != '<download_era5>' and _verify_path(met_filepath) is False:
                                 msg = f'Required meteorological file: {met_filepath} not found for method: {method} in .config_method_parameters.yml.'
                                 invalids.append(msg)
-                            utc_offset = met_file_row.get('utc_offset')
-                            if not -24 <= utc_offset <= 24:
-                                msg = f'UTC range for: {met_file} not in range for 24-hour offsets as specified in .config_method_parameters.yml.'
-                                invalids.append(msg)
+                        utc_offset = city_data.utc_offset
+                        if not -24 <= utc_offset <= 24:
+                            msg = f'UTC-offset for: {met_file} not in -24 to 24 hours range as specified in .config_method_parameters.yml.'
+                            invalids.append(msg)
 
                     if method in ['solweig_only']:
                         prior_svfszip = city_data.target_svfszip_path
@@ -132,6 +146,17 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
                             invalids.append(msg)
 
     return invalids
+
+def _is_tile_wider_than_half_aoi_side(min_lat, min_lon, max_lat, max_lon, tile_side_meters):
+    center_lat = (min_lat + max_lat) / 2
+    lon_degree_offset, lat_degree_offset = offset_meters_to_geographic_degrees(center_lat, tile_side_meters)
+
+    is_tile_wider_than_half = False
+    if (lon_degree_offset > (max_lon - min_lon)/2) or (lat_degree_offset > (max_lat - min_lat)/2):
+        is_tile_wider_than_half = True
+
+    return is_tile_wider_than_half
+
 
 def _validate_basic_inputs(source_base_path, target_path, city_folder_name):
     invalids = verify_fundamental_paths(source_base_path, target_path, city_folder_name)
@@ -157,3 +182,12 @@ def _validate_config_inputs(processing_config_df, source_base_path, target_path,
 
 def _highlighted_print(msg):
     print('\n\x1b[6;30;42m' + msg + '\x1b[0m')
+
+def offset_meters_to_geographic_degrees(decimal_latitude, length_m):
+    earth_radius_m = 6378137
+    rad = 180/math.pi
+
+    lon_degree_offset = abs((length_m / (earth_radius_m * math.cos(math.pi*decimal_latitude/180))) * rad)
+    lat_degree_offset = abs((length_m / earth_radius_m) * rad)
+
+    return lon_degree_offset, lat_degree_offset

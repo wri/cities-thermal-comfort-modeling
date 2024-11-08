@@ -1,12 +1,13 @@
 import xarray as xr
-from IPython.core.application import base_flags
 from rasterio.enums import Resampling
 from dask.diagnostics import ProgressBar
 import shapely.wkt
 import geopandas as gp
 import numpy as np
-from datetime import datetime
+import random
+import time
 
+from datetime import datetime, timedelta
 from city_data import CityData
 from worker_tools import compute_time_diff_mins, save_tiff_file, save_geojson_file, log_method_failure
 
@@ -31,31 +32,38 @@ def get_cif_data(task_index, output_base_path, folder_name_city_data, tile_id, f
         output_resolution = int(tile_resolution)
 
     result_flags = []
-    if 'era5' in feature_list:
-        _get_era5(aoi_gdf)
+    # randomize retrieval to reduce contention against GEE
+    random_group= _generate_unique_random_list(1, 3, 3)
+    for group in random_group:
+        # wait random length of time to help reduce contention and GEE throttling
+        wait_time = random.uniform(10, 30)
 
-    if 'lulc' in feature_list:
-        this_success = _get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution)
-        result_flags.append(this_success)
+        if group == 1:
+            if 'lulc' in feature_list:
+                time.sleep(wait_time)
+                this_success = _get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution)
+                result_flags.append(this_success)
+        elif group == 2:
+            if 'tree_canopy' in feature_list:
+                time.sleep(wait_time)
+                this_success = _get_tree_canopy_height(city_data, tile_data_path, aoi_gdf, output_resolution)
+                result_flags.append(this_success)
+        elif group == 3:
+            time.sleep(wait_time)
+            if 'dem' in feature_list or 'dsm' in feature_list:
+                retrieve_dem = True if 'dem' in feature_list else False
+                this_success, nasa_dem = _get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution)
+                result_flags.append(this_success)
+            else:
+                nasa_dem = None
 
-    if 'tree_canopy' in feature_list:
-        this_success = _get_tree_canopy_height(city_data, tile_data_path, aoi_gdf, output_resolution)
-        result_flags.append(this_success)
-
-    if 'dem' in feature_list or 'dsm' in feature_list:
-        retrieve_dem = True if 'dem' in feature_list else False
-        this_success, nasa_dem = _get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution)
-        result_flags.append(this_success)
-    else:
-        nasa_dem = None
-
-    if 'dsm' in feature_list:
-        this_success, alos_dsm = _get_dsm(tile_data_path, aoi_gdf, output_resolution)
-        result_flags.append(this_success)
-        this_success, overture_buildings = _get_building_footprints(tile_data_path, aoi_gdf)
-        result_flags.append(this_success)
-        this_success = _get_building_height_dsm(city_data, tile_data_path, overture_buildings, alos_dsm, nasa_dem)
-        result_flags.append(this_success)
+            if 'dsm' in feature_list:
+                this_success, alos_dsm = _get_dsm(tile_data_path, aoi_gdf, output_resolution)
+                result_flags.append(this_success)
+                this_success, overture_buildings = _get_building_footprints(tile_data_path, aoi_gdf)
+                result_flags.append(this_success)
+                this_success = _get_building_height_dsm(city_data, tile_data_path, overture_buildings, alos_dsm, nasa_dem)
+                result_flags.append(this_success)
 
     run_duration_min = compute_time_diff_mins(start_time)
     return_code = 0 if all(result_flags) else 1
@@ -71,15 +79,20 @@ def get_cif_data(task_index, output_base_path, folder_name_city_data, tile_id, f
 
     return return_stdout
 
+def _generate_unique_random_list(start, end, count):
+    if count > (end - start + 1):
+        raise ValueError("Count is larger than the range of unique values available.")
+    return random.sample(range(start, end + 1), count)
 
-def _get_era5(aoi_gdf):
-    from city_metrix.metrics import era_5_met_preprocessing
 
-    aoi_era_5 = era_5_met_preprocessing(aoi_gdf.total_bounds)
+def _random_list(in_list):
+    random.shuffle(in_list)
+    return in_list
+
 
 def _get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution):
     try:
-        from workers.open_urban import OpenUrban, reclass_map
+        from open_urban import OpenUrban, reclass_map
 
         # Load data
         lulc = OpenUrban().get_data(aoi_gdf.total_bounds)

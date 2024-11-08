@@ -32,14 +32,18 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
            * solweig_full - this option runs cif-download (where needed), wall_height_aspect, skyview_factor, and finally solweig_only
    1. Modify the four sections of the .config_method_parameters.yml file to specify:
       1. methods attributes (the file already contains default values which you may want to leave unaltered)
-      1. the name(s) for meteorological files to be processed by the solweig method
+      1. the name(s) for meteorological file(s) to be processed by the solweig method.
+         * Enter "<download_era5>" if you instead or also want the system to automatically download ERA5 data into a file named "met_era5_hottest_days.txt"
+           *  **TIP**: On the next run, you can enter the file name met_era5_hottest_days.txt to avoid the download from ERA5 since the file is already on the system
       1. the names of source files stored in the primary_source_data tile folders.
          1. If you want the system to automatically retrieve a tiff base file, instead specify None for the specific files.
            * **Note**: the system assumes that all source tiff files in all tiles have the same name.
          1. You can also specify a combination of None for some files and the name of the custom file if you want to provide some customer files and also have the system automatically retrieve others from CIF.
-      1. the bounding coordinates of your area of interest and whether you want the AOI to be tiled into smaller sub-cells.
-         * **Note**: These values are only used if you want to automatically retrieve base data from CIF.
-         * **Note**: the cell-size value currently currently must specified in geographic degrees but will later be updated to meters.
+      1. Area-of-Interest parameters:
+         1. the utc offset in hours
+         1. the bounding coordinates of the area of interest
+         1. tile-side-length in meters or None depending on whether you want the area sub-tiled
+         1. tile-buffer length in meters or None depending on whether you want the constructed tiles to be buffered
 
 ### Running the system
    1. Open a Windows command prompt
@@ -64,11 +68,10 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
 
 ## Installation Instructions
 
-Use `SOLWEIG-inputs.ipynb` to generate the input files for [SOLWEIG](https://umep-docs.readthedocs.io/projects/tutorial/en/latest/Tutorials/IntroductionToSolweig.html).
-
 ### Setup
 1. Install Miniconda3 and add to system path, such as "C:\ProgramData\miniconda3\Scripts"
 2. Install QGIS (v3.34.11) standalone app and add "UMEP for Processing" plugin.
+   * **Note**: The plugin is periodically updated and it's a good idea to stay current with the latest, so periodically check in QGIS plugins for updates.
 3. Install PyCharm and create batch script with name "pycharm" pointing to PyCharm.bat such as "C:\Program Files\JetBrains\PyCharm Community Edition 2024.2.1\bin\pycharm.bat"
 4. Determine paths to both QGIS and QGIS plugins and modify existing config.ini file as follows:
    * Open QGIS app, enter the following in the python console:
@@ -88,19 +91,22 @@ print(sys.path)
    * Activate the cities-thermal conda environment
    * Execute the environment_post_processing.bat file
    * For later runs, you can simply execute the setup_conda.bat file
-8. Create the C:\CTM_processing folder
+8. Add credentials for Google Earth Engine and ERA5
+   * Install <https://cloud.google.com/sdk/docs/install>
+   * If you want to use the ERA5 layer, you need to install the  [Climate Data Store (CDS) Application Program Interface (API)](https://cds.climate.copernicus.eu/how-to-api)
+9. Create the C:\CTM_processing folder
    * Copy the ZAF_Capetown_small_tile and ZZZ_template_city folders from the codebase into C:\CTM_processing folder.
    * In these folders, modify the two "._run_CTCM_.." batch files to include the path to the main.py module if it does not already point to the correct local repository on the machine.
-9. Create a batch file for navigating to the C:\CTM_processing folder and starting the conda environment.
+10. Create a batch file for navigating to the C:\CTM_processing folder and starting the conda environment.
    * Create the "gotcm.bat" file in some directory such as C:\Users\Administrator\Documents\Batches with following content:
      ~~~
      cd C:\CTCM_processing
      conda activate cities-thermal
      ~~~
    * Add location of the batch file to the system path
-10. Confirm processing by running the test_processing_runs.py tests in the local repository code
+11. Confirm processing by running the test_processing_runs.py tests in the local repository code
     * **Note**: tests may show exceptions even though the tests pass
-11. Confirm processing using the C:\CTM_processing folder
+12. Confirm processing using the C:\CTM_processing folder
    * in windows command prompt, execute "gotcm" to go to the processing folder and start the conda environment.
    * Execute the _sample_run_CTM_processing_pre_check.bat batch script and ensure that no errors are report.
    * Execute the _sample_run_CTM_processing:
@@ -108,10 +114,17 @@ print(sys.path)
      * The result_data folder contains two subfolders with each of these folders containing subfolders.
      * The result_data folder also contains the .logs and .run_reports folders.
 
+### CIF setup
+1. Download and install gcloud https://dl.google.com/dl/cloudsdk/channels/rapid/GoogleCloudSDKInstaller.exe but don't sign in
+2. Add Environmental per https://github.com/wri/cities-cif?tab=readme-ov-file#credentials
+2. ERA5 data api creds to home directory per https://cds.climate.copernicus.eu/how-to-api
+
 ### Execution in Pycharm
 1. Create input dataset based on the ZZZ_template_city folder, providing source data, meteorological timeseries files, and configuration settings
 1. Configure runs of city data using the .config_umep_city_processing.csv file in the source folder located above the cities folders
 1. In PyCharm, run main.py specifying source/target folders
 1. In command prompt, run the _sample_run_main.bat batch file
 
+
+Use `SOLWEIG-inputs.ipynb` to generate the input files for [SOLWEIG](https://umep-docs.readthedocs.io/projects/tutorial/en/latest/Tutorials/IntroductionToSolweig.html).
 

@@ -189,9 +189,25 @@ fabric.properties
 *.tif.aux.xml
 preprocessed_data/
 tcm_results/
+results_data/
+environment_post_processing.bat
+sample_cities/NLD_Amsterdam_download_only/source_data/primary_source_data/
+_test_compiler.txt
+test_local_proecessing_runs.py
+local_*/
+.config.ini
+
 NOT_FOR_CHECKIN/
 .local*
 _local*
 
 # CIF
 data
+cif_*.tif
+viewer.*
+met_era5_hottest_days.txt
+.qgis_viewer
+*.html
+
+
+

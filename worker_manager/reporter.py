@@ -2,12 +2,14 @@ import os
 from collections.abc import Iterable
 import json
 import pandas as pd
+from osgeo import gdal
 from datetime import datetime
+from pathlib import Path
 
-from src.src_tools import create_folder
+from src.src_tools import create_folder, clean_folder
 from workers.city_data import CityData
 
-def _parse_row_results(dc):
+def parse_row_results(dc):
     results = []
     # serialize the return information - one way or another
     for obj in dc:
@@ -57,7 +59,7 @@ def _get_inclusive_between_string(text, start_substring, end_substring):
     except ValueError:
         return None
 
-def _report_results(enabled_processing_tasks_df, results_df, target_base_path, city_folder_name):
+def report_results(enabled_processing_tasks_df, results_df, target_base_path, city_folder_name):
     results_df.sort_values(['task_index', 'tile', 'step_index', 'met_filename'], inplace=True)
 
     merged = pd.merge(enabled_processing_tasks_df, results_df, left_index=True, right_on='task_index',
@@ -82,8 +84,47 @@ def _report_results(enabled_processing_tasks_df, results_df, target_base_path, c
 
     return report_file_path
 
+
 def _evaluate_return_code(return_code):
     return 'success' if return_code == 0 else 'FAILURE'
 
 
+def write_raster_vrt_file_for_folder(source_folder, files, target_viewer_folder):
+    # get list of files in tiles
+    for file_name in files:
+        raster_files = _find_files_with_name(source_folder, file_name)
+        file_stem = Path(file_name).stem
+        output_vrt_file = f'{file_stem}.vrt'
+        output_file_path = os.path.join(target_viewer_folder, output_vrt_file)
+        _write_raster_vrt(output_file_path, raster_files)
 
+
+def _write_raster_vrt(output_file_path, raster_files):
+    # Build VRT
+    vrt_options = gdal.BuildVRTOptions(resampleAlg='nearest')
+    vrt = gdal.BuildVRT(output_file_path, raster_files, options=vrt_options)
+
+    # Save the VRT
+    if vrt is not None:
+        vrt.FlushCache()
+    else:
+        raise Exception('vrt not created do to improper GeoTiff format')
+    vrt = None
+
+
+def _find_files_with_name(root_folder, file_name):
+    matching_files = []
+    for dirpath, dirnames, filenames in os.walk(root_folder):
+        if file_name in filenames:
+            matching_files.append(os.path.join(dirpath, file_name))
+    return matching_files
+
+
+def find_files_with_substring_in_name(directory, start_substring, end_substring):
+    matching_files = []
+    for file_name in os.listdir(directory):
+        if file_name.startswith(start_substring) and file_name.endswith(end_substring):
+            matching_files.append(file_name)
+
+    matching_files.sort()
+    return matching_files

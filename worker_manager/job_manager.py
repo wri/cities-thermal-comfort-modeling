@@ -8,13 +8,12 @@ import geopandas as gpd
 import shapely
 from shapely import wkt
 import dask
-from shapely import Polygon
-
-from functools import reduce
-from worker_manager.graph_builder import _get_aoi_fishnet, get_cif_features, _get_aoi
-from worker_manager.reporter import _parse_row_results, _report_results
+from pathlib import Path
+from worker_manager.graph_builder import get_aoi_fishnet, get_cif_features, get_aoi
+from worker_manager.reporter import parse_row_results, report_results, write_raster_vrt_file_for_folder, \
+    find_files_with_substring_in_name
 from src.src_tools import create_folder, get_existing_tiles
-from workers.worker_tools import get_application_path
+from workers.worker_tools import get_application_path, clean_folder
 from workers.city_data import CityData
 
 warnings.filterwarnings('ignore')
@@ -27,11 +26,12 @@ dask.config.set({'logging.distributed': 'warning'})
 MET_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(get_application_path(), 'workers', 'meteorological_processor.py'))
 TILE_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(get_application_path(), 'workers', 'tile_processor.py'))
 
+DEBUG=False
 
 def start_jobs(source_base_path, target_base_path, city_folder_name, processing_config_df):
     _start_logging(target_base_path, city_folder_name)
 
-    aoi_boundary, tile_side_meters, tile_buffer_meters, utc_offset = _get_aoi(source_base_path, city_folder_name)
+    aoi_boundary, tile_side_meters, tile_buffer_meters, utc_offset = get_aoi(source_base_path, city_folder_name)
 
     out_list = []
 
@@ -87,7 +87,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
                 delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
                 futures.append(delay_tile_array)
         else:
-            fishnet = _get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters)
+            fishnet = get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters)
             _write_tile_grid(fishnet, target_base_path, city_folder_name)
 
             print(f'\nCreating data for {fishnet.geometry.size} new tiles..')
@@ -113,17 +113,56 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
     combined_delays_passed.append(delays_all_passed)
     
     # Write run_report
-    report_file_path = _report_results(enabled_processing_tasks_df, combined_results_df, target_base_path, city_folder_name)
+    report_file_path = report_results(enabled_processing_tasks_df, combined_results_df, target_base_path, city_folder_name)
     print(f'\nRun report written to {report_file_path}\n')
 
     return_code = 0 if all(combined_delays_passed) else 1
 
     if return_code == 0:
+        if DEBUG:
+            _write_vrt_files(city_data, source_base_path, target_base_path, city_folder_name)
         return_str = "Processing encountered no errors."
     else:
         return_str = 'Processing encountered errors. See log file.'
 
     return return_code, return_str
+
+
+def _write_vrt_files(cd1, source_path, target__path, city_folder_name):
+    city_data = CityData(city_folder_name, None, source_path, target__path)
+
+    target_viewer_folder = os.path.join(city_data.target_base_path, city_data.folder_name_city_data, '.qgis_viewer',
+                                        'vrt_files')
+    create_folder(target_viewer_folder)
+    clean_folder(target_viewer_folder)
+
+    source_folder = city_data.source_city_data_path
+    dem_file_name = city_data.dem_tif_filename
+    dsm_file_name = city_data.dsm_tif_filename
+    tree_canopy_file_name = city_data.tree_canopy_tif_filename
+    lulc_file_name = city_data.lulc_tif_filename
+    source_files = [dem_file_name, dsm_file_name, tree_canopy_file_name, lulc_file_name]
+    if source_files:
+        write_raster_vrt_file_for_folder(source_folder, source_files, target_viewer_folder)
+
+    # loop through met folders under tcm_results
+    for met_file in city_data.met_files:
+        if met_file.get('filename') == CityData.method_name_era5_download:
+            met_file_name = CityData.filename_era5
+        else:
+            met_file_name = met_file.get('filename')
+
+        met_folder_name = Path(met_file_name).stem
+        target_tcm_folder = str(os.path.join(city_data.target_tcm_results_path, met_folder_name))
+        target_tcm_first_tile_folder = os.path.join(target_tcm_folder, 'tile_001')
+
+        if os.path.exists(target_tcm_first_tile_folder):
+            shadow_files = find_files_with_substring_in_name(target_tcm_first_tile_folder, 'Shadow_', '.tif')
+            write_raster_vrt_file_for_folder(target_tcm_folder, shadow_files, target_viewer_folder)
+
+            shadow_files = find_files_with_substring_in_name(target_tcm_first_tile_folder, 'Tmrt_', '.tif')
+            write_raster_vrt_file_for_folder(target_tcm_folder, shadow_files, target_viewer_folder)
+
 
 def any_value_matches_in_dict_list(dict_list, target_string):
     for dictionary in dict_list:
@@ -224,7 +263,7 @@ def _process_rows(futures):
             # TODO implement progress bar
             dc = dask.compute(*futures)
 
-        all_passed, results_df, failed_task_ids, failed_task_details =_parse_row_results(dc)
+        all_passed, results_df, failed_task_ids, failed_task_details =parse_row_results(dc)
 
         if not all_passed:
             task_str = ','.join(map(str,failed_task_ids))

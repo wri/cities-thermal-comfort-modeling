@@ -12,7 +12,7 @@ def _build_source_dataframes(source_base_path, city_folder_name):
     return processing_config_df
 
 
-def _get_aoi(source_base_path, city_folder_name):
+def get_aoi(source_base_path, city_folder_name):
     source_city_path = str(os.path.join(source_base_path, city_folder_name))
 
     utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters = \
@@ -23,7 +23,7 @@ def _get_aoi(source_base_path, city_folder_name):
     return aoi_boundary, tile_side_meters, tile_buffer_meters, utc_offset
 
 
-def _get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters):
+def get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters):
     bounds = aoi_boundary.bounds
 
     min_lon = bounds[0]

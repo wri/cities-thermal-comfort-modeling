@@ -1,6 +1,9 @@
+import os.path
 import time
+import rioxarray
 from city_data import CityData
 from source_cif_data_downloader import get_cif_data
+from worker_tools import reverse_y_dimension_as_needed, save_tiff_file
 
 PROCESSING_PAUSE_TIME_SEC = 30
 
@@ -54,6 +57,9 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
         time.sleep(PROCESSING_PAUSE_TIME_SEC)
 
     if task_method != 'cif_download_only':
+        # ensure all source TIFF files have negative NS y direction
+        ensure_y_dimension_direction(city_folder_name, tile_folder_name, source_base_path)
+
         if task_method == 'solweig_full':
             return_vals = _execute_solweig_full_plugin_steps(task_index, city_folder_name, tile_folder_name, source_base_path, target_base_path)
             return_stdouts.extend(return_vals)
@@ -73,6 +79,28 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
     result_json = f'{{"Return_package": [{result_str}]}}'
 
     return result_json
+
+
+def ensure_y_dimension_direction(city_folder, folder_tile, source_path):
+    city_data = CityData(city_folder, folder_tile, source_path, None)
+    tile_data_path = city_data.source_tile_data_path
+
+    _enforce_tiff_upper_left_origin(tile_data_path, city_data.source_dem_path)
+    _enforce_tiff_upper_left_origin(tile_data_path, city_data.source_dsm_path)
+    _enforce_tiff_upper_left_origin(tile_data_path, city_data.source_land_cover_path)
+    _enforce_tiff_upper_left_origin(tile_data_path, city_data.source_tree_canopy_path)
+
+
+def _enforce_tiff_upper_left_origin(tile_data_path, file_path):
+    # Open into an xarray.DataArray
+    geotiff_da = rioxarray.open_rasterio(file_path)
+    geotiff_2d = geotiff_da.sel(band=1).squeeze()
+    geotiff_da.close()
+
+    was_reversed, reversed_arr = reverse_y_dimension_as_needed(geotiff_2d)
+    if was_reversed:
+        data_file = os.path.basename(file_path)
+        save_tiff_file(reversed_arr, tile_data_path, data_file)
 
 
 if __name__ == "__main__":

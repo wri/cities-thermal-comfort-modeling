@@ -12,7 +12,7 @@ echo *** Processing data source in: %city_folder%
 echo **********************************************************************************
 call conda activate cities-thermal
 echo Starting run: %date% %time%
-call python %path_to_main% --source_base_path=%parent_path% --target_base_path=%parent_path% --city_folder_name=%city_folder% --processing_option=%processing_option%
+call python %path_to_main% --base_path=%parent_path% --city_folder_name=%city_folder% --processing_option=%processing_option%
 echo:
 echo Finished run: %date% %time%
 echo **********************************************************************************

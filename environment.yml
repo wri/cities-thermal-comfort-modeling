@@ -4,20 +4,22 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.12
+  - python=3.12.7
 #  - ipykernel
 #  - python-dotenv
-  - matplotlib
-  - qgis=3.34.11
-  - scipy
+  - gdal=3.9.2
   - numpy=1.26.4
-  - conda-build
-  - dask[complete]=2024.8.2
-  - rasterio
-  - rioxarray
-  - cdsapi
-  - pytest
-  - pip
+  - matplotlib=3.9.2
+  - qgis=3.34.11
+  - matplotlib=3.9.2
+  - scipy=1.14.1
+  - conda-build=24.9.0
+  - dask[complete]=2024.10.0
+  - rasterio=1.4.1
+  - rioxarray=0.17.0
+  - cdsapi=0.7.4
+  - pytest=8.3.3
+  - pip=24.3.1
   - pip:
     - git+https://github.com/wri/cities-cif@main
  #   - git+https://github.com/wri/cities-cif@v0.1.2

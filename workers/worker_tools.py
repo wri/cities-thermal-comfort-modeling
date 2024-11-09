@@ -60,7 +60,10 @@ def save_tiff_file(raster_data_array, tile_data_path, tiff_data_FILENAME):
     create_folder(tile_data_path)
     file_path = os.path.join(tile_data_path, tiff_data_FILENAME)
     remove_file(file_path)
-    raster_data_array.rio.to_raster(raster_path=file_path, driver="COG")
+    try:
+        raster_data_array.rio.to_raster(raster_path=file_path, driver="COG")
+    except Exception as e_msg:
+        raise Exception(f'GeoTiff file {tiff_data_FILENAME} not written to {tile_data_path}.')
 
 
 def save_geojson_file(vector_geodataframe, tile_data_path, tiff_data_FILENAME):
@@ -69,8 +72,18 @@ def save_geojson_file(vector_geodataframe, tile_data_path, tiff_data_FILENAME):
     remove_file(file_path)
     vector_geodataframe.to_file(file_path, driver='GeoJSON')
 
+
 def compute_time_diff_mins(start_time):
     return round(((datetime.now() - start_time).seconds)/60, 1)
+
+
+def reverse_y_dimension_as_needed(dataarray):
+    was_reversed= False
+    y_dimensions = dataarray.shape[0]
+    if dataarray.y.data[0] < dataarray.y.data[y_dimensions - 1]:
+        dataarray = dataarray.isel({dataarray.rio.y_dim: slice(None, None, -1)})
+        was_reversed = True
+    return was_reversed, dataarray
 
 
 def log_method_start(method, task_index, step, source_base_path):

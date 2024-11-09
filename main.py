@@ -4,15 +4,17 @@ from worker_manager.config_validator import _validate_basic_inputs, _validate_co
 from worker_manager.graph_builder import _build_source_dataframes
 from worker_manager.job_manager import start_jobs
 
-
 """
 Guide to creating standalone app for calling QGIS: https://docs.qgis.org/3.16/en/docs/pyqgis_developer_cookbook/intro.html
 https://medium.com/@giovannigallon/how-i-automate-qgis-tasks-using-python-54df35d8d63f
 """
 
-def start_processing(source_base_path, target_base_path, city_folder_name, processing_option):
-    abs_source_base_path = os.path.abspath(source_base_path)
-    abs_target_base_path = os.path.abspath(target_base_path)
+def start_processing(base_path, city_folder_name, processing_option):
+    # Unify the data into a single umbrella folder
+    # TODO Remove the separation of source and target base path
+    abs_source_base_path = os.path.abspath(base_path)
+    abs_target_base_path = os.path.abspath(base_path)
+
     return_code_basic = _validate_basic_inputs(abs_source_base_path, abs_target_base_path, city_folder_name)
 
     processing_config_df = _build_source_dataframes(abs_source_base_path, city_folder_name)
@@ -49,10 +51,8 @@ def _highlighted_print(msg):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Run methods in the "UMEP for Processing" QGIS plugin.')
-    parser.add_argument('--source_base_path', metavar='path', required=True,
-                        help='the path to city-based source data')
-    parser.add_argument('--target_base_path', metavar='path', required=True,
-                        help='path to export results')
+    parser.add_argument('--base_path', metavar='path', required=True,
+                        help='the path to city-based source and results data')
     parser.add_argument('--city_folder_name', metavar='path', required=True,
                         help='name of source city_folder')
 
@@ -61,6 +61,6 @@ if __name__ == "__main__":
                         help=f'specifies type of configuration pre-check. Options are: {valid_methods}')
     args = parser.parse_args()
 
-    return_code = start_processing(args.source_base_path, args.target_base_path, args.city_folder_name, args.processing_option)
+    return_code = start_processing(args.base_path, args.city_folder_name, args.processing_option)
 
     print(f'return code: {return_code}')

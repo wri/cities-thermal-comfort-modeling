@@ -9,7 +9,9 @@ import time
 
 from datetime import datetime, timedelta
 from city_data import CityData
-from worker_tools import compute_time_diff_mins, save_tiff_file, save_geojson_file, log_method_failure
+from worker_tools import compute_time_diff_mins, save_tiff_file, save_geojson_file, log_method_failure, \
+    reverse_y_dimension_as_needed
+
 
 # Unify the layers on the same resolution
 DEFAULT_LULC_RESOLUTION = 1
@@ -118,6 +120,9 @@ def _get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution):
         if output_resolution != DEFAULT_LULC_RESOLUTION:
             lulc_to_solweig_class = _resample_categorical_raster(lulc_to_solweig_class, output_resolution)
 
+        # reverse y direction, if y values increase in NS direction from LL corner
+        was_reversed, lulc_to_solweig_class = reverse_y_dimension_as_needed(lulc_to_solweig_class)
+
         # Save data to file
         save_tiff_file(lulc_to_solweig_class, tile_data_path, city_data.lulc_tif_filename)
 
@@ -140,6 +145,10 @@ def _get_tree_canopy_height(city_data, tile_data_path, aoi_gdf, output_resolutio
         # Load layer
         tree_canopy_height = TreeCanopyHeight(spatial_resolution=output_resolution).get_data(aoi_gdf.total_bounds)
         tree_canopy_height_float32 = tree_canopy_height.astype('float32')
+
+        # reverse y direction, if y values increase in NS direction from LL corner
+        was_reversed, tree_canopy_height_float32 = reverse_y_dimension_as_needed(tree_canopy_height_float32)
+
         save_tiff_file(tree_canopy_height_float32, tile_data_path, city_data.tree_canopy_tif_filename)
 
         return True
@@ -154,6 +163,10 @@ def _get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution
         from city_metrix.layers import NasaDEM
 
         nasa_dem = NasaDEM(spatial_resolution=output_resolution).get_data(aoi_gdf.total_bounds)
+
+        # reverse y direction, if y values increase in NS direction from LL corner
+        was_reversed, nasa_dem = reverse_y_dimension_as_needed(nasa_dem)
+
         if retrieve_dem:
             save_tiff_file(nasa_dem, tile_data_path, city_data.dem_tif_filename)
 
@@ -170,6 +183,10 @@ def _get_dsm(tile_data_path, aoi_gdf, output_resolution):
         from city_metrix.layers import AlosDSM
 
         alos_dsm = AlosDSM(spatial_resolution=output_resolution).get_data(aoi_gdf.total_bounds)
+
+        # reverse y direction, if y values increase in NS direction from LL corner
+        was_reversed, alos_dsm = reverse_y_dimension_as_needed(alos_dsm)
+
         if DEBUG:
             save_tiff_file(alos_dsm, tile_data_path, 'debug_alos_dsm.tif')
 

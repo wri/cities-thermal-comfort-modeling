@@ -1,4 +1,6 @@
+
 import math
+import numbers
 import os
 
 from worker_manager.graph_builder import get_cif_features
@@ -66,12 +68,37 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
         dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename, has_custom_features, feature_list = \
             parse_filenames_config(source_city_path, CityData.filename_method_parameters_config)
 
-        if not has_custom_features:
+        non_tiled_city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
+
+        if (not has_custom_features  or
+                any(d['filename'] == CityData.method_name_era5_download for d in non_tiled_city_data.met_files)):
             utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters = \
                 parse_processing_areas_config(source_city_path, CityData.filename_method_parameters_config)
 
-            if not isinstance(min_lon, float) or not isinstance(min_lat, float) or not isinstance(max_lon, float) or not isinstance(max_lat, float):
+            if (not isinstance(min_lon, numbers.Number) or not isinstance(min_lat, numbers.Number) or
+                    not isinstance(max_lon, numbers.Number) or not isinstance(max_lat, numbers.Number)):
                 msg = f'If there are no custom source tif files, then values in NewProcessingAOI section must be defined in {CityData.filename_method_parameters_config}'
+                invalids.append(msg)
+
+            if not (-180 <= min_lon <= 180) or not (-180 <= max_lon <= 180):
+                msg = f'Min and max longitude values must be between -180 and 180 in ProcessingAOI section of {CityData.filename_method_parameters_config}'
+                invalids.append(msg)
+
+            if not (-90 <= min_lat <= 90) or not (-90 <= max_lat <= 90):
+                msg = f'Min and max latitude values must be between -90 and 90 in ProcessingAOI section of {CityData.filename_method_parameters_config}'
+                invalids.append(msg)
+
+            if not (min_lon <= max_lon):
+                msg = f'Min longitude must be less than max longitude in ProcessingAOI section of {CityData.filename_method_parameters_config}'
+                invalids.append(msg)
+
+            if not (min_lat <= max_lat):
+                msg = f'Min latitude must be less than max latitude in ProcessingAOI section of {CityData.filename_method_parameters_config}'
+                invalids.append(msg)
+
+            # TODO improve this evaluation
+            if abs(max_lon - min_lon) > 0.3 or abs(max_lon - min_lon) > 0.3:
+                msg = f'Specified AOI must be less than 30km on a side in ProcessingAOI section of {CityData.filename_method_parameters_config}'
                 invalids.append(msg)
 
             if (tile_side_meters != None and tile_side_meters != 'None' and
@@ -91,7 +118,7 @@ def verify_processing_config(processing_config_df, source_base_path, target_base
                 msg = f"Both tile_buffer_meters must be greater than 10 in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
                 invalids.append(msg)
 
-        else:
+        if has_custom_features:
             for tile_folder_name, tile_dimensions in existing_tiles.items():
                 if bool(enabled) or pre_check_option == 'pre_check_all':
                     try:

@@ -102,10 +102,19 @@ def test_main_check_all_failure():
         start_processing(base_path, source_city_folder_name, 'pre_check_all')
 
 
-def test_main_check_invalid_configs():
+def test_main_check_invalid_city_1_configs():
     package_folder = os.path.dirname(os.getcwd())
     base_path = os.path.join(package_folder, 'sample_cities')
-    source_city_folder_name = 'XXX_Invalid_city'
+    source_city_folder_name = 'XXX_Invalid_city_1'
+
+    with pytest.raises(Exception):
+        start_processing(base_path, source_city_folder_name, 'pre_check_all')
+
+
+def test_main_check_invalid_city_2_configs():
+    package_folder = os.path.dirname(os.getcwd())
+    base_path = os.path.join(package_folder, 'sample_cities')
+    source_city_folder_name = 'XXX_Invalid_city_2'
 
     with pytest.raises(Exception):
         start_processing(base_path, source_city_folder_name, 'pre_check_all')

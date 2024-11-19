@@ -2,11 +2,9 @@ import os
 from collections.abc import Iterable
 import json
 import pandas as pd
-from osgeo import gdal
 from datetime import datetime
-from pathlib import Path
 
-from src.src_tools import create_folder, clean_folder
+from src.src_tools import create_folder
 from workers.city_data import CityData
 
 def parse_row_results(dc):
@@ -87,29 +85,6 @@ def report_results(enabled_processing_tasks_df, results_df, target_base_path, ci
 
 def _evaluate_return_code(return_code):
     return 'success' if return_code == 0 else 'FAILURE'
-
-
-def write_raster_vrt_file_for_folder(source_folder, files, target_viewer_folder):
-    # get list of files in tiles
-    for file_name in files:
-        raster_files = _find_files_with_name(source_folder, file_name)
-        file_stem = Path(file_name).stem
-        output_vrt_file = f'{file_stem}.vrt'
-        output_file_path = os.path.join(target_viewer_folder, output_vrt_file)
-        _write_raster_vrt(output_file_path, raster_files)
-
-
-def _write_raster_vrt(output_file_path, raster_files):
-    # Build VRT
-    vrt_options = gdal.BuildVRTOptions(resampleAlg='nearest')
-    vrt = gdal.BuildVRT(output_file_path, raster_files, options=vrt_options)
-
-    # Save the VRT
-    if vrt is not None:
-        vrt.FlushCache()
-    else:
-        raise Exception('vrt not created do to improper GeoTiff format')
-    vrt = None
 
 
 def _find_files_with_name(root_folder, file_name):

@@ -13,6 +13,8 @@ def _build_source_dataframes(source_base_path, city_folder_name):
 
 
 def get_aoi(source_base_path, city_folder_name):
+    from city_metrix.layers.layer import get_utm_zone_epsg
+
     source_city_path = str(os.path.join(source_base_path, city_folder_name))
 
     utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters = \
@@ -20,7 +22,9 @@ def get_aoi(source_base_path, city_folder_name):
 
     aoi_boundary = coordinates_to_bbox(min_lon, min_lat, max_lon, max_lat)
 
-    return aoi_boundary, tile_side_meters, tile_buffer_meters, utc_offset
+    crs_str = get_utm_zone_epsg(aoi_boundary.bounds)
+
+    return aoi_boundary, tile_side_meters, tile_buffer_meters, utc_offset, crs_str
 
 
 def get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters):

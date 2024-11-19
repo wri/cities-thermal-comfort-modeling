@@ -3,15 +3,16 @@ import pandas as pd
 
 from pathlib import Path
 
-from src.src_tools import get_substring_between_chars
 from worker_manager.reporter import _find_files_with_name
 from workers.city_data import CityData
 from workers.worker_tools import create_folder, clean_folder, get_application_path
 
-def write_vrt_files(city_data, crs_str):
+QGIS_VIEWER_FOLDER = '.qgis_viewer'
+
+def write_qgis_files(city_data, crs_str):
     from worker_manager.reporter import find_files_with_substring_in_name
 
-    target_viewer_folder = str(os.path.join(city_data.target_base_path, city_data.folder_name_city_data, '.qgis_viewer'))
+    target_viewer_folder = str(os.path.join(city_data.target_base_path, city_data.folder_name_city_data, QGIS_VIEWER_FOLDER))
     target_vrt_folder = str(os.path.join(target_viewer_folder, 'vrt_files'))
     create_folder(target_vrt_folder)
     clean_folder(target_vrt_folder)
@@ -67,7 +68,7 @@ def write_vrt_files(city_data, crs_str):
 
 
 def _modify_and_write_qgis_file(vrt_files, city_data, crs_str, target_viewer_folder):
-    source_qgs_file = os.path.join(get_application_path(), 'support', 'template_viewer.qgs')
+    source_qgs_file = os.path.join(get_application_path(), 'support', 'qgis_viewer', 'template_viewer.qgs')
     target_qgs_file = os.path.join(target_viewer_folder, 'viewer.qgs')
 
     with open(source_qgs_file, "r") as file:
@@ -98,7 +99,18 @@ def _modify_and_write_qgis_file(vrt_files, city_data, crs_str, target_viewer_fol
         data = data.replace(f'EPSG:{template_crs}', f'EPSG:{target_crs}')
 
         # Reset the default view extent
-        # source_line = _get_string_line_by_line(source_qgs_file, '<DefaultViewExtent')
+        source_line = _get_string_line_by_line(source_qgs_file, '<DefaultViewExtent')
+
+        min_lon = city_data.min_lon
+        min_lat = city_data.min_lat
+        max_lon = city_data.max_lon
+        max_lat = city_data.max_lat
+        reproj_bbox = _get_reprojected_bbox(min_lon, min_lat, max_lon, max_lat, target_crs)
+        target_minx, target_miny, target_maxx, target_maxy = reproj_bbox.squeeze().bounds
+        target_line =f'    <DefaultViewExtent ymin="{target_miny}" xmin="{target_minx}" xmax="{target_maxx}" ymax="{target_maxy}">\n'
+
+        data = data.replace(source_line, target_line)
+
         # default_extent = get_substring_between_chars(source_line, '<', '>').split(' ')
         # source_ymax = get_substring_between_chars(default_extent[1],'"', '"')
         # source_xmin = get_substring_between_chars(default_extent[2],'"', '"')
@@ -221,8 +233,8 @@ def write_tile_grid(tile_grid, target_base_path, city_folder_name):
     projected_gdf = gpd.GeoDataFrame(modified_tile_grid, crs='EPSG:4326')
 
     target_file_name = 'tile_grid.geojson'
-    target_path = str(os.path.join(target_base_path, city_folder_name, CityData.folder_name_results,
-                            CityData.folder_name_preprocessed_data))
+    target_path = str(
+        os.path.join(target_base_path, city_folder_name, QGIS_VIEWER_FOLDER))
     create_folder(target_path)
     file_path = os.path.join(target_path, target_file_name)
 

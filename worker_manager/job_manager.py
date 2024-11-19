@@ -6,7 +6,7 @@ import pandas as pd
 import shapely
 import dask
 
-from worker_manager.ancillary_files import write_config_files, write_tile_grid, write_vrt_files
+from worker_manager.ancillary_files import write_config_files, write_tile_grid, write_qgis_files
 from worker_manager.graph_builder import get_aoi_fishnet, get_cif_features, get_aoi
 from worker_manager.reporter import parse_row_results, report_results
 from src.src_tools import create_folder, get_existing_tiles
@@ -23,7 +23,6 @@ dask.config.set({'logging.distributed': 'warning'})
 MET_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(get_application_path(), 'workers', 'meteorological_processor.py'))
 TILE_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(get_application_path(), 'workers', 'tile_processor.py'))
 
-DEBUG=False
 
 def start_jobs(source_base_path, target_base_path, city_folder_name, processing_config_df):
     _start_logging(target_base_path, city_folder_name)
@@ -116,8 +115,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
     return_code = 0 if all(combined_delays_passed) else 1
 
     if return_code == 0:
-        if DEBUG:
-            write_vrt_files(city_data, crs_str)
+        write_qgis_files(city_data, crs_str)
         return_str = "Processing encountered no errors."
     else:
         return_str = 'Processing encountered errors. See log file.'

@@ -1,6 +1,6 @@
 import os
 
-from worker_manager.ancillary_files import write_vrt_files
+from worker_manager.ancillary_files import write_qgis_files
 from workers.city_data import CityData
 
 
@@ -12,7 +12,7 @@ def test_vrt_writer():
     city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
 
     crs_str = 'EPSG:32734'
-    write_vrt_files(city_data, crs_str)
+    write_qgis_files(city_data, crs_str)
 
 def test_vrt_writer_amsterdam():
     package_folder = os.path.dirname(os.getcwd())
@@ -22,5 +22,5 @@ def test_vrt_writer_amsterdam():
     city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
 
     crs_str = 'EPSG:32631'
-    write_vrt_files(city_data, crs_str)
+    write_qgis_files(city_data, crs_str)
 

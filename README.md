@@ -32,6 +32,7 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
            * solweig_full - this option runs cif-download (where needed), wall_height_aspect, skyview_factor, and finally solweig_only
    1. Modify the four sections of the .config_method_parameters.yml file to specify:
       1. methods attributes (the file already contains default values which you may want to leave unaltered)
+         * **IMPORTANT** The default values for the leaf start and leaf end dates are for the northern hemisphere. If the area of interest is in the southern hemisphere these dates must be changed so that there are leaves on the trees for the met date(s) being used. The first day of spring through the first day of fall is approximately doy 267-80.    
       1. the name(s) for meteorological file(s) to be processed by the solweig method.
          * Enter "<download_era5>" if you instead or also want the system to automatically download ERA5 data into a file named "met_era5_hottest_days.txt"
            *  **TIP**: On the next run, you can enter the file name met_era5_hottest_days.txt to avoid the download from ERA5 since the file is already on the system

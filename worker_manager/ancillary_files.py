@@ -36,6 +36,24 @@ def write_qgis_files(city_data, crs_str):
     source_files += lulc
     write_raster_vrt_file_for_folder(source_folder, source_files, target_vrt_folder)
 
+    # Build VRTs for preprocessed results
+    preprocessed_files = []
+    target_preproc_folder = city_data.target_preprocessed_path
+    target_preproc_first_tile_folder = os.path.join(target_preproc_folder, 'tile_001')
+    if os.path.exists(target_preproc_first_tile_folder):
+        wall_aspect_file_stem = Path(city_data.filename_wall_aspect).stem
+        wall_aspect_file_names = find_files_with_substring_in_name(target_preproc_first_tile_folder, wall_aspect_file_stem, '.tif')
+        wall_aspect_files = _build_file_dict('preprocessed_data', 'preproc', wall_aspect_file_stem, 0, wall_aspect_file_names)
+        write_raster_vrt_file_for_folder(target_preproc_folder, wall_aspect_files, target_vrt_folder)
+        preprocessed_files += wall_aspect_files
+
+        wall_height_file_stem = Path(city_data.filename_wall_height).stem
+        wall_height_file_names = find_files_with_substring_in_name(target_preproc_first_tile_folder, wall_height_file_stem, '.tif')
+        wall_height_files = _build_file_dict('preprocessed_data', 'preproc', wall_height_file_stem, 0, wall_height_file_names)
+        write_raster_vrt_file_for_folder(target_preproc_folder, wall_height_files, target_vrt_folder)
+        preprocessed_files += wall_height_files
+
+
     # Build VRTs for tcm results
     met_files = []
     set_id = 0
@@ -63,7 +81,7 @@ def write_qgis_files(city_data, crs_str):
             set_id += 1
 
     # write the QGIS viewer file
-    vrt_files = source_files + met_files
+    vrt_files = source_files + preprocessed_files + met_files
     _modify_and_write_qgis_file(vrt_files, city_data, crs_str, target_viewer_folder)
 
 

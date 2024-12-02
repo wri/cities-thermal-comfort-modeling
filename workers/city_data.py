@@ -85,6 +85,7 @@ class CityData:
 
         if target_base_path:
             obj.target_path_city_data = str(os.path.join(obj.target_base_path, folder_name_city_data, cls.folder_name_results))
+            obj.target_preprocessed_path = os.path.join(obj.target_path_city_data, obj.folder_name_preprocessed_data)
             obj.target_tcm_results_path = os.path.join(obj.target_path_city_data, obj.folder_name_tcm_results)
 
             if obj.folder_name_tile_data:

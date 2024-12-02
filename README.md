@@ -64,6 +64,13 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
    1. Results of your run are written to the result_data folder under your city folder specified in the batch script.
    1. To see a report of success/failure, see the html files in the .results_data\.run_reports for the time that you started your run. 
    1. For details about any failures, see the log file(s) in the .results_data\.logs folder.
+   1. The system also generates a QGIS workfile named 'viewer.qgs' in the .qgis_viewer folder.
+      * **Note** The current version of the workfile requires two steps to view your data:
+        1. After opening the file in QGIS, it will likely give the warning that several files are unavailable. Click on the "Remove Unavailable Layers" and OK to continue.
+        2. Next, right click on one of the layers and select "Zoom to Layer(s)" option. Your data should now be viewable.
+      * **Notes on current limitations**
+        1. The viewer only supports results for up to two meteorological files in the tcm_tmrt and tcm_shadow groups.
+        2. Each meteorological group only supports up to five hourly layers
    
 
 

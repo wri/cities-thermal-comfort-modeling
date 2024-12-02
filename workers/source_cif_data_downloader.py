@@ -267,7 +267,7 @@ def _create_base_dtm(dsm, dem):
 def _combine_building_and_dem(dem, buildings, target_crs):
     coords_dict = {dim: dem.coords[dim].values for dim in dem.dims}
 
-    # Conver to ndarray in order to mask and combine layers
+    # Convert to ndarray in order to mask and combine layers
     dem_nda = dem.to_numpy()
     bldg_nda = buildings.to_dataarray().to_numpy().reshape(dem_nda.shape)
 
@@ -277,7 +277,7 @@ def _combine_building_and_dem(dem, buildings, target_crs):
     # Mask buildings onto DEM
     dem_nda[mask] = bldg_nda[mask]
 
-    #Conver resuls into DataArray and re-add coordinates and CRS
+    #Convert results into DataArray and re-add coordinates and CRS
     composite_xa = xr.DataArray(dem_nda,
                       dims = ["y","x"],
                       coords = coords_dict

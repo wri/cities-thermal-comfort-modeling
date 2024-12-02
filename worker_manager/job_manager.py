@@ -1,19 +1,16 @@
 import os
-import shutil
 import subprocess
 import multiprocessing as mp
 import warnings
 import pandas as pd
-import geopandas as gpd
 import shapely
-from shapely import wkt
 import dask
-from pathlib import Path
+
+from worker_manager.ancillary_files import write_config_files, write_tile_grid, write_qgis_files
 from worker_manager.graph_builder import get_aoi_fishnet, get_cif_features, get_aoi
-from worker_manager.reporter import parse_row_results, report_results, write_raster_vrt_file_for_folder, \
-    find_files_with_substring_in_name
+from worker_manager.reporter import parse_row_results, report_results
 from src.src_tools import create_folder, get_existing_tiles
-from workers.worker_tools import get_application_path, clean_folder
+from workers.worker_tools import get_application_path
 from workers.city_data import CityData
 
 warnings.filterwarnings('ignore')
@@ -26,12 +23,11 @@ dask.config.set({'logging.distributed': 'warning'})
 MET_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(get_application_path(), 'workers', 'meteorological_processor.py'))
 TILE_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(get_application_path(), 'workers', 'tile_processor.py'))
 
-DEBUG=False
 
 def start_jobs(source_base_path, target_base_path, city_folder_name, processing_config_df):
     _start_logging(target_base_path, city_folder_name)
 
-    aoi_boundary, tile_side_meters, tile_buffer_meters, utc_offset = get_aoi(source_base_path, city_folder_name)
+    aoi_boundary, tile_side_meters, tile_buffer_meters, utc_offset, crs_str = get_aoi(source_base_path, city_folder_name)
 
     out_list = []
 
@@ -42,7 +38,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
 
     city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
 
-    _write_config_files(source_base_path, target_base_path, city_folder_name)
+    write_config_files(source_base_path, target_base_path, city_folder_name)
 
     has_era_met_download = any_value_matches_in_dict_list(city_data.met_files, CityData.method_name_era5_download)
     # meteorological data
@@ -74,7 +70,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
             end_tile_id = config_row.end_tile_id
             existing_tiles = get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_tile_id)
 
-            _write_tile_grid(existing_tiles, target_base_path, city_folder_name)
+            write_tile_grid(existing_tiles, target_base_path, city_folder_name)
 
             print(f'\nProcessing over {len(existing_tiles)} existing tiles..')
             for tile_folder_name, tile_dimensions in existing_tiles.items():
@@ -88,7 +84,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
                 futures.append(delay_tile_array)
         else:
             fishnet = get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters)
-            _write_tile_grid(fishnet, target_base_path, city_folder_name)
+            write_tile_grid(fishnet, target_base_path, city_folder_name)
 
             print(f'\nCreating data for {fishnet.geometry.size} new tiles..')
             for index, cell in fishnet.iterrows():
@@ -119,8 +115,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
     return_code = 0 if all(combined_delays_passed) else 1
 
     if return_code == 0:
-        if DEBUG:
-            _write_vrt_files(city_data, source_base_path, target_base_path, city_folder_name)
+        write_qgis_files(city_data, crs_str)
         return_str = "Processing encountered no errors."
     else:
         return_str = 'Processing encountered errors. See log file.'
@@ -128,78 +123,11 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
     return return_code, return_str
 
 
-def _write_vrt_files(cd1, source_path, target__path, city_folder_name):
-    city_data = CityData(city_folder_name, None, source_path, target__path)
-
-    target_viewer_folder = os.path.join(city_data.target_base_path, city_data.folder_name_city_data, '.qgis_viewer',
-                                        'vrt_files')
-    create_folder(target_viewer_folder)
-    clean_folder(target_viewer_folder)
-
-    source_folder = city_data.source_city_data_path
-    dem_file_name = city_data.dem_tif_filename
-    dsm_file_name = city_data.dsm_tif_filename
-    tree_canopy_file_name = city_data.tree_canopy_tif_filename
-    lulc_file_name = city_data.lulc_tif_filename
-    source_files = [dem_file_name, dsm_file_name, tree_canopy_file_name, lulc_file_name]
-    if source_files:
-        write_raster_vrt_file_for_folder(source_folder, source_files, target_viewer_folder)
-
-    # loop through met folders under tcm_results
-    for met_file in city_data.met_files:
-        if met_file.get('filename') == CityData.method_name_era5_download:
-            met_file_name = CityData.filename_era5
-        else:
-            met_file_name = met_file.get('filename')
-
-        met_folder_name = Path(met_file_name).stem
-        target_tcm_folder = str(os.path.join(city_data.target_tcm_results_path, met_folder_name))
-        target_tcm_first_tile_folder = os.path.join(target_tcm_folder, 'tile_001')
-
-        if os.path.exists(target_tcm_first_tile_folder):
-            shadow_files = find_files_with_substring_in_name(target_tcm_first_tile_folder, 'Shadow_', '.tif')
-            write_raster_vrt_file_for_folder(target_tcm_folder, shadow_files, target_viewer_folder)
-
-            shadow_files = find_files_with_substring_in_name(target_tcm_first_tile_folder, 'Tmrt_', '.tif')
-            write_raster_vrt_file_for_folder(target_tcm_folder, shadow_files, target_viewer_folder)
-
-
 def any_value_matches_in_dict_list(dict_list, target_string):
     for dictionary in dict_list:
         if target_string in dictionary.values():
             return True
     return False
-
-def _write_config_files(source_base_path, target_base_path, city_folder_name):
-    source_yml_config = os.path.join(source_base_path, city_folder_name, CityData.filename_method_parameters_config)
-    source_csv_config = os.path.join(source_base_path, city_folder_name, CityData.filename_umep_city_processing_config)
-    target_yml_config = os.path.join(target_base_path, city_folder_name, CityData.folder_name_results, CityData.filename_method_parameters_config)
-    target_csv_config = os.path.join(target_base_path, city_folder_name, CityData.folder_name_results, CityData.filename_umep_city_processing_config)
-    shutil.copyfile(source_yml_config, target_yml_config)
-    shutil.copyfile(source_csv_config, target_csv_config)
-
-
-def _write_tile_grid(tile_grid, target_base_path, city_folder_name):
-    if isinstance(tile_grid,dict):
-        modified_tile_grid = pd.DataFrame(columns=['id', 'geometry'])
-        for key, value in tile_grid.items():
-            poly = wkt.loads(str(value[0]))
-            modified_tile_grid.loc[len(modified_tile_grid)] = [key, poly]
-    else:
-        # TODO figure out how to retain the index
-        if 'fishnet_geometry' in tile_grid.columns:
-            modified_tile_grid = tile_grid.drop(columns='fishnet_geometry', axis=1)
-        else:
-            modified_tile_grid = tile_grid
-    projected_gdf = gpd.GeoDataFrame(modified_tile_grid, crs='EPSG:4326')
-
-    target_file_name = 'tile_grid.geojson'
-    target_path = str(os.path.join(target_base_path, city_folder_name, CityData.folder_name_results,
-                            CityData.folder_name_preprocessed_data))
-    create_folder(target_path)
-    file_path = os.path.join(target_path, target_file_name)
-
-    projected_gdf.to_file(file_path, driver='GeoJSON')
 
 
 def _construct_met_proc_array(task_index, source_base_path, city_folder_name, aoi_boundary, utc_offset, sampling_local_hours):

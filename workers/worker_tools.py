@@ -56,14 +56,14 @@ def get_application_path():
 toBool = {'true': True, 'false': False}
 
 
-def save_tiff_file(raster_data_array, tile_data_path, tiff_data_FILENAME):
+def save_tiff_file(raster_data_array, tile_data_path, tiff_filename):
     create_folder(tile_data_path)
-    file_path = os.path.join(tile_data_path, tiff_data_FILENAME)
+    file_path = os.path.join(tile_data_path, tiff_filename)
     remove_file(file_path)
     try:
         raster_data_array.rio.to_raster(raster_path=file_path, driver="COG")
     except Exception as e_msg:
-        raise Exception(f'GeoTiff file {tiff_data_FILENAME} not written to {tile_data_path}.')
+        raise Exception(f'GeoTiff file {tiff_filename} not written to {tile_data_path}.')
 
 
 def save_geojson_file(vector_geodataframe, tile_data_path, tiff_data_FILENAME):

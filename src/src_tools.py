@@ -126,3 +126,13 @@ def _get_geobounds_of_geotiff_file(file_path):
 def coordinates_to_bbox(min_x, min_y, max_x, max_y):
     tile_boundary = shapely.box(min_x, min_y, max_x, max_y)
     return tile_boundary
+
+
+def get_substring_between_chars(string, start_char, end_char):
+    start_index = string.find(start_char) + 1
+    end_index = string.find(end_char, start_index)
+
+    if start_index == 0 or end_index == -1:
+        return ""
+
+    return string[start_index:end_index]

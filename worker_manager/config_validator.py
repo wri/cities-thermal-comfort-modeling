@@ -176,31 +176,8 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
                             msg = f'Required source file: {prior_wallaspect} currently not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                             invalids.append(msg)
 
-                    # Check metrics for all tifs in the tile folder
-                    # tile_folder = os.path.join(city_data.source_city_data_path, city_data.folder_name_primary_source_data, tile_folder_name)
-                    # tif_files = list_files_with_extension(tile_folder, '.tif')
-                    #
-                    # processing_list = _get_list_of_existing_tifs_to_be_processed(city_data, cif_feature_list)
-                    #
-                    # filtered_existing_list =filter_list_by_another_list(tif_files, processing_list)
-                    #
-                    # tif_df = pd.DataFrame(columns=['filename', 'crs', 'width', 'height', 'resolution', 'compression'])
-                    # for tif_file in filtered_existing_list:
-                    #     tif_file_path = os.path.join(tile_folder, tif_file)
-                    #     with rasterio.open(tif_file_path) as dataset:
-                    #         # Get the CRS as a dictionary
-                    #         crs = dataset.crs.to_string()
-                    #         width = dataset.profile["width"]
-                    #         height = dataset.profile["height"]
-                    #         resolution = dataset.res
-                    #         compression = dataset.compression
-                    #         new_row = {'filename': tif_file, 'crs': crs, 'width': width, 'height': height, 'resolution': resolution, 'compression': compression}
-                    #         tif_df.loc[len(tif_df)] = new_row
-
                     tif_df, unique_metrics_df = get_parameters_for_custom_tif_files(city_data, tile_folder_name, cif_feature_list)
 
-                    # metrics_df = tif_df[['crs', 'width', 'height', 'res', 'compression']]
-                    # unique_metrics_df = metrics_df.drop_duplicates()
                     if unique_metrics_df.shape[0] > 1:
                         msg = f'TIF files in folder {tile_folder_name} has inconsistent parameters with {unique_metrics_df.shape[0]} unique parameter variants.'
                         invalids.append(msg)

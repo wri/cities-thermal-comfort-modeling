@@ -1,6 +1,6 @@
 import os
 
-from worker_manager.config_validator import _validate_basic_inputs, _validate_config_inputs
+from worker_manager.config_validator import validate_basic_inputs, validate_config_inputs
 from worker_manager.graph_builder import _build_source_dataframes
 from worker_manager.job_manager import start_jobs
 
@@ -15,7 +15,7 @@ def start_processing(base_path, city_folder_name, processing_option):
     abs_source_base_path = os.path.abspath(base_path)
     abs_target_base_path = os.path.abspath(base_path)
 
-    return_code_basic = _validate_basic_inputs(abs_source_base_path, abs_target_base_path, city_folder_name)
+    return_code_basic = validate_basic_inputs(abs_source_base_path, abs_target_base_path, city_folder_name)
 
     processing_config_df = _build_source_dataframes(abs_source_base_path, city_folder_name)
 
@@ -24,8 +24,8 @@ def start_processing(base_path, city_folder_name, processing_option):
     else:
         precheck_option = processing_option
 
-    return_code_configs = _validate_config_inputs(processing_config_df, abs_source_base_path, abs_target_base_path,
-                                                  city_folder_name, precheck_option)
+    return_code_configs = validate_config_inputs(processing_config_df, abs_source_base_path, abs_target_base_path,
+                                                 city_folder_name, precheck_option)
 
     # TODO - Add checks for prerequite met data, such as consistent CRS
     if processing_option == 'run_pipeline':

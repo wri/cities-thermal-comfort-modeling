@@ -61,7 +61,7 @@ class CityData:
             raise Exception(f'The {cls.filename_method_parameters_config} file not found or improperly defined in {city_configs}. (Error: {e_msg})')
 
         (obj.dem_tif_filename, obj.dsm_tif_filename, obj.tree_canopy_tif_filename, obj.lulc_tif_filename, 
-         has_custom_features, feature_list) =(
+         has_custom_features, cif_feature_list) =(
             parse_filenames_config(obj.source_city_path, cls.filename_method_parameters_config))
 
         obj.utc_offset, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat, tile_side_meters, tile_buffer_meters = \

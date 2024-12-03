@@ -73,6 +73,10 @@ def save_geojson_file(vector_geodataframe, tile_data_path, tiff_data_FILENAME):
     vector_geodataframe.to_file(file_path, driver='GeoJSON')
 
 
+def list_files_with_extension(directory, extension):
+    return [f for f in os.listdir(directory) if f.endswith(extension)]
+
+
 def compute_time_diff_mins(start_time):
     return round(((datetime.now() - start_time).seconds)/60, 1)
 

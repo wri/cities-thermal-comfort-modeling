@@ -176,7 +176,7 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
                             msg = f'Required source file: {prior_wallaspect} currently not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                             invalids.append(msg)
 
-                    tif_df, unique_metrics_df = get_parameters_for_custom_tif_files(city_data, tile_folder_name, cif_feature_list)
+                    tif_df, disrupting_metrics_df, unique_metrics_df = get_parameters_for_custom_tif_files(city_data, tile_folder_name, cif_feature_list)
 
                     if tif_df['nodata'].isnull().any():
                         files_with_nan = tif_df.loc[tif_df['nodata'].isnull(), 'filename'].tolist()
@@ -190,7 +190,7 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
                         msg = f'TIF files in folder {tile_folder_name} and possibly other folders has inconsistent parameters with {unique_metrics_df.shape[0]} unique parameter variants.'
                         invalids.append(msg)
 
-                        msg = f'TIF parameters: {tif_df.to_json(orient='records')}'
+                        msg = f'TIF parameters: {disrupting_metrics_df.to_json(orient='records')}'
                         invalids.append(msg)
 
                         msg = 'Stopping analysis at first set of inconsistent TIF files.'
@@ -233,7 +233,9 @@ def get_parameters_for_custom_tif_files(city_data, tile_folder_name, cif_feature
     metrics_df = tif_df[['crs', 'width', 'height']]
     unique_metrics_df = metrics_df.drop_duplicates()
 
-    return tif_df, unique_metrics_df
+    disrupting_metrics_df = tif_df[['filename', 'crs', 'width', 'height']]
+
+    return tif_df, disrupting_metrics_df, unique_metrics_df
 
 
 def filter_list_by_another_list(main_list, filter_list):

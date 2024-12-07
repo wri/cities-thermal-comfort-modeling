@@ -187,6 +187,16 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
 
                         break
 
+                    lulc_metrics = full_metrics_df.loc[full_metrics_df['filename'] == city_data.lulc_tif_filename]
+                    if lulc_metrics is not None:
+                        band_min = lulc_metrics['band_min'].values[0]
+                        band_max = lulc_metrics['band_max'].values[0]
+                        if band_min < 1 or band_max > 7:
+                            msg = f"Folder {tile_folder_name} and possibly other folders has LULC ({city_data.lulc_tif_filename}) with values outside of range 1-7."
+                            invalids.append(msg)
+
+                            break
+
                     if full_metrics_df.loc[~full_metrics_df['compression'].isnull(), 'filename'].any():
                         files_with_nan = full_metrics_df.loc[~full_metrics_df['compression'].isnull(), 'filename'].tolist()
                         files_with_nan_str = ','.join(map(str,files_with_nan))
@@ -221,7 +231,7 @@ def get_parameters_for_custom_tif_files(city_data, tile_folder_name, cif_feature
 
     filtered_existing_list = filter_list_by_another_list(tif_files, processing_list)
 
-    full_metrics_df = pd.DataFrame(columns=['filename', 'crs', 'width', 'height', 'bounds', 'nodata', 'compression'])
+    full_metrics_df = pd.DataFrame(columns=['filename', 'crs', 'width', 'height', 'bounds', 'band_min', 'band_max', 'nodata', 'compression'])
     for tif_file in filtered_existing_list:
         tif_file_path = os.path.join(tile_folder, tif_file)
         with rasterio.open(tif_file_path) as dataset:
@@ -233,7 +243,12 @@ def get_parameters_for_custom_tif_files(city_data, tile_folder_name, cif_feature
             bounds = dataset.bounds
             compression = dataset.compression
 
-            new_row = {'filename': tif_file, 'crs': crs, 'width': width, 'height': height, 'bounds': bounds, 'nodata': no_data, 'compression': compression}
+            band1 = dataset.read(1)
+            band_min = band1.min()
+            band_max = band1.max()
+
+            new_row = {'filename': tif_file, 'crs': crs, 'width': width, 'height': height, 'bounds': bounds,
+                       'band_min': band_min, 'band_max': band_max, 'nodata': no_data, 'compression': compression}
             full_metrics_df.loc[len(full_metrics_df)] = new_row
 
     consistency_metrics_df = full_metrics_df[['crs', 'width', 'height', 'bounds']]

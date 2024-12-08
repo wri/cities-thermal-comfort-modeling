@@ -53,6 +53,7 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
     source_city_path = str(os.path.join(source_base_path, city_folder_name))
     custom_file_names, has_custom_features, cif_features = get_cif_features(source_city_path)
 
+    cell_count = None
     for index, config_row in processing_config_df.iterrows():
         start_tile_id = config_row.start_tile_id
         end_tile_id = config_row.end_tile_id
@@ -197,14 +198,6 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
 
                             break
 
-                    if full_metrics_df.loc[~full_metrics_df['compression'].isnull(), 'filename'].any():
-                        files_with_nan = full_metrics_df.loc[~full_metrics_df['compression'].isnull(), 'filename'].tolist()
-                        files_with_nan_str = ','.join(map(str,files_with_nan))
-                        msg = f"Folder {tile_folder_name} and possibly other folders has compressed file(s) ({files_with_nan_str})."
-                        invalids.append(msg)
-
-                        break
-
                     if unique_consistency_metrics_df.shape[0] > 1:
                         msg = f'TIF files in folder {tile_folder_name} and possibly other folders has inconsistent parameters with {unique_consistency_metrics_df.shape[0]} unique parameter variants.'
                         invalids.append(msg)
@@ -217,7 +210,16 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
 
                         break
 
-    return invalids
+        # Get representative cell count
+        if config_row.method == 'solweig_full':
+            dem_file_path = os.path.join(source_city_path, CityData.folder_name_source_data,
+                                      CityData.folder_name_primary_source_data,'tile_001', dem_tif_filename)
+            with rasterio.open(dem_file_path) as dataset:
+                width = dataset.profile["width"]
+                height = dataset.profile["height"]
+                cell_count = width * height
+
+    return cell_count, invalids
 
 
 def get_parameters_for_custom_tif_files(city_data, tile_folder_name, cif_feature_list):
@@ -231,24 +233,22 @@ def get_parameters_for_custom_tif_files(city_data, tile_folder_name, cif_feature
 
     filtered_existing_list = filter_list_by_another_list(tif_files, processing_list)
 
-    full_metrics_df = pd.DataFrame(columns=['filename', 'crs', 'width', 'height', 'bounds', 'band_min', 'band_max', 'nodata', 'compression'])
+    full_metrics_df = pd.DataFrame(columns=['filename', 'crs', 'width', 'height', 'bounds', 'band_min', 'band_max', 'nodata'])
     for tif_file in filtered_existing_list:
         tif_file_path = os.path.join(tile_folder, tif_file)
         with rasterio.open(tif_file_path) as dataset:
-            # Get the CRS as a dictionary
             crs = dataset.crs.to_string()
             width = dataset.profile["width"]
             height = dataset.profile["height"]
             no_data = dataset.nodata if dataset.nodata is not None else ~sys.maxsize
             bounds = dataset.bounds
-            compression = dataset.compression
 
             band1 = dataset.read(1)
             band_min = band1.min()
             band_max = band1.max()
 
             new_row = {'filename': tif_file, 'crs': crs, 'width': width, 'height': height, 'bounds': bounds,
-                       'band_min': band_min, 'band_max': band_max, 'nodata': no_data, 'compression': compression}
+                       'band_min': band_min, 'band_max': band_max, 'nodata': no_data}
             full_metrics_df.loc[len(full_metrics_df)] = new_row
 
     consistency_metrics_df = full_metrics_df[['crs', 'width', 'height', 'bounds']]
@@ -300,15 +300,15 @@ def validate_basic_inputs(source_base_path, target_path, city_folder_name):
         return 0
 
 def validate_config_inputs(processing_config_df, source_base_path, target_path, city_folder_name, pre_check_option):
-    detailed_invalids = _verify_processing_config(processing_config_df, source_base_path, target_path, city_folder_name, pre_check_option)
+    cell_count, detailed_invalids = _verify_processing_config(processing_config_df, source_base_path, target_path, city_folder_name, pre_check_option)
     if detailed_invalids:
         print('\n')
         _highlighted_print('------------ Invalid configurations ------------ ')
         for invalid in detailed_invalids:
             print(invalid)
         raise Exception("Stopped processing due to invalid configurations.")
-    else:
-        return 0
+
+    return cell_count, 0
 
 def _highlighted_print(msg):
     print('\n\x1b[6;30;42m' + msg + '\x1b[0m')

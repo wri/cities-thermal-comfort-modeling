@@ -1,4 +1,6 @@
 import os
+import math
+import datetime
 
 from worker_manager.config_validator import validate_basic_inputs, validate_config_inputs
 from worker_manager.graph_builder import _build_source_dataframes
@@ -24,10 +26,20 @@ def start_processing(base_path, city_folder_name, processing_option):
     else:
         precheck_option = processing_option
 
-    return_code_configs = validate_config_inputs(processing_config_df, abs_source_base_path, abs_target_base_path,
-                                                 city_folder_name, precheck_option)
+    solweig_full_cell_count, return_code_configs = validate_config_inputs(processing_config_df, abs_source_base_path,
+                                                                          abs_target_base_path, city_folder_name, precheck_option)
 
-    # TODO - Add checks for prerequite met data, such as consistent CRS
+    # Print runtime estimate
+    if solweig_full_cell_count is not None:
+        est_runtime_mins = math.ceil((6E-38 * pow(solweig_full_cell_count,6)) - 2.8947)
+        if est_runtime_mins < 5:
+            print('\nEstimated runtime of a few minutes or less for tile_001.\n')
+        else:
+            now = datetime.datetime.now()
+            time_change = datetime.timedelta(minutes=est_runtime_mins)
+            est_end_time = now + time_change
+            print(f'\nEstimated completion time for processing of tile_001: {est_end_time.strftime('%m/%d/%Y %I:%M %p')}\n')
+
     if processing_option == 'run_pipeline':
         return_code, return_str = start_jobs(abs_source_base_path, abs_target_base_path, city_folder_name, processing_config_df)
 

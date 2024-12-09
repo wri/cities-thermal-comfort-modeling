@@ -31,14 +31,16 @@ def start_processing(base_path, city_folder_name, processing_option):
 
     # Print runtime estimate
     if solweig_full_cell_count is not None:
-        est_runtime_mins = math.ceil((6E-38 * pow(solweig_full_cell_count,6)) - 2.8947)
-        if est_runtime_mins < 5:
-            print('\nEstimated runtime of a few minutes or less for tile_001.\n')
+        if solweig_full_cell_count < 2E3:
+            print('\nEstimated runtime is a few minutes or less.\n')
         else:
-            now = datetime.datetime.now()
-            time_change = datetime.timedelta(minutes=est_runtime_mins)
-            est_end_time = now + time_change
-            print(f'\nEstimated completion time for processing of tile_001: {est_end_time.strftime('%m/%d/%Y %I:%M %p')}\n')
+            if solweig_full_cell_count < 1E6:
+                x = solweig_full_cell_count
+                est_runtime_mins = math.ceil((7E-5 * x) + 6.9158)
+            else:
+                x = pow(solweig_full_cell_count, 6)
+                est_runtime_mins = math.ceil((8E-79 * x**2) + (4E-38 * x) + 39.571)
+            _print_runtime_estimate(est_runtime_mins)
 
     if processing_option == 'run_pipeline':
         return_code, return_str = start_jobs(abs_source_base_path, abs_target_base_path, city_folder_name, processing_config_df)
@@ -55,6 +57,15 @@ def start_processing(base_path, city_folder_name, processing_option):
         else:
             _highlighted_print('Pre-check encountered errors.')
             return -99
+
+def _print_runtime_estimate(est_runtime_mins):
+    est_runtime_hours = round(est_runtime_mins / 60, 1)
+    now = datetime.datetime.now()
+    time_change = datetime.timedelta(minutes=est_runtime_mins)
+    est_end_time = now + time_change
+    print(f'\nEstimated runtime: {est_runtime_hours} hours')
+    print(f'Estimated completion time for processing of tile_001: {est_end_time.strftime('%m/%d/%Y %I:%M %p')}\n')
+
 
 def _highlighted_print(msg):
     print('\n\x1b[6;30;42m' + msg + '\x1b[0m')

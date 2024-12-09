@@ -251,10 +251,12 @@ def get_parameters_for_custom_tif_files(city_data, tile_folder_name, cif_feature
                        'band_min': band_min, 'band_max': band_max, 'nodata': no_data}
             full_metrics_df.loc[len(full_metrics_df)] = new_row
 
-    consistency_metrics_df = full_metrics_df[['crs', 'width', 'height', 'bounds']]
+    # consistency_metrics_df = full_metrics_df[['crs', 'width', 'height', 'bounds']]
+    consistency_metrics_df = full_metrics_df[['crs', 'width', 'height']]
     unique_consistency_metrics_df = consistency_metrics_df.drop_duplicates()
 
-    named_consistency_metrics_df = full_metrics_df[['filename', 'crs', 'width', 'height', 'bounds']]
+    # named_consistency_metrics_df = full_metrics_df[['filename', 'crs', 'width', 'height', 'bounds']]
+    named_consistency_metrics_df = full_metrics_df[['filename', 'crs', 'width', 'height']]
 
     return full_metrics_df, named_consistency_metrics_df, unique_consistency_metrics_df
 

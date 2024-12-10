@@ -78,7 +78,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
                 tile_resolution = tile_dimensions[1]
 
                 proc_array = _construct_tile_proc_array(task_index, task_method, source_base_path, target_base_path,
-                                                        city_folder_name, tile_folder_name, cif_features,
+                                                        city_folder_name, tile_folder_name, has_custom_features, cif_features,
                                                         tile_boundary, tile_resolution, utc_offset)
                 delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
                 futures.append(delay_tile_array)
@@ -95,7 +95,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
                 tile_folder_name = f'tile_{tile_id}'
 
                 proc_array = _construct_tile_proc_array(task_index, task_method, source_base_path, target_base_path,
-                                                        city_folder_name, tile_folder_name, cif_features,
+                                                        city_folder_name, tile_folder_name, has_custom_features, cif_features,
                                                         tile_boundary, None, utc_offset)
                 delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
                 futures.append(delay_tile_array)
@@ -144,7 +144,7 @@ def _construct_met_proc_array(task_index, source_base_path, city_folder_name, ao
 
 
 def _construct_tile_proc_array(task_index, task_method, source_base_path, target_base_path, city_folder_name,
-                               tile_folder_name, cif_features, tile_boundary, tile_resolution, utc_offset):
+                               tile_folder_name, has_custom_features, cif_features, tile_boundary, tile_resolution, utc_offset):
     proc_array = ['python', TILE_PROCESSING_MODULE_PATH,
                   f'--task_index={task_index}',
                   f'--task_method={task_method}',
@@ -152,6 +152,7 @@ def _construct_tile_proc_array(task_index, task_method, source_base_path, target
                   f'--target_base_path={target_base_path}',
                   f'--city_folder_name={city_folder_name}',
                   f'--tile_folder_name={tile_folder_name}',
+                  f'--has_custom_features={has_custom_features}',
                   f'--cif_features={cif_features}',
                   f'--tile_boundary={tile_boundary}',
                   f'--tile_resolution={tile_resolution}',

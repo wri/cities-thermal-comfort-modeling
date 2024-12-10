@@ -6,29 +6,39 @@ import geopandas as gp
 import numpy as np
 import random
 import time
+import os
 
 from datetime import datetime, timedelta
 from city_data import CityData
+from src.src_tools import remove_folder
 from worker_tools import compute_time_diff_mins, save_tiff_file, save_geojson_file, log_method_failure, \
     reverse_y_dimension_as_needed
-
+from workers.worker_tools import expand_quoted_value
 
 # Unify the layers on the same resolution
 DEFAULT_LULC_RESOLUTION = 1
 DEBUG = False
 
-def get_cif_data(task_index, output_base_path, folder_name_city_data, tile_id, features, tile_boundary, tile_resolution='None'):
+def get_cif_data(task_index, output_base_path, folder_name_city_data, tile_id, has_custom_features, cif_features,
+                 tile_boundary, tile_resolution='None'):
     start_time = datetime.now()
+
+    tile_resolution = expand_quoted_value(tile_resolution)
+    has_custom_features = expand_quoted_value(has_custom_features)
 
     city_data = CityData(folder_name_city_data, tile_id, output_base_path, None)
     tile_data_path = city_data.source_tile_data_path
 
+    if not has_custom_features:
+        primary_source_data = os.path.join(city_data.source_city_data_path, CityData.folder_name_primary_source_data)
+        remove_folder(primary_source_data)
+
     d = {'geometry': [shapely.wkt.loads(tile_boundary)]}
     aoi_gdf = gp.GeoDataFrame(d, crs="EPSG:4326")
 
-    feature_list = features.split(',')
+    feature_list = cif_features.split(',')
 
-    if tile_resolution is None or tile_resolution == 'None':
+    if tile_resolution is None:
         output_resolution = DEFAULT_LULC_RESOLUTION
     else:
         output_resolution = int(tile_resolution)

@@ -20,8 +20,7 @@
 # Names of meteorological files used by SOLWEIG method in "UMEP for Processing" plugin.
 # Specify custom files or "<download_era5>" method to automatically download ERA5 data into a file named met_era5_hottest_days.txt
 - MetFiles:
-  - filename: met_20jan2022.txt
-  - filename: <download_era5>
+  - filename: met_era5_hottest_days.txt
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
 # All four file mappings must be specified here. Specify None for filename where custom file is not available for processing.
 # Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif
@@ -36,9 +35,9 @@
 # If you don't want to subdivide the AOI, specify None for tile_side_meters and tile_buffer_meters.
 - ProcessingAOI:
   utc_offset: 2
-  min_lon: 4.9011
-  min_lat: 52.3719
-  max_lon: 4.9183
-  max_lat: 52.3852
-  tile_side_meters: 500
-  tile_buffer_meters: 20
+  min_lon: 18.41294
+  min_lat: -33.92100
+  max_lon: 18.41401
+  max_lat: -33.91999
+  tile_side_meters: None
+  tile_buffer_meters: None

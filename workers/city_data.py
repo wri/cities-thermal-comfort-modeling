@@ -61,7 +61,7 @@ class CityData:
             raise Exception(f'The {cls.filename_method_parameters_config} file not found or improperly defined in {city_configs}. (Error: {e_msg})')
 
         (obj.dem_tif_filename, obj.dsm_tif_filename, obj.tree_canopy_tif_filename, obj.lulc_tif_filename, 
-         has_custom_features, cif_feature_list) =(
+         has_custom_features, custom_feature_list, cif_feature_list) =(
             parse_filenames_config(obj.source_city_path, cls.filename_method_parameters_config))
 
         obj.utc_offset, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat, tile_side_meters, tile_buffer_meters = \
@@ -113,34 +113,50 @@ def parse_filenames_config(source_city_path, filename_method_parameters_config):
         with open(city_configs, 'r') as stream:
             values = list(yaml.safe_load_all(stream))[0]
 
+            custom_feature_list = []
             cif_feature_list = []
             filenames = values[2]
-            dem_tif_filename = filenames['dem_tif_filename']
-            if dem_tif_filename == 'None':
+            dem_tif_filename = remove_none_quotes(filenames['dem_tif_filename'])
+            if dem_tif_filename is None:
                 dem_tif_filename = template_name_cif_dem
                 cif_feature_list.append('dem')
+            else:
+                custom_feature_list.append('dem')
 
-            dsm_tif_filename = filenames['dsm_tif_filename']
-            if dsm_tif_filename == 'None':
+            dsm_tif_filename = remove_none_quotes(filenames['dsm_tif_filename'])
+            if dsm_tif_filename is None:
                 dsm_tif_filename = template_name_cif_dsm
                 cif_feature_list.append('dsm')
+            else:
+                custom_feature_list.append('dsm')
 
-            tree_canopy_tif_filename = filenames['tree_canopy_tif_filename']
-            if tree_canopy_tif_filename == 'None':
+            tree_canopy_tif_filename = remove_none_quotes(filenames['tree_canopy_tif_filename'])
+            if tree_canopy_tif_filename is None:
                 tree_canopy_tif_filename = template_name_cif_tree_canopy
                 cif_feature_list.append('tree_canopy')
+            else:
+                custom_feature_list.append('tree_canopy')
 
-            lulc_tif_filename = filenames['lulc_tif_filename']
-            if lulc_tif_filename == 'None':
+            lulc_tif_filename = remove_none_quotes(filenames['lulc_tif_filename'])
+            if lulc_tif_filename is None:
                 lulc_tif_filename = template_name_cif_lulc
                 cif_feature_list.append('lulc')
+            else:
+                custom_feature_list.append('lulc')
 
             has_custom_features = True if len(cif_feature_list) < 4 else False
     except Exception as e_msg:
         raise Exception(
             f'The {filename_method_parameters_config} file not found or improperly defined in {city_configs}. (Error: {e_msg})')
 
-    return dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename, has_custom_features, cif_feature_list
+    return dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename, has_custom_features, custom_feature_list, cif_feature_list
+
+def remove_none_quotes(value):
+    if type(value).__name__ == 'str':
+        return_val = None if value == 'None' else value
+    else:
+        return_val = value
+    return return_val
 
 
 def parse_processing_areas_config(source_city_path, filename_method_parameters_config):
@@ -150,13 +166,13 @@ def parse_processing_areas_config(source_city_path, filename_method_parameters_c
             values = list(yaml.safe_load_all(stream))[0]
 
             processing_area = values[3]
-            utc_offset = processing_area['utc_offset']
-            min_lon = processing_area['min_lon']
-            min_lat = processing_area['min_lat']
-            max_lon = processing_area['max_lon']
-            max_lat = processing_area['max_lat']
-            tile_side_meters = processing_area['tile_side_meters']
-            tile_buffer_meters = processing_area['tile_buffer_meters']
+            utc_offset = remove_none_quotes(processing_area['utc_offset'])
+            min_lon = remove_none_quotes(processing_area['min_lon'])
+            min_lat = remove_none_quotes(processing_area['min_lat'])
+            max_lon = remove_none_quotes(processing_area['max_lon'])
+            max_lat = remove_none_quotes(processing_area['max_lat'])
+            tile_side_meters = remove_none_quotes(processing_area['tile_side_meters'])
+            tile_buffer_meters = remove_none_quotes(processing_area['tile_buffer_meters'])
 
     except Exception as e_msg:
         raise Exception(

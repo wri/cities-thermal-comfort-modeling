@@ -90,6 +90,19 @@ def reverse_y_dimension_as_needed(dataarray):
     return was_reversed, dataarray
 
 
+def expand_quoted_value(value):
+    return_value = value
+    if type(value).__name__ == 'str':
+        if value.lower() == 'none':
+            return_value = None
+        elif value.lower() == 'true':
+            return_value = True
+        elif value.lower() == 'false':
+            return_value = False
+
+    return return_value
+
+
 def log_method_start(method, task_index, step, source_base_path):
     if step is None:
         logging.info(f"task:{task_index}\tStarting '{method}'\tconfig:'{source_base_path}')")

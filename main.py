@@ -40,7 +40,7 @@ def start_processing(base_path, city_folder_name, processing_option):
             else:
                 x = pow(solweig_full_cell_count, 6)
                 est_runtime_mins = math.ceil((8E-79 * x**2) + (4E-38 * x) + 39.571)
-            _print_runtime_estimate(est_runtime_mins)
+            _print_runtime_estimate(est_runtime_mins, processing_option)
     else:
         print('\nEstimated runtime could not be made.\n')
 
@@ -60,13 +60,14 @@ def start_processing(base_path, city_folder_name, processing_option):
             _highlighted_print('Pre-check encountered errors.')
             return -99
 
-def _print_runtime_estimate(est_runtime_mins):
+def _print_runtime_estimate(est_runtime_mins, processing_option):
     est_runtime_hours = round(est_runtime_mins / 60, 1)
     now = datetime.datetime.now()
     time_change = datetime.timedelta(minutes=est_runtime_mins)
     est_end_time = now + time_change
     print(f'\nEstimated runtime: {est_runtime_hours} hours')
-    print(f'Estimated completion time for processing of tile_001: {est_end_time.strftime('%m/%d/%Y %I:%M %p')}\n')
+    if processing_option == 'run_pipeline':
+        print(f'Estimated completion time for processing of tile_001: {est_end_time.strftime('%m/%d/%Y %I:%M %p')}\n')
 
 
 def _highlighted_print(msg):

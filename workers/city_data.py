@@ -1,6 +1,7 @@
 import os
 import yaml
 from attr.converters import to_bool
+from workers.worker_tools import expand_quoted_value
 
 
 class CityData:
@@ -116,28 +117,28 @@ def parse_filenames_config(source_city_path, filename_method_parameters_config):
             custom_feature_list = []
             cif_feature_list = []
             filenames = values[2]
-            dem_tif_filename = remove_none_quotes(filenames['dem_tif_filename'])
+            dem_tif_filename = expand_quoted_value(filenames['dem_tif_filename'])
             if dem_tif_filename is None:
                 dem_tif_filename = template_name_cif_dem
                 cif_feature_list.append('dem')
             else:
                 custom_feature_list.append('dem')
 
-            dsm_tif_filename = remove_none_quotes(filenames['dsm_tif_filename'])
+            dsm_tif_filename = expand_quoted_value(filenames['dsm_tif_filename'])
             if dsm_tif_filename is None:
                 dsm_tif_filename = template_name_cif_dsm
                 cif_feature_list.append('dsm')
             else:
                 custom_feature_list.append('dsm')
 
-            tree_canopy_tif_filename = remove_none_quotes(filenames['tree_canopy_tif_filename'])
+            tree_canopy_tif_filename = expand_quoted_value(filenames['tree_canopy_tif_filename'])
             if tree_canopy_tif_filename is None:
                 tree_canopy_tif_filename = template_name_cif_tree_canopy
                 cif_feature_list.append('tree_canopy')
             else:
                 custom_feature_list.append('tree_canopy')
 
-            lulc_tif_filename = remove_none_quotes(filenames['lulc_tif_filename'])
+            lulc_tif_filename = expand_quoted_value(filenames['lulc_tif_filename'])
             if lulc_tif_filename is None:
                 lulc_tif_filename = template_name_cif_lulc
                 cif_feature_list.append('lulc')
@@ -151,13 +152,6 @@ def parse_filenames_config(source_city_path, filename_method_parameters_config):
 
     return dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename, has_custom_features, custom_feature_list, cif_feature_list
 
-def remove_none_quotes(value):
-    if type(value).__name__ == 'str':
-        return_val = None if value == 'None' else value
-    else:
-        return_val = value
-    return return_val
-
 
 def parse_processing_areas_config(source_city_path, filename_method_parameters_config):
     city_configs = os.path.join(source_city_path, filename_method_parameters_config)
@@ -166,13 +160,13 @@ def parse_processing_areas_config(source_city_path, filename_method_parameters_c
             values = list(yaml.safe_load_all(stream))[0]
 
             processing_area = values[3]
-            utc_offset = remove_none_quotes(processing_area['utc_offset'])
-            min_lon = remove_none_quotes(processing_area['min_lon'])
-            min_lat = remove_none_quotes(processing_area['min_lat'])
-            max_lon = remove_none_quotes(processing_area['max_lon'])
-            max_lat = remove_none_quotes(processing_area['max_lat'])
-            tile_side_meters = remove_none_quotes(processing_area['tile_side_meters'])
-            tile_buffer_meters = remove_none_quotes(processing_area['tile_buffer_meters'])
+            utc_offset = expand_quoted_value(processing_area['utc_offset'])
+            min_lon = expand_quoted_value(processing_area['min_lon'])
+            min_lat = expand_quoted_value(processing_area['min_lat'])
+            max_lon = expand_quoted_value(processing_area['max_lon'])
+            max_lat = expand_quoted_value(processing_area['max_lat'])
+            tile_side_meters = expand_quoted_value(processing_area['tile_side_meters'])
+            tile_buffer_meters = expand_quoted_value(processing_area['tile_buffer_meters'])
 
     except Exception as e_msg:
         raise Exception(

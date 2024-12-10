@@ -8,12 +8,14 @@ from worker_tools import reverse_y_dimension_as_needed, save_tiff_file
 PROCESSING_PAUSE_TIME_SEC = 30
 
 def process_tile(task_index, task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
-                 cif_features, tile_boundary, tile_resolution, utc_offset):
+                 has_custom_features, cif_features, tile_boundary, tile_resolution, utc_offset):
     from umep_plugin_processor import run_plugin
 
-    def _execute_retrieve_cif_data(task_idx, source_path, folder_city, folder_tile, features, boundary, resolution):
+    def _execute_retrieve_cif_data(task_idx, source_path, folder_city, folder_tile, has_custom_features,
+                                   cif_features, boundary, resolution):
         cif_stdout = \
-            get_cif_data(task_idx, source_path, folder_city, folder_tile, features, boundary, resolution)
+            get_cif_data(task_idx, source_path, folder_city, folder_tile, has_custom_features,
+                         cif_features, boundary, resolution)
         return cif_stdout
 
     def _execute_solweig_only_plugin(task_idx, step_index, folder_city, folder_tile, source_path, target_path):
@@ -52,7 +54,7 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
 
     if cif_features != 'None' and cif_features != '':
         return_val = _execute_retrieve_cif_data(task_index, source_base_path, city_folder_name, tile_folder_name,
-                                   cif_features, tile_boundary, tile_resolution)
+                                   has_custom_features, cif_features, tile_boundary, tile_resolution)
         return_stdouts.append(return_val)
         time.sleep(PROCESSING_PAUSE_TIME_SEC)
 
@@ -112,6 +114,7 @@ if __name__ == "__main__":
     parser.add_argument('--target_base_path', metavar='path', required=True, help='folder for writing data')
     parser.add_argument('--city_folder_name', metavar='str', required=True, help='name of city folder')
     parser.add_argument('--tile_folder_name', metavar='str', required=True, help='name of tile folder')
+    parser.add_argument('--has_custom_features', metavar='str', required=True, help='indicates if primary source has customer layers')
     parser.add_argument('--cif_features', metavar='str', required=True, help='coma-delimited list of cif features to retrieve')
     parser.add_argument('--tile_boundary', metavar='str', required=True, help='geographic boundary of tile')
     parser.add_argument('--tile_resolution', metavar='str', required=True, help='resolution of tile in m.')
@@ -120,7 +123,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     return_stdout =process_tile(args.task_index, args.task_method, args.source_base_path, args.target_base_path,
-                                args.city_folder_name, args.tile_folder_name, args.cif_features, args.tile_boundary,
-                                args.tile_resolution, args.utc_offset)
+                                args.city_folder_name, args.tile_folder_name, args.has_custom_features,
+                                args.cif_features, args.tile_boundary, args.tile_resolution, args.utc_offset)
 
     print(return_stdout)

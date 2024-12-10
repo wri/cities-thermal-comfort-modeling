@@ -3,6 +3,7 @@ import os
 import pandas as pd
 
 from src.src_tools import coordinates_to_bbox
+from worker_manager.tools import construct_polygon_from_bounds
 from workers.city_data import parse_processing_areas_config, CityData, parse_filenames_config
 
 def _build_source_dataframes(source_base_path, city_folder_name):
@@ -35,48 +36,50 @@ def get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters):
     max_lon = bounds[2]
     max_lat = bounds[3]
 
-    if tile_side_meters is None or tile_side_meters == 'None':
-        ns = _get_distance_between_points(min_lon, min_lat, min_lon, max_lat)
-        ew = _get_distance_between_points(min_lon, min_lat, max_lon, min_lat)
-        tile_side_meters = ns if ns > ew else ew
-        tile_buffer_meters = 0
-    elif tile_buffer_meters is None or tile_buffer_meters == 'None':
+    if tile_buffer_meters is None:
         tile_buffer_meters = 0
 
-    from city_metrix.layers.layer import create_fishnet_grid
-    fishnet = create_fishnet_grid(min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters,
-                                  tile_units_in_degrees=False)
+    if tile_side_meters is None:
+        import geopandas as gpd
+        bbox_poly = construct_polygon_from_bounds(min_lon, min_lat, max_lon, max_lat)
+        geom_gpd = gpd.GeoDataFrame(index=[0], crs="EPSG:4326", geometry=[bbox_poly])
 
-    return fishnet
+    else:
+        from city_metrix.layers.layer import create_fishnet_grid
+        geom_gpd = create_fishnet_grid(min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters,
+                                      tile_units_in_degrees=False)
 
-def _get_distance_between_points(lon1, lat1, lon2, lat2):
-    # Convert decimal degrees to radians
-    lon1, lat1, lon2, lat2 = map(math.radians, [lon1, lat1, lon2, lat2])
+    return geom_gpd
 
-    # Haversine formula
-    dlon = lon2 - lon1
-    dlat = lat2 - lat1
-    a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
-    c = 2 * math.asin(math.sqrt(a))
 
-    # Global average radius of Earth in kilometers.
-    r = 6371000
-
-    # Calculate the result
-    return c * r
+# def _get_distance_between_points(lon1, lat1, lon2, lat2):
+#     # Convert decimal degrees to radians
+#     lon1, lat1, lon2, lat2 = map(math.radians, [lon1, lat1, lon2, lat2])
+#
+#     # Haversine formula
+#     dlon = lon2 - lon1
+#     dlat = lat2 - lat1
+#     a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
+#     c = 2 * math.asin(math.sqrt(a))
+#
+#     # Global average radius of Earth in kilometers.
+#     r = 6371000
+#
+#     # Calculate the result
+#     return c * r
 
 def get_cif_features(source_city_path):
-    dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename, has_custom_features, cif_feature_list =\
-        parse_filenames_config(source_city_path, CityData.filename_method_parameters_config)
+    (dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename, has_custom_features,
+     custom_feature_list, cif_feature_list) = parse_filenames_config(source_city_path, CityData.filename_method_parameters_config)
 
     custom_file_names = []
-    if 'dem' not in cif_feature_list:
+    if 'dem' in custom_feature_list:
         custom_file_names.append(dem_tif_filename)
-    if 'dsm' not in cif_feature_list:
+    if 'dsm' in custom_feature_list:
         custom_file_names.append(dsm_tif_filename)
-    if 'tree_canopy' not in cif_feature_list:
+    if 'tree_canopy' in custom_feature_list:
         custom_file_names.append(tree_canopy_tif_filename)
-    if 'lulc' not in cif_feature_list:
+    if 'lulc' in custom_feature_list:
         custom_file_names.append(lulc_tif_filename)
 
     cif_features = ','.join(cif_feature_list)

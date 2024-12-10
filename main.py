@@ -41,6 +41,8 @@ def start_processing(base_path, city_folder_name, processing_option):
                 x = pow(solweig_full_cell_count, 6)
                 est_runtime_mins = math.ceil((8E-79 * x**2) + (4E-38 * x) + 39.571)
             _print_runtime_estimate(est_runtime_mins)
+    else:
+        print('\nEstimated runtime could not be made.\n')
 
     if processing_option == 'run_pipeline':
         return_code, return_str = start_jobs(abs_source_base_path, abs_target_base_path, city_folder_name, processing_config_df)

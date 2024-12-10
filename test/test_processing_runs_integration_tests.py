@@ -2,40 +2,81 @@ import os
 import pandas as pd
 
 from main import start_processing
-from src.src_tools import remove_folder, clean_folder
+from src.src_tools import remove_folder, clean_folder, get_application_path
 from test.testing_tools import is_valid_output_directory
 from workers.city_data import CityData
 import pytest
 
+CLEANUP_RESULTS=True
 
 def test_custom_city():
     package_folder = os.path.dirname(os.getcwd())
     base_path = os.path.join(package_folder, 'sample_cities')
     source_city_folder_name = 'ZAF_Capetown_small_tile'
 
-    target_results = os.path.join(base_path, source_city_folder_name, CityData.folder_name_results, CityData.folder_name_results)
-    clean_folder(target_results)
+    city_folder = os.path.join(base_path, source_city_folder_name)
+    results_data_folder = os.path.join(city_folder, CityData.folder_name_results)
+    clean_folder(results_data_folder)
 
-    return_code = start_processing(base_path, source_city_folder_name, 'run_pipeline')
+    try:
+        return_code = start_processing(base_path, source_city_folder_name, 'run_pipeline')
 
-    has_valid_results = _verify_expected_output_folders(base_path, base_path, source_city_folder_name)
-    assert return_code == 0
-    assert has_valid_results
+        has_valid_results = _verify_expected_output_folders(base_path, base_path, source_city_folder_name)
+        assert return_code == 0
+        assert has_valid_results
+    finally:
+        if CLEANUP_RESULTS:
+            qgis_folder = os.path.join(city_folder, '.qgis_viewer')
+            remove_folder(qgis_folder)
+            remove_folder(results_data_folder)
 
 
-def test_cif_city():
+def test_untiled_full_cif():
+    package_folder = os.path.dirname(os.getcwd())
+    base_path = os.path.join(package_folder, 'sample_cities')
+    source_city_folder_name = 'ZAF_Capetown_full_cif'
+
+    city_folder = os.path.join(base_path, source_city_folder_name)
+    results_data_folder = os.path.join(city_folder, CityData.folder_name_results)
+    clean_folder(results_data_folder)
+
+    try:
+        return_code = start_processing(base_path, source_city_folder_name, 'run_pipeline')
+
+        has_valid_results = _verify_expected_output_folders(base_path, base_path, source_city_folder_name)
+        assert return_code == 0
+        assert has_valid_results
+    finally:
+        if CLEANUP_RESULTS:
+            qgis_folder = os.path.join(city_folder, '.qgis_viewer')
+            primary_source_folder = os.path.join(city_folder, CityData.folder_name_source_data, CityData.folder_name_primary_source_data)
+            remove_folder(primary_source_folder)
+            remove_folder(qgis_folder)
+            remove_folder(results_data_folder)
+
+
+def test_tiled_cif_city():
     package_folder = os.path.dirname(os.getcwd())
     base_path = os.path.join(package_folder, 'sample_cities')
     source_city_folder_name = 'NLD_Amsterdam'
 
-    target_results = os.path.join(base_path, source_city_folder_name, CityData.folder_name_results, CityData.folder_name_results)
-    clean_folder(target_results)
+    city_folder = os.path.join(base_path, source_city_folder_name)
+    results_data_folder = os.path.join(city_folder, CityData.folder_name_results)
+    clean_folder(results_data_folder)
 
-    return_code = start_processing(base_path, source_city_folder_name, 'run_pipeline')
+    try:
+        return_code = start_processing(base_path, source_city_folder_name, 'run_pipeline')
 
-    has_valid_results = _verify_expected_output_folders(base_path, base_path, source_city_folder_name)
-    assert return_code == 0
-    assert has_valid_results
+        has_valid_results = _verify_expected_output_folders(base_path, base_path, source_city_folder_name)
+        assert return_code == 0
+        assert has_valid_results
+    finally:
+        if CLEANUP_RESULTS:
+            qgis_folder = os.path.join(city_folder, '.qgis_viewer')
+            primary_source_folder = os.path.join(city_folder, CityData.folder_name_source_data, CityData.folder_name_primary_source_data)
+            remove_folder(primary_source_folder)
+            remove_folder(qgis_folder)
+            remove_folder(results_data_folder)
 
 
 def test_mixed_cif_city():
@@ -43,29 +84,46 @@ def test_mixed_cif_city():
     base_path = os.path.join(package_folder, 'sample_cities')
     source_city_folder_name = 'ZAF_Capetown_small_mixed_cif'
 
-    target_results = os.path.join(base_path, source_city_folder_name, CityData.folder_name_results, CityData.folder_name_results)
-    clean_folder(target_results)
+    city_folder = os.path.join(base_path, source_city_folder_name)
+    results_data_folder = os.path.join(city_folder, CityData.folder_name_results)
+    clean_folder(results_data_folder)
 
-    return_code = start_processing(base_path, source_city_folder_name, 'run_pipeline')
+    try:
+        return_code = start_processing(base_path, source_city_folder_name, 'run_pipeline')
 
-    has_valid_results = _verify_expected_output_folders(base_path, base_path, source_city_folder_name)
-    assert return_code == 0
-    assert has_valid_results
+        has_valid_results = _verify_expected_output_folders(base_path, base_path, source_city_folder_name)
+        assert return_code == 0
+        assert has_valid_results
+    finally:
+        if CLEANUP_RESULTS:
+            qgis_folder = os.path.join(city_folder, '.qgis_viewer')
+            remove_folder(qgis_folder)
+            remove_folder(results_data_folder)
 
 
 def test_download_only_cif_city():
     package_folder = os.path.dirname(os.getcwd())
     base_path = os.path.join(package_folder, 'sample_cities')
-    source_city_folder_name = 'NLD_Amsterdam_download_only'
+    source_city_folder_name = 'ZAF_Capetown_cif_download_only'
 
     primary_data = os.path.join(base_path, source_city_folder_name, CityData.folder_name_source_data, CityData.folder_name_primary_source_data)
     clean_folder(primary_data)
-    target_results = os.path.join(base_path, source_city_folder_name, CityData.folder_name_results, CityData.folder_name_results)
-    clean_folder(target_results)
 
-    return_code = start_processing(base_path, source_city_folder_name, 'run_pipeline')
+    city_folder = os.path.join(base_path, source_city_folder_name)
+    results_data_folder = os.path.join(city_folder, CityData.folder_name_results)
+    clean_folder(results_data_folder)
 
-    assert return_code == 0
+    try:
+        return_code = start_processing(base_path, source_city_folder_name, 'run_pipeline')
+
+        assert return_code == 0
+    finally:
+        if CLEANUP_RESULTS:
+            qgis_folder = os.path.join(city_folder, '.qgis_viewer')
+            primary_source_folder = os.path.join(city_folder, CityData.folder_name_source_data, CityData.folder_name_primary_source_data)
+            remove_folder(primary_source_folder)
+            remove_folder(qgis_folder)
+            remove_folder(results_data_folder)
 
 
 def test_cif_city_check():
@@ -73,14 +131,12 @@ def test_cif_city_check():
     base_path = os.path.join(package_folder, 'sample_cities')
     source_city_folder_name = 'NLD_Amsterdam'
 
-    target_results = os.path.join(base_path, source_city_folder_name, CityData.folder_name_results, CityData.folder_name_results)
-    clean_folder(target_results)
+    results_data_folder = os.path.join(base_path, source_city_folder_name, CityData.folder_name_results, CityData.folder_name_results)
+    clean_folder(results_data_folder)
 
     return_code = start_processing(base_path, source_city_folder_name, 'pre_check_all')
 
-    has_valid_results = _verify_expected_output_folders(base_path, base_path, source_city_folder_name)
     assert return_code == 0
-    assert has_valid_results
 
 
 def test_custom_city_check_all():

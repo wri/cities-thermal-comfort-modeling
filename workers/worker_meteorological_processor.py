@@ -3,7 +3,7 @@ import geopandas as gp
 import pandas as pd
 import os
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from city_data import CityData
 from worker_tools import compute_time_diff_mins, remove_file
 

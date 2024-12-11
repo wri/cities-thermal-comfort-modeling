@@ -1,9 +1,7 @@
-import math
 import os
 import pandas as pd
 
-from src.src_tools import coordinates_to_bbox
-from worker_manager.tools import construct_polygon_from_bounds
+from worker_manager.tools import construct_polygon_from_bounds, coordinates_to_bbox
 from workers.city_data import parse_processing_areas_config, CityData, parse_filenames_config
 
 def _build_source_dataframes(source_base_path, city_folder_name):
@@ -51,7 +49,6 @@ def get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters):
 
     return geom_gpd
 
-
 # def _get_distance_between_points(lon1, lat1, lon2, lat2):
 #     # Convert decimal degrees to radians
 #     lon1, lat1, lon2, lat2 = map(math.radians, [lon1, lat1, lon2, lat2])
@@ -68,6 +65,7 @@ def get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters):
 #     # Calculate the result
 #     return c * r
 
+
 def get_cif_features(source_city_path):
     (dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename, has_custom_features,
      custom_feature_list, cif_feature_list) = parse_filenames_config(source_city_path, CityData.filename_method_parameters_config)
@@ -82,6 +80,10 @@ def get_cif_features(source_city_path):
     if 'lulc' in custom_feature_list:
         custom_file_names.append(lulc_tif_filename)
 
-    cif_features = ','.join(cif_feature_list)
+    if cif_feature_list:
+        cif_features = ','.join(cif_feature_list)
+    else:
+        cif_features = None
+
     return custom_file_names, has_custom_features, cif_features
 

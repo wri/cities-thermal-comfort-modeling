@@ -1,8 +1,6 @@
 import os
 import yaml
 from attr.converters import to_bool
-from workers.worker_tools import expand_quoted_value
-
 
 class CityData:
     filename_method_parameters_config = '.config_method_parameters.yml'
@@ -61,8 +59,8 @@ class CityData:
         except Exception as e_msg:
             raise Exception(f'The {cls.filename_method_parameters_config} file not found or improperly defined in {city_configs}. (Error: {e_msg})')
 
-        (obj.dem_tif_filename, obj.dsm_tif_filename, obj.tree_canopy_tif_filename, obj.lulc_tif_filename, 
-         has_custom_features, custom_feature_list, cif_feature_list) =(
+        (obj.dem_tif_filename, obj.dsm_tif_filename, obj.tree_canopy_tif_filename, obj.lulc_tif_filename,
+         has_custom_features, custom_feature_list, cif_feature_list) = (
             parse_filenames_config(obj.source_city_path, cls.filename_method_parameters_config))
 
         obj.utc_offset, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat, tile_side_meters, tile_buffer_meters = \
@@ -117,40 +115,41 @@ def parse_filenames_config(source_city_path, filename_method_parameters_config):
             custom_feature_list = []
             cif_feature_list = []
             filenames = values[2]
-            dem_tif_filename = expand_quoted_value(filenames['dem_tif_filename'])
+            dem_tif_filename = unpack_quoted_value(filenames['dem_tif_filename'])
             if dem_tif_filename is None:
                 dem_tif_filename = template_name_cif_dem
                 cif_feature_list.append('dem')
             else:
                 custom_feature_list.append('dem')
 
-            dsm_tif_filename = expand_quoted_value(filenames['dsm_tif_filename'])
+            dsm_tif_filename = unpack_quoted_value(filenames['dsm_tif_filename'])
             if dsm_tif_filename is None:
                 dsm_tif_filename = template_name_cif_dsm
                 cif_feature_list.append('dsm')
             else:
                 custom_feature_list.append('dsm')
 
-            tree_canopy_tif_filename = expand_quoted_value(filenames['tree_canopy_tif_filename'])
+            tree_canopy_tif_filename = unpack_quoted_value(filenames['tree_canopy_tif_filename'])
             if tree_canopy_tif_filename is None:
                 tree_canopy_tif_filename = template_name_cif_tree_canopy
                 cif_feature_list.append('tree_canopy')
             else:
                 custom_feature_list.append('tree_canopy')
 
-            lulc_tif_filename = expand_quoted_value(filenames['lulc_tif_filename'])
+            lulc_tif_filename = unpack_quoted_value(filenames['lulc_tif_filename'])
             if lulc_tif_filename is None:
                 lulc_tif_filename = template_name_cif_lulc
                 cif_feature_list.append('lulc')
             else:
-                custom_feature_list.append('lulc')
+                custom_feature_list.append('lucl')
 
             has_custom_features = True if len(cif_feature_list) < 4 else False
     except Exception as e_msg:
         raise Exception(
             f'The {filename_method_parameters_config} file not found or improperly defined in {city_configs}. (Error: {e_msg})')
 
-    return dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename, has_custom_features, custom_feature_list, cif_feature_list
+    return (dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename, has_custom_features,
+            custom_feature_list, cif_feature_list)
 
 
 def parse_processing_areas_config(source_city_path, filename_method_parameters_config):
@@ -160,16 +159,45 @@ def parse_processing_areas_config(source_city_path, filename_method_parameters_c
             values = list(yaml.safe_load_all(stream))[0]
 
             processing_area = values[3]
-            utc_offset = expand_quoted_value(processing_area['utc_offset'])
-            min_lon = expand_quoted_value(processing_area['min_lon'])
-            min_lat = expand_quoted_value(processing_area['min_lat'])
-            max_lon = expand_quoted_value(processing_area['max_lon'])
-            max_lat = expand_quoted_value(processing_area['max_lat'])
-            tile_side_meters = expand_quoted_value(processing_area['tile_side_meters'])
-            tile_buffer_meters = expand_quoted_value(processing_area['tile_buffer_meters'])
+            utc_offset = unpack_quoted_value(processing_area['utc_offset'])
+            min_lon = unpack_quoted_value(processing_area['min_lon'])
+            min_lat = unpack_quoted_value(processing_area['min_lat'])
+            max_lon = unpack_quoted_value(processing_area['max_lon'])
+            max_lat = unpack_quoted_value(processing_area['max_lat'])
+            tile_side_meters = unpack_quoted_value(processing_area['tile_side_meters'])
+            tile_buffer_meters = unpack_quoted_value(processing_area['tile_buffer_meters'])
 
     except Exception as e_msg:
         raise Exception(
             f'The {filename_method_parameters_config} file not found or improperly defined in {city_configs}. (Error: {e_msg})')
 
     return utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters
+
+def unpack_quoted_value(value):
+    return_value = value
+    if type(value).__name__ == 'str':
+        if value.lower() == 'none':
+            return_value = None
+        elif value.lower() == 'true':
+            return_value = True
+        elif value.lower() == 'false':
+            return_value = False
+        elif value.isnumeric():
+            if is_float_or_integer(value) == 'Integer':
+                return_value = int(value)
+            elif is_float_or_integer(value) == 'Float':
+                return_value = float(value)
+
+    return return_value
+
+def is_float_or_integer(s):
+    try:
+        int(s)
+        return "Integer"
+    except ValueError:
+        try:
+            float(s)
+            return "Float"
+        except ValueError:
+            return "Neither"
+

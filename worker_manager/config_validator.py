@@ -6,11 +6,8 @@ import rasterio
 import pandas as pd
 
 from worker_manager.graph_builder import get_cif_features
-from src.src_tools import get_existing_tiles
-from worker_manager.tools import get_aoi_area_in_square_meters
+from worker_manager.tools import get_aoi_area_in_square_meters, get_existing_tiles, list_files_with_extension
 from workers.city_data import CityData, parse_filenames_config, parse_processing_areas_config
-from workers.worker_tools import list_files_with_extension
-
 
 def verify_fundamental_paths(source_base_path, target_path, city_folder_name):
     invalids = []
@@ -78,6 +75,7 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
 
         if (not has_custom_features or
                 any(d['filename'] == CityData.method_name_era5_download for d in non_tiled_city_data.met_files)):
+
             utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters = \
                 parse_processing_areas_config(source_city_path, CityData.filename_method_parameters_config)
 
@@ -132,7 +130,6 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
                 msg = f"tile_buffer_meters must be None if tile_sider_meters is None in {CityData.filename_method_parameters_config}."
                 invalids.append(msg)
 
-
         if has_custom_features:
             for tile_folder_name, tile_dimensions in existing_tiles.items():
                 if bool(enabled) or pre_check_option == 'pre_check_all':
@@ -143,23 +140,23 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
                         break
 
                     prior_dsm = city_data.source_dsm_path
-                    if 'dsm' not in cif_features and _verify_path(prior_dsm) is False and prior_dsm is not None:
+                    if cif_features is not None and 'dsm' not in cif_features and _verify_path(prior_dsm) is False:
                         msg = f'Required source file: {prior_dsm} not found for row {index} in .config_umep_city_processing.csv.'
                         invalids.append(msg)
 
                     if method in CityData.processing_methods:
                         prior_tree_canopy = city_data.source_tree_canopy_path
-                        if 'tree_canopy' not in cif_features and _verify_path(prior_tree_canopy) is False and prior_tree_canopy is not None:
+                        if cif_features is not None and 'tree_canopy' not in cif_features and _verify_path(prior_tree_canopy) is False:
                             msg = f'Required source file: {prior_tree_canopy} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                             invalids.append(msg)
 
                     if method in ['solweig_only', 'solweig_full']:
                         prior_land_cover = city_data.source_land_cover_path
                         prior_dem = city_data.source_dem_path
-                        if 'lulc' not in cif_features and _verify_path(prior_land_cover) is False and prior_land_cover is not None:
+                        if cif_features is not None and 'lulc' not in cif_features and _verify_path(prior_land_cover) is False:
                             msg = f'Required source file: {prior_land_cover} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                             invalids.append(msg)
-                        if 'dem' not in cif_features and _verify_path(prior_dem) is False and prior_dem is not None:
+                        if cif_features is not None and 'dem' not in cif_features and _verify_path(prior_dem) is False:
                             msg = f'Required source file: {prior_dem} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                             invalids.append(msg)
                         for met_file_row in city_data.met_files:
@@ -234,7 +231,7 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
                     representative_tif = lulc_tif_filename
 
                 tiff_file_path = os.path.join(source_city_path, CityData.folder_name_source_data,
-                                          CityData.folder_name_primary_source_data,'tile_001', representative_tif)
+                                              CityData.folder_name_primary_source_data, 'tile_001', representative_tif)
                 with rasterio.open(tiff_file_path) as dataset:
                     width = dataset.profile["width"]
                     height = dataset.profile["height"]

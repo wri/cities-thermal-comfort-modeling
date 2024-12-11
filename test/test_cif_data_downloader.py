@@ -2,7 +2,7 @@ import os
 
 import shapely
 
-from src.src_tools import remove_file, get_application_path, remove_folder
+from workers.worker_tools import remove_file, get_application_path, remove_folder
 from test.testing_tools import is_valid_output_file
 from workers.city_data import CityData
 from workers.source_cif_data_downloader import get_cif_data
@@ -25,46 +25,51 @@ DEBUG = False
 
 def test_get_cif_non_terrain_data():
     # feature_list = ['era5', 'lulc', 'tree_canopy']
-    feature_list = ['lulc', 'tree_canopy']
-    features = ','.join(feature_list)
+    cif_feature_list = ['lulc', 'tree_canopy']
+    cif_features = ','.join(cif_feature_list)
+    has_custom_features = False
 
-    remove_output_files(feature_list)
-    get_cif_data(test_task_index, output_base_path, folder_name_city_data, folder_name_tile_data, features, tile_boundary)
+    remove_output_files(cif_feature_list)
+
+    get_cif_data(test_task_index, output_base_path, folder_name_city_data, folder_name_tile_data, has_custom_features,
+                 cif_features, tile_boundary, None)
 
     # if 'era5' in feature_list:
     #     expected_file = os.path.join(tile_data_path, CityData)
     #     assert is_valid_output_file(expected_file)
 
-    if 'lulc' in feature_list:
+    if 'lulc' in cif_feature_list:
         expected_file = os.path.join(tile_data_path, city_data.lulc_tif_filename)
         assert is_valid_output_file(expected_file)
 
-    if 'tree_canopy' in feature_list:
+    if 'tree_canopy' in cif_feature_list:
         expected_file = os.path.join(tile_data_path, city_data.tree_canopy_tif_filename)
         assert is_valid_output_file(expected_file)
 
     if not DEBUG:
-        remove_output_files(feature_list)
+        remove_output_files(cif_feature_list)
         remove_folder(tile_data_path)
 
 
 def test_get_cif_terrain_data():
-    feature_list = ['dem', 'dsm']
-    features = ','.join(feature_list)
+    cif_feature_list = ['dem', 'dsm']
+    cif_features = ','.join(cif_feature_list)
+    has_custom_features = False
 
-    remove_output_files(feature_list)
-    get_cif_data(test_task_index, output_base_path, folder_name_city_data, folder_name_tile_data, features, tile_boundary)
+    remove_output_files(cif_feature_list)
+    get_cif_data(test_task_index, output_base_path, folder_name_city_data, folder_name_tile_data, has_custom_features,
+                 cif_features, tile_boundary, None)
 
-    if 'dem' in feature_list:
+    if 'dem' in cif_feature_list:
         expected_file =  os.path.join(tile_data_path, city_data.dem_tif_filename)
         assert is_valid_output_file(expected_file)
 
-    if 'dsm' in feature_list:
+    if 'dsm' in cif_feature_list:
         expected_file =  os.path.join(tile_data_path, city_data.dsm_tif_filename)
         assert is_valid_output_file(expected_file)
 
     if not DEBUG:
-        remove_output_files(feature_list)
+        remove_output_files(cif_feature_list)
         remove_folder(tile_data_path)
 
 

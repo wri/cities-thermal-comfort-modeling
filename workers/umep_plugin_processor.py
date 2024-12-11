@@ -20,7 +20,8 @@ MAX_RETRY_COUNT = 3
 RETRY_PAUSE_TIME_SEC = 10
 
 
-def run_plugin(task_index, step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path, met_filename=None, utc_offset=None):
+def run_plugin(task_index, step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path,
+               target_base_path, met_filename, utc_offset):
     start_time = datetime.now()
     _start_logging(target_base_path, folder_name_city_data)
 
@@ -86,10 +87,9 @@ def run_plugin(task_index, step_index, step_method, folder_name_city_data, folde
 
     run_duration_min = compute_time_diff_mins(start_time)
 
-    met_filename_str = met_filename if met_filename != 'None' else 'N/A'
     start_time_str = start_time.strftime('%Y_%m_%d_%H:%M:%S')
     return_stdout = (f'{{"task_index": {task_index}, "tile": "{folder_name_tile_data}", "step_index": {step_index}, '
-                     f'"step_method": "{step_method}", "met_filename": "{met_filename_str}", "return_code": {return_code}, '
+                     f'"step_method": "{step_method}", "met_filename": "{met_filename}", "return_code": {return_code}, '
                      f'"start_time": "{start_time_str}", "run_duration_min": {run_duration_min}}}')
 
     return return_stdout
@@ -207,30 +207,3 @@ def _assign_method_title(method):
         method_title = 'SOLWEIG'
     return method_title
 
-
-
-# if __name__ == "__main__":
-#     import argparse
-#     parser = argparse.ArgumentParser(description='Run specified method in the "UMEP for Processing" QGIS plugin.')
-#     parser.add_argument('--task_index', metavar='str', required=True, help='index from the processor config file')
-#     parser.add_argument('--step_index', metavar='str', required=True, help='index for multi-part runs. Only used for reporting')
-#     valid_methods = ['wall_height_aspect', 'skyview_factor', 'solweig_only']
-#     parser.add_argument('--step_method', metavar='str', choices=valid_methods, required=True, help='plugin method name')
-#     parser.add_argument('--folder_name_city_data', metavar='str', required=True, help='name of city folder')
-#     parser.add_argument('--folder_name_tile_data', metavar='str', required=True, help='name of tile folder')
-#     parser.add_argument('--source_data_path', metavar='path', required=True, help='folder with source data')
-#     parser.add_argument('--target_path', metavar='path', required=True, help='folder that is to be populated')
-#
-#     parser.add_argument('--met_filename', metavar='str', required=False, help='name of the meteorological file')
-#     parser.add_argument('--utc_offset', metavar='int', required=False, help='local hour offset from utc')
-#     args = parser.parse_args()
-#
-#     return_code, start_time, run_duration_min = run_plugin(args.task_index, args.step_method, args.folder_name_city_data, args.folder_name_tile_data,
-#                              args.source_data_path, args.target_path, args.met_filename, args.utc_offset)
-#
-#     met_filename_str = args.met_filename if args.met_filename != 'None' else 'N/A'
-#     start_time_str = start_time.strftime('%Y_%m_%d_%H:%M:%S')
-#     return_stdout = (f'{{"Return_package": {{"task_index": {args.task_index}, "step_index": {args.step_index}, \
-#                      "step_method": "{args.step_method}", "met_filename": "{met_filename_str}", "return_code": {return_code}, \
-#                      "start_time": "{start_time_str}", "run_duration_min": {run_duration_min}}}}}')
-#     print(return_stdout)

@@ -1,5 +1,4 @@
 import xarray as xr
-from rasterio.enums import Resampling
 from dask.diagnostics import ProgressBar
 import shapely.wkt
 import geopandas as gp
@@ -8,28 +7,28 @@ import random
 import time
 import os
 
-from datetime import datetime, timedelta
-from city_data import CityData
-from src.src_tools import remove_folder
-from worker_tools import compute_time_diff_mins, save_tiff_file, save_geojson_file, log_method_failure, \
-    reverse_y_dimension_as_needed
-from workers.worker_tools import expand_quoted_value
+from rasterio.enums import Resampling
+from datetime import datetime
+from city_data import CityData, unpack_quoted_value
+from worker_tools import compute_time_diff_mins, reverse_y_dimension_as_needed, save_tiff_file, \
+    log_method_failure, save_geojson_file, remove_folder
+
+# from worker_tools import compute_time_diff_mins, save_tiff_file, save_geojson_file, log_method_failure, \
+#     reverse_y_dimension_as_needed, remove_folder, unpack_yml_value
 
 # Unify the layers on the same resolution
 DEFAULT_LULC_RESOLUTION = 1
 DEBUG = False
 
 def get_cif_data(task_index, output_base_path, folder_name_city_data, tile_id, has_custom_features, cif_features,
-                 tile_boundary, tile_resolution='None'):
+                 tile_boundary, tile_resolution):
     start_time = datetime.now()
-
-    tile_resolution = expand_quoted_value(tile_resolution)
-    has_custom_features = expand_quoted_value(has_custom_features)
 
     city_data = CityData(folder_name_city_data, tile_id, output_base_path, None)
     tile_data_path = city_data.source_tile_data_path
 
-    if not has_custom_features:
+    has_custom_features = unpack_quoted_value(has_custom_features)
+    if has_custom_features is False:
         primary_source_data = os.path.join(city_data.source_city_data_path, CityData.folder_name_primary_source_data)
         remove_folder(primary_source_data)
 
@@ -38,10 +37,8 @@ def get_cif_data(task_index, output_base_path, folder_name_city_data, tile_id, h
 
     feature_list = cif_features.split(',')
 
-    if tile_resolution is None:
-        output_resolution = DEFAULT_LULC_RESOLUTION
-    else:
-        output_resolution = int(tile_resolution)
+    tile_resolution = unpack_quoted_value(tile_resolution)
+    output_resolution = DEFAULT_LULC_RESOLUTION if tile_resolution is None else tile_resolution
 
     result_flags = []
     # randomize retrieval to reduce contention against GEE
@@ -381,3 +378,4 @@ def prototype_refinement_building_Elevation_estimates(overture_bldgs):
         overture_bldgs['inferred_height']
     overture_bldgs.loc[overture_bldgs['best_guess_height'].isnull(), 'best_guess_height'] = (
                 other_typical_floors * floor_height)
+

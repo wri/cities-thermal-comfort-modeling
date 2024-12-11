@@ -5,29 +5,9 @@ from datetime import datetime
 from pathlib import Path
 
 
-def initialize_scratch_folder(folder_path):
-    if os.path.isdir(folder_path):
-        clean_folder(folder_path)
-    else:
-        create_folder(folder_path)
-
 def create_folder(folder_path):
     if not os.path.isdir(folder_path):
         os.makedirs(folder_path)
-
-def clean_folder(folder_path):
-    if os.path.isdir(folder_path):
-        # Iterate over all the files and subdirectories in the directory
-        for filename in os.listdir(folder_path):
-            file_path = os.path.join(folder_path, filename)
-            try:
-                # Check if it is a file or a directory
-                if os.path.isfile(file_path) or os.path.islink(file_path):
-                    os.remove(file_path)  # Remove the file or link
-                elif os.path.isdir(file_path):
-                    shutil.rmtree(file_path)  # Remove the directory and its contents
-            except Exception as e_msg:
-                print(f'Failed to delete {file_path}. Reason: {e_msg}')
 
 def remove_folder(folder_path):
     if os.path.isdir(folder_path):
@@ -73,10 +53,6 @@ def save_geojson_file(vector_geodataframe, tile_data_path, tiff_data_FILENAME):
     vector_geodataframe.to_file(file_path, driver='GeoJSON')
 
 
-def list_files_with_extension(directory, extension):
-    return [f for f in os.listdir(directory) if f.endswith(extension)]
-
-
 def compute_time_diff_mins(start_time):
     return round(((datetime.now() - start_time).seconds)/60, 1)
 
@@ -88,19 +64,6 @@ def reverse_y_dimension_as_needed(dataarray):
         dataarray = dataarray.isel({dataarray.rio.y_dim: slice(None, None, -1)})
         was_reversed = True
     return was_reversed, dataarray
-
-
-def expand_quoted_value(value):
-    return_value = value
-    if type(value).__name__ == 'str':
-        if value.lower() == 'none':
-            return_value = None
-        elif value.lower() == 'true':
-            return_value = True
-        elif value.lower() == 'false':
-            return_value = False
-
-    return return_value
 
 
 def log_method_start(method, task_index, step, source_base_path):

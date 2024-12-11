@@ -4,8 +4,9 @@ import pandas as pd
 from pathlib import Path
 
 from worker_manager.reporter import _find_files_with_name
+from worker_manager.tools import clean_folder
 from workers.city_data import CityData
-from workers.worker_tools import create_folder, clean_folder, get_application_path
+from workers.worker_tools import create_folder, get_application_path
 
 QGIS_VIEWER_FOLDER = '.qgis_viewer'
 

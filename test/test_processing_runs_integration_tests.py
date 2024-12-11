@@ -2,7 +2,8 @@ import os
 import pandas as pd
 
 from main import start_processing
-from src.src_tools import remove_folder, clean_folder, get_application_path
+from worker_manager.tools import clean_folder
+from workers.worker_tools import remove_folder
 from test.testing_tools import is_valid_output_directory
 from workers.city_data import CityData
 import pytest

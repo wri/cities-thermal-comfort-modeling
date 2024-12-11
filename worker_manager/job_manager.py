@@ -9,25 +9,28 @@ import dask
 from worker_manager.ancillary_files import write_config_files, write_tile_grid, write_qgis_files
 from worker_manager.graph_builder import get_aoi_fishnet, get_cif_features, get_aoi
 from worker_manager.reporter import parse_row_results, report_results
-from src.src_tools import create_folder, get_existing_tiles
-from workers.worker_tools import get_application_path
+from worker_manager.tools import get_existing_tiles
+from workers.worker_tools import get_application_path, create_folder
 from workers.city_data import CityData
 
 warnings.filterwarnings('ignore')
 import logging
+
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
 
 dask.config.set({'logging.distributed': 'warning'})
 
-MET_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(get_application_path(), 'workers', 'meteorological_processor.py'))
-TILE_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(get_application_path(), 'workers', 'tile_processor.py'))
+MET_PROCESSING_MODULE_PATH = os.path.abspath(
+    os.path.join(get_application_path(), 'workers', 'worker_meteorological_processor.py'))
+TILE_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(get_application_path(), 'workers', 'worker_tile_processor.py'))
 
 
 def start_jobs(source_base_path, target_base_path, city_folder_name, processing_config_df):
     _start_logging(target_base_path, city_folder_name)
 
-    aoi_boundary, tile_side_meters, tile_buffer_meters, utc_offset, crs_str = get_aoi(source_base_path, city_folder_name)
+    aoi_boundary, tile_side_meters, tile_buffer_meters, utc_offset, crs_str = get_aoi(source_base_path,
+                                                                                      city_folder_name)
 
     out_list = []
 
@@ -44,7 +47,8 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
     # meteorological data
     if has_era_met_download:
         sampling_local_hours = city_data.sampling_local_hours
-        proc_array = _construct_met_proc_array(-1, source_base_path, city_folder_name, aoi_boundary, utc_offset, sampling_local_hours)
+        proc_array = _construct_met_proc_array(-1, source_base_path, city_folder_name, aoi_boundary, utc_offset,
+                                               sampling_local_hours)
         delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
         met_futures = []
         met_futures.append(delay_tile_array)
@@ -56,7 +60,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
 
     # build plugin graph
     enabled_processing_tasks_df = processing_config_df[(processing_config_df['enabled'])]
-    
+
     futures = []
     for index, config_row in enabled_processing_tasks_df.iterrows():
         task_index = index
@@ -64,7 +68,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
 
         source_city_path = str(os.path.join(source_base_path, city_folder_name))
         custom_file_names, has_custom_features, cif_features = get_cif_features(source_city_path)
-    
+
         if has_custom_features:
             start_tile_id = config_row.start_tile_id
             end_tile_id = config_row.end_tile_id
@@ -80,6 +84,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
                 proc_array = _construct_tile_proc_array(task_index, task_method, source_base_path, target_base_path,
                                                         city_folder_name, tile_folder_name, has_custom_features, cif_features,
                                                         tile_boundary, tile_resolution, utc_offset)
+
                 delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
                 futures.append(delay_tile_array)
         else:
@@ -97,19 +102,20 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
                 proc_array = _construct_tile_proc_array(task_index, task_method, source_base_path, target_base_path,
                                                         city_folder_name, tile_folder_name, has_custom_features, cif_features,
                                                         tile_boundary, None, utc_offset)
+
                 delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
                 futures.append(delay_tile_array)
 
-    
     # TODO consider processing every nth tile and return just those results
     delays_all_passed, results_df = _process_rows(futures)
 
     # Combine processing return values
     combined_results_df = pd.concat([combined_results_df, results_df])
     combined_delays_passed.append(delays_all_passed)
-    
+
     # Write run_report
-    report_file_path = report_results(enabled_processing_tasks_df, combined_results_df, target_base_path, city_folder_name)
+    report_file_path = report_results(enabled_processing_tasks_df, combined_results_df, target_base_path,
+                                      city_folder_name)
     print(f'\nRun report written to {report_file_path}\n')
 
     return_code = 0 if all(combined_delays_passed) else 1
@@ -130,7 +136,8 @@ def any_value_matches_in_dict_list(dict_list, target_string):
     return False
 
 
-def _construct_met_proc_array(task_index, source_base_path, city_folder_name, aoi_boundary, utc_offset, sampling_local_hours):
+def _construct_met_proc_array(task_index, source_base_path, city_folder_name, aoi_boundary, utc_offset,
+                              sampling_local_hours):
     proc_array = ['python', MET_PROCESSING_MODULE_PATH,
                   f'--task_index={task_index}',
                   f'--source_base_path={source_base_path}',
@@ -158,7 +165,6 @@ def _construct_tile_proc_array(task_index, task_method, source_base_path, target
                   f'--tile_resolution={tile_resolution}',
                   f'--utc_offset={utc_offset}'
                   ]
-
     return proc_array
 
 
@@ -192,12 +198,12 @@ def _process_rows(futures):
             # TODO implement progress bar
             dc = dask.compute(*futures)
 
-        all_passed, results_df, failed_task_ids, failed_task_details =parse_row_results(dc)
+        all_passed, results_df, failed_task_ids, failed_task_details = parse_row_results(dc)
 
         if not all_passed:
-            task_str = ','.join(map(str,failed_task_ids))
+            task_str = ','.join(map(str, failed_task_ids))
             count = len(failed_task_ids)
-            msg =  f'FAILURE: There were {count} processing failures for tasks indices: ({task_str})'
+            msg = f'FAILURE: There were {count} processing failures for tasks indices: ({task_str})'
             print(msg)
 
             for failed_run in failed_task_details:
@@ -207,10 +213,11 @@ def _process_rows(futures):
     else:
         return True, None
 
+
 def _log_info_msg(message):
     logging.info(message)
+
 
 def _log_failure(message, e_msg):
     print('Failure. See log file.')
     logging.critical(f"**** FAILED execution with '{message}' ({e_msg})")
-

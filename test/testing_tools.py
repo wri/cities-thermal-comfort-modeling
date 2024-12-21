@@ -16,9 +16,11 @@ def is_valid_output_file(file_path):
 
 SAMPLE_CITIES_PATH = str(os.path.join(DATA_DIR, 'sample_cities'))
 
-def run_main(source_city_folder_name:str, processing_option:str):
+def run_main(target_base_path:str, source_city_folder_name:str, processing_option:str):
+    target_base = SAMPLE_CITIES_PATH if target_base_path is None else target_base_path
     command = ['python', os.path.join(ROOT_DIR, 'main.py'),
-               '--base_path', SAMPLE_CITIES_PATH,
+               '--source_base_path', SAMPLE_CITIES_PATH,
+               '--target_base_path', target_base,
                '--city_folder_name', source_city_folder_name,
                '--processing_option', processing_option]
     proc_results = subprocess.run(command, capture_output=True, text=True)

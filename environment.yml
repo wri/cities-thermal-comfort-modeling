@@ -21,5 +21,5 @@ dependencies:
   - pytest=8.3.3
   - pip=24.3.1
   - pip:
-    - git+https://github.com/wri/cities-cif@main
+     - git+https://github.com/wri/cities-cif@main
  #   - git+https://github.com/wri/cities-cif@v0.1.2

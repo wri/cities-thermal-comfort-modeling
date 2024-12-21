@@ -191,7 +191,7 @@ preprocessed_data/
 tcm_results/
 results_data/
 environment_post_processing.bat
-sample_cities/NLD_Amsterdam_download_only/source_data/primary_source_data/
+data/sample_cities/NLD_Amsterdam_download_only/source_data/primary_source_data/
 _test_compiler.txt
 test_local_processing_runs.py
 local_*/

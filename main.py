@@ -2,14 +2,15 @@ import os
 import math
 import datetime
 
-from worker_manager.config_validator import validate_basic_inputs, validate_config_inputs
-from worker_manager.graph_builder import _build_source_dataframes
-from worker_manager.job_manager import start_jobs
+from src.worker_manager.config_validator import validate_basic_inputs, validate_config_inputs
+from src.worker_manager.graph_builder import build_source_dataframes
+from src.worker_manager.job_manager import start_jobs
 
 """
 Guide to creating standalone app for calling QGIS: https://docs.qgis.org/3.16/en/docs/pyqgis_developer_cookbook/intro.html
 https://medium.com/@giovannigallon/how-i-automate-qgis-tasks-using-python-54df35d8d63f
 """
+
 
 def start_processing(base_path, city_folder_name, processing_option):
     # Unify the data into a single umbrella folder
@@ -19,7 +20,7 @@ def start_processing(base_path, city_folder_name, processing_option):
 
     return_code_basic = validate_basic_inputs(abs_source_base_path, abs_target_base_path, city_folder_name)
 
-    processing_config_df = _build_source_dataframes(abs_source_base_path, city_folder_name)
+    processing_config_df = build_source_dataframes(abs_source_base_path, city_folder_name)
 
     if processing_option == 'run_pipeline':
         precheck_option = 'pre_check'
@@ -78,7 +79,6 @@ if __name__ == "__main__":
                         help='the path to city-based source and results data')
     parser.add_argument('--city_folder_name', metavar='path', required=True,
                         help='name of source city_folder')
-
     valid_methods = ['run_pipeline', 'pre_check_all', 'pre_check']
     parser.add_argument('--processing_option', metavar='str', choices=valid_methods, required=True,
                         help=f'specifies type of configuration pre-check. Options are: {valid_methods}')

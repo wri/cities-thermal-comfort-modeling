@@ -1,1 +1,0 @@
-This folder is used for preparing the QGIS viewer.

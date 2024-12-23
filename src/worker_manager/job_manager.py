@@ -39,7 +39,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
 
     write_config_files(source_base_path, target_base_path, city_folder_name)
 
-    has_era_met_download = any_value_matches_in_dict_list(city_data.met_files, CityData.method_name_era5_download)
+    has_era_met_download = any_value_matches_in_dict_list(city_data.met_filenames, CityData.method_name_era5_download)
     # meteorological data
     if has_era_met_download:
         write_log_message('Retrieving ERA meteorological data', __file__, logger)

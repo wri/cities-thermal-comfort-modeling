@@ -5,7 +5,7 @@ from src.workers.worker_tools import remove_folder, create_folder
 from test.testing_tools import run_main, verify_expected_output_folders, SAMPLE_CITIES_PATH
 from src.workers.city_data import CityData
 
-CLEANUP_RESULTS=True
+CLEANUP_RESULTS=False
 
 SCRATCH_TARGET_DIR = os.path.join(DATA_DIR, 'scratch_target')
 create_folder(SCRATCH_TARGET_DIR)
@@ -32,7 +32,7 @@ def test_untiled_full_cif():
     target_city_dir = os.path.join(SCRATCH_TARGET_DIR, source_city_folder_name)
     remove_folder(target_city_dir)
 
-    primary_data = os.path.join(SAMPLE_CITIES_PATH, source_city_folder_name, CityData.folder_name_source_data, CityData.folder_name_primary_source_data)
+    primary_data = os.path.join(SAMPLE_CITIES_PATH, source_city_folder_name, CityData.folder_name_primary_data, CityData.folder_name_primary_raster_files)
     remove_folder(primary_data)
 
     try:
@@ -53,7 +53,7 @@ def test_tiled_cif_city():
     target_city_dir = os.path.join(SCRATCH_TARGET_DIR, source_city_folder_name)
     remove_folder(target_city_dir)
 
-    primary_data = os.path.join(SAMPLE_CITIES_PATH, source_city_folder_name, CityData.folder_name_source_data, CityData.folder_name_primary_source_data)
+    primary_data = os.path.join(SAMPLE_CITIES_PATH, source_city_folder_name, CityData.folder_name_primary_data, CityData.folder_name_primary_raster_files)
     remove_folder(primary_data)
 
     try:
@@ -91,7 +91,7 @@ def test_download_only_cif_city():
     target_city_dir = os.path.join(SCRATCH_TARGET_DIR, source_city_folder_name)
     remove_folder(target_city_dir)
 
-    primary_data = os.path.join(SAMPLE_CITIES_PATH, source_city_folder_name, CityData.folder_name_source_data, CityData.folder_name_primary_source_data)
+    primary_data = os.path.join(SAMPLE_CITIES_PATH, source_city_folder_name, CityData.folder_name_primary_data, CityData.folder_name_primary_raster_files)
     remove_folder(primary_data)
 
     try:

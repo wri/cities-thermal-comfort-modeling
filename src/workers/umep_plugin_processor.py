@@ -13,7 +13,7 @@ from pathlib import Path
 from datetime import datetime
 from qgis.core import QgsApplication
 from worker_tools import remove_file, remove_folder, compute_time_diff_mins, create_folder, log_method_failure, \
-    log_method_start, log_method_completion, _start_logging, get_configurations
+    log_method_start, log_method_completion, start_model_logging, get_configurations
 from city_data import CityData
 
 import logging
@@ -27,11 +27,11 @@ RETRY_PAUSE_TIME_SEC = 10
 def run_plugin(task_index, step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path,
                target_base_path, met_filename, utc_offset):
     start_time = datetime.now()
-    _start_logging(target_base_path, folder_name_city_data)
+    start_model_logging(target_base_path, folder_name_city_data)
 
     city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
     method_title = _assign_method_title(step_method)
-    log_method_start(method_title, task_index, None, city_data.source_base_path)
+    log_method_start(method_title, task_index, None, city_data.target_base_path)
 
     # Initiate QGIS and UMEP processing
     try:
@@ -67,24 +67,24 @@ def run_plugin(task_index, step_index, step_method, folder_name_city_data, folde
                             remove_file(target_base_path)
                             shutil.move(str(temp_result_path), str(target_base_path))
                 except Exception as e_msg:
-                    msg = (f'{method_title} processing succeeded but could not create target folder or move files: {city_data.target_tile_data_path}.')
-                    log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, e_msg)
+                    msg = (f'{method_title} processing succeeded but could not create target folder or move files: {city_data.target_preprocessed_tile_data_path}.')
+                    log_method_failure(start_time, msg, task_index, None, city_data.target_base_path, e_msg)
                     return 1
 
                 return_code = 0
             except Exception as e_msg:
                 msg = f'task:{task_index} {method_title} failure. Retrying. ({e_msg})'
-                log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, e_msg)
+                log_method_failure(start_time, msg, task_index, None, city_data.target_base_path, e_msg)
                 if retry_count < MAX_RETRY_COUNT:
                     time.sleep(RETRY_PAUSE_TIME_SEC)
                 return_code = 3
             retry_count += 1
 
     if return_code == 0:
-        log_method_completion(start_time, method_title, task_index, None, city_data.source_base_path)
+        log_method_completion(start_time, method_title, task_index, None, city_data.target_base_path)
     else:
         msg = f'{method_title} processing cancelled after {MAX_RETRY_COUNT} attempts.'
-        log_method_failure(start_time, msg, task_index, None, city_data.source_base_path, '')
+        log_method_failure(start_time, msg, task_index, None, city_data.target_base_path, '')
 
     run_duration_min = compute_time_diff_mins(start_time)
 
@@ -100,12 +100,12 @@ def _prepare_method_execution(method, city_data, tmpdirname, met_filename=None, 
     keepers = {}
 
     if method == 'wall_height_aspect':
-        create_folder(city_data.target_tile_data_path)
+        create_folder(city_data.target_preprocessed_tile_data_path)
 
         temp_target_wallheight_path = os.path.join(tmpdirname, city_data.filename_wall_height)
         temp_target_wallaspect_path = os.path.join(tmpdirname, city_data.filename_wall_aspect)
         input_params = {
-            'INPUT': city_data.source_dsm_path,
+            'INPUT': city_data.target_dsm_path,
             'INPUT_LIMIT': city_data.wall_lower_limit_height,
             'OUTPUT_HEIGHT': temp_target_wallheight_path,
             'OUTPUT_ASPECT': temp_target_wallaspect_path,
@@ -115,13 +115,13 @@ def _prepare_method_execution(method, city_data, tmpdirname, met_filename=None, 
         keepers[temp_target_wallaspect_path] = city_data.target_wallaspect_path
 
     elif method == 'skyview_factor':
-        create_folder(city_data.target_tile_data_path)
+        create_folder(city_data.target_preprocessed_tile_data_path)
 
         temp_svfs_file_no_extension = os.path.join(tmpdirname, Path(city_data.target_svfszip_path).stem)
         temp_svfs_file_with_extension = os.path.join(tmpdirname, os.path.basename(city_data.target_svfszip_path))
         input_params = {
-            'INPUT_DSM': city_data.source_dsm_path,
-            'INPUT_CDSM': city_data.source_tree_canopy_path,
+            'INPUT_DSM': city_data.target_dsm_path,
+            'INPUT_CDSM': city_data.target_tree_canopy_path,
             'TRANS_VEG': 3,
             'INPUT_TDSM': None,
             'INPUT_THEIGHT': 25,
@@ -132,25 +132,25 @@ def _prepare_method_execution(method, city_data, tmpdirname, met_filename=None, 
         umep_method_title = 'umep:Urban Geometry: Sky View Factor'
         keepers[temp_svfs_file_with_extension] = city_data.target_svfszip_path
     else:
-        source_met_file_path = os.path.join(city_data.source_met_files_path, met_filename)
+        target_met_file_path = os.path.join(city_data.target_met_filenames_path, met_filename)
         temp_met_folder = os.path.join(tmpdirname, Path(met_filename).stem, city_data.folder_name_tile_data)
         create_folder(temp_met_folder)
         target_met_folder = os.path.join(city_data.target_tcm_results_path, Path(met_filename).stem, city_data.folder_name_tile_data)
         input_params = {
-            "INPUT_DSM": city_data.source_dsm_path,
+            "INPUT_DSM": city_data.target_dsm_path,
             "INPUT_SVF": city_data.target_svfszip_path,
             "INPUT_HEIGHT": city_data.target_wallheight_path,
             "INPUT_ASPECT": city_data.target_wallaspect_path,
-            "INPUT_CDSM": city_data.source_tree_canopy_path,
+            "INPUT_CDSM": city_data.target_tree_canopy_path,
             "TRANS_VEG": 3,
             "LEAF_START": city_data.leaf_start,
             "LEAF_END": city_data.leaf_end,
             "CONIFER_TREES": city_data.conifer_trees,
             "INPUT_TDSM": None,
             "INPUT_THEIGHT": 25,
-            "INPUT_LC": city_data.source_land_cover_path,
+            "INPUT_LC": city_data.target_land_cover_path,
             "USE_LC_BUILD": False,
-            "INPUT_DEM": city_data.source_dem_path,
+            "INPUT_DEM": city_data.target_dem_path,
             "SAVE_BUILD": False,
             "INPUT_ANISO": "",
             "ALBEDO_WALLS": city_data.albedo_walls,
@@ -161,7 +161,7 @@ def _prepare_method_execution(method, city_data, tmpdirname, met_filename=None, 
             "ABS_L": 0.95,
             "POSTURE": 0,
             "CYL": True,
-            "INPUTMET": source_met_file_path,
+            "INPUTMET": target_met_file_path,
             "ONLYGLOBAL": True,
             "UTC": utc_offset,
             "POI_FILE": None,

@@ -11,7 +11,7 @@ from src.workers.city_data import CityData
 
 
 def get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_tile_id):
-    tiles_folders = str(os.path.join(source_city_path, CityData.folder_name_source_data, CityData.folder_name_primary_source_data))
+    tiles_folders = str(os.path.join(source_city_path, CityData.folder_name_primary_data, CityData.folder_name_primary_raster_files))
 
     tile_sizes = {}
     for dir_obj in Path(tiles_folders).iterdir():

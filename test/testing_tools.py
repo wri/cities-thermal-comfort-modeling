@@ -17,10 +17,9 @@ def is_valid_output_file(file_path):
 SAMPLE_CITIES_PATH = str(os.path.join(DATA_DIR, 'sample_cities'))
 
 def run_main(target_base_path:str, source_city_folder_name:str, processing_option:str):
-    target_base = SAMPLE_CITIES_PATH if target_base_path is None else target_base_path
     command = ['python', os.path.join(ROOT_DIR, 'main.py'),
                '--source_base_path', SAMPLE_CITIES_PATH,
-               '--target_base_path', target_base,
+               '--target_base_path', target_base_path,
                '--city_folder_name', source_city_folder_name,
                '--processing_option', processing_option]
     proc_results = subprocess.run(command, capture_output=True, text=True)
@@ -37,7 +36,7 @@ def verify_expected_output_folders(source_sample_cities_path, target_sample_citi
         if enabled:
             # Use representative tile
             city_data = CityData(source_city_folder_name, 'tile_001', source_sample_cities_path, target_sample_cities_path)
-            result_folder = city_data.target_tile_data_path
+            result_folder = city_data.target_preprocessed_tile_data_path
             enabled_target_folder.append(result_folder)
 
     unique_target_folders = set(enabled_target_folder)

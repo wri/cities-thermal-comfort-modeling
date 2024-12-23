@@ -87,7 +87,7 @@ def log_method_failure(start_time, feature, task_index, step, source_base_path, 
         logging.error(f"task:{task_index}\t**** FAILED execution of '{feature}' fpr met_series:{step} after runtime:{runtime} mins\tconfig:'{source_base_path}'({e_msg})")
 
 
-def _start_logging(target_base_path, city_folder_name):
+def start_model_logging(target_base_path, city_folder_name):
     log_folder_path = str(os.path.join(target_base_path, city_folder_name, '.logs'))
     create_folder(log_folder_path)
     log_file_path = os.path.join(log_folder_path, 'model_execution.log')

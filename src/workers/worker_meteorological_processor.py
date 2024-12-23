@@ -71,8 +71,8 @@ def _get_era5(aoi_gdf, output_base_path, folder_name_city_data, utc_offset, samp
 
     # Write results to text file
     met_filename = CityData.filename_era5
-    target_file_path = os.path.join(output_base_path, folder_name_city_data, CityData.folder_name_source_data,
-                                    CityData.folder_name_met_files, met_filename)
+    target_file_path = os.path.join(output_base_path, folder_name_city_data, CityData.folder_name_primary_data,
+                                    CityData.folder_name_primary_met_filenames, met_filename)
     remove_file(target_file_path)
     with open(target_file_path, 'w') as file:
         for row in reformatted_data:

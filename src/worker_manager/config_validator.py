@@ -71,10 +71,10 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
         dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename, has_custom_features, custom_feature_list, cif_feature_list = \
             parse_filenames_config(source_city_path, CityData.filename_method_parameters_config)
 
-        non_tiled_city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
+        non_tiled_city_data = CityData(city_folder_name, None, source_base_path, None)
 
         if (not has_custom_features or
-                any(d['filename'] == CityData.method_name_era5_download for d in non_tiled_city_data.met_files)):
+                any(d['filename'] == CityData.method_name_era5_download for d in non_tiled_city_data.met_filenames)):
 
             utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters = \
                 parse_processing_areas_config(source_city_path, CityData.filename_method_parameters_config)
@@ -159,9 +159,9 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
                         if cif_features is not None and 'dem' not in cif_features and _verify_path(prior_dem) is False:
                             msg = f'Required source file: {prior_dem} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                             invalids.append(msg)
-                        for met_file_row in city_data.met_files:
+                        for met_file_row in city_data.met_filenames:
                             met_file = met_file_row.get('filename')
-                            met_filepath = os.path.join(city_data.source_met_files_path, met_file)
+                            met_filepath = os.path.join(city_data.source_met_filenames_path, met_file)
                             if met_file != '<download_era5>' and _verify_path(met_filepath) is False:
                                 msg = f'Required meteorological file: {met_filepath} not found for method: {method} in .config_method_parameters.yml.'
                                 invalids.append(msg)
@@ -230,8 +230,8 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
                 else:
                     representative_tif = lulc_tif_filename
 
-                tiff_file_path = os.path.join(source_city_path, CityData.folder_name_source_data,
-                                              CityData.folder_name_primary_source_data, 'tile_001', representative_tif)
+                tiff_file_path = os.path.join(source_city_path, CityData.folder_name_primary_data,
+                                              CityData.folder_name_primary_raster_files, 'tile_001', representative_tif)
                 with rasterio.open(tiff_file_path) as dataset:
                     width = dataset.profile["width"]
                     height = dataset.profile["height"]
@@ -249,7 +249,7 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
 def get_parameters_for_custom_tif_files(city_data, tile_folder_name, cif_feature_list):
     import sys
 
-    tile_folder = os.path.join(city_data.source_city_data_path, city_data.folder_name_primary_source_data,
+    tile_folder = os.path.join(city_data.source_city_data_path, city_data.folder_name_primary_raster_files,
                                tile_folder_name)
     tif_files = list_files_with_extension(tile_folder, '.tif')
 

@@ -18,8 +18,8 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
             1. See the ZAF_Capetown_small_tile\source_data\primary_source_data folder for an example setup.
             1. **Tip**: You can use the "aws s3" command to download files from S3.
                * For example, to download a zip file for a sample tile, run "aws.exe s3 cp s3://wri-cities-heat/demo/kenn_transfer/tile_001.zip ." 
-   1. If you are providing your own meteorological files, copy them into the .\source_data\met_files folder.
-      * **Note**: Since you may currently not have meteorological data in the correct format for your city, copy over a file from the ZAF_Capetown_small_tile\source_data\met_files folder.
+   1. If you are providing your own meteorological files, copy them into the .\source_data\met_filenames folder.
+      * **Note**: Since you may currently not have meteorological data in the correct format for your city, copy over a file from the ZAF_Capetown_small_tile\source_data\met_filenames folder.
 
 ### Configuration for a city
    #### In your city folder:

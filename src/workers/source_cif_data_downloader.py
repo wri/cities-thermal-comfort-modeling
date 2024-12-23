@@ -10,26 +10,26 @@ from rasterio.enums import Resampling
 from datetime import datetime
 from city_data import CityData, unpack_quoted_value
 from worker_tools import compute_time_diff_mins, reverse_y_dimension_as_needed, save_tiff_file, \
-    log_method_failure, save_geojson_file, remove_folder, _start_logging, log_method_start, log_method_completion
+    log_method_failure, save_geojson_file, remove_folder, start_model_logging, log_method_start, log_method_completion
 
 # Unify the layers on the same resolution
 DEFAULT_LULC_RESOLUTION = 1
 DEBUG = False
 
-def get_cif_data(task_index, output_base_path, folder_name_city_data, tile_id, has_custom_features, cif_features,
+def get_cif_data(task_index, source_base_path, target_base_path, folder_name_city_data, tile_id, has_custom_features, cif_features,
                  tile_boundary, tile_resolution):
     start_time = datetime.now()
-    _start_logging(output_base_path, folder_name_city_data)
+    start_model_logging(target_base_path, folder_name_city_data)
 
-    city_data = CityData(folder_name_city_data, tile_id, output_base_path, None)
+    city_data = CityData(folder_name_city_data, tile_id, source_base_path, target_base_path)
     log_method_start(f'CIF download: ({cif_features}) in tile {tile_id}', task_index, None, '')
 
-    tile_data_path = city_data.source_tile_data_path
+    tile_cif_data_path = city_data.target_primary_tile_data_path
 
-    has_custom_features = unpack_quoted_value(has_custom_features)
-    if has_custom_features is False:
-        primary_source_data = os.path.join(city_data.source_city_data_path, CityData.folder_name_primary_source_data)
-        remove_folder(primary_source_data)
+    # has_custom_features = unpack_quoted_value(has_custom_features)
+    # if has_custom_features is False:
+    #     primary_target_data = os.path.join(city_data.target_city_data_path, CityData.folder_name_primary_raster_files)
+    #     remove_folder(primary_target_data)
 
     d = {'geometry': [shapely.wkt.loads(tile_boundary)]}
     aoi_gdf = gp.GeoDataFrame(d, crs="EPSG:4326")
@@ -49,14 +49,14 @@ def get_cif_data(task_index, output_base_path, folder_name_city_data, tile_id, h
             if 'lulc' in feature_list:
                 time.sleep(wait_time)
                 log_method_start(f'CIF-lulc download for {tile_id}', task_index, None, '')
-                this_success = _get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution)
+                this_success = _get_lulc(city_data, tile_cif_data_path, aoi_gdf, output_resolution)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-lulc download for tile {tile_id}', task_index, None, '')
         elif group == 2:
             if 'tree_canopy' in feature_list:
                 time.sleep(wait_time)
                 log_method_start(f'CIF-Tree_canopy download for {tile_id}', task_index, None, '')
-                this_success = _get_tree_canopy_height(city_data, tile_data_path, aoi_gdf, output_resolution)
+                this_success = _get_tree_canopy_height(city_data, tile_cif_data_path, aoi_gdf, output_resolution)
                 result_flags.append(this_success)
                 log_method_completion(start_time,f'CIF-Tree_canopy download for {tile_id}', task_index, None, '')
         elif group == 3:
@@ -64,7 +64,7 @@ def get_cif_data(task_index, output_base_path, folder_name_city_data, tile_id, h
             if 'dem' in feature_list or 'dsm' in feature_list:
                 retrieve_dem = True if 'dem' in feature_list else False
                 log_method_start(f'CIF-DEM download for {tile_id}', task_index, None, '')
-                this_success, nasa_dem = _get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution)
+                this_success, nasa_dem = _get_dem(city_data, tile_cif_data_path, aoi_gdf, retrieve_dem, output_resolution)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-DEM download for {tile_id}', task_index, None, '')
             else:
@@ -72,11 +72,11 @@ def get_cif_data(task_index, output_base_path, folder_name_city_data, tile_id, h
 
             if 'dsm' in feature_list:
                 log_method_start(f'CIF-DSM download for {tile_id}', task_index, None, '')
-                this_success, alos_dsm = _get_dsm(tile_data_path, aoi_gdf, output_resolution)
+                this_success, alos_dsm = _get_dsm(tile_cif_data_path, aoi_gdf, output_resolution)
                 result_flags.append(this_success)
-                this_success, overture_buildings = _get_building_footprints(tile_data_path, aoi_gdf)
+                this_success, overture_buildings = _get_building_footprints(tile_cif_data_path, aoi_gdf)
                 result_flags.append(this_success)
-                this_success = _get_building_height_dsm(city_data, tile_data_path, overture_buildings, alos_dsm, nasa_dem)
+                this_success = _get_building_height_dsm(city_data, tile_cif_data_path, overture_buildings, alos_dsm, nasa_dem)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-DSM download for {tile_id}', task_index, None, '')
 

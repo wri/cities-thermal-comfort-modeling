@@ -1,0 +1,44 @@
+# Configurable attribute values for method processing
+# sampling_local_hours specifies hours for <download_era5> method.
+- MethodAttributes:
+  wall_height_aspect:
+    lower_limit_for_wall_height: 3
+  skyview_factor:
+    transmissivity_of_light_through_vegetation: 3
+    trunk_zone_height: 25
+  solweig:
+    leaf_start: 97
+    leaf_end: 300
+    conifer_trees: False
+    albedo_walls: 0.2
+    albedo_ground: 0.15
+    emis_walls: 0.9
+    emis_ground: 0.95
+    output_tmrt: True
+    output_sh: True
+    sampling_local_hours: 12,15,18
+# Names of meteorological files used by SOLWEIG method in "UMEP for Processing" plugin.
+# Specify custom files or "<download_era5>" method to automatically download ERA5 data into a file named met_era5_hottest_days.txt
+- MetFiles:
+  - filename: <met_filename_1>.txt
+  - filename: <download_era5>
+# Custom source-files that were independently created and will replace standard files pulled from CIF system.
+# All four file mappings must be specified here. Specify None for filename where custom file is not available for processing.
+# Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif
+# Auto-generated filenames from CIF: cif_dem.tif, cif_dsm_ground_build.tif, cif_tree_canopy.tif, cif_lulc.tif
+- CustomTiffFilenames:
+  dem_tif_filename: None
+  dsm_tif_filename: dsm_ground_build.tif
+  tree_canopy_tif_filename: tree_canopy.tif
+  lulc_tif_filename: lulc.tif
+# Processing Area of Interest used for tile construction and ERA5-data download. If any custom files
+# are specified above, then the system will not construct a new tile grid and will instead use the existing one.
+# If you don't want to subdivide the AOI, specify None for tile_side_meters and tile_buffer_meters.
+- ProcessingAOI:
+  utc_offset: <>
+  min_lon: <>
+  min_lat: <>
+  max_lon: <>
+  max_lat: <>
+  tile_side_meters: None
+  tile_buffer_meters: None

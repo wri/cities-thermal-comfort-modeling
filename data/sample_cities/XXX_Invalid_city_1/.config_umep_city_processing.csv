@@ -1,0 +1,3 @@
+enabled,method,start_tile_id,end_tile_id
+true,my_method,*,*
+huh,solweig_full,*,*

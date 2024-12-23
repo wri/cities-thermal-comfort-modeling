@@ -39,17 +39,17 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
 
     write_config_files(source_base_path, target_base_path, city_folder_name)
 
-    has_era_met_download = any_value_matches_in_dict_list(city_data.met_filenames, CityData.method_name_era5_download)
+    has_era_met_download = any_value_matches_in_dict_list(city_data.met_filenames, CityData.method_trigger_era5_download)
     # meteorological data
     if has_era_met_download:
         write_log_message('Retrieving ERA meteorological data', __file__, logger)
         sampling_local_hours = city_data.sampling_local_hours
-        proc_array = _construct_met_proc_array(-1, source_base_path, city_folder_name, aoi_boundary, utc_offset,
+        proc_array = _construct_met_proc_array(-1, target_base_path, city_folder_name, aoi_boundary, utc_offset,
                                                sampling_local_hours)
         delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
         met_futures = []
         met_futures.append(delay_tile_array)
-        met_delays_all_passed, met_results_df = _process_rows(met_futures)
+        met_delays_all_passed, met_results_df = _process_rows(met_futures, logger)
         out_list.extend(met_results_df)
 
         combined_results_df = pd.concat([combined_results_df, met_results_df])
@@ -143,11 +143,11 @@ def any_value_matches_in_dict_list(dict_list, target_string):
     return False
 
 
-def _construct_met_proc_array(task_index, source_base_path, city_folder_name, aoi_boundary, utc_offset,
+def _construct_met_proc_array(task_index, target_base_path, city_folder_name, aoi_boundary, utc_offset,
                               sampling_local_hours):
     proc_array = ['python', MET_PROCESSING_MODULE_PATH,
                   f'--task_index={task_index}',
-                  f'--source_base_path={source_base_path}',
+                  f'--target_base_path={target_base_path}',
                   f'--city_folder_name={city_folder_name}',
                   f'--aoi_boundary={str(aoi_boundary)}',
                   f'--utc_offset={utc_offset}',

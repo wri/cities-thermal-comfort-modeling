@@ -99,6 +99,8 @@ def test_download_only_cif_city():
         # return_code = start_processing(SAMPLE_CITIES_PATH, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         assert return_code == 0
+        # TODO remove this false assertion once ERA5 is working again
+        assert False
     finally:
         if CLEANUP_RESULTS:
             remove_folder(target_city_dir)

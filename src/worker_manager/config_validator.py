@@ -24,6 +24,10 @@ def verify_fundamental_paths(source_base_path, target_path, city_folder_name):
         msg = f'Invalid target base path: {target_path}'
         invalids.append(msg)
 
+    if source_base_path == target_path:
+        msg = f'Source and target base paths cannot be the same.'
+        invalids.append(msg)
+
     if invalids:
         return invalids
 
@@ -74,7 +78,7 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
         non_tiled_city_data = CityData(city_folder_name, None, source_base_path, None)
 
         if (not has_custom_features or
-                any(d['filename'] == CityData.method_name_era5_download for d in non_tiled_city_data.met_filenames)):
+                any(d['filename'] == CityData.method_trigger_era5_download for d in non_tiled_city_data.met_filenames)):
 
             utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters = \
                 parse_processing_areas_config(source_city_path, CityData.filename_method_parameters_config)

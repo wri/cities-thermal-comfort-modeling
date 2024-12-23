@@ -30,7 +30,7 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
 
         out_list = []
         for met_file in city_data.met_filenames:
-            if met_file.get('filename') == CityData.method_name_era5_download:
+            if met_file.get('filename') == CityData.method_trigger_era5_download:
                 met_filename = CityData.filename_era5
             else:
                 met_filename = met_file.get('filename')
@@ -107,9 +107,10 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
 def _transfer_met_files(city_data):
     create_folder(city_data.target_met_filenames_path)
     for met_file in city_data.met_filenames:
-        source_path = os.path.join(city_data.source_met_filenames_path, met_file['filename'])
-        target_path = os.path.join(city_data.target_met_filenames_path, met_file['filename'])
-        shutil.copyfile(source_path, target_path)
+        if met_file != city_data.method_trigger_era5_download:
+            source_path = os.path.join(city_data.source_met_filenames_path, met_file['filename'])
+            target_path = os.path.join(city_data.target_met_filenames_path, met_file['filename'])
+            shutil.copyfile(source_path, target_path)
 
 
 def _transfer_raster_files(city_data):

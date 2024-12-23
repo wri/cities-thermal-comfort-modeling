@@ -10,14 +10,14 @@ from worker_tools import compute_time_diff_mins, remove_file
 MET_NULL_VALUE = -999
 TARGET_HEADING =  '%iy id it imin qn qh qe qs qf U RH Tair press rain kdown snow ldown fcld wuh xsmd lai kdiff kdir wdir'
 
-def get_met_data(task_index, source_base_path, folder_name_city_data, aoi_boundary, utc_offset, sampling_local_hours):
+def get_met_data(task_index, target_base_path, folder_name_city_data, aoi_boundary, utc_offset, sampling_local_hours):
     start_time = datetime.now()
 
     d = {'geometry': [shapely.wkt.loads(aoi_boundary)]}
     aoi_gdf = gp.GeoDataFrame(d, crs="EPSG:4326")
 
     # Retrieve and write ERA5 data
-    return_code = _get_era5(aoi_gdf, source_base_path, folder_name_city_data, utc_offset, sampling_local_hours)
+    return_code = _get_era5(aoi_gdf, target_base_path, folder_name_city_data, utc_offset, sampling_local_hours)
 
     # Wrap up results
     step_method = 'ERA5_download'
@@ -43,7 +43,7 @@ def _get_era5(aoi_gdf, output_base_path, folder_name_city_data, utc_offset, samp
         try:
             aoi_era_5 = era_5_met_preprocessing(aoi_gdf)
             break
-        except:
+        except Exception as e_msg:
             count +=1
 
     if aoi_era_5 is None:
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Retrieve meteorological data.')
     parser.add_argument('--task_index', metavar='str', required=True, help='index from the processor config file')
-    parser.add_argument('--source_base_path', metavar='path', required=True, help='folder for source data')
+    parser.add_argument('--target_base_path', metavar='path', required=True, help='folder for source data')
     parser.add_argument('--city_folder_name', metavar='str', required=True, help='name of city folder')
     parser.add_argument('--aoi_boundary', metavar='str', required=True, help='geographic boundary of the AOI')
     parser.add_argument('--utc_offset', metavar='str', required=True, help='hour offset from utc')
@@ -156,6 +156,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    result_json = get_met_data(args.task_index, args.source_base_path, args.city_folder_name, args.aoi_boundary, args.utc_offset, args.sampling_local_hours)
+    result_json = get_met_data(args.task_index, args.target_base_path, args.city_folder_name, args.aoi_boundary, args.utc_offset, args.sampling_local_hours)
 
     print(result_json)

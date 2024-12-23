@@ -60,7 +60,7 @@ def write_qgis_files(city_data, crs_str):
     met_filenames = []
     set_id = 0
     for met_file in city_data.met_filenames:
-        if met_file.get('filename') == CityData.method_name_era5_download:
+        if met_file.get('filename') == CityData.method_trigger_era5_download:
             met_file_name = CityData.filename_era5
         else:
             met_file_name = met_file.get('filename')

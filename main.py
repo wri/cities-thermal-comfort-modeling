@@ -13,8 +13,6 @@ https://medium.com/@giovannigallon/how-i-automate-qgis-tasks-using-python-54df35
 
 
 def start_processing(source_base_path, target_base_path, city_folder_name, processing_option):
-    # Unify the data into a single umbrella folder
-    # TODO Remove the separation of source and target base path
     abs_source_base_path = os.path.abspath(source_base_path)
     abs_target_base_path = os.path.abspath(target_base_path)
 

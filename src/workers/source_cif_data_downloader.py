@@ -16,7 +16,7 @@ from worker_tools import compute_time_diff_mins, reverse_y_dimension_as_needed, 
 DEFAULT_LULC_RESOLUTION = 1
 DEBUG = False
 
-def get_cif_data(task_index, source_base_path, target_base_path, folder_name_city_data, tile_id, has_custom_features, cif_features,
+def get_cif_data(task_index, source_base_path, target_base_path, folder_name_city_data, tile_id, cif_features,
                  tile_boundary, tile_resolution):
     start_time = datetime.now()
     start_model_logging(target_base_path, folder_name_city_data)
@@ -80,9 +80,7 @@ def get_cif_data(task_index, source_base_path, target_base_path, folder_name_cit
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-DSM download for {tile_id}', task_index, None, '')
 
-    run_duration_min = compute_time_diff_mins(start_time)
     return_code = 0 if all(result_flags) else 1
-
     run_duration_min = compute_time_diff_mins(start_time)
 
     met_filename_str = 'N/A'

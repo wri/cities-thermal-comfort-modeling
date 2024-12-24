@@ -18,11 +18,10 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
     utc_offset = unpack_quoted_value(utc_offset)
 
     def _execute_retrieve_cif_data(task_idx, source_base_path, target_base_path, folder_city, folder_tile,
-                                   custom_features, features, boundary, resolution):
+                                   features, boundary, resolution):
         from source_cif_data_downloader import get_cif_data
         cif_stdout = \
-            get_cif_data(task_idx, source_base_path, target_base_path, folder_city, folder_tile, custom_features,
-                         features, boundary, resolution)
+            get_cif_data(task_idx, source_base_path, target_base_path, folder_city, folder_tile, features, boundary, resolution)
         return cif_stdout
 
     def _execute_solweig_only_plugin(task_idx, step_index, folder_city, folder_tile, source_path, target_path, utc_offset):
@@ -73,7 +72,7 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
     # get cif data
     if cif_features is not None:
         return_val = _execute_retrieve_cif_data(task_index, source_base_path, target_base_path, city_folder_name,
-                                                tile_folder_name, has_custom_features, cif_features, tile_boundary,
+                                                tile_folder_name, cif_features, tile_boundary,
                                                 tile_resolution)
         return_stdouts.append(return_val)
         time.sleep(PROCESSING_PAUSE_TIME_SEC)

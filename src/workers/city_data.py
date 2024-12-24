@@ -8,7 +8,7 @@ from src.constants import FILENAME_METHOD_CONFIG, FOLDER_NAME_PRIMARY_DATA, FOLD
 
 
 class CityData:
- 
+
     def __new__(cls, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path):
         obj = super().__new__(cls)
 

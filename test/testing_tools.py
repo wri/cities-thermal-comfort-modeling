@@ -44,7 +44,7 @@ def verify_expected_output_folders(source_sample_cities_path, target_sample_citi
     unique_target_folders = set(enabled_target_folder)
     expected_target_folder_count = len(unique_target_folders)
     actual_target_folder_count = 0
-    has_content = False
+
     for folder in unique_target_folders:
         out_directory = os.path.abspath(folder)
         if is_valid_output_directory(out_directory) is True:

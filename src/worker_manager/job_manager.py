@@ -59,8 +59,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
     enabled_processing_tasks_df = processing_config_df[(processing_config_df['enabled'])]
 
     futures = []
-    for index, config_row in enabled_processing_tasks_df.iterrows():
-        task_index = index
+    for task_index, config_row in enabled_processing_tasks_df.iterrows():
         task_method = config_row.method
 
         source_city_path = str(os.path.join(source_base_path, city_folder_name))
@@ -93,11 +92,11 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
             write_tile_grid(fishnet, target_base_path, city_folder_name)
 
             print(f'\nCreating data for {fishnet.geometry.size} new tiles..')
-            for index, cell in fishnet.iterrows():
+            for tile_index, cell in fishnet.iterrows():
                 cell_bounds = cell.geometry.bounds
                 tile_boundary = str(shapely.box(cell_bounds[0], cell_bounds[1], cell_bounds[2], cell_bounds[3]))
 
-                tile_id = str(index + 1).zfill(3)
+                tile_id = str(tile_index + 1).zfill(3)
                 tile_folder_name = f'tile_{tile_id}'
 
                 proc_array = _construct_tile_proc_array(task_index, task_method, source_base_path, target_base_path,

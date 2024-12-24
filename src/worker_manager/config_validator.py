@@ -75,7 +75,7 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
                 f"Invalid 'method' column ({method}) on row {index} in .config_umep_city_processing.csv. Valid values: {valid_methods}")
 
         dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename, has_custom_features, custom_feature_list, cif_feature_list = \
-            parse_filenames_config(source_city_path, FILENAME_METHOD_CONFIG)
+            parse_filenames_config(source_city_path)
 
         non_tiled_city_data = CityData(city_folder_name, None, source_base_path, None)
 
@@ -83,7 +83,7 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
                 any(d['filename'] == METHOD_TRIGGER_ERA5_DOWNLOAD for d in non_tiled_city_data.met_filenames)):
 
             utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters = \
-                parse_processing_areas_config(source_city_path, FILENAME_METHOD_CONFIG)
+                parse_processing_areas_config(source_city_path)
 
             if (not isinstance(min_lon, numbers.Number) or not isinstance(min_lat, numbers.Number) or
                     not isinstance(max_lon, numbers.Number) or not isinstance(max_lat, numbers.Number)):

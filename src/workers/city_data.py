@@ -48,10 +48,10 @@ class CityData:
 
         (obj.dem_tif_filename, obj.dsm_tif_filename, obj.tree_canopy_tif_filename, obj.lulc_tif_filename,
          has_custom_features, obj.custom_feature_list, obj.cif_feature_list) = (
-            parse_filenames_config(obj.source_city_path, FILENAME_METHOD_CONFIG))
+            parse_filenames_config(obj.source_city_path))
 
         obj.utc_offset, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat, tile_side_meters, tile_buffer_meters = \
-            parse_processing_areas_config(obj.source_city_path, FILENAME_METHOD_CONFIG)
+            parse_processing_areas_config(obj.source_city_path)
 
         if obj.folder_name_tile_data:
             obj.source_raster_files_path = os.path.join(obj.source_city_data_path, FOLDER_NAME_PRIMARY_RASTER_FILES)
@@ -111,7 +111,7 @@ class CityData:
 
         return obj
 
-def parse_filenames_config(source_city_path, FILENAME_METHOD_CONFIG):
+def parse_filenames_config(source_city_path):
     city_configs = os.path.join(source_city_path, FILENAME_METHOD_CONFIG)
     template_name_cif_dem = 'cif_dem.tif'
     template_name_cif_dsm = 'cif_dsm_ground_build.tif'
@@ -162,7 +162,7 @@ def parse_filenames_config(source_city_path, FILENAME_METHOD_CONFIG):
             custom_feature_list, cif_feature_list)
 
 
-def parse_processing_areas_config(source_city_path, FILENAME_METHOD_CONFIG):
+def parse_processing_areas_config(source_city_path):
     city_configs = os.path.join(source_city_path, FILENAME_METHOD_CONFIG)
     try:
         with open(city_configs, 'r') as stream:

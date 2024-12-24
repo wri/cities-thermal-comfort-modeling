@@ -7,6 +7,9 @@ import sys
 import processing
 from processing.core.Processing import Processing
 from processing_umep.processing_umep import ProcessingUMEPProvider
+
+from src.constants import FILENAME_WALL_HEIGHT, FILENAME_WALL_ASPECT
+
 warnings.filterwarnings("ignore")
 
 from pathlib import Path
@@ -102,8 +105,8 @@ def _prepare_method_execution(method, city_data, tmpdirname, met_filename=None, 
     if method == 'wall_height_aspect':
         create_folder(city_data.target_preprocessed_tile_data_path)
 
-        temp_target_wallheight_path = os.path.join(tmpdirname, city_data.filename_wall_height)
-        temp_target_wallaspect_path = os.path.join(tmpdirname, city_data.filename_wall_aspect)
+        temp_target_wallheight_path = os.path.join(tmpdirname, FILENAME_WALL_HEIGHT)
+        temp_target_wallaspect_path = os.path.join(tmpdirname, FILENAME_WALL_ASPECT)
         input_params = {
             'INPUT': city_data.target_dsm_path,
             'INPUT_LIMIT': city_data.wall_lower_limit_height,

@@ -7,11 +7,13 @@ from pyproj import Transformer
 from shapely.geometry import Polygon
 from pyproj import Geod
 from pathlib import Path
+
+from src.constants import FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_PRIMARY_DATA
 from src.workers.city_data import CityData
 
 
 def get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_tile_id):
-    tiles_folders = str(os.path.join(source_city_path, CityData.folder_name_primary_data, CityData.folder_name_primary_raster_files))
+    tiles_folders = str(os.path.join(source_city_path, FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_RASTER_FILES))
 
     tile_sizes = {}
     for dir_obj in Path(tiles_folders).iterdir():

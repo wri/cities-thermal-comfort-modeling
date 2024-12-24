@@ -2,26 +2,13 @@ import os
 import yaml
 from attr.converters import to_bool
 
+from src.constants import FILENAME_METHOD_CONFIG, FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_RASTER_FILES, \
+    FOLDER_NAME_PRIMARY_MET_FILENAMES, FOLDER_NAME_RESULTS, FOLDER_NAME_PREPROCESSED_DATA, FOLDER_NAME_TCM_RESULTS, \
+    FILENAME_WALL_HEIGHT, FILENAME_WALL_ASPECT, FILENAME_SVFS_ZIP
+
+
 class CityData:
-    filename_method_parameters_config = '.config_method_parameters.yml'
-    filename_umep_city_processing_config = '.config_umep_city_processing.csv'
-
-    folder_name_primary_data = 'primary_data'
-    folder_name_primary_raster_files = 'raster_files'
-    folder_name_primary_met_filenames = 'met_files'
-    folder_name_results = 'results_data'
-    folder_name_preprocessed_data = 'preprocessed_data'
-    folder_name_tcm_results = 'tcm_results'
-
-    filename_wall_height = 'wallheight.tif'
-    filename_wall_aspect = 'wallaspect.tif'
-    filename_svfs_zip = 'svfs.zip'
-
-    filename_era5 = 'met_era5_hottest_days.txt'
-    method_trigger_era5_download = '<download_era5>'
-
-    processing_methods = ['cif_download_only', 'wall_height_aspect', 'skyview_factor', 'solweig_only', 'solweig_full']
-
+ 
     def __new__(cls, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path):
         obj = super().__new__(cls)
 
@@ -31,9 +18,9 @@ class CityData:
         obj.source_base_path = source_base_path
 
         obj.source_city_path = str(os.path.join(source_base_path, folder_name_city_data))
-        obj.source_city_data_path = str(os.path.join(obj.source_city_path, cls.folder_name_primary_data))
+        obj.source_city_data_path = str(os.path.join(obj.source_city_path, FOLDER_NAME_PRIMARY_DATA))
 
-        city_configs = os.path.join(obj.source_city_path, cls.filename_method_parameters_config)
+        city_configs = os.path.join(obj.source_city_path, FILENAME_METHOD_CONFIG)
         try:
             with open(city_configs, 'r') as stream:
                 values = list(yaml.safe_load_all(stream))[0]
@@ -57,17 +44,17 @@ class CityData:
                 obj.met_filenames = values[1].get('MetFiles')
 
         except Exception as e_msg:
-            raise Exception(f'The {cls.filename_method_parameters_config} file not found or improperly defined in {city_configs}. (Error: {e_msg})')
+            raise Exception(f'The {FILENAME_METHOD_CONFIG} file not found or improperly defined in {city_configs}. (Error: {e_msg})')
 
         (obj.dem_tif_filename, obj.dsm_tif_filename, obj.tree_canopy_tif_filename, obj.lulc_tif_filename,
          has_custom_features, obj.custom_feature_list, obj.cif_feature_list) = (
-            parse_filenames_config(obj.source_city_path, cls.filename_method_parameters_config))
+            parse_filenames_config(obj.source_city_path, FILENAME_METHOD_CONFIG))
 
         obj.utc_offset, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat, tile_side_meters, tile_buffer_meters = \
-            parse_processing_areas_config(obj.source_city_path, cls.filename_method_parameters_config)
+            parse_processing_areas_config(obj.source_city_path, FILENAME_METHOD_CONFIG)
 
         if obj.folder_name_tile_data:
-            obj.source_raster_files_path = os.path.join(obj.source_city_data_path, obj.folder_name_primary_raster_files)
+            obj.source_raster_files_path = os.path.join(obj.source_city_data_path, FOLDER_NAME_PRIMARY_RASTER_FILES)
             obj.source_primary_raster_tile_data_path = os.path.join(obj.source_raster_files_path, obj.folder_name_tile_data)
             obj.source_dem_path = os.path.join(obj.source_primary_raster_tile_data_path, obj.dem_tif_filename)
             obj.source_dsm_path = os.path.join(obj.source_primary_raster_tile_data_path, obj.dsm_tif_filename)
@@ -80,24 +67,24 @@ class CityData:
             obj.source_tree_canopy_path = None
             obj.source_land_cover_path = None
 
-        obj.source_met_filenames_path = os.path.join(obj.source_city_data_path, obj.folder_name_primary_met_filenames)
+        obj.source_met_filenames_path = os.path.join(obj.source_city_data_path, FOLDER_NAME_PRIMARY_MET_FILENAMES)
 
         if target_base_path:
             obj.target_base_path = target_base_path
 
             obj.target_city_path = str(os.path.join(target_base_path, folder_name_city_data))
-            obj.target_city_data_path = str(os.path.join(obj.target_city_path, cls.folder_name_primary_data))
+            obj.target_city_data_path = str(os.path.join(obj.target_city_path, FOLDER_NAME_PRIMARY_DATA))
 
             obj.target_path_city_data = str(os.path.join(obj.target_base_path, folder_name_city_data,
-                                                         cls.folder_name_results))
+                                                         FOLDER_NAME_RESULTS))
             obj.target_manager_log_path = os.path.join(obj.target_city_path, '.logs', 'worker_manager.log')
-            obj.target_preprocessed_path = os.path.join(obj.target_path_city_data, obj.folder_name_preprocessed_data)
-            obj.target_tcm_results_path = os.path.join(obj.target_path_city_data, obj.folder_name_tcm_results)
+            obj.target_preprocessed_path = os.path.join(obj.target_path_city_data, FOLDER_NAME_PREPROCESSED_DATA)
+            obj.target_tcm_results_path = os.path.join(obj.target_path_city_data, FOLDER_NAME_TCM_RESULTS)
 
             if obj.folder_name_tile_data:
                 # source_primary_raster_tile_data_path
                 obj.target_raster_files_path = os.path.join(obj.target_city_data_path,
-                                                            obj.folder_name_primary_raster_files)
+                                                            FOLDER_NAME_PRIMARY_RASTER_FILES)
                 obj.target_primary_tile_data_path = os.path.join(obj.target_raster_files_path, obj.folder_name_tile_data)
 
                 obj.target_dem_path = os.path.join(obj.target_primary_tile_data_path, obj.dem_tif_filename)
@@ -107,9 +94,9 @@ class CityData:
                 obj.target_land_cover_path = os.path.join(obj.target_primary_tile_data_path, obj.lulc_tif_filename)
 
                 obj.target_preprocessed_tile_data_path = os.path.join(obj.target_preprocessed_path, obj.folder_name_tile_data)
-                obj.target_wallheight_path = os.path.join(obj.target_preprocessed_tile_data_path, obj.filename_wall_height)
-                obj.target_wallaspect_path = os.path.join(obj.target_preprocessed_tile_data_path, obj.filename_wall_aspect)
-                obj.target_svfszip_path = os.path.join(obj.target_preprocessed_tile_data_path, obj.filename_svfs_zip)
+                obj.target_wallheight_path = os.path.join(obj.target_preprocessed_tile_data_path, FILENAME_WALL_HEIGHT)
+                obj.target_wallaspect_path = os.path.join(obj.target_preprocessed_tile_data_path, FILENAME_WALL_ASPECT)
+                obj.target_svfszip_path = os.path.join(obj.target_preprocessed_tile_data_path, FILENAME_SVFS_ZIP)
             else:
                 obj.target_preprocessed_tile_data_path = None
                 obj.target_dem_path = None
@@ -120,12 +107,12 @@ class CityData:
                 obj.target_wallaspect_path = None
                 obj.target_svfszip_path = None
 
-            obj.target_met_filenames_path = os.path.join(obj.target_city_data_path, obj.folder_name_primary_met_filenames)
+            obj.target_met_filenames_path = os.path.join(obj.target_city_data_path, FOLDER_NAME_PRIMARY_MET_FILENAMES)
 
         return obj
 
-def parse_filenames_config(source_city_path, filename_method_parameters_config):
-    city_configs = os.path.join(source_city_path, filename_method_parameters_config)
+def parse_filenames_config(source_city_path, FILENAME_METHOD_CONFIG):
+    city_configs = os.path.join(source_city_path, FILENAME_METHOD_CONFIG)
     template_name_cif_dem = 'cif_dem.tif'
     template_name_cif_dsm = 'cif_dsm_ground_build.tif'
     template_name_cif_tree_canopy = 'cif_tree_canopy.tif'
@@ -169,14 +156,14 @@ def parse_filenames_config(source_city_path, filename_method_parameters_config):
             has_custom_features = True if len(cif_feature_list) < 4 else False
     except Exception as e_msg:
         raise Exception(
-            f'The {filename_method_parameters_config} file not found or improperly defined in {city_configs}. (Error: {e_msg})')
+            f'The {FILENAME_METHOD_CONFIG} file not found or improperly defined in {city_configs}. (Error: {e_msg})')
 
     return (dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename, has_custom_features,
             custom_feature_list, cif_feature_list)
 
 
-def parse_processing_areas_config(source_city_path, filename_method_parameters_config):
-    city_configs = os.path.join(source_city_path, filename_method_parameters_config)
+def parse_processing_areas_config(source_city_path, FILENAME_METHOD_CONFIG):
+    city_configs = os.path.join(source_city_path, FILENAME_METHOD_CONFIG)
     try:
         with open(city_configs, 'r') as stream:
             values = list(yaml.safe_load_all(stream))[0]
@@ -192,7 +179,7 @@ def parse_processing_areas_config(source_city_path, filename_method_parameters_c
 
     except Exception as e_msg:
         raise Exception(
-            f'The {filename_method_parameters_config} file not found or improperly defined in {city_configs}. (Error: {e_msg})')
+            f'The {FILENAME_METHOD_CONFIG} file not found or improperly defined in {city_configs}. (Error: {e_msg})')
 
     return utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters
 

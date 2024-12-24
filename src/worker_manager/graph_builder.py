@@ -1,11 +1,12 @@
 import os
 import pandas as pd
 
+from src.constants import FILENAME_METHOD_CONFIG, FILENAME_UMEP_PROC_CONFIG
 from src.worker_manager.tools import construct_polygon_from_bounds, coordinates_to_bbox
 from src.workers.city_data import parse_processing_areas_config, CityData, parse_filenames_config
 
 def build_source_dataframes(source_base_path, city_folder_name):
-    config_processing_file_path = str(os.path.join(source_base_path, city_folder_name, CityData.filename_umep_city_processing_config))
+    config_processing_file_path = str(os.path.join(source_base_path, city_folder_name, FILENAME_UMEP_PROC_CONFIG))
     processing_config_df = pd.read_csv(config_processing_file_path)
 
     return processing_config_df
@@ -17,7 +18,7 @@ def get_aoi(source_base_path, city_folder_name):
     source_city_path = str(os.path.join(source_base_path, city_folder_name))
 
     utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters = \
-        parse_processing_areas_config(source_city_path, CityData.filename_method_parameters_config)
+        parse_processing_areas_config(source_city_path, FILENAME_METHOD_CONFIG)
 
     aoi_boundary = coordinates_to_bbox(min_lon, min_lat, max_lon, max_lat)
 
@@ -68,7 +69,7 @@ def get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters):
 
 def get_cif_features(source_city_path):
     (dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename, has_custom_features,
-     custom_feature_list, cif_feature_list) = parse_filenames_config(source_city_path, CityData.filename_method_parameters_config)
+     custom_feature_list, cif_feature_list) = parse_filenames_config(source_city_path, FILENAME_METHOD_CONFIG)
 
     custom_file_names = []
     if 'dem' in custom_feature_list:

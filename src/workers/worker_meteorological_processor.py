@@ -5,6 +5,7 @@ import os
 
 from datetime import datetime
 from city_data import CityData
+from src.constants import FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_MET_FILENAMES, FILENAME_ERA5
 from worker_tools import compute_time_diff_mins, remove_file
 
 MET_NULL_VALUE = -999
@@ -21,7 +22,7 @@ def get_met_data(task_index, target_base_path, folder_name_city_data, aoi_bounda
 
     # Wrap up results
     step_method = 'ERA5_download'
-    met_filename = CityData.filename_era5
+    met_filename = FILENAME_ERA5
     start_time_str = start_time.strftime('%Y_%m_%d_%H:%M:%S')
     run_duration_min = compute_time_diff_mins(start_time)
     return_stdout = (f'{{"task_index": {task_index}, "tile": "None", "step_index": {0}, '
@@ -70,9 +71,9 @@ def _get_era5(aoi_gdf, output_base_path, folder_name_city_data, utc_offset, samp
         reformatted_data.append(_reformat_line(row))
 
     # Write results to text file
-    met_filename = CityData.filename_era5
-    target_file_path = os.path.join(output_base_path, folder_name_city_data, CityData.folder_name_primary_data,
-                                    CityData.folder_name_primary_met_filenames, met_filename)
+    met_filename = FILENAME_ERA5
+    target_file_path = os.path.join(output_base_path, folder_name_city_data, FOLDER_NAME_PRIMARY_DATA,
+                                    FOLDER_NAME_PRIMARY_MET_FILENAMES, met_filename)
     remove_file(target_file_path)
     with open(target_file_path, 'w') as file:
         for row in reformatted_data:

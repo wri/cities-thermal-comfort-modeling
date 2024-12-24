@@ -28,7 +28,7 @@ def get_cif_data(task_index, source_base_path, target_base_path, folder_name_cit
 
     # has_custom_features = unpack_quoted_value(has_custom_features)
     # if has_custom_features is False:
-    #     primary_target_data = os.path.join(city_data.target_city_data_path, CityData.folder_name_primary_raster_files)
+    #     primary_target_data = os.path.join(city_data.target_city_data_path, FOLDER_NAME_PRIMARY_RASTER_FILES)
     #     remove_folder(primary_target_data)
 
     d = {'geometry': [shapely.wkt.loads(tile_boundary)]}

@@ -3,7 +3,10 @@ import subprocess
 import pandas as pd
 
 from src.workers.city_data import CityData
-from src.constants import DATA_DIR, ROOT_DIR
+from src.constants import DATA_DIR, ROOT_DIR, FILENAME_UMEP_PROC_CONFIG
+
+SAMPLE_CITIES_SOURCE_DIR = str(os.path.join(DATA_DIR, 'sample_cities'))
+SCRATCH_TARGET_DIR = str(os.path.join(DATA_DIR, 'scratch_target'))
 
 
 def is_valid_output_directory(path):
@@ -14,11 +17,10 @@ def is_valid_output_file(file_path):
     is_valid = True if os.path.isfile(file_path) and os.path.getsize(file_path) > 0 else False
     return is_valid
 
-SAMPLE_CITIES_PATH = str(os.path.join(DATA_DIR, 'sample_cities'))
 
 def run_main(target_base_path:str, source_city_folder_name:str, processing_option:str):
     command = ['python', os.path.join(ROOT_DIR, 'main.py'),
-               '--source_base_path', SAMPLE_CITIES_PATH,
+               '--source_base_path', SAMPLE_CITIES_SOURCE_DIR,
                '--target_base_path', target_base_path,
                '--city_folder_name', source_city_folder_name,
                '--processing_option', processing_option]
@@ -29,7 +31,7 @@ def run_main(target_base_path:str, source_city_folder_name:str, processing_optio
 
 def verify_expected_output_folders(source_sample_cities_path, target_sample_cities_path, source_city_folder_name):
     enabled_target_folder = []
-    config_processing_file_path = str(os.path.join(source_sample_cities_path, source_city_folder_name, CityData.filename_umep_city_processing_config))
+    config_processing_file_path = str(os.path.join(source_sample_cities_path, source_city_folder_name, FILENAME_UMEP_PROC_CONFIG))
     processing_config_df = pd.read_csv(config_processing_file_path)
     for index, config_row in processing_config_df.iterrows():
         enabled = bool(config_row.enabled)

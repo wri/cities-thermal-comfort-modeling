@@ -4,7 +4,7 @@
 #
 # from src.workers.city_data import CityData
 # from src.workers.source_cif_data_downloader import get_cif_data
-# from test.testing_tools import is_valid_output_file, SAMPLE_CITIES_PATH
+# from test.testing_tools import is_valid_output_file, SAMPLE_CITIES_SOURCE_DIR
 # from src.workers.worker_tools import remove_file, remove_folder
 #
 # min_lon = 4.901190775092289
@@ -15,7 +15,7 @@
 #
 # folder_name_city_data = 'NLD_Amsterdam'
 # folder_name_tile_data = 'tile_099'
-# city_data = CityData(folder_name_city_data, folder_name_tile_data, SAMPLE_CITIES_PATH, None)
+# city_data = CityData(folder_name_city_data, folder_name_tile_data, SAMPLE_CITIES_SOURCE_DIR, None)
 # tile_data_path = city_data.source_tile_data_path
 # test_task_index = -1
 #
@@ -29,7 +29,7 @@
 #
 #     remove_output_files(cif_feature_list)
 #
-#     get_cif_data(test_task_index, SAMPLE_CITIES_PATH, folder_name_city_data, folder_name_tile_data, has_custom_features,
+#     get_cif_data(test_task_index, SAMPLE_CITIES_SOURCE_DIR, folder_name_city_data, folder_name_tile_data, has_custom_features,
 #                  cif_features, tile_boundary, None)
 #
 #     # if 'era5' in feature_list:
@@ -57,7 +57,7 @@
 #     has_custom_features = False
 #
 #     remove_output_files(cif_feature_list)
-#     get_cif_data(test_task_index, SAMPLE_CITIES_PATH, folder_name_city_data, folder_name_tile_data, has_custom_features,
+#     get_cif_data(test_task_index, SAMPLE_CITIES_SOURCE_DIR, folder_name_city_data, folder_name_tile_data, has_custom_features,
 #                  cif_features, tile_boundary, None)
 #
 #     if 'dem' in cif_feature_list:

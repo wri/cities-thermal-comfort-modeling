@@ -4,6 +4,8 @@ import json
 import pandas as pd
 
 from datetime import datetime
+
+from src.constants import FOLDER_NAME_RESULTS
 from src.workers.city_data import CityData
 from src.workers.worker_tools import create_folder
 
@@ -71,7 +73,7 @@ def report_results(enabled_processing_tasks_df, results_df, target_base_path, ci
                     'step_method', 'met_filename',
                     'return_code', 'start_time', 'run_duration_min']]
 
-    results_subfolder = CityData.folder_name_results
+    results_subfolder = FOLDER_NAME_RESULTS
     report_folder = str(os.path.join(target_base_path, city_folder_name, '.logs', '.run_reports'))
     create_folder(report_folder)
 

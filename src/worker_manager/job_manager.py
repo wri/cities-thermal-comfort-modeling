@@ -6,7 +6,7 @@ import pandas as pd
 import shapely
 import dask
 
-from src.constants import SRC_DIR
+from src.constants import SRC_DIR, METHOD_TRIGGER_ERA5_DOWNLOAD
 from src.worker_manager.ancillary_files import write_config_files, write_tile_grid, write_qgis_files
 from src.worker_manager.graph_builder import get_aoi_fishnet, get_cif_features, get_aoi
 from src.worker_manager.logger_tools import setup_logger, write_log_message
@@ -39,7 +39,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
 
     write_config_files(source_base_path, target_base_path, city_folder_name)
 
-    has_era_met_download = any_value_matches_in_dict_list(city_data.met_filenames, CityData.method_trigger_era5_download)
+    has_era_met_download = any_value_matches_in_dict_list(city_data.met_filenames, METHOD_TRIGGER_ERA5_DOWNLOAD)
     # meteorological data
     if has_era_met_download:
         write_log_message('Retrieving ERA meteorological data', __file__, logger)

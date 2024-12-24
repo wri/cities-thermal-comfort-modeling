@@ -3,6 +3,7 @@ import shutil
 import time
 import rioxarray
 from city_data import CityData, unpack_quoted_value
+from src.constants import FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSING_METHODS
 from src.workers.worker_tools import create_folder
 from worker_tools import reverse_y_dimension_as_needed, save_tiff_file
 
@@ -30,8 +31,8 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
 
         out_list = []
         for met_file in city_data.met_filenames:
-            if met_file.get('filename') == CityData.method_trigger_era5_download:
-                met_filename = CityData.filename_era5
+            if met_file.get('filename') == METHOD_TRIGGER_ERA5_DOWNLOAD:
+                met_filename = FILENAME_ERA5
             else:
                 met_filename = met_file.get('filename')
 
@@ -89,7 +90,7 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
             return_vals = _execute_solweig_only_plugin(task_index, 1, city_folder_name,
                                          tile_folder_name, source_base_path, target_base_path, utc_offset)
             return_stdouts.extend(return_vals)
-        elif task_method in CityData.processing_methods:
+        elif task_method in PROCESSING_METHODS:
             from umep_plugin_processor import run_plugin
             return_val = run_plugin(task_index, 1, task_method, city_folder_name, tile_folder_name,
                        source_base_path, target_base_path, None, None)
@@ -107,7 +108,7 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
 def _transfer_met_files(city_data):
     create_folder(city_data.target_met_filenames_path)
     for met_file in city_data.met_filenames:
-        if met_file != city_data.method_trigger_era5_download:
+        if met_file != METHOD_TRIGGER_ERA5_DOWNLOAD:
             source_path = os.path.join(city_data.source_met_filenames_path, met_file['filename'])
             target_path = os.path.join(city_data.target_met_filenames_path, met_file['filename'])
             shutil.copyfile(source_path, target_path)

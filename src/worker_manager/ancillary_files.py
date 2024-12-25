@@ -1,10 +1,8 @@
 import os
 import shutil
-
 import pandas as pd
 
 from pathlib import Path
-
 from src.constants import DATA_DIR, FILENAME_METHOD_CONFIG, FILENAME_PROCESSING_CONFIG, FOLDER_NAME_RESULTS, \
     FILENAME_WALL_ASPECT, FILENAME_WALL_HEIGHT, FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD
 from src.worker_manager.reporter import _find_files_with_name
@@ -212,13 +210,43 @@ def _write_raster_vrt(output_file_path, raster_files):
 
 
 def write_config_files(source_base_path, target_base_path, city_folder_name):
-    source_yml_config = os.path.join(source_base_path, city_folder_name, FILENAME_METHOD_CONFIG)
-    target_yml_config = os.path.join(target_base_path, city_folder_name, FILENAME_METHOD_CONFIG)
-    shutil.copyfile(source_yml_config, target_yml_config)
+    from src.workers.worker_tools import write_yaml
 
-    source_csv_config = os.path.join(source_base_path, city_folder_name, FILENAME_PROCESSING_CONFIG)
-    target_csv_config = os.path.join(target_base_path, city_folder_name, FILENAME_PROCESSING_CONFIG)
-    shutil.copyfile(source_csv_config, target_csv_config)
+    city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
+
+    # write updated config files to target
+    source_yml_config_path = city_data.city_method_config_path
+    target_yml_config_path = os.path.join(target_base_path, city_folder_name, FILENAME_METHOD_CONFIG)
+
+    updated_yml_config = update_custom_tiff_filenames_yml(city_data)
+    write_yaml(updated_yml_config, target_yml_config_path)
+
+    source_csv_config = city_data.city_processing_config_path
+    target_csv_source_config = os.path.join(target_base_path, city_folder_name, FILENAME_PROCESSING_CONFIG)
+    shutil.copyfile(source_csv_config, target_csv_source_config)
+
+    # write source config files to target subdirectory
+    source_config_dir = str(os.path.join(target_base_path, city_folder_name, '.source_config_files'))
+    create_folder(source_config_dir)
+    target_original_yml_config_path = os.path.join(source_config_dir, FILENAME_METHOD_CONFIG)
+    shutil.copyfile(source_yml_config_path, target_original_yml_config_path)
+    target_csv_original_config = os.path.join(source_config_dir, FILENAME_PROCESSING_CONFIG)
+    shutil.copyfile(source_csv_config, target_csv_original_config)
+
+
+def update_custom_tiff_filenames_yml(city_data:CityData):
+    from src.workers.worker_tools import read_yaml
+    city_configs = os.path.join(city_data.source_city_path, FILENAME_METHOD_CONFIG)
+
+    list_doc = read_yaml(city_configs)
+    custom_tiff_filenames = list_doc[2]
+
+    custom_tiff_filenames['dem_tif_filename'] = city_data.dem_tif_filename
+    custom_tiff_filenames['dsm_tif_filename'] = city_data.dsm_tif_filename
+    custom_tiff_filenames['lulc_tif_filename'] = city_data.lulc_tif_filename
+    custom_tiff_filenames['tree_canopy_tif_filename'] = city_data.tree_canopy_tif_filename
+
+    return list_doc
 
 
 def write_tile_grid(tile_grid, target_base_path, city_folder_name):

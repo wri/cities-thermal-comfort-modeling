@@ -1,9 +1,9 @@
 import os
 
+from main import start_processing
 from src.constants import DATA_DIR, FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_RASTER_FILES
 from src.workers.worker_tools import remove_folder, create_folder
 from test.testing_tools import run_main, verify_expected_output_folders, SAMPLE_CITIES_SOURCE_DIR
-from src.workers.city_data import CityData
 
 CLEANUP_RESULTS=False
 
@@ -16,8 +16,8 @@ def test_custom_city():
     remove_folder(target_city_dir)
 
     try:
-        return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
-        # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+        # return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+        return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         has_valid_results = verify_expected_output_folders(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name)
         vrt_count = file_count_in_vrt_directory(target_city_dir)

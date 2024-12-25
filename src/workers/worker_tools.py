@@ -38,6 +38,13 @@ def read_yaml(config_path):
     return values
 
 
+def write_yaml(data, config_path):
+    dir = os.path.dirname(config_path)
+    create_folder(dir)
+    with open(config_path, 'w') as file:
+        yaml.safe_dump(data, file)
+
+
 def unpack_quoted_value(value):
     return_value = value
     if type(value).__name__ == 'str':

@@ -15,6 +15,9 @@ class CityData:
         obj.source_city_path = str(os.path.join(source_base_path, folder_name_city_data))
         obj.source_city_data_path = str(os.path.join(obj.source_city_path, FOLDER_NAME_PRIMARY_DATA))
 
+        obj.city_processing_config_path = os.path.join(obj.source_city_path, FILENAME_PROCESSING_CONFIG)
+        obj.city_method_config_path = os.path.join(obj.source_city_path, FILENAME_METHOD_CONFIG)
+
         (obj.wall_lower_limit_height, obj.light_transmissivity, obj.trunk_zone_height, obj.leaf_start, obj.leaf_end,
          obj.conifer_trees, obj.albedo_walls, obj.albedo_ground, obj.emis_walls, obj.emis_ground, obj.output_tmrt,
          obj.output_sh, obj.sampling_local_hours, obj.met_filenames) = (parse_method_attributes_conf(obj.source_city_path))

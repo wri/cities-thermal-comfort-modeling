@@ -4,9 +4,6 @@ import json
 import pandas as pd
 
 from datetime import datetime
-
-from src.constants import FOLDER_NAME_RESULTS
-from src.workers.city_data import CityData
 from src.workers.worker_tools import create_folder
 
 

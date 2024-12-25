@@ -8,9 +8,10 @@ import os
 
 from rasterio.enums import Resampling
 from datetime import datetime
-from city_data import CityData, unpack_quoted_value
+from city_data import CityData
 from worker_tools import compute_time_diff_mins, reverse_y_dimension_as_needed, save_tiff_file, \
-    log_method_failure, save_geojson_file, remove_folder, start_model_logging, log_method_start, log_method_completion
+    log_method_failure, save_geojson_file, start_model_logging, log_method_start, log_method_completion, \
+    unpack_quoted_value
 
 # Unify the layers on the same resolution
 DEFAULT_LULC_RESOLUTION = 1

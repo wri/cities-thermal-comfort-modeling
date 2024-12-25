@@ -9,7 +9,9 @@ from src.constants import FILENAME_METHOD_CONFIG, FILENAME_PROCESSING_CONFIG, FO
     FOLDER_NAME_PRIMARY_RASTER_FILES, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSING_METHODS
 from src.worker_manager.graph_builder import get_cif_features
 from src.worker_manager.tools import get_aoi_area_in_square_meters, get_existing_tiles, list_files_with_extension
-from src.workers.city_data import CityData, parse_filenames_config, parse_processing_areas_config
+from src.workers.city_data import CityData
+from src.workers.config_processor import parse_filenames_config, parse_processing_areas_config
+
 
 def verify_fundamental_paths(source_base_path, target_path, city_folder_name):
     invalids = []

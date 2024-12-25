@@ -1,11 +1,12 @@
 import shutil
 import os
 import logging
+import yaml
 from datetime import datetime
 from pathlib import Path
-
 from src.constants import ROOT_DIR
 
+toBool = {'true': True, 'false': False}
 
 def create_folder(folder_path):
     if not os.path.isdir(folder_path):
@@ -30,7 +31,41 @@ def get_configurations():
 
     return qgis_home_path, qgis_plugin_path
 
-toBool = {'true': True, 'false': False}
+
+def read_yaml(config_path):
+    with open(config_path, 'r') as stream:
+        values = list(yaml.safe_load_all(stream))[0]
+    return values
+
+
+def unpack_quoted_value(value):
+    return_value = value
+    if type(value).__name__ == 'str':
+        if value.lower() == 'none':
+            return_value = None
+        elif value.lower() == 'true':
+            return_value = True
+        elif value.lower() == 'false':
+            return_value = False
+        elif value.isnumeric():
+            if _is_float_or_integer(value) == 'Integer':
+                return_value = int(value)
+            elif _is_float_or_integer(value) == 'Float':
+                return_value = float(value)
+
+    return return_value
+
+
+def _is_float_or_integer(s):
+    try:
+        int(s)
+        return "Integer"
+    except ValueError:
+        try:
+            float(s)
+            return "Float"
+        except ValueError:
+            return "Neither"
 
 
 def save_tiff_file(raster_data_array, tile_data_path, tiff_filename):

@@ -5,7 +5,7 @@ import pandas as pd
 
 from pathlib import Path
 
-from src.constants import DATA_DIR, FILENAME_METHOD_CONFIG, FILENAME_UMEP_PROC_CONFIG, FOLDER_NAME_RESULTS, \
+from src.constants import DATA_DIR, FILENAME_METHOD_CONFIG, FILENAME_PROCESSING_CONFIG, FOLDER_NAME_RESULTS, \
     FILENAME_WALL_ASPECT, FILENAME_WALL_HEIGHT, FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD
 from src.worker_manager.reporter import _find_files_with_name
 from src.worker_manager.tools import clean_folder
@@ -216,8 +216,8 @@ def write_config_files(source_base_path, target_base_path, city_folder_name):
     target_yml_config = os.path.join(target_base_path, city_folder_name, FILENAME_METHOD_CONFIG)
     shutil.copyfile(source_yml_config, target_yml_config)
 
-    source_csv_config = os.path.join(source_base_path, city_folder_name, FILENAME_UMEP_PROC_CONFIG)
-    target_csv_config = os.path.join(target_base_path, city_folder_name, FILENAME_UMEP_PROC_CONFIG)
+    source_csv_config = os.path.join(source_base_path, city_folder_name, FILENAME_PROCESSING_CONFIG)
+    target_csv_config = os.path.join(target_base_path, city_folder_name, FILENAME_PROCESSING_CONFIG)
     shutil.copyfile(source_csv_config, target_csv_config)
 
 

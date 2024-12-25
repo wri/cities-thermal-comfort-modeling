@@ -1,12 +1,12 @@
 import os
 import pandas as pd
 
-from src.constants import FILENAME_METHOD_CONFIG, FILENAME_UMEP_PROC_CONFIG
+from src.constants import FILENAME_METHOD_CONFIG, FILENAME_PROCESSING_CONFIG
 from src.worker_manager.tools import construct_polygon_from_bounds, coordinates_to_bbox
 from src.workers.city_data import parse_processing_areas_config, CityData, parse_filenames_config
 
 def build_source_dataframes(source_base_path, city_folder_name):
-    config_processing_file_path = str(os.path.join(source_base_path, city_folder_name, FILENAME_UMEP_PROC_CONFIG))
+    config_processing_file_path = str(os.path.join(source_base_path, city_folder_name, FILENAME_PROCESSING_CONFIG))
     processing_config_df = pd.read_csv(config_processing_file_path)
 
     return processing_config_df

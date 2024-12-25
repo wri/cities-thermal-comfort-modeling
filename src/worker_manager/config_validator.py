@@ -5,7 +5,7 @@ import os
 import rasterio
 import pandas as pd
 
-from src.constants import FILENAME_METHOD_CONFIG, FILENAME_UMEP_PROC_CONFIG, FOLDER_NAME_PRIMARY_DATA, \
+from src.constants import FILENAME_METHOD_CONFIG, FILENAME_PROCESSING_CONFIG, FOLDER_NAME_PRIMARY_DATA, \
     FOLDER_NAME_PRIMARY_RASTER_FILES, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSING_METHODS
 from src.worker_manager.graph_builder import get_cif_features
 from src.worker_manager.tools import get_aoi_area_in_square_meters, get_existing_tiles, list_files_with_extension
@@ -33,7 +33,7 @@ def verify_fundamental_paths(source_base_path, target_path, city_folder_name):
     if invalids:
         return invalids
 
-    config_processing_file_path = str(os.path.join(city_path, FILENAME_UMEP_PROC_CONFIG))
+    config_processing_file_path = str(os.path.join(city_path, FILENAME_PROCESSING_CONFIG))
     if _verify_path(config_processing_file_path) is False:
         msg = f'Processing registry file does not exist as: {config_processing_file_path}'
         invalids.append(msg)

@@ -9,7 +9,7 @@ import dask
 from src.constants import SRC_DIR, METHOD_TRIGGER_ERA5_DOWNLOAD
 from src.worker_manager.ancillary_files import write_config_files, write_tile_grid, write_qgis_files
 from src.worker_manager.graph_builder import get_aoi_fishnet, get_cif_features, get_aoi
-from src.worker_manager.logger_tools import setup_logger, write_log_message
+from src.workers.logger_tools import setup_logger, write_log_message
 from src.worker_manager.reporter import parse_row_results, report_results
 from src.worker_manager.tools import get_existing_tiles
 from src.workers.city_data import CityData
@@ -72,7 +72,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
             end_tile_id = config_row.end_tile_id
             existing_tiles = get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_tile_id)
 
-            write_tile_grid(existing_tiles, target_base_path, city_folder_name)
+            write_tile_grid(existing_tiles, city_data.target_qgis_viewer_path)
 
             print(f'\nProcessing over {len(existing_tiles)} existing tiles..')
             for tile_folder_name, tile_dimensions in existing_tiles.items():
@@ -89,7 +89,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
                 futures.append(delay_tile_array)
         else:
             fishnet = get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters)
-            write_tile_grid(fishnet, target_base_path, city_folder_name)
+            write_tile_grid(fishnet, city_data.target_qgis_viewer_path)
 
             print(f'\nCreating data for {fishnet.geometry.size} new tiles..')
             for tile_index, cell in fishnet.iterrows():
@@ -117,7 +117,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
     combined_delays_passed.append(delays_all_passed)
 
     # Write run_report
-    report_file_path = report_results(enabled_processing_tasks_df, combined_results_df, target_base_path,
+    report_file_path = report_results(enabled_processing_tasks_df, combined_results_df, city_data.target_report_path,
                                       city_folder_name)
     print(f'\nRun report written to {report_file_path}\n')
 

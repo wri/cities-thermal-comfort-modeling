@@ -122,37 +122,3 @@ def reverse_y_dimension_as_needed(dataarray):
         was_reversed = True
     return was_reversed, dataarray
 
-
-def log_method_start(method, task_index, step, source_base_path):
-    if step is None:
-        logging.info(f"task:{task_index}\tStarting '{method}'\tconfig:'{source_base_path}')")
-    else:
-        logging.info(f"task:{task_index}\tStarting '{method}' for met_series:{step}\tconfig:'{source_base_path}'")
-
-
-def log_method_completion(start_time, method, task_index, step, source_base_path):
-    runtime = compute_time_diff_mins(start_time)
-    if step is None:
-        logging.info(f"task:{task_index}\tFinished '{method}', runtime:{runtime} mins\tconfig:'{source_base_path}'")
-    else:
-        logging.info(f"task:{task_index}\tFinished '{method}' for met_series:{step}, runtime:{runtime} mins\tconfig:'{source_base_path}'")
-
-
-def log_method_failure(start_time, feature, task_index, step, source_base_path, e_msg):
-    print('Method failure. See log file.')
-    runtime = compute_time_diff_mins(start_time)
-    if step is None:
-        logging.error(f"task:{task_index}\t**** FAILED execution of '{feature}' after runtime:{runtime} mins\tconfig:'{source_base_path}'({e_msg})")
-    else:
-        logging.error(f"task:{task_index}\t**** FAILED execution of '{feature}' fpr met_series:{step} after runtime:{runtime} mins\tconfig:'{source_base_path}'({e_msg})")
-
-
-def start_model_logging(target_base_path, city_folder_name):
-    log_folder_path = str(os.path.join(target_base_path, city_folder_name, '.logs'))
-    create_folder(log_folder_path)
-    log_file_path = os.path.join(log_folder_path, 'model_execution.log')
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s\t%(levelname)s\t%(message)s',
-                        datefmt='%a_%Y_%b_%d_%H:%M:%S',
-                        filename=log_file_path
-                        )

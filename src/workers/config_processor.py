@@ -4,12 +4,30 @@ from attr.converters import to_bool
 from src.constants import FILENAME_METHOD_CONFIG
 from src.workers.worker_tools import read_yaml, unpack_quoted_value
 
+def parse_scenario_config(source_city_path):
+    city_configs = os.path.join(source_city_path, FILENAME_METHOD_CONFIG)
+    try:
+        values = read_yaml(city_configs)
+
+        scenario = values[0]
+        short_title = unpack_quoted_value(scenario['short_title'])
+        version = unpack_quoted_value(scenario['version'])
+        description = unpack_quoted_value(scenario['description'])
+        author = unpack_quoted_value(scenario['author'])
+
+    except Exception as e_msg:
+        raise Exception(
+            f'The {FILENAME_METHOD_CONFIG} file not found or improperly defined in {city_configs}. (Error: {e_msg})')
+
+    return short_title, version, description, author
+
+
 def parse_processing_areas_config(source_city_path):
     city_configs = os.path.join(source_city_path, FILENAME_METHOD_CONFIG)
     try:
         values = read_yaml(city_configs)
 
-        processing_area = values[0]
+        processing_area = values[1]
         utc_offset = unpack_quoted_value(processing_area['utc_offset'])
         min_lon = unpack_quoted_value(processing_area['min_lon'])
         min_lat = unpack_quoted_value(processing_area['min_lat'])
@@ -25,11 +43,11 @@ def parse_processing_areas_config(source_city_path):
     return utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters
 
 
-def parse_met_files_conf(source_city_path):
+def parse_met_files_config(source_city_path):
     city_configs = os.path.join(source_city_path, FILENAME_METHOD_CONFIG)
     try:
         values = read_yaml(city_configs)
-        met_filenames = values[1].get('MetFiles')
+        met_filenames = values[2].get('MetFiles')
 
     except Exception as e_msg:
         raise Exception(
@@ -50,7 +68,7 @@ def parse_filenames_config(source_city_path):
         cif_feature_list = []
 
         values = read_yaml(city_configs)
-        filenames = values[2]
+        filenames = values[3]
         dem_tif_filename = unpack_quoted_value(filenames['dem_tif_filename'])
         if dem_tif_filename is None:
             dem_tif_filename = template_name_cif_dem
@@ -88,11 +106,11 @@ def parse_filenames_config(source_city_path):
             custom_feature_list, cif_feature_list)
 
 
-def parse_method_attributes_conf(source_city_path):
+def parse_method_attributes_config(source_city_path):
     city_configs = os.path.join(source_city_path, FILENAME_METHOD_CONFIG)
     try:
         values = read_yaml(city_configs)
-        method_attributes = values[3]
+        method_attributes = values[4]
         wall_lower_limit_height = method_attributes['wall_height_aspect']['lower_limit_for_wall_height']
         light_transmissivity = method_attributes['skyview_factor'][
             'transmissivity_of_light_through_vegetation']

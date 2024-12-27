@@ -2,6 +2,7 @@ import os
 
 from main import start_processing
 from src.constants import DATA_DIR, FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_RASTER_FILES
+from src.workers.city_data import CityData
 from src.workers.worker_tools import remove_folder, create_folder
 from test.testing_tools import run_main, verify_expected_output_folders, SAMPLE_CITIES_SOURCE_DIR
 
@@ -9,6 +10,20 @@ CLEANUP_RESULTS=False
 
 SCRATCH_TARGET_DIR = os.path.join(DATA_DIR, 'scratch_target')
 create_folder(SCRATCH_TARGET_DIR)
+
+
+
+
+
+
+# test fpr era5
+
+
+
+
+
+
+
 
 def test_custom_city():
     source_city_folder_name = 'ZAF_Capetown_small_tile'
@@ -20,7 +35,7 @@ def test_custom_city():
         # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         has_valid_results = verify_expected_output_folders(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name)
-        vrt_count = file_count_in_vrt_directory(target_city_dir)
+        vrt_count = file_count_in_vrt_directory(source_city_folder_name)
 
         assert return_code == 0
         assert has_valid_results
@@ -43,7 +58,7 @@ def test_untiled_full_cif():
         # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         has_valid_results = verify_expected_output_folders(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name)
-        vrt_count = file_count_in_vrt_directory(target_city_dir)
+        vrt_count = file_count_in_vrt_directory(source_city_folder_name)
 
         assert return_code == 0
         assert has_valid_results
@@ -67,7 +82,7 @@ def test_tiled_cif_city():
         # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         has_valid_results = verify_expected_output_folders(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name)
-        vrt_count = file_count_in_vrt_directory(target_city_dir)
+        vrt_count = file_count_in_vrt_directory(source_city_folder_name)
 
         assert return_code == 0
         assert has_valid_results
@@ -88,7 +103,7 @@ def test_mixed_cif_city():
         # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         has_valid_results = verify_expected_output_folders(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name)
-        vrt_count = file_count_in_vrt_directory(target_city_dir)
+        vrt_count = file_count_in_vrt_directory(source_city_folder_name)
 
         assert return_code == 0
         assert has_valid_results
@@ -119,8 +134,9 @@ def test_download_only_cif_city():
             remove_folder(primary_data)
 
 
-def file_count_in_vrt_directory(target_city_dir):
-    vrt_dir = os.path.join(target_city_dir, '.qgis_viewer', 'vrt_files')
+def file_count_in_vrt_directory(source_city_folder_name):
+    city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+    vrt_dir = os.path.join(city_data.target_qgis_viewer_path, 'vrt_files')
     lst = os.listdir(vrt_dir)
     number_files = len(lst)
     return number_files

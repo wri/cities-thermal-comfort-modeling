@@ -9,19 +9,15 @@ from processing.core.Processing import Processing
 from processing_umep.processing_umep import ProcessingUMEPProvider
 
 from src.constants import FILENAME_WALL_HEIGHT, FILENAME_WALL_ASPECT
+from src.workers.logger_tools import setup_logger, log_method_start, log_method_failure, log_method_completion
 
 warnings.filterwarnings("ignore")
 
 from pathlib import Path
 from datetime import datetime
 from qgis.core import QgsApplication
-from worker_tools import remove_file, remove_folder, compute_time_diff_mins, create_folder, log_method_failure, \
-    log_method_start, log_method_completion, start_model_logging, get_configurations
+from worker_tools import remove_file, remove_folder, compute_time_diff_mins, create_folder, get_configurations
 from city_data import CityData
-
-import logging
-for handler in logging.root.handlers[:]:
-    logging.root.removeHandler(handler)
 
 MAX_RETRY_COUNT = 3
 RETRY_PAUSE_TIME_SEC = 10
@@ -30,11 +26,11 @@ RETRY_PAUSE_TIME_SEC = 10
 def run_plugin(task_index, step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path,
                target_base_path, met_filename, utc_offset):
     start_time = datetime.now()
-    start_model_logging(target_base_path, folder_name_city_data)
 
     city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
+    logger = setup_logger(city_data.target_model_log_path)
     method_title = _assign_method_title(step_method)
-    log_method_start(method_title, task_index, None, city_data.target_base_path)
+    log_method_start(method_title, task_index, None, city_data.target_base_path, logger)
 
     # Initiate QGIS and UMEP processing
     try:
@@ -44,7 +40,7 @@ def run_plugin(task_index, step_index, step_method, folder_name_city_data, folde
         Processing.initialize()
     except Exception as e_msg:
         msg = 'Processing could not initialize UMEP processing'
-        log_method_failure(datetime.now(), msg, None, None, None, e_msg)
+        log_method_failure(datetime.now(), msg, None, None, None, e_msg, logger)
         # return
 
     e_msg = ''
@@ -71,20 +67,20 @@ def run_plugin(task_index, step_index, step_method, folder_name_city_data, folde
                             shutil.move(str(temp_result_path), str(target_base_path))
                 except Exception as e_msg:
                     msg = (f'{method_title} processing succeeded but could not create target folder or move files: {city_data.target_preprocessed_tile_data_path}.')
-                    log_method_failure(start_time, msg, task_index, None, city_data.target_base_path, e_msg)
+                    log_method_failure(start_time, msg, task_index, None, city_data.target_base_path, e_msg, logger)
                     return 1
 
                 return_code = 0
             except Exception as e_msg:
                 msg = f'task:{task_index} {method_title} failure. Retrying. ({e_msg})'
-                log_method_failure(start_time, msg, task_index, None, city_data.target_base_path, e_msg)
+                log_method_failure(start_time, msg, task_index, None, city_data.target_base_path, e_msg, logger)
                 if retry_count < MAX_RETRY_COUNT:
                     time.sleep(RETRY_PAUSE_TIME_SEC)
                 return_code = 3
             retry_count += 1
 
     if return_code == 0:
-        log_method_completion(start_time, method_title, task_index, None, city_data.target_base_path)
+        log_method_completion(start_time, method_title, task_index, None, city_data.target_base_path, logger)
     else:
         msg = f'{method_title} processing cancelled after {MAX_RETRY_COUNT} attempts.'
         log_method_failure(start_time, msg, task_index, None, city_data.target_base_path, '')

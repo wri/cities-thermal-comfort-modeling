@@ -1,3 +1,9 @@
+# Description of scenario
+- Scenario:
+  short_title: first scenario
+  version: 1
+  description: Scenario that demonstrates blah.
+  author: author@wri.org
 # Processing Area of Interest used for tile construction and ERA5-data download. If any custom files
 # are specified above, then the system will not construct a new tile grid and will instead use the existing one.
 # If you don't want to subdivide the AOI, specify None for tile_side_meters and tile_buffer_meters.

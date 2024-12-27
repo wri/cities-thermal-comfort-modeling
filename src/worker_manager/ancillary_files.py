@@ -10,12 +10,11 @@ from src.worker_manager.tools import clean_folder
 from src.workers.city_data import CityData
 from src.workers.worker_tools import create_folder
 
-QGIS_VIEWER_FOLDER = '.qgis_viewer'
 
 def write_qgis_files(city_data, crs_str):
     from src.worker_manager.reporter import find_files_with_substring_in_name
 
-    target_viewer_folder = str(os.path.join(city_data.target_base_path, city_data.folder_name_city_data, QGIS_VIEWER_FOLDER))
+    target_viewer_folder = city_data.target_qgis_viewer_path
     target_vrt_folder = str(os.path.join(target_viewer_folder, 'vrt_files'))
     create_folder(target_vrt_folder)
     clean_folder(target_vrt_folder)
@@ -212,19 +211,19 @@ def write_config_files(source_base_path, target_base_path, city_folder_name):
 
     # write updated config files to target
     source_yml_config_path = city_data.city_method_config_path
-    target_yml_config_path = os.path.join(target_base_path, city_folder_name, FILENAME_METHOD_CONFIG)
+    target_yml_config_path = os.path.join(city_data.target_city_path, FILENAME_METHOD_CONFIG)
 
     updated_yml_config = update_custom_tiff_filenames_yml(city_data)
     write_yaml(updated_yml_config, target_yml_config_path)
 
     source_csv_config = city_data.city_processing_config_path
-    target_csv_source_config = os.path.join(target_base_path, city_folder_name, FILENAME_PROCESSING_CONFIG)
+    target_csv_source_config = os.path.join(city_data.target_city_path, FILENAME_PROCESSING_CONFIG)
     shutil.copyfile(source_csv_config, target_csv_source_config)
 
     # write source config files to target subdirectory
-    source_config_dir = str(os.path.join(target_base_path, city_folder_name, '.source_config_files'))
+    source_config_dir = str(os.path.join(city_data.target_city_path, '.source_config_files'))
     create_folder(source_config_dir)
-    target_original_yml_config_path = os.path.join(source_config_dir, FILENAME_METHOD_CONFIG)
+    target_original_yml_config_path = os.path.join(city_data.target_city_path, FILENAME_METHOD_CONFIG)
     shutil.copyfile(source_yml_config_path, target_original_yml_config_path)
     target_csv_original_config = os.path.join(source_config_dir, FILENAME_PROCESSING_CONFIG)
     shutil.copyfile(source_csv_config, target_csv_original_config)
@@ -235,7 +234,7 @@ def update_custom_tiff_filenames_yml(city_data:CityData):
     city_configs = os.path.join(city_data.source_city_path, FILENAME_METHOD_CONFIG)
 
     list_doc = read_yaml(city_configs)
-    custom_tiff_filenames = list_doc[2]
+    custom_tiff_filenames = list_doc[3]
 
     custom_tiff_filenames['dem_tif_filename'] = city_data.dem_tif_filename
     custom_tiff_filenames['dsm_tif_filename'] = city_data.dsm_tif_filename
@@ -245,7 +244,7 @@ def update_custom_tiff_filenames_yml(city_data:CityData):
     return list_doc
 
 
-def write_tile_grid(tile_grid, target_base_path, city_folder_name):
+def write_tile_grid(tile_grid, target_qgis_viewer_path):
     from shapely import wkt
     import geopandas as gpd
 
@@ -263,8 +262,7 @@ def write_tile_grid(tile_grid, target_base_path, city_folder_name):
     projected_gdf = gpd.GeoDataFrame(modified_tile_grid, crs='EPSG:4326')
 
     target_file_name = 'tile_grid.geojson'
-    target_path = str(
-        os.path.join(target_base_path, city_folder_name, QGIS_VIEWER_FOLDER))
+    target_path = target_qgis_viewer_path
     create_folder(target_path)
     file_path = os.path.join(target_path, target_file_name)
 

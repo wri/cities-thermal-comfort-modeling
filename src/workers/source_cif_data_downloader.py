@@ -9,8 +9,8 @@ import os
 from rasterio.enums import Resampling
 from datetime import datetime
 from city_data import CityData
-from worker_tools import compute_time_diff_mins, reverse_y_dimension_as_needed, save_tiff_file, \
-    log_method_failure, save_geojson_file, start_model_logging, log_method_start, log_method_completion, \
+from src.workers.logger_tools import setup_logger, log_method_start, log_method_completion, log_method_failure
+from worker_tools import compute_time_diff_mins, reverse_y_dimension_as_needed, save_tiff_file, save_geojson_file, \
     unpack_quoted_value
 
 # Unify the layers on the same resolution
@@ -20,10 +20,11 @@ DEBUG = False
 def get_cif_data(task_index, source_base_path, target_base_path, folder_name_city_data, tile_id, cif_features,
                  tile_boundary, tile_resolution):
     start_time = datetime.now()
-    start_model_logging(target_base_path, folder_name_city_data)
 
     city_data = CityData(folder_name_city_data, tile_id, source_base_path, target_base_path)
-    log_method_start(f'CIF download: ({cif_features}) in tile {tile_id}', task_index, None, '')
+
+    logger = setup_logger(city_data.target_model_log_path)
+    log_method_start(f'CIF download: ({cif_features}) in tile {tile_id}', task_index, None, '', logger)
 
     tile_cif_data_path = city_data.target_primary_tile_data_path
 
@@ -49,37 +50,37 @@ def get_cif_data(task_index, source_base_path, target_base_path, folder_name_cit
         if group == 1:
             if 'lulc' in feature_list:
                 time.sleep(wait_time)
-                log_method_start(f'CIF-lulc download for {tile_id}', task_index, None, '')
-                this_success = _get_lulc(city_data, tile_cif_data_path, aoi_gdf, output_resolution)
+                log_method_start(f'CIF-lulc download for {tile_id}', task_index, None, '', logger)
+                this_success = _get_lulc(city_data, tile_cif_data_path, aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
-                log_method_completion(start_time, f'CIF-lulc download for tile {tile_id}', task_index, None, '')
+                log_method_completion(start_time, f'CIF-lulc download for tile {tile_id}', task_index, None, '', logger)
         elif group == 2:
             if 'tree_canopy' in feature_list:
                 time.sleep(wait_time)
-                log_method_start(f'CIF-Tree_canopy download for {tile_id}', task_index, None, '')
-                this_success = _get_tree_canopy_height(city_data, tile_cif_data_path, aoi_gdf, output_resolution)
+                log_method_start(f'CIF-Tree_canopy download for {tile_id}', task_index, None, '', logger)
+                this_success = _get_tree_canopy_height(city_data, tile_cif_data_path, aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
-                log_method_completion(start_time,f'CIF-Tree_canopy download for {tile_id}', task_index, None, '')
+                log_method_completion(start_time,f'CIF-Tree_canopy download for {tile_id}', task_index, None, '', logger)
         elif group == 3:
             time.sleep(wait_time)
             if 'dem' in feature_list or 'dsm' in feature_list:
                 retrieve_dem = True if 'dem' in feature_list else False
-                log_method_start(f'CIF-DEM download for {tile_id}', task_index, None, '')
-                this_success, nasa_dem = _get_dem(city_data, tile_cif_data_path, aoi_gdf, retrieve_dem, output_resolution)
+                log_method_start(f'CIF-DEM download for {tile_id}', task_index, None, '', logger)
+                this_success, nasa_dem = _get_dem(city_data, tile_cif_data_path, aoi_gdf, retrieve_dem, output_resolution, logger)
                 result_flags.append(this_success)
-                log_method_completion(start_time, f'CIF-DEM download for {tile_id}', task_index, None, '')
+                log_method_completion(start_time, f'CIF-DEM download for {tile_id}', task_index, None, '', logger)
             else:
                 nasa_dem = None
 
             if 'dsm' in feature_list:
-                log_method_start(f'CIF-DSM download for {tile_id}', task_index, None, '')
-                this_success, alos_dsm = _get_dsm(tile_cif_data_path, aoi_gdf, output_resolution)
+                log_method_start(f'CIF-DSM download for {tile_id}', task_index, None, '', logger)
+                this_success, alos_dsm = _get_dsm(tile_cif_data_path, aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 this_success, overture_buildings = _get_building_footprints(tile_cif_data_path, aoi_gdf)
                 result_flags.append(this_success)
                 this_success = _get_building_height_dsm(city_data, tile_cif_data_path, overture_buildings, alos_dsm, nasa_dem)
                 result_flags.append(this_success)
-                log_method_completion(start_time, f'CIF-DSM download for {tile_id}', task_index, None, '')
+                log_method_completion(start_time, f'CIF-DSM download for {tile_id}', task_index, None, '', logger)
 
     return_code = 0 if all(result_flags) else 1
     run_duration_min = compute_time_diff_mins(start_time)
@@ -91,7 +92,7 @@ def get_cif_data(task_index, source_base_path, target_base_path, folder_name_cit
                      f'"step_method": "{step_method}", "met_filename": "{met_filename_str}", "return_code": {return_code}, '
                      f'"start_time": "{start_time_str}", "run_duration_min": {run_duration_min}}}')
 
-    log_method_completion(start_time, f'CIF download: ({cif_features}) in tile {tile_id}', task_index, None, '')
+    log_method_completion(start_time, f'CIF download: ({cif_features}) in tile {tile_id}', task_index, None, '', logger)
 
     return return_stdout
 
@@ -106,7 +107,7 @@ def _random_list(in_list):
     return in_list
 
 
-def _get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution):
+def _get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
         from open_urban import OpenUrban, reclass_map
 
@@ -144,7 +145,7 @@ def _get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution):
 
     except Exception as e_msg:
         msg = f'Lulc processing cancelled due to failure.'
-        log_method_failure(datetime.now(), msg, None, None, city_data.source_base_path, '')
+        log_method_failure(datetime.now(), msg, None, None, city_data.source_base_path, '', logger)
         return False
 
 
@@ -152,7 +153,7 @@ def _count_occurrences(data, value):
     return data.where(data == value).count().item()
 
 
-def _get_tree_canopy_height(city_data, tile_data_path, aoi_gdf, output_resolution):
+def _get_tree_canopy_height(city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
         from city_metrix.layers import TreeCanopyHeight
 
@@ -169,10 +170,10 @@ def _get_tree_canopy_height(city_data, tile_data_path, aoi_gdf, output_resolutio
 
     except Exception as e_msg:
         msg = f'Tree-canopy processing cancelled due to failure.'
-        log_method_failure(datetime.now(), msg, None, None, city_data.source_base_path, '')
+        log_method_failure(datetime.now(), msg, None, None, city_data.source_base_path, '', logger)
         return False
 
-def _get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution):
+def _get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution, logger):
     try:
         from city_metrix.layers import NasaDEM
 
@@ -188,11 +189,11 @@ def _get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution
 
     except Exception as e_msg:
         msg = f'DEM processing cancelled due to failure.'
-        log_method_failure(datetime.now(), msg, None, None, city_data.source_base_path, '')
+        log_method_failure(datetime.now(), msg, None, None, city_data.source_base_path, '', logger)
         return False, None
 
 
-def _get_dsm(tile_data_path, aoi_gdf, output_resolution):
+def _get_dsm(tile_data_path, aoi_gdf, output_resolution, logger):
     try:
         from city_metrix.layers import AlosDSM
 
@@ -208,7 +209,7 @@ def _get_dsm(tile_data_path, aoi_gdf, output_resolution):
 
     except Exception as e_msg:
         msg = f'DSM processing cancelled due to failure.'
-        log_method_failure(datetime.now(), msg, None, None, None, '')
+        log_method_failure(datetime.now(), msg, None, None, None, '', logger)
         return False, None
 
 

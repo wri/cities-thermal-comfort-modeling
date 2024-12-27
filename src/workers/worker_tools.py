@@ -2,11 +2,29 @@ import shutil
 import os
 import logging
 import yaml
+import utm
 from datetime import datetime
-from pathlib import Path
 from src.constants import ROOT_DIR
+from shapely.geometry import box
 
 toBool = {'true': True, 'false': False}
+
+def get_utm_zone_epsg(bbox) -> str:
+    """
+    Get the UTM zone projection for given a bounding box.
+
+    :param bbox: tuple of (min x, min y, max x, max y)
+    :return: the EPSG code for the UTM zone of the centroid of the bbox
+    """
+    centroid = box(*bbox).centroid
+    utm_x, utm_y, band, zone = utm.from_latlon(centroid.y, centroid.x)
+
+    if centroid.y > 0:  # Northern zone
+        epsg = 32600 + band
+    else:
+        epsg = 32700 + band
+
+    return f"EPSG:{epsg}"
 
 def create_folder(folder_path):
     if not os.path.isdir(folder_path):

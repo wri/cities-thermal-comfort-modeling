@@ -157,6 +157,7 @@ def _get_string_line_by_line(file_path, search_string):
                 return line
         return None
 
+
 def _get_substring_after_char(string, char):
     # Find the position of the character in the string
     pos = string.find(char)
@@ -166,6 +167,7 @@ def _get_substring_after_char(string, char):
         return string[pos + 1:]
     else:
         return ""
+
 
 def _build_file_dict(target_folder_name, group_name, type_name, set_id, file_names):
     files = []
@@ -185,7 +187,7 @@ def write_raster_vrt_file_for_folder(source_folder, files, target_viewer_folder)
     # get list of files in tiles
     for file in files:
         output_vrt_file = file.get('vrt_name')
-        output_file_path = os.path.join(target_viewer_folder, output_vrt_file)
+        output_file_path = str(os.path.join(target_viewer_folder, output_vrt_file))
 
         filename = file.get('filename')
         source_raster_files = _find_files_with_name(source_folder, filename)
@@ -194,19 +196,13 @@ def write_raster_vrt_file_for_folder(source_folder, files, target_viewer_folder)
             _write_raster_vrt(output_file_path, source_raster_files)
 
 
-def _write_raster_vrt(output_file_path, raster_files):
-    from osgeo import gdal
-
-    # Build VRT
-    vrt_options = gdal.BuildVRTOptions(resampleAlg='nearest')
-    vrt = gdal.BuildVRT(output_file_path, raster_files, options=vrt_options)
-
-    # Save the VRT
-    if vrt is not None:
-        vrt.FlushCache()
-    else:
-        raise Exception(f'vrt not created due to improper GeoTiff format in {raster_files}')
-    vrt = None
+def _write_raster_vrt(output_file_path:str, raster_files):
+    import subprocess
+    command = ['gdalbuildvrt', '-r', 'nearest', output_file_path] + raster_files
+    try:
+        vrt_run = subprocess.run(command, check=True, capture_output=True, text=True)
+    except Exception as e_msg:
+        raise f'VRT creation failed for {raster_files} due to {e_msg}.'
 
 
 def write_config_files(source_base_path, target_base_path, city_folder_name):

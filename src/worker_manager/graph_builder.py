@@ -4,6 +4,7 @@ import pandas as pd
 from src.constants import FILENAME_PROCESSING_CONFIG
 from src.worker_manager.tools import construct_polygon_from_bounds, coordinates_to_bbox
 from src.workers.config_processor import parse_processing_areas_config, parse_filenames_config
+from src.workers.worker_tools import get_utm_zone_epsg
 
 
 def build_source_dataframes(source_base_path, city_folder_name):
@@ -14,8 +15,6 @@ def build_source_dataframes(source_base_path, city_folder_name):
 
 
 def get_aoi(source_base_path, city_folder_name):
-    from city_metrix.layers.layer import get_utm_zone_epsg
-
     source_city_path = str(os.path.join(source_base_path, city_folder_name))
 
     utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters = \

@@ -16,31 +16,32 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
     cif_features = unpack_quoted_value(cif_features)
     tile_resolution = unpack_quoted_value(tile_resolution)
     utc_offset = unpack_quoted_value(utc_offset)
+    city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
+    met_filenames = city_data.met_filenames
 
-    def _execute_retrieve_cif_data(task_idx, source_base_path, target_base_path, folder_city, folder_tile,
-                                   features, boundary, resolution):
+    def _execute_retrieve_cif_data(task_idx, source_path, target_path, folder_city, folder_tile, features,
+                                   boundary, resolution):
         from source_cif_data_downloader import get_cif_data
         cif_stdout = \
-            get_cif_data(task_idx, source_base_path, target_base_path, folder_city, folder_tile, features, boundary, resolution)
+            get_cif_data(task_idx, source_path, target_path, folder_city, folder_tile, features, boundary, resolution)
         return cif_stdout
 
-    def _execute_solweig_only_plugin(task_idx, step_index, folder_city, folder_tile, source_path, target_path, utc_offset):
+    def _execute_solweig_only_plugin(task_idx, step_index, folder_city, folder_tile, source_path, target_path, met_names, offset_utc):
         from umep_plugin_processor import run_plugin
-        city_data = CityData(folder_city, folder_tile, source_path, target_path)
 
         out_list = []
-        for met_file in city_data.met_filenames:
+        for met_file in met_names:
             if met_file.get('filename') == METHOD_TRIGGER_ERA5_DOWNLOAD:
                 met_filename = FILENAME_ERA5
             else:
                 met_filename = met_file.get('filename')
 
             solweig_stdout = run_plugin(task_idx, step_index, 'solweig_only', folder_city,
-                                     folder_tile, source_path, target_path, met_filename, utc_offset)
+                                     folder_tile, source_path, target_path, met_filename, offset_utc)
             out_list.append(solweig_stdout)
         return out_list
 
-    def _execute_solweig_full_plugin_steps(task_idx, folder_city, folder_tile, source_path, target_path, utc_offset):
+    def _execute_solweig_full_plugin_steps(task_idx, folder_city, folder_tile, source_path, target_path, met_names, offset_utc):
         from umep_plugin_processor import run_plugin
         out_list = []
         this_stdout1 = run_plugin(task_idx, 1, 'wall_height_aspect', folder_city, folder_tile,
@@ -53,18 +54,15 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
 
         time.sleep(PROCESSING_PAUSE_TIME_SEC)
         this_stdout3 = _execute_solweig_only_plugin(task_idx, 3, folder_city,
-                                                    folder_tile, source_path, target_path, utc_offset)
+                                                    folder_tile, source_path, target_path, met_names, offset_utc)
         out_list.extend(this_stdout3)
 
         return out_list
 
     return_stdouts = []
 
-    # Transfer custom files
-    city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
-
     # transfer custom files
-    if city_data.met_filenames:
+    if met_filenames:
         _transfer_met_files(city_data)
     if has_custom_features:
         _transfer_raster_files(city_data)
@@ -83,11 +81,11 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
 
         if task_method == 'solweig_full':
             return_vals = _execute_solweig_full_plugin_steps(task_index, city_folder_name, tile_folder_name,
-                                                             source_base_path, target_base_path, utc_offset)
+                                                             source_base_path, target_base_path, met_filenames, utc_offset)
             return_stdouts.extend(return_vals)
         elif task_method == 'solweig_only':
             return_vals = _execute_solweig_only_plugin(task_index, 1, city_folder_name,
-                                         tile_folder_name, source_base_path, target_base_path, utc_offset)
+                                         tile_folder_name, source_base_path, target_base_path, met_filenames, utc_offset)
             return_stdouts.extend(return_vals)
         elif task_method in PROCESSING_METHODS:
             from umep_plugin_processor import run_plugin

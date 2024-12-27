@@ -13,6 +13,7 @@ from src.workers.logger_tools import setup_logger, write_log_message
 from src.worker_manager.reporter import parse_row_results, report_results
 from src.worker_manager.tools import get_existing_tiles
 from src.workers.city_data import CityData
+from src.workers.worker_tools import remove_folder
 
 warnings.filterwarnings('ignore')
 dask.config.set({'logging.distributed': 'warning'})
@@ -24,6 +25,9 @@ TILE_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(SRC_DIR, 'workers', '
 
 def start_jobs(source_base_path, target_base_path, city_folder_name, processing_config_df):
     city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
+
+    # Remove existing target folder
+    remove_folder(city_data.target_city_path)
 
     logger = setup_logger(city_data.target_manager_log_path)
     write_log_message('Starting jobs', __file__, logger)

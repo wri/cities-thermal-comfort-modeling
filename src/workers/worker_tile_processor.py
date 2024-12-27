@@ -2,21 +2,21 @@ import os.path
 import shutil
 import time
 import rioxarray
-from city_data import CityData
+
 from src.constants import FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSING_METHODS
-from src.workers.worker_tools import create_folder, unpack_quoted_value
-from worker_tools import reverse_y_dimension_as_needed, save_tiff_file
+from src.workers.city_data import CityData
+from src.workers.worker_tools import create_folder, unpack_quoted_value, reverse_y_dimension_as_needed, save_tiff_file
 
 PROCESSING_PAUSE_TIME_SEC = 30
 
 
 def process_tile(task_index, task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
                  has_custom_features, cif_features, tile_boundary, tile_resolution, utc_offset):
+    city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
     has_custom_features = unpack_quoted_value(has_custom_features)
     cif_features = unpack_quoted_value(cif_features)
     tile_resolution = unpack_quoted_value(tile_resolution)
     utc_offset = unpack_quoted_value(utc_offset)
-    city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
     met_filenames = city_data.met_filenames
 
     def _execute_retrieve_cif_data(task_idx, source_path, target_path, folder_city, folder_tile, features,

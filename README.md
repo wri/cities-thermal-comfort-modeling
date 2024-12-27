@@ -9,7 +9,7 @@ CTCM framework is used for:
 Below steps are executed on one of the "Windows QGIS" EC2 instances maintained by WRI.
 ### Pre-execution configuration.
    1. Connect to one of the EC2 instance using RDP or some equivalent tool.
-   1. Open Windows File Explorer and go to the C:\CTCM_processing folder
+   1. Open Windows File Explorer and go to the C:\CTCM_data_setup folder
    1. Copy the ZZZ_template_city folder and rename to the country and city for your dataset, such as "USA_WashingtonDC". (This is **"your city folder"** in below instructions.)
    1. If you will be processing your own "custom" source TIFF files, then follow below steps, skip this step if you instead want the system to automatically retrieve the base TIFF files.
       1. Copy TIFF files for your city into subfolders under .\source_data\primary_source_data underneath your city folder.
@@ -48,7 +48,7 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
 
 ### Running the system
    1. Open a Windows command prompt
-      1. Enter and run the "gotcm" command to take you to the C:\CTCM_processing folder and activate the cities-thermal conda environment. 
+      1. Enter and run the "gotcm" command to take you to the C:\CTCM_data_setup folder and activate the cities-thermal conda environment. 
       1. To run a pre-check of the configurations in your city folder:
          1. Execute the _run_CTCM_pre_check.bat script by simply entering the script name and hitting Enter.
          1. Confirm that it returns "Passed all validation checks"
@@ -61,9 +61,9 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
          1. Review the "results_data" folder looking for the run results as described below in Post-Execution section.
 
 ### Post-Execution Evaluation of Results
-   1. Results of your run are written to the result_data folder under your city folder specified in the batch script.
-   1. To see a report of success/failure, see the html files in the .results_data\.run_reports for the time that you started your run. 
-   1. For details about any failures, see the log file(s) in the .results_data\.logs folder.
+   1. Results of your run are written to the C:\CTCM_outcome folder under your city folder specified in the batch script with a sub-folder for the scenario.
+   1. To see a report of success/failure, see the html files in the .logs\.run_reports for the time that you started your run. 
+   1. For details about any failures, see the log file(s) in the .logs folder.
    1. The system also generates a QGIS workfile named 'viewer.qgs' in the .qgis_viewer folder.
       * **Note** The current version of the workfile requires two steps to view your data:
         1. After opening the file in QGIS, it will likely give the warning that several files are unavailable. Click on the "Remove Unavailable Layers" and OK to continue.
@@ -77,8 +77,9 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
 ## Installation Instructions
 
 ### Setup
-1. Download and install Miniconda3 for all users
-2. Add install location to system path under environment variables, such as "C:\ProgramData\miniconda3\Scripts"
+1. Create environment variable named PYTHONPATH and set to the location of the source code.
+2. Download and install Miniconda3 for all users
+3. Add install location to system path under environment variables, such as "C:\ProgramData\miniconda3\Scripts"
 3. Install QGIS (v3.34.11) standalone app and add "UMEP for Processing" plugin.
    * **Note**: The plugin is periodically updated and it's a good idea to stay current with the latest, so periodically check in QGIS plugins for updates.
 4. Install PyCharm and create batch script with name "pycharm" pointing to PyCharm.bat such as "C:\Program Files\JetBrains\PyCharm Community Edition 2024.2.1\bin\pycharm.bat"
@@ -103,25 +104,24 @@ print(sys.path)
 9. Add credentials for Google Earth Engine and ERA5
    * Install <https://cloud.google.com/sdk/docs/install>
    * If you want to use the ERA5 layer, you need to install the  [Climate Data Store (CDS) Application Program Interface (API)](https://cds.climate.copernicus.eu/how-to-api)
-10. Create the C:\CTM_processing folder
-   * Copy the ZAF_Capetown_small_tile and ZZZ_template_city folders from the codebase into C:\CTM_processing folder.
+10. Create the C:\CTCM_data_setup folder
+   * Copy the ZAF_Capetown_small_tile and ZZZ_template_city folders from the codebase into C:\CTCM_data_setup folder.
    * In these folders, modify the two "._run_CTCM_.." batch files to include the path to the main.py module if it does not already point to the correct local repository on the machine.
-11. Create a batch file for navigating to the C:\CTM_processing folder and starting the conda environment.
+11. Create a batch file for navigating to the C:\CTCM_data_setup folder and starting the conda environment.
    * Create the "gotcm.bat" file in some directory such as C:\Users\Administrator\Documents\Batches with following content:
      ~~~
-     cd C:\CTCM_processing
+     cd C:\CTCM_data_setup
      conda activate cities-thermal
      ~~~
    * Add location of the batch file to the system path
 12. Confirm processing by running the test_processing_runs.py tests in the local repository code
     * **Note**: tests may show exceptions even though the tests pass
-13. Confirm processing using the C:\CTM_processing folder
+13. Confirm processing using the C:\CTCM_data_setup folder
    * in windows command prompt, execute "gotcm" to go to the processing folder and start the conda environment.
    * Execute the _sample_run_CTM_processing_pre_check.bat batch script and ensure that no errors are report.
-   * Execute the _sample_run_CTM_processing:
-     * The C:\CTCM_processing\ZAF_Capetown_small_tile folder contains the new C:\CTCM_processing\ZAF_Capetown_small_tile\results_data folder
-     * The result_data folder contains two subfolders with each of these folders containing subfolders.
-     * The result_data folder also contains the .logs and .run_reports folders.
+   * Execute the _sample_run_CTM_processing and then confirm:
+     * The C:\CTCM_outcome\ZAF_Capetown_small_tile folder contains results.
+     * The ..\result_data folder contains two subfolders with each of these folders containing subfolders.
 
 ### CIF setup
 1. Download and install gcloud https://dl.google.com/dl/cloudsdk/channels/rapid/GoogleCloudSDKInstaller.exe but don't sign in

@@ -4,13 +4,12 @@ import geopandas as gp
 import numpy as np
 import random
 import time
-import os
 
 from rasterio.enums import Resampling
 from datetime import datetime
-from city_data import CityData
+from src.workers.city_data import CityData
 from src.workers.logger_tools import setup_logger, log_method_start, log_method_completion, log_method_failure
-from worker_tools import compute_time_diff_mins, reverse_y_dimension_as_needed, save_tiff_file, save_geojson_file, \
+from src.workers.worker_tools import compute_time_diff_mins, reverse_y_dimension_as_needed, save_tiff_file, save_geojson_file, \
     unpack_quoted_value
 
 # Unify the layers on the same resolution

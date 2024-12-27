@@ -8,16 +8,15 @@ import processing
 from processing.core.Processing import Processing
 from processing_umep.processing_umep import ProcessingUMEPProvider
 
+from pathlib import Path
+from datetime import datetime
+from qgis.core import QgsApplication
+from src.workers.worker_tools import remove_file, remove_folder, compute_time_diff_mins, create_folder, get_configurations
+from src.workers.city_data import CityData
 from src.constants import FILENAME_WALL_HEIGHT, FILENAME_WALL_ASPECT
 from src.workers.logger_tools import setup_logger, log_method_start, log_method_failure, log_method_completion
 
 warnings.filterwarnings("ignore")
-
-from pathlib import Path
-from datetime import datetime
-from qgis.core import QgsApplication
-from worker_tools import remove_file, remove_folder, compute_time_diff_mins, create_folder, get_configurations
-from city_data import CityData
 
 MAX_RETRY_COUNT = 3
 RETRY_PAUSE_TIME_SEC = 10

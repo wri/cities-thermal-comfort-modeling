@@ -1,11 +1,10 @@
 import shutil
 import os
-import logging
 import yaml
 import utm
 from datetime import datetime
-from src.constants import ROOT_DIR
 from shapely.geometry import box
+from src.constants import ROOT_DIR
 
 toBool = {'true': True, 'false': False}
 

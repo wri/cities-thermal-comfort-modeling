@@ -3,7 +3,7 @@ import shutil
 import pandas as pd
 
 from pathlib import Path
-from src.constants import DATA_DIR, FILENAME_METHOD_CONFIG, FILENAME_PROCESSING_CONFIG, FOLDER_NAME_RESULTS, \
+from src.constants import DATA_DIR, FILENAME_METHOD_CONFIG, FILENAME_PROCESSING_CONFIG, \
     FILENAME_WALL_ASPECT, FILENAME_WALL_HEIGHT, FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD
 from src.worker_manager.reporter import _find_files_with_name
 from src.worker_manager.tools import clean_folder

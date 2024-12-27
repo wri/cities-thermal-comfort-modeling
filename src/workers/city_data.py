@@ -31,9 +31,15 @@ class CityData:
          has_custom_features, obj.custom_feature_list, obj.cif_feature_list) = (
             parse_filenames_config(obj.source_city_path))
 
-        (obj.wall_lower_limit_height, obj.light_transmissivity, obj.trunk_zone_height, obj.leaf_start, obj.leaf_end,
+        (northern_leaf_start, northern_leaf_end, southern_leaf_start, southern_leaf_end, obj.wall_lower_limit_height,
+         obj.light_transmissivity, obj.trunk_zone_height,
          obj.conifer_trees, obj.albedo_walls, obj.albedo_ground, obj.emis_walls, obj.emis_ground, obj.output_tmrt,
          obj.output_sh, obj.sampling_local_hours) = (parse_method_attributes_config(obj.source_city_path))
+
+        # set leave start/end for latitude
+        obj.leaf_start, obj.leaf_end =_get_latitude_based_leaf_start_end(obj.min_lat, obj.max_lat,
+                                                                 northern_leaf_start, northern_leaf_end,
+                                                                 southern_leaf_start, southern_leaf_end)
 
         if obj.folder_name_tile_data:
             obj.source_raster_files_path = os.path.join(obj.source_city_data_path, FOLDER_NAME_PRIMARY_RASTER_FILES)
@@ -85,3 +91,18 @@ class CityData:
 
         return obj
 
+def _get_latitude_based_leaf_start_end(min_lat, max_lat, northern_leaf_start, northern_leaf_end,
+                                       southern_leaf_start, southern_leaf_end):
+    tropical_latitude = 23.5
+    mid_lat = (min_lat + max_lat) / 2
+    if abs(mid_lat) <= tropical_latitude:  # tropical zone
+        leaf_start = 0
+        leaf_end = 365
+    elif mid_lat > tropical_latitude:
+        leaf_start = northern_leaf_start
+        leaf_end = northern_leaf_end
+    else:
+        leaf_start = southern_leaf_start
+        leaf_end = southern_leaf_end
+
+    return leaf_start, leaf_end

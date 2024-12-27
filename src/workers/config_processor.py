@@ -111,12 +111,16 @@ def parse_method_attributes_config(source_city_path):
     try:
         values = read_yaml(city_configs)
         method_attributes = values[4]
+
+        northern_leaf_start = method_attributes['solweig']['northern_hemisphere']['leaf_start']
+        northern_leaf_end = method_attributes['solweig']['northern_hemisphere']['leaf_end']
+        southern_leaf_start = method_attributes['solweig']['southern_hemisphere']['leaf_start']
+        southern_leaf_end = method_attributes['solweig']['southern_hemisphere']['leaf_end']
+
         wall_lower_limit_height = method_attributes['wall_height_aspect']['lower_limit_for_wall_height']
         light_transmissivity = method_attributes['skyview_factor'][
             'transmissivity_of_light_through_vegetation']
         trunk_zone_height = method_attributes['skyview_factor']['trunk_zone_height']
-        leaf_start = method_attributes['solweig']['leaf_start']
-        leaf_end = method_attributes['solweig']['leaf_end']
         conifer_trees = to_bool(method_attributes['solweig']['conifer_trees'])
         albedo_walls = method_attributes['solweig']['albedo_walls']
         albedo_ground = method_attributes['solweig']['albedo_ground']
@@ -130,7 +134,8 @@ def parse_method_attributes_config(source_city_path):
         raise Exception(
             f'The {FILENAME_METHOD_CONFIG} file not found or improperly defined in {city_configs}. (Error: {e_msg})')
 
-    return (wall_lower_limit_height, light_transmissivity, trunk_zone_height, leaf_start, leaf_end, conifer_trees, albedo_walls,
+    return (northern_leaf_start, northern_leaf_end, southern_leaf_start, southern_leaf_end, wall_lower_limit_height,
+            light_transmissivity, trunk_zone_height, conifer_trees, albedo_walls,
             albedo_ground, emis_walls, emis_ground, output_tmrt, output_sh, sampling_local_hours)
 
 

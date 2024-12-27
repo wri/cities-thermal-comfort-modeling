@@ -1,3 +1,34 @@
+# Description of scenario
+- Scenario:
+  short_title: first scenario
+  version: 1
+  description: Scenario that demonstrates blah.
+  author: author@wri.org
+# Processing Area of Interest used for tile construction and ERA5-data download. If any custom files
+# are specified above, then the system will not construct a new tile grid and will instead use the existing one.
+# If you don't want to subdivide the AOI, specify None for tile_side_meters and tile_buffer_meters.
+- ProcessingAOI:
+  utc_offset: 2
+  min_lon: -200
+  min_lat: 20
+  max_lon: 200
+  max_lat: 10
+  tile_side_meters: None
+  tile_buffer_meters: None
+# Names of meteorological files used by SOLWEIG method in "UMEP for Processing" plugin.
+# Specify custom files or "<download_era5>" method to automatically download ERA5 data into a file named met_era5_hottest_days.txt
+- MetFiles:
+  - filename: met_20jan2022.txt
+  - filename: met_22jan2022.txt
+# Mapping to name of custom TIFF source file or specify None where custom file is not available for processing.
+# If None is specified, then the system will auto-generate a TIFF file from CIF.
+# Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif
+# Auto-generated filenames from CIF: cif_dem.tif, cif_dsm_ground_build.tif, cif_tree_canopy.tif, cif_lulc.tif
+- CustomTiffFilenames:
+  dem_tif_filename: None
+  dsm_tif_filename: dsm_ground_build.tif
+  tree_canopy_tif_filename: tree_canopy.tif
+  lulc_tif_filename: lulc.tif
 # Configurable attribute values for method processing
 # sampling_local_hours specifies hours for <download_era5> method.
 - MethodAttributes:
@@ -17,28 +48,3 @@
     output_tmrt: True
     output_sh: True
     sampling_local_hours: 12,15,18
-# Names of meteorological files used by SOLWEIG method in "UMEP for Processing" plugin.
-# Specify custom files or "<download_era5>" method to automatically download ERA5 data into a file named met_era5_hottest_days.txt
-- MetFiles:
-  - filename: met_20jan2022.txt
-  - filename: met_22jan2022.txt
-# Mapping to name of custom TIFF source file or specify None where custom file is not available for processing.
-# If None is specified, then the system will auto-generate a TIFF file from CIF.
-# Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif
-# Auto-generated filenames from CIF: cif_dem.tif, cif_dsm_ground_build.tif, cif_tree_canopy.tif, cif_lulc.tif
-- CustomTiffFilenames:
-  dem_tif_filename: None
-  dsm_tif_filename: dsm_ground_build.tif
-  tree_canopy_tif_filename: tree_canopy.tif
-  lulc_tif_filename: lulc.tif
-# Processing Area of Interest used for tile construction and ERA5-data download. If any custom files
-# are specified above, then the system will not construct a new tile grid and will instead use the existing one.
-# If you don't want to subdivide the AOI, specify None for tile_side_meters and tile_buffer_meters.
-- ProcessingAOI:
-  utc_offset: 2
-  min_lon: -200
-  min_lat: 20
-  max_lon: 200
-  max_lat: 10
-  tile_side_meters: None
-  tile_buffer_meters: None

@@ -1,13 +1,16 @@
-
 import math
 import numbers
 import os
 import rasterio
 import pandas as pd
 
+from src.constants import FILENAME_METHOD_CONFIG, FILENAME_PROCESSING_CONFIG, FOLDER_NAME_PRIMARY_DATA, \
+    FOLDER_NAME_PRIMARY_RASTER_FILES, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSING_METHODS
 from src.worker_manager.graph_builder import get_cif_features
 from src.worker_manager.tools import get_aoi_area_in_square_meters, get_existing_tiles, list_files_with_extension
-from src.workers.city_data import CityData, parse_filenames_config, parse_processing_areas_config
+from src.workers.city_data import CityData
+from src.workers.config_processor import parse_filenames_config, parse_processing_areas_config
+
 
 def verify_fundamental_paths(source_base_path, target_path, city_folder_name):
     invalids = []
@@ -24,10 +27,14 @@ def verify_fundamental_paths(source_base_path, target_path, city_folder_name):
         msg = f'Invalid target base path: {target_path}'
         invalids.append(msg)
 
+    if source_base_path == target_path:
+        msg = f'Source and target base paths cannot be the same.'
+        invalids.append(msg)
+
     if invalids:
         return invalids
 
-    config_processing_file_path = str(os.path.join(city_path, CityData.filename_umep_city_processing_config))
+    config_processing_file_path = str(os.path.join(city_path, FILENAME_PROCESSING_CONFIG))
     if _verify_path(config_processing_file_path) is False:
         msg = f'Processing registry file does not exist as: {config_processing_file_path}'
         invalids.append(msg)
@@ -63,71 +70,71 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
         enabled = str(config_row.enabled)
 
         method = config_row.method
-        valid_methods = CityData.processing_methods
+        valid_methods = PROCESSING_METHODS
         if method not in valid_methods:
             invalids.append(
                 f"Invalid 'method' column ({method}) on row {index} in .config_umep_city_processing.csv. Valid values: {valid_methods}")
 
         dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename, has_custom_features, custom_feature_list, cif_feature_list = \
-            parse_filenames_config(source_city_path, CityData.filename_method_parameters_config)
+            parse_filenames_config(source_city_path)
 
-        non_tiled_city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
+        non_tiled_city_data = CityData(city_folder_name, None, source_base_path, None)
 
         if (not has_custom_features or
-                any(d['filename'] == CityData.method_name_era5_download for d in non_tiled_city_data.met_files)):
+                any(d['filename'] == METHOD_TRIGGER_ERA5_DOWNLOAD for d in non_tiled_city_data.met_filenames)):
 
             utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters = \
-                parse_processing_areas_config(source_city_path, CityData.filename_method_parameters_config)
+                parse_processing_areas_config(source_city_path)
 
             if (not isinstance(min_lon, numbers.Number) or not isinstance(min_lat, numbers.Number) or
                     not isinstance(max_lon, numbers.Number) or not isinstance(max_lat, numbers.Number)):
-                msg = f'If there are no custom source tif files, then values in NewProcessingAOI section must be defined in {CityData.filename_method_parameters_config}'
+                msg = f'If there are no custom source tif files, then values in NewProcessingAOI section must be defined in {FILENAME_METHOD_CONFIG}'
                 invalids.append(msg)
 
             if not (-180 <= min_lon <= 180) or not (-180 <= max_lon <= 180):
-                msg = f'Min and max longitude values must be between -180 and 180 in ProcessingAOI section of {CityData.filename_method_parameters_config}'
+                msg = f'Min and max longitude values must be between -180 and 180 in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
                 invalids.append(msg)
 
             if not (-90 <= min_lat <= 90) or not (-90 <= max_lat <= 90):
-                msg = f'Min and max latitude values must be between -90 and 90 in ProcessingAOI section of {CityData.filename_method_parameters_config}'
+                msg = f'Min and max latitude values must be between -90 and 90 in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
                 invalids.append(msg)
 
             if not (min_lon <= max_lon):
-                msg = f'Min longitude must be less than max longitude in ProcessingAOI section of {CityData.filename_method_parameters_config}'
+                msg = f'Min longitude must be less than max longitude in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
                 invalids.append(msg)
 
             if not (min_lat <= max_lat):
-                msg = f'Min latitude must be less than max latitude in ProcessingAOI section of {CityData.filename_method_parameters_config}'
+                msg = f'Min latitude must be less than max latitude in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
                 invalids.append(msg)
 
             # TODO improve this evaluation
             if abs(max_lon - min_lon) > 0.3 or abs(max_lon - min_lon) > 0.3:
-                msg = f'Specified AOI must be less than 30km on a side in ProcessingAOI section of {CityData.filename_method_parameters_config}'
+                msg = f'Specified AOI must be less than 30km on a side in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
                 invalids.append(msg)
 
             if (tile_side_meters is not None and
                     _is_tile_wider_than_half_aoi_side(min_lat, min_lon, max_lat, max_lon, tile_side_meters)):
-                msg = f"Requested tile_side_meters cannot be larger than half the AOI side length in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
+                msg = f"Requested tile_side_meters cannot be larger than half the AOI side length in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
                 invalids.append(msg)
 
             if tile_side_meters is not None and tile_side_meters < 150:
-                msg = f"Requested tile_side_meters must be 100 meters or more in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
+                msg = f"Requested tile_side_meters must be 100 meters or more in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
                 invalids.append(msg)
 
             if tile_side_meters is not None and int(tile_side_meters) <= 10:
-                msg = f"tile_side_meters must be greater than 10 in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
+                msg = f"tile_side_meters must be greater than 10 in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
                 invalids.append(msg)
 
             if tile_buffer_meters is not None and int(tile_buffer_meters) <= 10:
-                msg = f"tile_buffer_meters must be greater than 10 in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
+                msg = f"tile_buffer_meters must be greater than 10 in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
                 invalids.append(msg)
 
             if tile_buffer_meters is not None and int(tile_buffer_meters) > 500:
-                msg = f"tile_buffer_meters must be less than 500 in {CityData.filename_method_parameters_config}. Specify None if you don't want to subdivide the aoi."
+                msg = f"tile_buffer_meters must be less than 500 in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
                 invalids.append(msg)
 
             if tile_side_meters is None and tile_buffer_meters is not None:
-                msg = f"tile_buffer_meters must be None if tile_sider_meters is None in {CityData.filename_method_parameters_config}."
+                msg = f"tile_buffer_meters must be None if tile_sider_meters is None in {FILENAME_METHOD_CONFIG}."
                 invalids.append(msg)
 
         if has_custom_features:
@@ -144,7 +151,7 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
                         msg = f'Required source file: {prior_dsm} not found for row {index} in .config_umep_city_processing.csv.'
                         invalids.append(msg)
 
-                    if method in CityData.processing_methods:
+                    if method in PROCESSING_METHODS:
                         prior_tree_canopy = city_data.source_tree_canopy_path
                         if cif_features is not None and 'tree_canopy' not in cif_features and _verify_path(prior_tree_canopy) is False:
                             msg = f'Required source file: {prior_tree_canopy} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
@@ -159,9 +166,9 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
                         if cif_features is not None and 'dem' not in cif_features and _verify_path(prior_dem) is False:
                             msg = f'Required source file: {prior_dem} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                             invalids.append(msg)
-                        for met_file_row in city_data.met_files:
+                        for met_file_row in city_data.met_filenames:
                             met_file = met_file_row.get('filename')
-                            met_filepath = os.path.join(city_data.source_met_files_path, met_file)
+                            met_filepath = os.path.join(city_data.source_met_filenames_path, met_file)
                             if met_file != '<download_era5>' and _verify_path(met_filepath) is False:
                                 msg = f'Required meteorological file: {met_filepath} not found for method: {method} in .config_method_parameters.yml.'
                                 invalids.append(msg)
@@ -230,8 +237,8 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
                 else:
                     representative_tif = lulc_tif_filename
 
-                tiff_file_path = os.path.join(source_city_path, CityData.folder_name_source_data,
-                                              CityData.folder_name_primary_source_data, 'tile_001', representative_tif)
+                tiff_file_path = os.path.join(source_city_path, FOLDER_NAME_PRIMARY_DATA,
+                                              FOLDER_NAME_PRIMARY_RASTER_FILES, 'tile_001', representative_tif)
                 with rasterio.open(tiff_file_path) as dataset:
                     width = dataset.profile["width"]
                     height = dataset.profile["height"]
@@ -249,7 +256,7 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
 def get_parameters_for_custom_tif_files(city_data, tile_folder_name, cif_feature_list):
     import sys
 
-    tile_folder = os.path.join(city_data.source_city_data_path, city_data.folder_name_primary_source_data,
+    tile_folder = os.path.join(city_data.source_city_data_path, FOLDER_NAME_PRIMARY_RASTER_FILES,
                                tile_folder_name)
     tif_files = list_files_with_extension(tile_folder, '.tif')
 

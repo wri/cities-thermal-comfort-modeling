@@ -6,13 +6,14 @@ import pandas as pd
 import shapely
 import dask
 
-from src.constants import SRC_DIR
+from src.constants import SRC_DIR, METHOD_TRIGGER_ERA5_DOWNLOAD
 from src.worker_manager.ancillary_files import write_config_files, write_tile_grid, write_qgis_files
 from src.worker_manager.graph_builder import get_aoi_fishnet, get_cif_features, get_aoi
-from src.worker_manager.logger_tools import setup_logger, write_log_message
+from src.workers.logger_tools import setup_logger, write_log_message
 from src.worker_manager.reporter import parse_row_results, report_results
 from src.worker_manager.tools import get_existing_tiles
 from src.workers.city_data import CityData
+from src.workers.worker_tools import remove_folder
 
 warnings.filterwarnings('ignore')
 dask.config.set({'logging.distributed': 'warning'})
@@ -24,6 +25,9 @@ TILE_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(SRC_DIR, 'workers', '
 
 def start_jobs(source_base_path, target_base_path, city_folder_name, processing_config_df):
     city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
+
+    # Remove existing target folder
+    remove_folder(city_data.target_city_path)
 
     logger = setup_logger(city_data.target_manager_log_path)
     write_log_message('Starting jobs', __file__, logger)
@@ -39,17 +43,17 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
 
     write_config_files(source_base_path, target_base_path, city_folder_name)
 
-    has_era_met_download = any_value_matches_in_dict_list(city_data.met_files, CityData.method_name_era5_download)
+    has_era_met_download = any_value_matches_in_dict_list(city_data.met_filenames, METHOD_TRIGGER_ERA5_DOWNLOAD)
     # meteorological data
     if has_era_met_download:
         write_log_message('Retrieving ERA meteorological data', __file__, logger)
         sampling_local_hours = city_data.sampling_local_hours
-        proc_array = _construct_met_proc_array(-1, source_base_path, city_folder_name, aoi_boundary, utc_offset,
+        proc_array = _construct_met_proc_array(-1, target_base_path, city_folder_name, aoi_boundary, utc_offset,
                                                sampling_local_hours)
         delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
         met_futures = []
         met_futures.append(delay_tile_array)
-        met_delays_all_passed, met_results_df = _process_rows(met_futures)
+        met_delays_all_passed, met_results_df = _process_rows(met_futures, logger)
         out_list.extend(met_results_df)
 
         combined_results_df = pd.concat([combined_results_df, met_results_df])
@@ -59,8 +63,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
     enabled_processing_tasks_df = processing_config_df[(processing_config_df['enabled'])]
 
     futures = []
-    for index, config_row in enabled_processing_tasks_df.iterrows():
-        task_index = index
+    for task_index, config_row in enabled_processing_tasks_df.iterrows():
         task_method = config_row.method
 
         source_city_path = str(os.path.join(source_base_path, city_folder_name))
@@ -73,7 +76,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
             end_tile_id = config_row.end_tile_id
             existing_tiles = get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_tile_id)
 
-            write_tile_grid(existing_tiles, target_base_path, city_folder_name)
+            write_tile_grid(existing_tiles, city_data.target_qgis_viewer_path)
 
             print(f'\nProcessing over {len(existing_tiles)} existing tiles..')
             for tile_folder_name, tile_dimensions in existing_tiles.items():
@@ -90,14 +93,14 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
                 futures.append(delay_tile_array)
         else:
             fishnet = get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters)
-            write_tile_grid(fishnet, target_base_path, city_folder_name)
+            write_tile_grid(fishnet, city_data.target_qgis_viewer_path)
 
             print(f'\nCreating data for {fishnet.geometry.size} new tiles..')
-            for index, cell in fishnet.iterrows():
+            for tile_index, cell in fishnet.iterrows():
                 cell_bounds = cell.geometry.bounds
                 tile_boundary = str(shapely.box(cell_bounds[0], cell_bounds[1], cell_bounds[2], cell_bounds[3]))
 
-                tile_id = str(index + 1).zfill(3)
+                tile_id = str(tile_index + 1).zfill(3)
                 tile_folder_name = f'tile_{tile_id}'
 
                 proc_array = _construct_tile_proc_array(task_index, task_method, source_base_path, target_base_path,
@@ -118,7 +121,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
     combined_delays_passed.append(delays_all_passed)
 
     # Write run_report
-    report_file_path = report_results(enabled_processing_tasks_df, combined_results_df, target_base_path,
+    report_file_path = report_results(enabled_processing_tasks_df, combined_results_df, city_data.target_report_path,
                                       city_folder_name)
     print(f'\nRun report written to {report_file_path}\n')
 
@@ -143,11 +146,11 @@ def any_value_matches_in_dict_list(dict_list, target_string):
     return False
 
 
-def _construct_met_proc_array(task_index, source_base_path, city_folder_name, aoi_boundary, utc_offset,
+def _construct_met_proc_array(task_index, target_base_path, city_folder_name, aoi_boundary, utc_offset,
                               sampling_local_hours):
     proc_array = ['python', MET_PROCESSING_MODULE_PATH,
                   f'--task_index={task_index}',
-                  f'--source_base_path={source_base_path}',
+                  f'--target_base_path={target_base_path}',
                   f'--city_folder_name={city_folder_name}',
                   f'--aoi_boundary={str(aoi_boundary)}',
                   f'--utc_offset={utc_offset}',

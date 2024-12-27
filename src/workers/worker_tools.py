@@ -1,11 +1,29 @@
 import shutil
 import os
-import logging
+import yaml
+import utm
 from datetime import datetime
-from pathlib import Path
-
+from shapely.geometry import box
 from src.constants import ROOT_DIR
 
+toBool = {'true': True, 'false': False}
+
+def get_utm_zone_epsg(bbox) -> str:
+    """
+    Get the UTM zone projection for given a bounding box.
+
+    :param bbox: tuple of (min x, min y, max x, max y)
+    :return: the EPSG code for the UTM zone of the centroid of the bbox
+    """
+    centroid = box(*bbox).centroid
+    utm_x, utm_y, band, zone = utm.from_latlon(centroid.y, centroid.x)
+
+    if centroid.y > 0:  # Northern zone
+        epsg = 32600 + band
+    else:
+        epsg = 32700 + band
+
+    return f"EPSG:{epsg}"
 
 def create_folder(folder_path):
     if not os.path.isdir(folder_path):
@@ -30,7 +48,48 @@ def get_configurations():
 
     return qgis_home_path, qgis_plugin_path
 
-toBool = {'true': True, 'false': False}
+
+def read_yaml(config_path):
+    with open(config_path, 'r') as stream:
+        values = list(yaml.safe_load_all(stream))[0]
+    return values
+
+
+def write_yaml(data, config_path):
+    dir = os.path.dirname(config_path)
+    create_folder(dir)
+    with open(config_path, 'w') as file:
+        yaml.safe_dump(data, file)
+
+
+def unpack_quoted_value(value):
+    return_value = value
+    if type(value).__name__ == 'str':
+        if value.lower() == 'none':
+            return_value = None
+        elif value.lower() == 'true':
+            return_value = True
+        elif value.lower() == 'false':
+            return_value = False
+        elif value.isnumeric():
+            if _is_float_or_integer(value) == 'Integer':
+                return_value = int(value)
+            elif _is_float_or_integer(value) == 'Float':
+                return_value = float(value)
+
+    return return_value
+
+
+def _is_float_or_integer(s):
+    try:
+        int(s)
+        return "Integer"
+    except ValueError:
+        try:
+            float(s)
+            return "Float"
+        except ValueError:
+            return "Neither"
 
 
 def save_tiff_file(raster_data_array, tile_data_path, tiff_filename):
@@ -62,37 +121,3 @@ def reverse_y_dimension_as_needed(dataarray):
         was_reversed = True
     return was_reversed, dataarray
 
-
-def log_method_start(method, task_index, step, source_base_path):
-    if step is None:
-        logging.info(f"task:{task_index}\tStarting '{method}'\tconfig:'{source_base_path}')")
-    else:
-        logging.info(f"task:{task_index}\tStarting '{method}' for met_series:{step}\tconfig:'{source_base_path}'")
-
-
-def log_method_completion(start_time, method, task_index, step, source_base_path):
-    runtime = compute_time_diff_mins(start_time)
-    if step is None:
-        logging.info(f"task:{task_index}\tFinished '{method}', runtime:{runtime} mins\tconfig:'{source_base_path}'")
-    else:
-        logging.info(f"task:{task_index}\tFinished '{method}' for met_series:{step}, runtime:{runtime} mins\tconfig:'{source_base_path}'")
-
-
-def log_method_failure(start_time, feature, task_index, step, source_base_path, e_msg):
-    print('Method failure. See log file.')
-    runtime = compute_time_diff_mins(start_time)
-    if step is None:
-        logging.error(f"task:{task_index}\t**** FAILED execution of '{feature}' after runtime:{runtime} mins\tconfig:'{source_base_path}'({e_msg})")
-    else:
-        logging.error(f"task:{task_index}\t**** FAILED execution of '{feature}' fpr met_series:{step} after runtime:{runtime} mins\tconfig:'{source_base_path}'({e_msg})")
-
-
-def _start_logging(target_base_path, city_folder_name):
-    log_folder_path = str(os.path.join(target_base_path, city_folder_name, '.logs'))
-    create_folder(log_folder_path)
-    log_file_path = os.path.join(log_folder_path, 'model_execution.log')
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s\t%(levelname)s\t%(message)s',
-                        datefmt='%a_%Y_%b_%d_%H:%M:%S',
-                        filename=log_file_path
-                        )

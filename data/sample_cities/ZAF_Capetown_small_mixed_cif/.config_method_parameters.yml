@@ -37,8 +37,12 @@
     transmissivity_of_light_through_vegetation: 3
     trunk_zone_height: 25
   solweig:
-    leaf_start: 97
-    leaf_end: 300
+    northern_hemisphere:
+      leaf_start: 97
+      leaf_end: 300
+    southern_hemisphere:
+      leaf_start: 283
+      leaf_end: 96
     conifer_trees: False
     albedo_walls: 0.2
     albedo_ground: 0.15

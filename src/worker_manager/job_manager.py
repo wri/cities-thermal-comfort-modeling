@@ -8,7 +8,7 @@ import dask
 
 from src.constants import SRC_DIR, METHOD_TRIGGER_ERA5_DOWNLOAD
 from src.worker_manager.ancillary_files import write_config_files, write_tile_grid, write_qgis_files
-from src.worker_manager.graph_builder import get_aoi_fishnet, get_cif_features, get_aoi
+from src.worker_manager.graph_builder import get_aoi_fishnet, get_aoi
 from src.workers.logger_tools import setup_logger, write_log_message
 from src.worker_manager.reporter import parse_row_results, report_results
 from src.worker_manager.tools import get_existing_tiles
@@ -24,12 +24,12 @@ TILE_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(SRC_DIR, 'workers', '
 
 
 def start_jobs(source_base_path, target_base_path, city_folder_name, processing_config_df):
-    city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
+    non_tiled_city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
 
     # Remove existing target folder
-    remove_folder(city_data.target_city_path)
+    remove_folder(non_tiled_city_data.target_city_path)
 
-    logger = setup_logger(city_data.target_manager_log_path)
+    logger = setup_logger(non_tiled_city_data.target_manager_log_path)
     write_log_message('Starting jobs', __file__, logger)
 
     out_list = []
@@ -43,11 +43,11 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
 
     write_config_files(source_base_path, target_base_path, city_folder_name)
 
-    has_era_met_download = any_value_matches_in_dict_list(city_data.met_filenames, METHOD_TRIGGER_ERA5_DOWNLOAD)
+    has_era_met_download = any_value_matches_in_dict_list(non_tiled_city_data.met_filenames, METHOD_TRIGGER_ERA5_DOWNLOAD)
     # meteorological data
     if has_era_met_download:
         write_log_message('Retrieving ERA meteorological data', __file__, logger)
-        sampling_local_hours = city_data.sampling_local_hours
+        sampling_local_hours = non_tiled_city_data.sampling_local_hours
         proc_array = _construct_met_proc_array(-1, target_base_path, city_folder_name, aoi_boundary, utc_offset,
                                                sampling_local_hours)
         delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
@@ -69,14 +69,15 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
         source_city_path = str(os.path.join(source_base_path, city_folder_name))
 
         # Retrieve CIF data
-        custom_file_names, has_custom_features, cif_features = get_cif_features(source_city_path)
+        custom_primary_filenames = non_tiled_city_data.custom_primary_filenames
+        cif_primary_features = non_tiled_city_data.cif_primary_feature_list
 
-        if has_custom_features:
+        if custom_primary_filenames:
             start_tile_id = config_row.start_tile_id
             end_tile_id = config_row.end_tile_id
-            existing_tiles = get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_tile_id)
+            existing_tiles = get_existing_tiles(source_city_path, custom_primary_filenames, start_tile_id, end_tile_id)
 
-            write_tile_grid(existing_tiles, city_data.target_qgis_viewer_path)
+            write_tile_grid(existing_tiles, non_tiled_city_data.target_qgis_viewer_path)
 
             print(f'\nProcessing over {len(existing_tiles)} existing tiles..')
             for tile_folder_name, tile_dimensions in existing_tiles.items():
@@ -84,7 +85,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
                 tile_resolution = tile_dimensions[1]
 
                 proc_array = _construct_tile_proc_array(task_index, task_method, source_base_path, target_base_path,
-                                                        city_folder_name, tile_folder_name, has_custom_features, cif_features,
+                                                        city_folder_name, tile_folder_name, cif_primary_features,
                                                         tile_boundary, tile_resolution, utc_offset)
 
                 write_log_message(f'Staging: {proc_array}', __file__, logger)
@@ -93,7 +94,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
                 futures.append(delay_tile_array)
         else:
             fishnet = get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters)
-            write_tile_grid(fishnet, city_data.target_qgis_viewer_path)
+            write_tile_grid(fishnet, non_tiled_city_data.target_qgis_viewer_path)
 
             print(f'\nCreating data for {fishnet.geometry.size} new tiles..')
             for tile_index, cell in fishnet.iterrows():
@@ -104,7 +105,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
                 tile_folder_name = f'tile_{tile_id}'
 
                 proc_array = _construct_tile_proc_array(task_index, task_method, source_base_path, target_base_path,
-                                                        city_folder_name, tile_folder_name, has_custom_features, cif_features,
+                                                        city_folder_name, tile_folder_name, cif_primary_features,
                                                         tile_boundary, None, utc_offset)
 
                 write_log_message(f'Staging: {proc_array}', __file__, logger)
@@ -121,7 +122,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
     combined_delays_passed.append(delays_all_passed)
 
     # Write run_report
-    report_file_path = report_results(enabled_processing_tasks_df, combined_results_df, city_data.target_report_path,
+    report_file_path = report_results(enabled_processing_tasks_df, combined_results_df, non_tiled_city_data.target_report_path,
                                       city_folder_name)
     print(f'\nRun report written to {report_file_path}\n')
 
@@ -129,7 +130,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
 
     if return_code == 0:
         write_log_message('Building QGIS viewer objects', __file__, logger)
-        write_qgis_files(city_data, crs_str)
+        write_qgis_files(non_tiled_city_data, crs_str)
         return_str = "Processing encountered no errors."
     else:
         return_str = 'Processing encountered errors. See log file.'
@@ -161,7 +162,12 @@ def _construct_met_proc_array(task_index, target_base_path, city_folder_name, ao
 
 
 def _construct_tile_proc_array(task_index, task_method, source_base_path, target_base_path, city_folder_name,
-                               tile_folder_name, has_custom_features, cif_features, tile_boundary, tile_resolution, utc_offset):
+                               tile_folder_name, cif_primary_features, tile_boundary, tile_resolution, utc_offset):
+    if cif_primary_features:
+        cif_features = ','.join(cif_primary_features)
+    else:
+        cif_features = None
+
     proc_array = ['python', TILE_PROCESSING_MODULE_PATH,
                   f'--task_index={task_index}',
                   f'--task_method={task_method}',
@@ -169,8 +175,7 @@ def _construct_tile_proc_array(task_index, task_method, source_base_path, target
                   f'--target_base_path={target_base_path}',
                   f'--city_folder_name={city_folder_name}',
                   f'--tile_folder_name={tile_folder_name}',
-                  f'--has_custom_features={has_custom_features}',
-                  f'--cif_features={cif_features}',
+                  f'--cif_primary_features={cif_features}',
                   f'--tile_boundary={tile_boundary}',
                   f'--tile_resolution={tile_resolution}',
                   f'--utc_offset={utc_offset}'

@@ -1,11 +1,9 @@
-import os
-
 from attr.converters import to_bool
 from src.constants import FILENAME_METHOD_CONFIG
 from src.workers.worker_tools import read_yaml, unpack_quoted_value
 
-def parse_scenario_config(source_city_path):
-    city_configs = os.path.join(source_city_path, FILENAME_METHOD_CONFIG)
+
+def parse_scenario_config(city_configs):
     try:
         values = read_yaml(city_configs)
 
@@ -22,8 +20,7 @@ def parse_scenario_config(source_city_path):
     return short_title, version, description, author
 
 
-def parse_processing_areas_config(source_city_path):
-    city_configs = os.path.join(source_city_path, FILENAME_METHOD_CONFIG)
+def parse_processing_areas_config(city_configs):
     try:
         values = read_yaml(city_configs)
 
@@ -43,8 +40,7 @@ def parse_processing_areas_config(source_city_path):
     return utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters
 
 
-def parse_met_files_config(source_city_path):
-    city_configs = os.path.join(source_city_path, FILENAME_METHOD_CONFIG)
+def parse_met_files_config(city_configs):
     try:
         values = read_yaml(city_configs)
         met_filenames = values[2].get('MetFiles')
@@ -55,9 +51,7 @@ def parse_met_files_config(source_city_path):
 
     return met_filenames
 
-
-def parse_filenames_config(source_city_path):
-    city_configs = os.path.join(source_city_path, FILENAME_METHOD_CONFIG)
+def parse_filenames_config(city_configs):
     template_name_cif_dem = 'cif_dem.tif'
     template_name_cif_dsm = 'cif_dsm_ground_build.tif'
     template_name_cif_tree_canopy = 'cif_tree_canopy.tif'
@@ -65,6 +59,7 @@ def parse_filenames_config(source_city_path):
     template_name_cif_era5 = '?????'
     try:
         custom_feature_list = []
+        custom_primary_filenames = []
         cif_feature_list = []
 
         values = read_yaml(city_configs)
@@ -75,6 +70,7 @@ def parse_filenames_config(source_city_path):
             cif_feature_list.append('dem')
         else:
             custom_feature_list.append('dem')
+            custom_primary_filenames.append(dem_tif_filename)
 
         dsm_tif_filename = unpack_quoted_value(filenames['dsm_tif_filename'])
         if dsm_tif_filename is None:
@@ -82,6 +78,7 @@ def parse_filenames_config(source_city_path):
             cif_feature_list.append('dsm')
         else:
             custom_feature_list.append('dsm')
+            custom_primary_filenames.append(dsm_tif_filename)
 
         tree_canopy_tif_filename = unpack_quoted_value(filenames['tree_canopy_tif_filename'])
         if tree_canopy_tif_filename is None:
@@ -89,6 +86,7 @@ def parse_filenames_config(source_city_path):
             cif_feature_list.append('tree_canopy')
         else:
             custom_feature_list.append('tree_canopy')
+            custom_primary_filenames.append(tree_canopy_tif_filename)
 
         lulc_tif_filename = unpack_quoted_value(filenames['lulc_tif_filename'])
         if lulc_tif_filename is None:
@@ -96,18 +94,17 @@ def parse_filenames_config(source_city_path):
             cif_feature_list.append('lulc')
         else:
             custom_feature_list.append('lulc')
+            custom_primary_filenames.append(lulc_tif_filename)
 
-        has_custom_features = True if len(cif_feature_list) < 4 else False
     except Exception as e_msg:
         raise Exception(
             f'The {FILENAME_METHOD_CONFIG} file not found or improperly defined in {city_configs}. (Error: {e_msg})')
 
-    return (dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename, has_custom_features,
-            custom_feature_list, cif_feature_list)
+    return (dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename,
+            custom_feature_list, custom_primary_filenames, cif_feature_list)
 
 
-def parse_method_attributes_config(source_city_path):
-    city_configs = os.path.join(source_city_path, FILENAME_METHOD_CONFIG)
+def parse_method_attributes_config(city_configs):
     try:
         values = read_yaml(city_configs)
         method_attributes = values[4]

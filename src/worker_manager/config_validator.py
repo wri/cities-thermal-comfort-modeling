@@ -6,10 +6,8 @@ import pandas as pd
 
 from src.constants import FILENAME_METHOD_CONFIG, FILENAME_PROCESSING_CONFIG, FOLDER_NAME_PRIMARY_DATA, \
     FOLDER_NAME_PRIMARY_RASTER_FILES, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSING_METHODS
-from src.worker_manager.graph_builder import get_cif_features
 from src.worker_manager.tools import get_aoi_area_in_square_meters, get_existing_tiles, list_files_with_extension
 from src.workers.city_data import CityData
-from src.workers.config_processor import parse_filenames_config, parse_processing_areas_config
 
 
 def verify_fundamental_paths(source_base_path, target_path, city_folder_name):
@@ -55,17 +53,40 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
         if enabled.lower() not in valid_enabled:
             invalids.append(f"Invalid 'enabled' column ({str(enabled)}) on row {index} in .config_umep_city_processing.csv. Valid values: {valid_enabled}")
 
+
+    # Gather parameters to be evaluated
     source_city_path = str(os.path.join(source_base_path, city_folder_name))
-    custom_file_names, has_custom_features, cif_features = get_cif_features(source_city_path)
+
+    non_tiled_city_data = CityData(city_folder_name, None, source_base_path, None)
+
+    # AOI metrics
+    utc_offset = non_tiled_city_data.utc_offset
+    min_lon = non_tiled_city_data.min_lon
+    min_lat = non_tiled_city_data.min_lat
+    max_lon = non_tiled_city_data.max_lon
+    max_lat = non_tiled_city_data.max_lat
+    tile_side_meters = non_tiled_city_data.tile_side_meters
+    tile_buffer_meters = non_tiled_city_data.tile_buffer_meters
+
+    # Source files
+    dem_tif_filename = non_tiled_city_data.dem_tif_filename
+    dsm_tif_filename = non_tiled_city_data.dsm_tif_filename
+    tree_canopy_tif_filename = non_tiled_city_data.tree_canopy_tif_filename
+    lulc_tif_filename = non_tiled_city_data.lulc_tif_filename
+    custom_primary_features = non_tiled_city_data.custom_primary_feature_list
+    custom_primary_filenames = non_tiled_city_data.custom_primary_filenames
+    cif_features = non_tiled_city_data.cif_primary_feature_list
+
 
     cell_count = None
     for index, config_row in processing_config_df.iterrows():
         start_tile_id = config_row.start_tile_id
         end_tile_id = config_row.end_tile_id
-        if not has_custom_features:
-            existing_tiles = []
+        if custom_primary_features:
+            existing_tile_sizes = get_existing_tiles(source_city_path, custom_primary_filenames, start_tile_id,
+                                                     end_tile_id)
         else:
-            existing_tiles = get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_tile_id)
+            existing_tile_sizes = []
 
         enabled = str(config_row.enabled)
 
@@ -75,112 +96,103 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
             invalids.append(
                 f"Invalid 'method' column ({method}) on row {index} in .config_umep_city_processing.csv. Valid values: {valid_methods}")
 
-        dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename, has_custom_features, custom_feature_list, cif_feature_list = \
-            parse_filenames_config(source_city_path)
+        # Evaluate AOI
+        if (not isinstance(min_lon, numbers.Number) or not isinstance(min_lat, numbers.Number) or
+                not isinstance(max_lon, numbers.Number) or not isinstance(max_lat, numbers.Number)):
+            msg = f'If there are no custom source tif files, then values in NewProcessingAOI section must be defined in {FILENAME_METHOD_CONFIG}'
+            invalids.append(msg)
 
-        non_tiled_city_data = CityData(city_folder_name, None, source_base_path, None)
+        if not (-180 <= min_lon <= 180) or not (-180 <= max_lon <= 180):
+            msg = f'Min and max longitude values must be between -180 and 180 in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
+            invalids.append(msg)
 
-        if (not has_custom_features or
-                any(d['filename'] == METHOD_TRIGGER_ERA5_DOWNLOAD for d in non_tiled_city_data.met_filenames)):
+        if not (-90 <= min_lat <= 90) or not (-90 <= max_lat <= 90):
+            msg = f'Min and max latitude values must be between -90 and 90 in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
+            invalids.append(msg)
 
-            utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters = \
-                parse_processing_areas_config(source_city_path)
+        if not (min_lon <= max_lon):
+            msg = f'Min longitude must be less than max longitude in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
+            invalids.append(msg)
 
-            if (not isinstance(min_lon, numbers.Number) or not isinstance(min_lat, numbers.Number) or
-                    not isinstance(max_lon, numbers.Number) or not isinstance(max_lat, numbers.Number)):
-                msg = f'If there are no custom source tif files, then values in NewProcessingAOI section must be defined in {FILENAME_METHOD_CONFIG}'
-                invalids.append(msg)
+        if not (min_lat <= max_lat):
+            msg = f'Min latitude must be less than max latitude in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
+            invalids.append(msg)
 
-            if not (-180 <= min_lon <= 180) or not (-180 <= max_lon <= 180):
-                msg = f'Min and max longitude values must be between -180 and 180 in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
-                invalids.append(msg)
+        # TODO improve this evaluation
+        if abs(max_lon - min_lon) > 0.3 or abs(max_lon - min_lon) > 0.3:
+            msg = f'Specified AOI must be less than 30km on a side in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
+            invalids.append(msg)
 
-            if not (-90 <= min_lat <= 90) or not (-90 <= max_lat <= 90):
-                msg = f'Min and max latitude values must be between -90 and 90 in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
-                invalids.append(msg)
+        if (tile_side_meters is not None and
+                _is_tile_wider_than_half_aoi_side(min_lat, min_lon, max_lat, max_lon, tile_side_meters)):
+            msg = f"Requested tile_side_meters cannot be larger than half the AOI side length in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
+            invalids.append(msg)
 
-            if not (min_lon <= max_lon):
-                msg = f'Min longitude must be less than max longitude in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
-                invalids.append(msg)
+        if tile_side_meters is not None and tile_side_meters < 150:
+            msg = f"Requested tile_side_meters must be 100 meters or more in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
+            invalids.append(msg)
 
-            if not (min_lat <= max_lat):
-                msg = f'Min latitude must be less than max latitude in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
-                invalids.append(msg)
+        if tile_side_meters is not None and int(tile_side_meters) <= 10:
+            msg = f"tile_side_meters must be greater than 10 in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
+            invalids.append(msg)
 
-            # TODO improve this evaluation
-            if abs(max_lon - min_lon) > 0.3 or abs(max_lon - min_lon) > 0.3:
-                msg = f'Specified AOI must be less than 30km on a side in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
-                invalids.append(msg)
+        if tile_buffer_meters is not None and int(tile_buffer_meters) <= 10:
+            msg = f"tile_buffer_meters must be greater than 10 in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
+            invalids.append(msg)
 
-            if (tile_side_meters is not None and
-                    _is_tile_wider_than_half_aoi_side(min_lat, min_lon, max_lat, max_lon, tile_side_meters)):
-                msg = f"Requested tile_side_meters cannot be larger than half the AOI side length in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
-                invalids.append(msg)
+        if tile_buffer_meters is not None and int(tile_buffer_meters) > 500:
+            msg = f"tile_buffer_meters must be less than 500 in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
+            invalids.append(msg)
 
-            if tile_side_meters is not None and tile_side_meters < 150:
-                msg = f"Requested tile_side_meters must be 100 meters or more in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
-                invalids.append(msg)
+        if tile_side_meters is None and tile_buffer_meters is not None:
+            msg = f"tile_buffer_meters must be None if tile_sider_meters is None in {FILENAME_METHOD_CONFIG}."
+            invalids.append(msg)
 
-            if tile_side_meters is not None and int(tile_side_meters) <= 10:
-                msg = f"tile_side_meters must be greater than 10 in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
-                invalids.append(msg)
-
-            if tile_buffer_meters is not None and int(tile_buffer_meters) <= 10:
-                msg = f"tile_buffer_meters must be greater than 10 in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
-                invalids.append(msg)
-
-            if tile_buffer_meters is not None and int(tile_buffer_meters) > 500:
-                msg = f"tile_buffer_meters must be less than 500 in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
-                invalids.append(msg)
-
-            if tile_side_meters is None and tile_buffer_meters is not None:
-                msg = f"tile_buffer_meters must be None if tile_sider_meters is None in {FILENAME_METHOD_CONFIG}."
-                invalids.append(msg)
-
-        if has_custom_features:
-            for tile_folder_name, tile_dimensions in existing_tiles.items():
+        # Evaluate custom features
+        if custom_primary_features:
+            for tile_folder_name, tile_dimensions in existing_tile_sizes.items():
                 if bool(enabled) or pre_check_option == 'pre_check_all':
                     try:
-                        city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
+                        tiled_city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
                     except Exception as e_msg:
                         invalids.append(e_msg)
                         break
 
-                    prior_dsm = city_data.source_dsm_path
+                    prior_dsm = tiled_city_data.source_dsm_path
                     if cif_features is not None and 'dsm' not in cif_features and _verify_path(prior_dsm) is False:
                         msg = f'Required source file: {prior_dsm} not found for row {index} in .config_umep_city_processing.csv.'
                         invalids.append(msg)
 
                     if method in PROCESSING_METHODS:
-                        prior_tree_canopy = city_data.source_tree_canopy_path
+                        prior_tree_canopy = tiled_city_data.source_tree_canopy_path
                         if cif_features is not None and 'tree_canopy' not in cif_features and _verify_path(prior_tree_canopy) is False:
                             msg = f'Required source file: {prior_tree_canopy} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                             invalids.append(msg)
 
                     if method in ['solweig_only', 'solweig_full']:
-                        prior_land_cover = city_data.source_land_cover_path
-                        prior_dem = city_data.source_dem_path
+                        prior_land_cover = tiled_city_data.source_land_cover_path
+                        prior_dem = tiled_city_data.source_dem_path
                         if cif_features is not None and 'lulc' not in cif_features and _verify_path(prior_land_cover) is False:
                             msg = f'Required source file: {prior_land_cover} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                             invalids.append(msg)
                         if cif_features is not None and 'dem' not in cif_features and _verify_path(prior_dem) is False:
                             msg = f'Required source file: {prior_dem} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                             invalids.append(msg)
-                        for met_file_row in city_data.met_filenames:
+                        for met_file_row in tiled_city_data.met_filenames:
                             met_file = met_file_row.get('filename')
-                            met_filepath = os.path.join(city_data.source_met_filenames_path, met_file)
+                            met_filepath = os.path.join(tiled_city_data.source_met_filenames_path, met_file)
                             if met_file != '<download_era5>' and _verify_path(met_filepath) is False:
                                 msg = f'Required meteorological file: {met_filepath} not found for method: {method} in .config_method_parameters.yml.'
                                 invalids.append(msg)
-                        utc_offset = city_data.utc_offset
+                        utc_offset = tiled_city_data.utc_offset
                         if not -24 <= utc_offset <= 24:
                             msg = f'UTC-offset for: {met_file} not in -24 to 24 hours range as specified in .config_method_parameters.yml.'
                             invalids.append(msg)
 
                     if method in ['solweig_only']:
-                        prior_svfszip = city_data.target_svfszip_path
-                        prior_wallheight = city_data.target_wallheight_path
-                        prior_wallaspect = city_data.target_wallaspect_path
+                        prior_svfszip = tiled_city_data.target_svfszip_path
+                        prior_wallheight = tiled_city_data.target_wallheight_path
+                        prior_wallaspect = tiled_city_data.target_wallaspect_path
                         if _verify_path(prior_svfszip) is False:
                             msg = f'Required source file: {prior_svfszip} currently not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                             invalids.append(msg)
@@ -192,7 +204,7 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
                             invalids.append(msg)
 
                     full_metrics_df, named_consistency_metrics_df, unique_consistency_metrics_df = (
-                        get_parameters_for_custom_tif_files(city_data, tile_folder_name, cif_feature_list))
+                        get_parameters_for_custom_tif_files(tiled_city_data, tile_folder_name, cif_features))
 
                     if full_metrics_df['nodata'].isnull().any():
                         files_with_nan = full_metrics_df.loc[full_metrics_df['nodata'].isnull(), 'filename'].tolist()
@@ -202,13 +214,13 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
 
                         break
 
-                    if 'lulc' in custom_feature_list:
-                        lulc_metrics = full_metrics_df.loc[full_metrics_df['filename'] == city_data.lulc_tif_filename]
+                    if 'lulc' in custom_primary_features:
+                        lulc_metrics = full_metrics_df.loc[full_metrics_df['filename'] == tiled_city_data.lulc_tif_filename]
                         if lulc_metrics is not None:
                             band_min = lulc_metrics['band_min'].values[0]
                             band_max = lulc_metrics['band_max'].values[0]
                             if band_min < 1 or band_max > 7:
-                                msg = f"Folder {tile_folder_name} and possibly other folders has LULC ({city_data.lulc_tif_filename}) with values outside of range 1-7."
+                                msg = f"Folder {tile_folder_name} and possibly other folders has LULC ({tiled_city_data.lulc_tif_filename}) with values outside of range 1-7."
                                 invalids.append(msg)
 
                                 break
@@ -225,14 +237,14 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
 
                         break
 
-        if has_custom_features:
+        if custom_primary_features:
             # Get representative cell count
             if config_row.method == 'solweig_full':
-                if 'dem' in custom_feature_list:
+                if 'dem' in custom_primary_features:
                     representative_tif = dem_tif_filename
-                elif 'dsm' in custom_feature_list:
+                elif 'dsm' in custom_primary_features:
                     representative_tif = dsm_tif_filename
-                elif 'tree_canopy' in custom_feature_list:
+                elif 'tree_canopy' in custom_primary_features:
                     representative_tif = tree_canopy_tif_filename
                 else:
                     representative_tif = lulc_tif_filename

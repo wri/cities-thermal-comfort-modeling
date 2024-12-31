@@ -16,14 +16,14 @@ from src.workers.worker_tools import compute_time_diff_mins, reverse_y_dimension
 DEFAULT_LULC_RESOLUTION = 1
 DEBUG = False
 
-def get_cif_data(task_index, source_base_path, target_base_path, folder_name_city_data, tile_id, cif_features,
+def get_cif_data(task_index, source_base_path, target_base_path, folder_name_city_data, tile_id, cif_primary_features,
                  tile_boundary, tile_resolution):
     start_time = datetime.now()
 
     city_data = CityData(folder_name_city_data, tile_id, source_base_path, target_base_path)
 
     logger = setup_logger(city_data.target_model_log_path)
-    log_method_start(f'CIF download: ({cif_features}) in tile {tile_id}', task_index, None, '', logger)
+    log_method_start(f'CIF download: ({cif_primary_features}) in tile {tile_id}', task_index, None, '', logger)
 
     tile_cif_data_path = city_data.target_primary_tile_data_path
 
@@ -35,7 +35,7 @@ def get_cif_data(task_index, source_base_path, target_base_path, folder_name_cit
     d = {'geometry': [shapely.wkt.loads(tile_boundary)]}
     aoi_gdf = gp.GeoDataFrame(d, crs="EPSG:4326")
 
-    feature_list = cif_features.split(',')
+    feature_list = cif_primary_features.split(',')
 
     tile_resolution = unpack_quoted_value(tile_resolution)
     output_resolution = DEFAULT_LULC_RESOLUTION if tile_resolution is None else tile_resolution
@@ -91,7 +91,7 @@ def get_cif_data(task_index, source_base_path, target_base_path, folder_name_cit
                      f'"step_method": "{step_method}", "met_filename": "{met_filename_str}", "return_code": {return_code}, '
                      f'"start_time": "{start_time_str}", "run_duration_min": {run_duration_min}}}')
 
-    log_method_completion(start_time, f'CIF download: ({cif_features}) in tile {tile_id}', task_index, None, '', logger)
+    log_method_completion(start_time, f'CIF download: ({cif_primary_features}) in tile {tile_id}', task_index, None, '', logger)
 
     return return_stdout
 

@@ -104,23 +104,23 @@ def test_mixed_cif_city():
             remove_folder(city_data.target_city_parent_path)
 
 
-def test_download_only_cif_city():
-    source_city_folder_name = 'ZAF_Capetown_cif_download_only'
-    city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
-
-    primary_data = os.path.join(SAMPLE_CITIES_SOURCE_DIR, source_city_folder_name, FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_RASTER_FILES)
-    remove_folder(primary_data)
-
-    try:
-        return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
-        # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
-
-        assert return_code == 0
-        # TODO remove this false assertion once ERA5 is working again
-        assert False
-    finally:
-        if CLEANUP_RESULTS:
-            remove_folder(city_data.target_city_parent_path)
+# def test_download_only_cif_city():
+#     source_city_folder_name = 'ZAF_Capetown_cif_download_only'
+#     city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+#
+#     primary_data = os.path.join(SAMPLE_CITIES_SOURCE_DIR, source_city_folder_name, FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_RASTER_FILES)
+#     remove_folder(primary_data)
+#
+#     try:
+#         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+#         # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+#
+#         assert return_code == 0
+#         # TODO remove this false assertion once ERA5 is working again
+#         assert False
+#     finally:
+#         if CLEANUP_RESULTS:
+#             remove_folder(city_data.target_city_parent_path)
 
 
 

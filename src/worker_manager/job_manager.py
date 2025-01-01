@@ -3,6 +3,7 @@ import subprocess
 import multiprocessing as mp
 import warnings
 import pandas as pd
+import geopandas as gpd
 import shapely
 import dask
 
@@ -25,6 +26,10 @@ TILE_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(SRC_DIR, 'workers', '
 
 def start_jobs(source_base_path, target_base_path, city_folder_name, processing_config_df):
     non_tiled_city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
+    source_city_path = str(os.path.join(source_base_path, city_folder_name))
+    custom_primary_filenames = non_tiled_city_data.custom_primary_filenames
+    cif_primary_features = non_tiled_city_data.cif_primary_feature_list
+    ctcm_intermediate_features = non_tiled_city_data.ctcm_intermediate_list
 
     # Remove existing target folder
     remove_folder(non_tiled_city_data.target_city_path)
@@ -40,8 +45,6 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
         columns=['status', 'task_index', 'tile', 'step_index', 'step_method', 'met_filename', 'return_code',
                  'start_time', 'run_duration_min'])
     combined_delays_passed = []
-
-    write_config_files(source_base_path, target_base_path, city_folder_name)
 
     has_era_met_download = any_value_matches_in_dict_list(non_tiled_city_data.met_filenames, METHOD_TRIGGER_ERA5_DOWNLOAD)
     # meteorological data
@@ -65,28 +68,26 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
     futures = []
     for task_index, config_row in enabled_processing_tasks_df.iterrows():
         task_method = config_row.method
-
-        source_city_path = str(os.path.join(source_base_path, city_folder_name))
+        start_tile_id = config_row.start_tile_id
+        end_tile_id = config_row.end_tile_id
 
         # Retrieve CIF data
-        custom_primary_filenames = non_tiled_city_data.custom_primary_filenames
-        cif_primary_features = non_tiled_city_data.cif_primary_feature_list
-
         if custom_primary_filenames:
-            start_tile_id = config_row.start_tile_id
-            end_tile_id = config_row.end_tile_id
             existing_tiles = get_existing_tiles(source_city_path, custom_primary_filenames, start_tile_id, end_tile_id)
+            tile_unique_values = existing_tiles[['tile_name', 'boundary']].drop_duplicates()
 
-            write_tile_grid(existing_tiles, non_tiled_city_data.target_qgis_viewer_path)
+            write_tile_grid(tile_unique_values, non_tiled_city_data.target_qgis_viewer_path)
 
-            print(f'\nProcessing over {len(existing_tiles)} existing tiles..')
-            for tile_folder_name, tile_dimensions in existing_tiles.items():
-                tile_boundary = tile_dimensions[0]
-                tile_resolution = tile_dimensions[1]
+            print(f'\nProcessing over {len(tile_unique_values)} existing tiles..')
+            for index, tile_metrics in existing_tiles.iterrows():
+                tile_folder_name = tile_metrics['tile_name']
+                tile_boundary = tile_metrics['boundary']
+                tile_resolution = tile_metrics['avg_res']
 
                 proc_array = _construct_tile_proc_array(task_index, task_method, source_base_path, target_base_path,
                                                         city_folder_name, tile_folder_name, cif_primary_features,
-                                                        tile_boundary, tile_resolution, utc_offset)
+                                                        ctcm_intermediate_features, tile_boundary, tile_resolution,
+                                                        utc_offset)
 
                 write_log_message(f'Staging: {proc_array}', __file__, logger)
 
@@ -106,7 +107,8 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
 
                 proc_array = _construct_tile_proc_array(task_index, task_method, source_base_path, target_base_path,
                                                         city_folder_name, tile_folder_name, cif_primary_features,
-                                                        tile_boundary, None, utc_offset)
+                                                        ctcm_intermediate_features, tile_boundary, None,
+                                                        utc_offset)
 
                 write_log_message(f'Staging: {proc_array}', __file__, logger)
 
@@ -121,14 +123,17 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
     combined_results_df = pd.concat([combined_results_df, results_df])
     combined_delays_passed.append(delays_all_passed)
 
+    # write configs and last run metrics
+    write_config_files(source_base_path, target_base_path, city_folder_name)
+
     # Write run_report
     report_file_path = report_results(enabled_processing_tasks_df, combined_results_df, non_tiled_city_data.target_report_path,
                                       city_folder_name)
     print(f'\nRun report written to {report_file_path}\n')
 
-    return_code = 0 if all(combined_delays_passed) else 1
+    return_code = 0 if all(combined_delays_passed) or delays_all_passed else 1
 
-    if return_code == 0:
+    if return_code == 0 and delays_all_passed:
         write_log_message('Building QGIS viewer objects', __file__, logger)
         write_qgis_files(non_tiled_city_data, crs_str)
         return_str = "Processing encountered no errors."
@@ -162,11 +167,17 @@ def _construct_met_proc_array(task_index, target_base_path, city_folder_name, ao
 
 
 def _construct_tile_proc_array(task_index, task_method, source_base_path, target_base_path, city_folder_name,
-                               tile_folder_name, cif_primary_features, tile_boundary, tile_resolution, utc_offset):
+                               tile_folder_name, cif_primary_features, ctcm_intermediate_features,
+                               tile_boundary, tile_resolution, utc_offset):
     if cif_primary_features:
         cif_features = ','.join(cif_primary_features)
     else:
         cif_features = None
+
+    if ctcm_intermediate_features:
+        ctcm_features = ','.join(ctcm_intermediate_features)
+    else:
+        ctcm_features = None
 
     proc_array = ['python', TILE_PROCESSING_MODULE_PATH,
                   f'--task_index={task_index}',
@@ -176,12 +187,12 @@ def _construct_tile_proc_array(task_index, task_method, source_base_path, target
                   f'--city_folder_name={city_folder_name}',
                   f'--tile_folder_name={tile_folder_name}',
                   f'--cif_primary_features={cif_features}',
+                  f'--ctcm_intermediate_features={ctcm_features}',
                   f'--tile_boundary={tile_boundary}',
                   f'--tile_resolution={tile_resolution}',
                   f'--utc_offset={utc_offset}'
                   ]
     return proc_array
-
 
 
 def _process_rows(futures, logger):
@@ -199,7 +210,10 @@ def _process_rows(futures, logger):
             write_log_message(msg, __file__, logger)
 
             # TODO implement progress bar
-            dc = dask.compute(*futures)
+            try:
+                dc = dask.compute(*futures)
+            except Exception as e_msg:
+                print(f'Dask failure for {futures}')
 
         all_passed, results_df, failed_task_ids, failed_task_details = parse_row_results(dc)
 

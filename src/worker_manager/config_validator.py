@@ -4,7 +4,7 @@ import os
 import rasterio
 import pandas as pd
 
-from src.constants import FILENAME_METHOD_CONFIG, FILENAME_PROCESSING_CONFIG, FOLDER_NAME_PRIMARY_DATA, \
+from src.constants import FILENAME_METHOD_YML_CONFIG, FILENAME_PROCESSING_CSV_CONFIG, FOLDER_NAME_PRIMARY_DATA, \
     FOLDER_NAME_PRIMARY_RASTER_FILES, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSING_METHODS
 from src.worker_manager.tools import get_aoi_area_in_square_meters, get_existing_tiles, list_files_with_extension
 from src.workers.city_data import CityData
@@ -32,7 +32,7 @@ def verify_fundamental_paths(source_base_path, target_path, city_folder_name):
     if invalids:
         return invalids
 
-    config_processing_file_path = str(os.path.join(city_path, FILENAME_PROCESSING_CONFIG))
+    config_processing_file_path = str(os.path.join(city_path, FILENAME_PROCESSING_CSV_CONFIG))
     if _verify_path(config_processing_file_path) is False:
         msg = f'Processing registry file does not exist as: {config_processing_file_path}'
         invalids.append(msg)
@@ -57,7 +57,7 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
     # Gather parameters to be evaluated
     source_city_path = str(os.path.join(source_base_path, city_folder_name))
 
-    non_tiled_city_data = CityData(city_folder_name, None, source_base_path, None)
+    non_tiled_city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
 
     # AOI metrics
     utc_offset = non_tiled_city_data.utc_offset
@@ -76,21 +76,21 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
     custom_primary_features = non_tiled_city_data.custom_primary_feature_list
     custom_primary_filenames = non_tiled_city_data.custom_primary_filenames
     cif_features = non_tiled_city_data.cif_primary_feature_list
-
+    custom_intermediate_features = non_tiled_city_data.custom_intermediate_list
 
     cell_count = None
     for index, config_row in processing_config_df.iterrows():
         start_tile_id = config_row.start_tile_id
         end_tile_id = config_row.end_tile_id
-        if custom_primary_features:
-            existing_tile_sizes = get_existing_tiles(source_city_path, custom_primary_filenames, start_tile_id,
-                                                     end_tile_id)
-        else:
-            existing_tile_sizes = []
-
         enabled = str(config_row.enabled)
-
         method = config_row.method
+
+        if custom_primary_features:
+            existing_tiles_metrics = get_existing_tiles(source_city_path, custom_primary_filenames, start_tile_id,
+                                                         end_tile_id)
+        else:
+            existing_tiles_metrics = None
+
         valid_methods = PROCESSING_METHODS
         if method not in valid_methods:
             invalids.append(
@@ -99,58 +99,77 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
         # Evaluate AOI
         if (not isinstance(min_lon, numbers.Number) or not isinstance(min_lat, numbers.Number) or
                 not isinstance(max_lon, numbers.Number) or not isinstance(max_lat, numbers.Number)):
-            msg = f'If there are no custom source tif files, then values in NewProcessingAOI section must be defined in {FILENAME_METHOD_CONFIG}'
+            msg = f'If there are no custom source tif files, then values in NewProcessingAOI section must be defined in {FILENAME_METHOD_YML_CONFIG}'
             invalids.append(msg)
 
         if not (-180 <= min_lon <= 180) or not (-180 <= max_lon <= 180):
-            msg = f'Min and max longitude values must be between -180 and 180 in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
+            msg = f'Min and max longitude values must be between -180 and 180 in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
             invalids.append(msg)
 
         if not (-90 <= min_lat <= 90) or not (-90 <= max_lat <= 90):
-            msg = f'Min and max latitude values must be between -90 and 90 in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
+            msg = f'Min and max latitude values must be between -90 and 90 in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
             invalids.append(msg)
 
         if not (min_lon <= max_lon):
-            msg = f'Min longitude must be less than max longitude in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
+            msg = f'Min longitude must be less than max longitude in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
             invalids.append(msg)
 
         if not (min_lat <= max_lat):
-            msg = f'Min latitude must be less than max latitude in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
+            msg = f'Min latitude must be less than max latitude in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
             invalids.append(msg)
 
         # TODO improve this evaluation
         if abs(max_lon - min_lon) > 0.3 or abs(max_lon - min_lon) > 0.3:
-            msg = f'Specified AOI must be less than 30km on a side in ProcessingAOI section of {FILENAME_METHOD_CONFIG}'
+            msg = f'Specified AOI must be less than 30km on a side in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
             invalids.append(msg)
 
         if (tile_side_meters is not None and
                 _is_tile_wider_than_half_aoi_side(min_lat, min_lon, max_lat, max_lon, tile_side_meters)):
-            msg = f"Requested tile_side_meters cannot be larger than half the AOI side length in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
+            msg = f"Requested tile_side_meters cannot be larger than half the AOI side length in {FILENAME_METHOD_YML_CONFIG}. Specify None if you don't want to subdivide the aoi."
             invalids.append(msg)
 
         if tile_side_meters is not None and tile_side_meters < 150:
-            msg = f"Requested tile_side_meters must be 100 meters or more in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
+            msg = f"Requested tile_side_meters must be 100 meters or more in {FILENAME_METHOD_YML_CONFIG}. Specify None if you don't want to subdivide the aoi."
             invalids.append(msg)
 
         if tile_side_meters is not None and int(tile_side_meters) <= 10:
-            msg = f"tile_side_meters must be greater than 10 in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
+            msg = f"tile_side_meters must be greater than 10 in {FILENAME_METHOD_YML_CONFIG}. Specify None if you don't want to subdivide the aoi."
             invalids.append(msg)
 
         if tile_buffer_meters is not None and int(tile_buffer_meters) <= 10:
-            msg = f"tile_buffer_meters must be greater than 10 in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
+            msg = f"tile_buffer_meters must be greater than 10 in {FILENAME_METHOD_YML_CONFIG}. Specify None if you don't want to subdivide the aoi."
             invalids.append(msg)
 
         if tile_buffer_meters is not None and int(tile_buffer_meters) > 500:
-            msg = f"tile_buffer_meters must be less than 500 in {FILENAME_METHOD_CONFIG}. Specify None if you don't want to subdivide the aoi."
+            msg = f"tile_buffer_meters must be less than 500 in {FILENAME_METHOD_YML_CONFIG}. Specify None if you don't want to subdivide the aoi."
             invalids.append(msg)
 
         if tile_side_meters is None and tile_buffer_meters is not None:
-            msg = f"tile_buffer_meters must be None if tile_sider_meters is None in {FILENAME_METHOD_CONFIG}."
+            msg = f"tile_buffer_meters must be None if tile_sider_meters is None in {FILENAME_METHOD_YML_CONFIG}."
             invalids.append(msg)
+
+        # check that resolution and size of raster files in tile are consistent
+        if custom_primary_features:
+            tile_res_counts = existing_tiles_metrics.groupby('tile_name')['avg_res'].nunique().reset_index(name='unique_avg_res_count')
+            non_consistent_res = tile_res_counts[tile_res_counts['unique_avg_res_count'] > 1]
+            if non_consistent_res.shape[0] > 0:
+                non_consistent_tiles = ', '.join(non_consistent_res['tile_name'])
+                msg = f"Inconsistent raster resolutions found in files in these tiles: {non_consistent_tiles}"
+                invalids.append(msg)
+
+            tile_bounds_counts = existing_tiles_metrics.groupby('tile_name')['boundary'].nunique().reset_index(name='unique_boundary_count')
+            non_consistent_boundary = tile_bounds_counts[tile_bounds_counts['unique_boundary_count'] > 1]
+            if non_consistent_res.shape[0] > 0:
+                non_consistent_tiles = ', '.join(non_consistent_boundary['tile_name'])
+                msg = f"Inconsistent raster boundary found in files in these tiles: {non_consistent_tiles}"
+                invalids.append(msg)
+
 
         # Evaluate custom features
         if custom_primary_features:
-            for tile_folder_name, tile_dimensions in existing_tile_sizes.items():
+            unique_tile_names = pd.DataFrame(existing_tiles_metrics['tile_name'].unique(), columns=['tile_name'])
+            for idx, tile_row in unique_tile_names.iterrows():
+                tile_folder_name = tile_row['tile_name']
                 if bool(enabled) or pre_check_option == 'pre_check_all':
                     try:
                         tiled_city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
@@ -262,13 +281,34 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
             # Assume 1-meter resolution of target cif files
             cell_count = math.ceil(square_meters)
 
+        if custom_intermediate_features:
+            # wall dependencies
+            if not ('wallaspect' in custom_intermediate_features and 'wallheight' in custom_intermediate_features):
+                msg = 'Both wall_aspect_filename and wall_height_filename must both be specified if one of them is specified as not None.'
+                invalids.append(msg)
+            else:
+                if 'dsm' in non_tiled_city_data.cif_primary_feature_list:
+                    msg = 'dsm_tif_filename cannot be None if wallaspect and wallheight are not None due, to dependency conflict.'
+                    invalids.append(msg)
+
+            if 'skyview_factor' in custom_intermediate_features and 'dsm' in non_tiled_city_data.cif_primary_feature_list:
+                msg = 'dsm_tif_filename cannot be None if skyview_factor_filename is not None, due to dependency conflict.'
+                invalids.append(msg)
+
+            if 'skyview_factor' in custom_intermediate_features and 'tree_canopy' in non_tiled_city_data.cif_primary_feature_list:
+                msg = 'tree_canopy_tif_filename cannot be None if skyview_factor_filename is not None, due to dependency conflict.'
+                invalids.append(msg)
+
+            #TODO ensure that the dsm has not changed since last run using checksum???
+
+
     return cell_count, invalids
 
 
 def get_parameters_for_custom_tif_files(city_data, tile_folder_name, cif_feature_list):
     import sys
 
-    tile_folder = os.path.join(city_data.source_city_data_path, FOLDER_NAME_PRIMARY_RASTER_FILES,
+    tile_folder = os.path.join(city_data.source_city_primary_data_path, FOLDER_NAME_PRIMARY_RASTER_FILES,
                                tile_folder_name)
     tif_files = list_files_with_extension(tile_folder, '.tif')
 

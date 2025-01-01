@@ -1,6 +1,5 @@
 import os
 
-from main import start_processing
 from src.constants import DATA_DIR, FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_RASTER_FILES
 from src.workers.city_data import CityData
 from src.workers.worker_tools import remove_folder, create_folder
@@ -11,14 +10,7 @@ CLEANUP_RESULTS=False
 SCRATCH_TARGET_DIR = os.path.join(DATA_DIR, 'scratch_target')
 create_folder(SCRATCH_TARGET_DIR)
 
-
-
-
-
-
 # test fpr era5
-
-
 
 
 
@@ -85,6 +77,25 @@ def test_tiled_cif_city():
             remove_folder(city_data.target_city_parent_path)
 
 
+def test_tiled_custom_city():
+    source_city_folder_name = 'NLD_Amsterdam_custom_tiled'
+    city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+
+    try:
+        return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+        # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+
+        has_valid_results = verify_expected_output_folders(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name)
+        vrt_count = file_count_in_vrt_directory(city_data)
+
+        assert return_code == 0
+        assert has_valid_results
+        assert vrt_count == 13
+    finally:
+        if CLEANUP_RESULTS:
+            remove_folder(city_data.target_city_parent_path)
+
+
 def test_mixed_cif_city():
     source_city_folder_name = 'ZAF_Capetown_small_mixed_cif'
     city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
@@ -99,6 +110,46 @@ def test_mixed_cif_city():
         assert return_code == 0
         assert has_valid_results
         assert vrt_count == 13
+    finally:
+        if CLEANUP_RESULTS:
+            remove_folder(city_data.target_city_parent_path)
+
+
+def test_custom_city_with_full_intermediates():
+    source_city_folder_name = 'ZAF_Capetown_with_full_intermediates'
+    city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+
+    try:
+        return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+        # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+
+        has_valid_results = verify_expected_output_folders(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR,
+                                                           source_city_folder_name)
+        vrt_count = file_count_in_vrt_directory(city_data)
+
+        assert return_code == 0
+        assert has_valid_results
+        assert vrt_count == 19
+    finally:
+        if CLEANUP_RESULTS:
+            remove_folder(city_data.target_city_parent_path)
+
+
+def test_custom_city_with_mixed_intermediates():
+    source_city_folder_name = 'ZAF_Capetown_with_mixed_intermediates'
+    city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+
+    try:
+        return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+        # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+
+        has_valid_results = verify_expected_output_folders(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR,
+                                                           source_city_folder_name)
+        vrt_count = file_count_in_vrt_directory(city_data)
+
+        assert return_code == 0
+        assert has_valid_results
+        assert vrt_count == 19
     finally:
         if CLEANUP_RESULTS:
             remove_folder(city_data.target_city_parent_path)

@@ -13,7 +13,7 @@ from datetime import datetime
 from qgis.core import QgsApplication
 from src.workers.worker_tools import remove_file, remove_folder, compute_time_diff_mins, create_folder, get_configurations
 from src.workers.city_data import CityData
-from src.constants import FILENAME_WALL_HEIGHT, FILENAME_WALL_ASPECT
+from src.constants import FILENAME_WALL_HEIGHT, FILENAME_WALL_ASPECT, FILENAME_SVFS_ZIP
 from src.workers.logger_tools import setup_logger, log_method_start, log_method_failure, log_method_completion
 
 warnings.filterwarnings("ignore")
@@ -65,7 +65,7 @@ def run_plugin(task_index, step_index, step_method, folder_name_city_data, folde
                             remove_file(target_base_path)
                             shutil.move(str(temp_result_path), str(target_base_path))
                 except Exception as e_msg:
-                    msg = (f'{method_title} processing succeeded but could not create target folder or move files: {city_data.target_preprocessed_tile_data_path}.')
+                    msg = (f'{method_title} processing succeeded but could not create target folder or move files: {city_data.target_intermediate_tile_data_path}')
                     log_method_failure(start_time, msg, task_index, None, city_data.target_base_path, e_msg, logger)
                     return 1
 
@@ -98,10 +98,10 @@ def _prepare_method_execution(method, city_data, tmpdirname, met_filename=None, 
     keepers = {}
 
     if method == 'wall_height_aspect':
-        create_folder(city_data.target_preprocessed_tile_data_path)
+        create_folder(city_data.target_intermediate_tile_data_path)
 
-        temp_target_wallheight_path = os.path.join(tmpdirname, FILENAME_WALL_HEIGHT)
-        temp_target_wallaspect_path = os.path.join(tmpdirname, FILENAME_WALL_ASPECT)
+        temp_target_wallheight_path = os.path.join(tmpdirname, city_data.wall_height_filename)
+        temp_target_wallaspect_path = os.path.join(tmpdirname, city_data.wall_aspect_filename)
         input_params = {
             'INPUT': city_data.target_dsm_path,
             'INPUT_LIMIT': city_data.wall_lower_limit_height,
@@ -113,10 +113,10 @@ def _prepare_method_execution(method, city_data, tmpdirname, met_filename=None, 
         keepers[temp_target_wallaspect_path] = city_data.target_wallaspect_path
 
     elif method == 'skyview_factor':
-        create_folder(city_data.target_preprocessed_tile_data_path)
+        create_folder(city_data.target_intermediate_tile_data_path)
 
         temp_svfs_file_no_extension = os.path.join(tmpdirname, Path(city_data.target_svfszip_path).stem)
-        temp_svfs_file_with_extension = os.path.join(tmpdirname, os.path.basename(city_data.target_svfszip_path))
+        temp_svfs_file_with_extension = os.path.join(tmpdirname, FILENAME_SVFS_ZIP)
         input_params = {
             'INPUT_DSM': city_data.target_dsm_path,
             'INPUT_CDSM': city_data.target_tree_canopy_path,

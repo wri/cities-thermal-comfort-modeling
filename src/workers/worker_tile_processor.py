@@ -8,13 +8,14 @@ from src.constants import FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSIN
 from src.workers.city_data import CityData
 from src.workers.worker_tools import create_folder, unpack_quoted_value, reverse_y_dimension_as_needed, save_tiff_file
 
-PROCESSING_PAUSE_TIME_SEC = 30
+PROCESSING_PAUSE_TIME_SEC = 10
 
 
 def process_tile(task_index, task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
-                 cif_primary_features, tile_boundary, tile_resolution, utc_offset):
+                 cif_primary_features, ctcm_intermediate_features, tile_boundary, tile_resolution, utc_offset):
     city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
     cif_primary_features = unpack_quoted_value(cif_primary_features)
+    ctcm_intermediate_features = unpack_quoted_value(ctcm_intermediate_features)
     tile_resolution = unpack_quoted_value(tile_resolution)
     utc_offset = unpack_quoted_value(utc_offset)
     met_filenames = city_data.met_filenames
@@ -41,16 +42,20 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
             out_list.append(solweig_stdout)
         return out_list
 
-    def _execute_solweig_full_plugin_steps(task_idx, folder_city, folder_tile, source_path, target_path, met_names, offset_utc):
+    def _execute_solweig_full_plugin_steps(task_idx, folder_city, folder_tile, source_path, target_path, met_names,
+                                           ctcm_intermediate_features, offset_utc):
         from umep_plugin_processor import run_plugin
         out_list = []
-        this_stdout1 = run_plugin(task_idx, 1, 'wall_height_aspect', folder_city, folder_tile,
-                   source_path, target_path, None, None)
-        out_list.append(this_stdout1)
+        ctcm_intermediates = ctcm_intermediate_features.split(',') if ctcm_intermediate_features is not None else None
+        if ctcm_intermediates and ('wallasect' in ctcm_intermediates or 'wallheight' in ctcm_intermediates):
+            this_stdout1 = run_plugin(task_idx, 1, 'wall_height_aspect', folder_city, folder_tile,
+                       source_path, target_path, None, None)
+            out_list.append(this_stdout1)
 
-        this_stdout2 = run_plugin(task_idx, 2, 'skyview_factor', folder_city, folder_tile,
-                   source_path, target_path, None, None)
-        out_list.append(this_stdout2)
+        if ctcm_intermediates and 'skyview_factor' in ctcm_intermediates:
+            this_stdout2 = run_plugin(task_idx, 2, 'skyview_factor', folder_city, folder_tile,
+                       source_path, target_path, None, None)
+            out_list.append(this_stdout2)
 
         time.sleep(PROCESSING_PAUSE_TIME_SEC)
         this_stdout3 = _execute_solweig_only_plugin(task_idx, 3, folder_city,
@@ -66,6 +71,8 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
         _transfer_met_files(city_data)
     if city_data.custom_primary_feature_list:
         _transfer_custom_files(city_data, city_data.custom_primary_feature_list)
+    if city_data.custom_intermediate_list:
+        _transfer_custom_files(city_data, city_data.custom_intermediate_list)
 
     # get cif data
     if cif_primary_features is not None:
@@ -81,7 +88,8 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
 
         if task_method == 'solweig_full':
             return_vals = _execute_solweig_full_plugin_steps(task_index, city_folder_name, tile_folder_name,
-                                                             source_base_path, target_base_path, met_filenames, utc_offset)
+                                                             source_base_path, target_base_path, met_filenames,
+                                                             ctcm_intermediate_features, utc_offset)
             return_stdouts.extend(return_vals)
         elif task_method == 'solweig_only':
             return_vals = _execute_solweig_only_plugin(task_index, 1, city_folder_name,
@@ -134,27 +142,6 @@ def _transfer_custom_files(city_data, custom_feature_list):
         create_folder(to_tile_dir)
         shutil.copyfile(file_paths[0], file_paths[1])
 
-# def _transfer_raster_files(city_data):
-#     for dir in os.listdir(city_data.source_raster_files_path):
-#         if dir.startswith('tile_'):
-#             tile_name = dir
-#             source_raster_paths = []
-#             for feature in city_data.custom_feature_list:
-#                 if feature == 'dem':
-#                     source_raster_paths.append((city_data.source_dem_path, city_data.target_dem_path))
-#                 elif feature == 'dsm':
-#                     source_raster_paths.append((city_data.source_dsm_path, city_data.target_dsm_path))
-#                 elif feature == 'lulc':
-#                     source_raster_paths.append((city_data.source_land_cover_path, city_data.target_land_cover_path))
-#                 elif feature == 'tree_canopy':
-#                     source_raster_paths.append((city_data.source_tree_canopy_path, city_data.target_tree_canopy_path))
-#
-#             to_tile_dir = os.path.join(city_data.target_raster_files_path, tile_name)
-#             create_folder(to_tile_dir)
-#             for file_paths in source_raster_paths:
-#                 shutil.copyfile(file_paths[0], file_paths[1])
-
-
 
 def ensure_y_dimension_direction(city_data):
     tile_data_path = city_data.target_primary_tile_data_path
@@ -187,6 +174,7 @@ if __name__ == "__main__":
     parser.add_argument('--city_folder_name', metavar='str', required=True, help='name of city folder')
     parser.add_argument('--tile_folder_name', metavar='str', required=True, help='name of tile folder')
     parser.add_argument('--cif_primary_features', metavar='str', required=True, help='coma-delimited list of cif features to retrieve')
+    parser.add_argument('--ctcm_intermediate_features', metavar='str', required=True, help='coma-delimited list of intermediates to be created')
     parser.add_argument('--tile_boundary', metavar='str', required=True, help='geographic boundary of tile')
     parser.add_argument('--tile_resolution', metavar='str', required=True, help='resolution of tile in m.')
     parser.add_argument('--utc_offset', metavar='str', required=True, help='hour offset from utc')
@@ -195,7 +183,8 @@ if __name__ == "__main__":
 
     return_stdout =process_tile(args.task_index, args.task_method, args.source_base_path, args.target_base_path,
                                 args.city_folder_name, args.tile_folder_name,
-                                args.cif_primary_features, args.tile_boundary, args.tile_resolution, args.utc_offset)
+                                args.cif_primary_features, args.ctcm_intermediate_features,
+                                args.tile_boundary, args.tile_resolution, args.utc_offset)
 
     print(return_stdout)
 

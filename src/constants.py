@@ -5,14 +5,14 @@ ROOT_DIR = str(Path(os.path.dirname(os.path.abspath(__file__))).parent)
 SRC_DIR = os.path.join(ROOT_DIR, 'src')
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
 
-FILENAME_METHOD_CONFIG = '.config_method_parameters.yml'
-FILENAME_PROCESSING_CONFIG = '.config_city_processing.csv'
+FILENAME_METHOD_YML_CONFIG = '.config_method_parameters.yml'
+FILENAME_PROCESSING_CSV_CONFIG = '.config_city_processing.csv'
 
 FOLDER_NAME_PRIMARY_DATA = 'primary_data'
 FOLDER_NAME_PRIMARY_RASTER_FILES = 'raster_files'
 FOLDER_NAME_PRIMARY_MET_FILENAMES = 'met_files'
+FOLDER_NAME_INTERMEDIATE_DATA = 'intermediate_data'
 FOLDER_NAME_RESULTS = 'results_data'
-FOLDER_NAME_PREPROCESSED_DATA = 'preprocessed_data'
 FOLDER_NAME_TCM_RESULTS = 'tcm_results'
 
 FILENAME_WALL_HEIGHT = 'wallheight.tif'

@@ -2,6 +2,8 @@ import os
 import shutil
 import rasterio
 import shapely
+import hashlib
+import pandas as pd
 
 from pyproj import Transformer
 from shapely.geometry import Polygon
@@ -9,13 +11,18 @@ from pyproj import Geod
 from pathlib import Path
 
 from src.constants import FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_PRIMARY_DATA
-from src.workers.city_data import CityData
 
 
-def get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_tile_id):
+def get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_tile_id, include_extended_metrics = False):
     tiles_folders = str(os.path.join(source_city_path, FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_RASTER_FILES))
 
-    tile_sizes = {}
+    if include_extended_metrics:
+        columns = ['tile_name', 'primary_file', 'checksum']
+    else:
+        columns = ['tile_name', 'primary_file', 'boundary', 'avg_res']
+
+    tile_metrics_df = pd.DataFrame(columns=columns)
+
     for dir_obj in Path(tiles_folders).iterdir():
         if dir_obj.is_dir() and os.path.basename(dir_obj).startswith('tile_'):
             tile_path = os.path.join(tiles_folders, dir_obj)
@@ -30,12 +37,20 @@ def get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_t
                 for file_obj in Path(tile_path).iterdir():
                     if file_obj.name in custom_file_names and file_obj.is_file() and Path(file_obj).suffix == '.tif':
                         # get bounds for first tiff file found in folder, assuming all other geotiffs have same bounds
-                        tile_boundary, avg_res = _get_geobounds_of_geotiff_file(file_obj)
-                        tile_sizes[tile_name] = [tile_boundary, avg_res]
-                        break
-        continue
+                        file_stem = Path(file_obj.name).stem
 
-    return tile_sizes
+                        if include_extended_metrics:
+                            chksum = calculate_checksum(file_obj)
+                            new_row = {'tile_name': tile_name, 'primary_file': file_stem,
+                                       'checksum': chksum}
+                        else:
+                            tile_boundary, avg_res = _get_geobounds_of_geotiff_file(file_obj)
+                            new_row = {'tile_name': tile_name, 'primary_file': file_stem,
+                                       'boundary': tile_boundary, 'avg_res': avg_res}
+
+                        tile_metrics_df = tile_metrics_df._append(new_row, ignore_index=True)
+
+    return tile_metrics_df
 
 
 def _get_tile_range(start_tile_id, end_tile_id):
@@ -110,3 +125,10 @@ def clean_folder(folder_path):
 def list_files_with_extension(directory, extension):
     return [f for f in os.listdir(directory) if f.endswith(extension)]
 
+
+def calculate_checksum(file_path):
+    sha256_hash = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        for byte_block in iter(lambda: f.read(4096), b""):
+            sha256_hash.update(byte_block)
+    return sha256_hash.hexdigest()

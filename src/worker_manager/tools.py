@@ -44,7 +44,7 @@ def get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_t
                             new_row = {'tile_name': tile_name, 'primary_file': file_stem,
                                        'checksum': chksum}
                         else:
-                            tile_boundary, avg_res = _get_geobounds_of_geotiff_file(file_obj)
+                            tile_boundary, avg_res = _get_spatial_dimensions_of_geotiff_file(file_obj)
                             new_row = {'tile_name': tile_name, 'primary_file': file_stem,
                                        'boundary': tile_boundary, 'avg_res': avg_res}
 
@@ -65,7 +65,7 @@ def _get_tile_range(start_tile_id, end_tile_id):
     return tile_range
 
 
-def _get_geobounds_of_geotiff_file(file_path):
+def _get_spatial_dimensions_of_geotiff_file(file_path):
     with rasterio.open(file_path) as dataset:
         bounds = dataset.bounds
         min_x = bounds.left
@@ -76,14 +76,20 @@ def _get_geobounds_of_geotiff_file(file_path):
         source_crs = dataset.crs.data.get('init')
         if source_crs != 'epsg:4326':
             transformer = Transformer.from_crs(source_crs, "EPSG:4326")
-            sw_coord = transformer.transform(min_x, min_y)
-            ne_coord = transformer.transform(max_x, max_y)
-            tile_boundary = coordinates_to_bbox(sw_coord[1], sw_coord[0], ne_coord[1], ne_coord[0])
+            from shapely import geometry
+            p1 = geometry.Point(transformer.transform(min_x, min_y))
+            p2 = geometry.Point(transformer.transform(max_x, min_y))
+            p3 = geometry.Point(transformer.transform(max_x, max_y))
+            p4 = geometry.Point(transformer.transform(min_x, max_y))
+
+            pointList = [p1, p2, p3, p4, p1]
+            tile_boundary = geometry.Polygon([[p.y, p.x] for p in pointList])
         else:
-            tile_boundary = coordinates_to_bbox(min_x, min_y, max_x, max_y)
+            tile_boundary = bounds
 
         avg_res = int(round((dataset.res[0] + dataset.res[1])/2, 0))
-        return tile_boundary, avg_res
+
+    return tile_boundary, avg_res
 
 
 def coordinates_to_bbox(min_x, min_y, max_x, max_y):

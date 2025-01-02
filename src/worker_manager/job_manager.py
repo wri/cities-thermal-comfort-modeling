@@ -3,9 +3,9 @@ import subprocess
 import multiprocessing as mp
 import warnings
 import pandas as pd
-import geopandas as gpd
 import shapely
 import dask
+from shapely.lib import envelope
 
 from src.constants import SRC_DIR, METHOD_TRIGGER_ERA5_DOWNLOAD
 from src.worker_manager.ancillary_files import write_config_files, write_tile_grid, write_qgis_files
@@ -22,6 +22,16 @@ dask.config.set({'logging.distributed': 'warning'})
 MET_PROCESSING_MODULE_PATH = os.path.abspath(
     os.path.join(SRC_DIR, 'workers', 'worker_meteorological_processor.py'))
 TILE_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(SRC_DIR, 'workers', 'worker_tile_processor.py'))
+
+
+def _add_buffer_hack(tile_boundary):
+    # TODO Remove after fixing CIF-321
+    # from shapely.geometry import Polygon
+    # Define the outer envelop of the tile boundary
+
+    tile_boundary_out = envelope(shapely.buffer(shapely.from_wkt(tile_boundary), 0.00005))
+
+    return str(tile_boundary_out)
 
 
 def start_jobs(source_base_path, target_base_path, city_folder_name, processing_config_df):
@@ -101,6 +111,8 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
             for tile_index, cell in fishnet.iterrows():
                 cell_bounds = cell.geometry.bounds
                 tile_boundary = str(shapely.box(cell_bounds[0], cell_bounds[1], cell_bounds[2], cell_bounds[3]))
+
+                tile_boundary = _add_buffer_hack(tile_boundary)
 
                 tile_id = str(tile_index + 1).zfill(3)
                 tile_folder_name = f'tile_{tile_id}'

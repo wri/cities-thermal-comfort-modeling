@@ -76,14 +76,21 @@ def _get_spatial_dimensions_of_geotiff_file(file_path):
         source_crs = dataset.crs.data.get('init')
         if source_crs != 'epsg:4326':
             transformer = Transformer.from_crs(source_crs, "EPSG:4326")
-            from shapely import geometry
-            p1 = geometry.Point(transformer.transform(min_x, min_y))
-            p2 = geometry.Point(transformer.transform(max_x, min_y))
-            p3 = geometry.Point(transformer.transform(max_x, max_y))
-            p4 = geometry.Point(transformer.transform(min_x, max_y))
+            sw_coord = transformer.transform(min_x, min_y)
+            ne_coord = transformer.transform(max_x, max_y)
+            tile_boundary = coordinates_to_bbox(sw_coord[1], sw_coord[0], ne_coord[1], ne_coord[0])
 
-            pointList = [p1, p2, p3, p4, p1]
-            tile_boundary = geometry.Polygon([[p.y, p.x] for p in pointList])
+            # TODO USe below code after fixing CIF-321
+            # transformer = Transformer.from_crs(source_crs, "EPSG:4326")
+            # from shapely import geometry
+            # p1 = geometry.Point(transformer.transform(min_x, min_y))
+            # p2 = geometry.Point(transformer.transform(max_x, min_y))
+            # p3 = geometry.Point(transformer.transform(max_x, max_y))
+            # p4 = geometry.Point(transformer.transform(min_x, max_y))
+            #
+            # pointList = [p1, p2, p3, p4, p1]
+            # tile_boundary = geometry.Polygon([[p.y, p.x] for p in pointList])
+            # TODO USe above code after fixing CIF-321
         else:
             tile_boundary = bounds
 

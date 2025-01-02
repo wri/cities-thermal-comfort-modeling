@@ -33,7 +33,7 @@ def get_cif_data(task_index, source_base_path, target_base_path, folder_name_cit
     #     remove_folder(primary_target_data)
 
     d = {'geometry': [shapely.wkt.loads(tile_boundary)]}
-    aoi_gdf = gp.GeoDataFrame(d, crs="EPSG:4326")
+    tiled_aoi_gdf = gp.GeoDataFrame(d, crs="EPSG:4326")
 
     feature_list = cif_primary_features.split(',')
 
@@ -50,14 +50,14 @@ def get_cif_data(task_index, source_base_path, target_base_path, folder_name_cit
             if 'lulc' in feature_list:
                 time.sleep(wait_time)
                 log_method_start(f'CIF-lulc download for {tile_id}', task_index, None, '', logger)
-                this_success = _get_lulc(city_data, tile_cif_data_path, aoi_gdf, output_resolution, logger)
+                this_success = _get_lulc(city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-lulc download for tile {tile_id}', task_index, None, '', logger)
         elif group == 2:
             if 'tree_canopy' in feature_list:
                 time.sleep(wait_time)
                 log_method_start(f'CIF-Tree_canopy download for {tile_id}', task_index, None, '', logger)
-                this_success = _get_tree_canopy_height(city_data, tile_cif_data_path, aoi_gdf, output_resolution, logger)
+                this_success = _get_tree_canopy_height(city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time,f'CIF-Tree_canopy download for {tile_id}', task_index, None, '', logger)
         elif group == 3:
@@ -65,7 +65,7 @@ def get_cif_data(task_index, source_base_path, target_base_path, folder_name_cit
             if 'dem' in feature_list or 'dsm' in feature_list:
                 retrieve_dem = True if 'dem' in feature_list else False
                 log_method_start(f'CIF-DEM download for {tile_id}', task_index, None, '', logger)
-                this_success, nasa_dem = _get_dem(city_data, tile_cif_data_path, aoi_gdf, retrieve_dem, output_resolution, logger)
+                this_success, nasa_dem = _get_dem(city_data, tile_cif_data_path, tiled_aoi_gdf, retrieve_dem, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-DEM download for {tile_id}', task_index, None, '', logger)
             else:
@@ -73,9 +73,9 @@ def get_cif_data(task_index, source_base_path, target_base_path, folder_name_cit
 
             if 'dsm' in feature_list:
                 log_method_start(f'CIF-DSM download for {tile_id}', task_index, None, '', logger)
-                this_success, alos_dsm = _get_dsm(tile_cif_data_path, aoi_gdf, output_resolution, logger)
+                this_success, alos_dsm = _get_dsm(tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
-                this_success, overture_buildings = _get_building_footprints(tile_cif_data_path, aoi_gdf)
+                this_success, overture_buildings = _get_building_footprints(tile_cif_data_path, tiled_aoi_gdf)
                 result_flags.append(this_success)
                 this_success = _get_building_height_dsm(city_data, tile_cif_data_path, overture_buildings, alos_dsm, nasa_dem)
                 result_flags.append(this_success)

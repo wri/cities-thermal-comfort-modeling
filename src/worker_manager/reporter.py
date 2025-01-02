@@ -4,7 +4,7 @@ import json
 import pandas as pd
 
 from datetime import datetime
-from src.workers.worker_tools import create_folder
+from src.workers.worker_tools import create_folder, get_substring_after
 
 
 def parse_row_results(dc):
@@ -23,6 +23,12 @@ def parse_row_results(dc):
     failed_task_ids = []
     failed_task_details = []
     for tile_row in results:
+        if hasattr(tile_row, 'stderr'):
+            error_msg = get_substring_after(tile_row.stderr, 'error:')
+            if error_msg:
+                all_passed = False
+                failed_task_details.append(error_msg)
+
         if hasattr(tile_row, 'stdout'):
             return_info = _get_inclusive_between_string(tile_row.stdout, '{"Return_package":', "]}")
             if return_info:

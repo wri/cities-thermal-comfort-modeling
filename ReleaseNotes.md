@@ -1,5 +1,10 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+
+## 2024/12/30
+1. Added option to provide intermediate data files.
+2. Moved leaf start/end values into a section named seasonal_leaf_coverage.
+
 ## 2024/12/27
 1. Processing folder renamed as C:\CTCM_data_setup. (Old folder renamed to C:\CTCM_processing_legacy)
 2. Processing now outputs 'scenario' results to C:\CTCM_outcome folder.
@@ -17,6 +22,6 @@
  4. .config_method_parameters.yml
     1. The order of yml sections are re-ordered to a more logical sequence
     2. Now includes a new section for scenario title, version, and author
-    3. The solweig parameters now specifies different leaf start/end values for both northern_hemisphere and southern_hemisphere
+    3. The solweig parameters now specifies different leaf start/end values for both hemisphere_north and hemisphere_south
     4. In CTCM_outcome folder, the names of raster files derived from CIF are renamed to the CIF name
  5. the _run_CTCM_.. batch files are updated. Please copy in the files from the C:\CTCM_data_setup\ZZZ_template_city folder.

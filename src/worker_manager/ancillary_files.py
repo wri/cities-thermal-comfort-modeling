@@ -3,7 +3,7 @@ import shutil
 import pandas as pd
 
 from pathlib import Path
-from src.constants import DATA_DIR, FILENAME_METHOD_CONFIG, FILENAME_PROCESSING_CONFIG, \
+from src.constants import DATA_DIR, FILENAME_METHOD_YML_CONFIG, FILENAME_PROCESSING_CSV_CONFIG, \
     FILENAME_WALL_ASPECT, FILENAME_WALL_HEIGHT, FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD
 from src.worker_manager.reporter import _find_files_with_name
 from src.worker_manager.tools import clean_folder
@@ -40,16 +40,16 @@ def write_qgis_files(city_data, crs_str):
 
     # Build VRTs for preprocessed results
     preprocessed_files = []
-    target_preproc_folder = city_data.target_preprocessed_path
+    target_preproc_folder = city_data.target_intermediate_data_path
     target_preproc_first_tile_folder = os.path.join(target_preproc_folder, 'tile_001')
     if os.path.exists(target_preproc_first_tile_folder):
-        wall_aspect_file_stem = Path(FILENAME_WALL_ASPECT).stem
+        wall_aspect_file_stem = Path(city_data.wall_aspect_filename).stem
         wall_aspect_file_names = find_files_with_substring_in_name(target_preproc_first_tile_folder, wall_aspect_file_stem, '.tif')
         wall_aspect_files = _build_file_dict('preprocessed_data', 'preproc', wall_aspect_file_stem, 0, wall_aspect_file_names)
         write_raster_vrt_file_for_folder(target_preproc_folder, wall_aspect_files, target_vrt_folder)
         preprocessed_files += wall_aspect_files
 
-        wall_height_file_stem = Path(FILENAME_WALL_HEIGHT).stem
+        wall_height_file_stem = Path(city_data.wall_height_filename).stem
         wall_height_file_names = find_files_with_substring_in_name(target_preproc_first_tile_folder, wall_height_file_stem, '.tif')
         wall_height_files = _build_file_dict('preprocessed_data', 'preproc', wall_height_file_stem, 0, wall_height_file_names)
         write_raster_vrt_file_for_folder(target_preproc_folder, wall_height_files, target_vrt_folder)
@@ -211,35 +211,42 @@ def write_config_files(source_base_path, target_base_path, city_folder_name):
 
     # write updated config files to target
     source_yml_config_path = city_data.city_method_config_path
-    target_yml_config_path = os.path.join(city_data.target_city_path, FILENAME_METHOD_CONFIG)
+    target_yml_config_path = os.path.join(city_data.target_city_path, FILENAME_METHOD_YML_CONFIG)
 
-    updated_yml_config = update_custom_tiff_filenames_yml(city_data)
+    updated_yml_config = _update_custom_filenames_yml(city_data)
     write_yaml(updated_yml_config, target_yml_config_path)
 
     source_csv_config = city_data.city_processing_config_path
-    target_csv_source_config = os.path.join(city_data.target_city_path, FILENAME_PROCESSING_CONFIG)
+    target_csv_source_config = os.path.join(city_data.target_city_path, FILENAME_PROCESSING_CSV_CONFIG)
     shutil.copyfile(source_csv_config, target_csv_source_config)
 
-    # write source config files to target subdirectory
-    source_config_dir = str(os.path.join(city_data.target_city_path, '.source_config_files'))
+    # write source config files to cache subdirectory
+    source_config_dir = str(os.path.join(city_data.target_city_path, '.last_run_cache'))
     create_folder(source_config_dir)
-    target_original_yml_config_path = os.path.join(city_data.target_city_path, FILENAME_METHOD_CONFIG)
+    target_original_yml_config_path = os.path.join(source_config_dir, FILENAME_METHOD_YML_CONFIG)
     shutil.copyfile(source_yml_config_path, target_original_yml_config_path)
-    target_csv_original_config = os.path.join(source_config_dir, FILENAME_PROCESSING_CONFIG)
+    target_csv_original_config = os.path.join(source_config_dir, FILENAME_PROCESSING_CSV_CONFIG)
     shutil.copyfile(source_csv_config, target_csv_original_config)
 
+    # write primary checksums to source_config subdirectory
 
-def update_custom_tiff_filenames_yml(city_data:CityData):
+
+def _update_custom_filenames_yml(city_data:CityData):
     from src.workers.worker_tools import read_yaml
-    city_configs = os.path.join(city_data.source_city_path, FILENAME_METHOD_CONFIG)
+    city_configs = os.path.join(city_data.source_city_path, FILENAME_METHOD_YML_CONFIG)
 
     list_doc = read_yaml(city_configs)
-    custom_tiff_filenames = list_doc[3]
 
-    custom_tiff_filenames['dem_tif_filename'] = city_data.dem_tif_filename
-    custom_tiff_filenames['dsm_tif_filename'] = city_data.dsm_tif_filename
-    custom_tiff_filenames['lulc_tif_filename'] = city_data.lulc_tif_filename
-    custom_tiff_filenames['tree_canopy_tif_filename'] = city_data.tree_canopy_tif_filename
+    custom_primary_filenames = list_doc[3]
+    custom_primary_filenames['dem_tif_filename'] = city_data.dem_tif_filename
+    custom_primary_filenames['dsm_tif_filename'] = city_data.dsm_tif_filename
+    custom_primary_filenames['lulc_tif_filename'] = city_data.lulc_tif_filename
+    custom_primary_filenames['tree_canopy_tif_filename'] = city_data.tree_canopy_tif_filename
+
+    custom_intermediate_filenames = list_doc[4]
+    custom_intermediate_filenames['skyview_factor_filename'] = city_data.skyview_factor_filename
+    custom_intermediate_filenames['wall_aspect_filename'] = city_data.wall_aspect_filename
+    custom_intermediate_filenames['wall_height_filename'] = city_data.wall_height_filename
 
     return list_doc
 
@@ -253,12 +260,22 @@ def write_tile_grid(tile_grid, target_qgis_viewer_path):
         for key, value in tile_grid.items():
             poly = wkt.loads(str(value[0]))
             modified_tile_grid.loc[len(modified_tile_grid)] = [key, poly]
-    else:
+    elif isinstance(tile_grid, gpd.GeoDataFrame):
         # TODO figure out how to retain the index
         if 'fishnet_geometry' in tile_grid.columns:
             modified_tile_grid = tile_grid.drop(columns='fishnet_geometry', axis=1)
         else:
             modified_tile_grid = tile_grid
+    elif isinstance(tile_grid, pd.DataFrame):
+        modified_tile_grid = pd.DataFrame(columns=['id', 'geometry'])
+        for index, value in tile_grid.iterrows():
+            tile_id = value['tile_name']
+            geom = value['boundary']
+            poly = wkt.loads(str(geom))
+            modified_tile_grid.loc[len(modified_tile_grid)] = [tile_id, poly]
+    else:
+        raise Exception("inconvertible")
+
     projected_gdf = gpd.GeoDataFrame(modified_tile_grid, crs='EPSG:4326')
 
     target_file_name = 'tile_grid.geojson'

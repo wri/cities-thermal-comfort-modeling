@@ -59,7 +59,11 @@ def write_yaml(data, config_path):
     dir = os.path.dirname(config_path)
     create_folder(dir)
     with open(config_path, 'w') as file:
-        yaml.safe_dump(data, file)
+        yaml.safe_dump(data, file, sort_keys=False)
+
+
+def get_substring_after(s, delim):
+    return s.partition(delim)[2]
 
 
 def unpack_quoted_value(value):

@@ -36,7 +36,6 @@ def get_cif_data(task_index, source_base_path, target_base_path, folder_name_cit
     tiled_aoi_gdf = gp.GeoDataFrame(d, crs="EPSG:4326")
 
     feature_list = cif_primary_features.split(',')
-    feature_list = ['lulc']
 
     tile_resolution = unpack_quoted_value(tile_resolution)
     output_resolution = DEFAULT_LULC_RESOLUTION if tile_resolution is None else tile_resolution

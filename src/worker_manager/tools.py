@@ -19,7 +19,7 @@ def get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_t
     if include_extended_metrics:
         columns = ['tile_name', 'primary_file', 'checksum']
     else:
-        columns = ['tile_name', 'primary_file', 'boundary', 'avg_res']
+        columns = ['tile_name', 'primary_file', 'boundary', 'avg_res', 'source_crs']
 
     tile_metrics_df = pd.DataFrame(columns=columns)
 
@@ -44,9 +44,9 @@ def get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_t
                             new_row = {'tile_name': tile_name, 'primary_file': file_stem,
                                        'checksum': chksum}
                         else:
-                            tile_boundary, avg_res = _get_spatial_dimensions_of_geotiff_file(file_obj)
+                            tile_boundary, avg_res, source_crs = _get_spatial_dimensions_of_geotiff_file(file_obj)
                             new_row = {'tile_name': tile_name, 'primary_file': file_stem,
-                                       'boundary': tile_boundary, 'avg_res': avg_res}
+                                       'boundary': tile_boundary, 'avg_res': avg_res, 'source_crs': source_crs}
 
                         tile_metrics_df = tile_metrics_df._append(new_row, ignore_index=True)
 
@@ -80,23 +80,15 @@ def _get_spatial_dimensions_of_geotiff_file(file_path):
             ne_coord = transformer.transform(max_x, max_y)
             tile_boundary = coordinates_to_bbox(sw_coord[1], sw_coord[0], ne_coord[1], ne_coord[0])
 
-            # TODO USe below code after fixing CIF-321
-            # transformer = Transformer.from_crs(source_crs, "EPSG:4326")
-            # from shapely import geometry
-            # p1 = geometry.Point(transformer.transform(min_x, min_y))
-            # p2 = geometry.Point(transformer.transform(max_x, min_y))
-            # p3 = geometry.Point(transformer.transform(max_x, max_y))
-            # p4 = geometry.Point(transformer.transform(min_x, max_y))
-            #
-            # pointList = [p1, p2, p3, p4, p1]
-            # tile_boundary = geometry.Polygon([[p.y, p.x] for p in pointList])
+            # TODO Use below code after fixing CIF-321
+            # tile_boundary = coordinates_to_bbox(min_x, min_y, max_x, max_y)
             # TODO USe above code after fixing CIF-321
         else:
             tile_boundary = bounds
 
         avg_res = int(round((dataset.res[0] + dataset.res[1])/2, 0))
 
-    return tile_boundary, avg_res
+    return tile_boundary, avg_res, source_crs
 
 
 def coordinates_to_bbox(min_x, min_y, max_x, max_y):

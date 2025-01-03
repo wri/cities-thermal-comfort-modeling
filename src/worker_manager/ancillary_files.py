@@ -254,7 +254,7 @@ def _update_custom_filenames_yml(city_data:CityData):
     return list_doc
 
 
-def write_tile_grid(tile_grid, target_qgis_viewer_path):
+def write_tile_grid(tile_grid, source_crs, target_qgis_viewer_path):
     from shapely import wkt
     import geopandas as gpd
 
@@ -279,7 +279,7 @@ def write_tile_grid(tile_grid, target_qgis_viewer_path):
     else:
         raise Exception("inconvertible")
 
-    projected_gdf = gpd.GeoDataFrame(modified_tile_grid, crs='EPSG:4326')
+    projected_gdf = gpd.GeoDataFrame(modified_tile_grid, crs=source_crs)
 
     target_file_name = 'tile_grid.geojson'
     target_path = target_qgis_viewer_path

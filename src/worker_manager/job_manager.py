@@ -76,6 +76,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
     enabled_processing_tasks_df = processing_config_df[(processing_config_df['enabled'])]
 
     futures = []
+    number_of_tiles = 1000  # Initialize as large number
     for task_index, config_row in enabled_processing_tasks_df.iterrows():
         task_method = config_row.method
         start_tile_id = config_row.start_tile_id
@@ -84,12 +85,17 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
         # Retrieve CIF data
         if custom_primary_filenames:
             existing_tiles = get_existing_tiles(source_city_path, custom_primary_filenames, start_tile_id, end_tile_id)
-            tile_unique_values = existing_tiles[['tile_name', 'boundary']].drop_duplicates()
+            tile_unique_values = existing_tiles[['tile_name', 'boundary', 'avg_res', 'source_crs']].drop_duplicates()
+            number_of_tiles = tile_unique_values.shape[0]
 
-            write_tile_grid(tile_unique_values, non_tiled_city_data.target_qgis_viewer_path)
+            # TODO update after fixing CIF-321
+            source_crs = 'epsg:4326'
+            # source_crs = tile_unique_values['source_crs'][0]
+
+            write_tile_grid(tile_unique_values, source_crs, non_tiled_city_data.target_qgis_viewer_path)
 
             print(f'\nProcessing over {len(tile_unique_values)} existing tiles..')
-            for index, tile_metrics in existing_tiles.iterrows():
+            for index, tile_metrics in tile_unique_values.iterrows():
                 tile_folder_name = tile_metrics['tile_name']
                 tile_boundary = tile_metrics['boundary']
                 tile_resolution = tile_metrics['avg_res']
@@ -105,7 +111,11 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
                 futures.append(delay_tile_array)
         else:
             fishnet = get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters)
-            write_tile_grid(fishnet, non_tiled_city_data.target_qgis_viewer_path)
+            number_of_tiles = fishnet.shape[0]
+
+            # TODO update after fixing CIF-321
+            source_crs = 'epsg:4326'
+            write_tile_grid(fishnet, source_crs, non_tiled_city_data.target_qgis_viewer_path)
 
             print(f'\nCreating data for {fishnet.geometry.size} new tiles..')
             for tile_index, cell in fishnet.iterrows():
@@ -129,7 +139,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
 
     # TODO consider processing every nth tile and return just those results
     write_log_message('Starting model processing', __file__, logger)
-    delays_all_passed, results_df = _process_rows(futures, logger)
+    delays_all_passed, results_df = _process_rows(futures, number_of_tiles, logger)
 
     # Combine processing return values
     combined_results_df = pd.concat([combined_results_df, results_df])
@@ -139,7 +149,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
     write_config_files(source_base_path, target_base_path, city_folder_name)
 
     # Write run_report
-    report_file_path = report_results(enabled_processing_tasks_df, combined_results_df, non_tiled_city_data.target_report_path,
+    report_file_path = report_results(enabled_processing_tasks_df, combined_results_df, non_tiled_city_data.target_log_path,
                                       city_folder_name)
     print(f'\nRun report written to {report_file_path}\n')
 
@@ -207,11 +217,13 @@ def _construct_tile_proc_array(task_index, task_method, source_base_path, target
     return proc_array
 
 
-def _process_rows(futures, logger):
+def _process_rows(futures, number_of_tiles, logger):
     if futures:
-        # TODO chunk size??
+        available_cpu_count = int(mp.cpu_count() - 1)
+        num_workers = number_of_tiles+1 if number_of_tiles < available_cpu_count else available_cpu_count
+
         from dask.distributed import Client
-        with Client(n_workers=int(mp.cpu_count() - 1),
+        with Client(n_workers=num_workers,
                     threads_per_worker=1,
                     processes=False,
                     memory_limit='2GB',

@@ -7,7 +7,7 @@ def parse_scenario_config(yml_values):
     try:
         scenario = yml_values[0]
         
-        short_title = unpack_quoted_value(scenario['short_title'])
+        short_title = str(unpack_quoted_value(scenario['short_title'])).lower()
         version = unpack_quoted_value(scenario['version'])
         description = unpack_quoted_value(scenario['description'])
         author = unpack_quoted_value(scenario['author'])

@@ -6,7 +6,7 @@ from pathlib import Path
 from src.constants import DATA_DIR, FILENAME_METHOD_YML_CONFIG, FILENAME_PROCESSING_CSV_CONFIG, \
     FILENAME_WALL_ASPECT, FILENAME_WALL_HEIGHT, FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD
 from src.worker_manager.reporter import _find_files_with_name
-from src.worker_manager.tools import clean_folder
+from src.worker_manager.tools import clean_folder, delete_files_with_extension
 from src.workers.city_data import CityData
 from src.workers.worker_tools import create_folder
 
@@ -85,6 +85,9 @@ def write_qgis_files(city_data, crs_str):
     # write the QGIS viewer file
     vrt_files = target_raster_files + preprocessed_files + met_filenames
     _modify_and_write_qgis_file(vrt_files, city_data, crs_str, target_viewer_folder)
+
+    # remove tif.aux.xml files
+    delete_files_with_extension(city_data.target_city_path, '.tif.aux.xml')
 
 
 def _modify_and_write_qgis_file(vrt_files, city_data, crs_str, target_viewer_folder):
@@ -221,14 +224,14 @@ def write_config_files(source_base_path, target_base_path, city_folder_name):
     shutil.copyfile(source_csv_config, target_csv_source_config)
 
     # write source config files to cache subdirectory
-    source_config_dir = str(os.path.join(city_data.target_city_path, '.last_run_cache'))
+    source_config_dir = str(os.path.join(city_data.target_log_path, 'last_run_cache'))
     create_folder(source_config_dir)
     target_original_yml_config_path = os.path.join(source_config_dir, FILENAME_METHOD_YML_CONFIG)
     shutil.copyfile(source_yml_config_path, target_original_yml_config_path)
     target_csv_original_config = os.path.join(source_config_dir, FILENAME_PROCESSING_CSV_CONFIG)
     shutil.copyfile(source_csv_config, target_csv_original_config)
 
-    # write primary checksums to source_config subdirectory
+    # TODO write primary checksums to source_config subdirectory
 
 
 def _update_custom_filenames_yml(city_data:CityData):
@@ -251,7 +254,7 @@ def _update_custom_filenames_yml(city_data:CityData):
     return list_doc
 
 
-def write_tile_grid(tile_grid, target_qgis_viewer_path):
+def write_tile_grid(tile_grid, source_crs, target_qgis_viewer_path):
     from shapely import wkt
     import geopandas as gpd
 
@@ -276,7 +279,7 @@ def write_tile_grid(tile_grid, target_qgis_viewer_path):
     else:
         raise Exception("inconvertible")
 
-    projected_gdf = gpd.GeoDataFrame(modified_tile_grid, crs='EPSG:4326')
+    projected_gdf = gpd.GeoDataFrame(modified_tile_grid, crs=source_crs)
 
     target_file_name = 'tile_grid.geojson'
     target_path = target_qgis_viewer_path

@@ -66,8 +66,10 @@ class CityData:
         if target_base_path:
             obj.target_base_path = target_base_path
 
-            filled_title = (str(obj.scenario_short_title).strip().replace(" ", "_").replace(".","") +
-                            '_' + str(obj.scenario_version).strip().replace(".", "_"))
+            cleaned_tile = str(obj.scenario_short_title).strip().replace(" ", "_").replace(".","")
+            cleaned_version = str(obj.scenario_version).strip().replace(".", "_")
+            filled_title = f'{cleaned_tile}_v{cleaned_version}'
+
             scenario_sub_folder =  f'{folder_name_city_data}_{filled_title}'
             obj.target_city_parent_path = str(os.path.join(target_base_path, folder_name_city_data))
             obj.target_city_path = str(os.path.join(obj.target_city_parent_path, scenario_sub_folder))
@@ -75,17 +77,16 @@ class CityData:
             obj.target_city_data_path = str(os.path.join(obj.target_city_path, FOLDER_NAME_PRIMARY_DATA))
             obj.target_met_filenames_path = os.path.join(obj.target_city_data_path, FOLDER_NAME_PRIMARY_MET_FILENAMES)
 
-            target_log_path = os.path.join(obj.target_city_path, '.logs')
-            obj.target_manager_log_path = os.path.join(target_log_path, 'worker_manager.log')
-            obj.target_model_log_path = os.path.join(target_log_path, 'model_execution.log')
-            obj.target_report_path = os.path.join(target_log_path, '.run_reports')
+            obj.target_log_path = os.path.join(obj.target_city_path, '.logs')
+            obj.target_manager_log_path = os.path.join(obj.target_log_path, 'worker_manager.log')
+            obj.target_model_log_path = os.path.join(obj.target_log_path, 'model_execution.log')
 
             obj.target_qgis_viewer_path = os.path.join(obj.target_city_path, '.qgis_viewer')
 
             obj.target_intermediate_data_path = os.path.join(obj.target_city_path, FOLDER_NAME_INTERMEDIATE_DATA)
 
             target_path_results_data = str(os.path.join(obj.target_city_path, FOLDER_NAME_RESULTS))
-            obj.target_tcm_results_path = os.path.join(target_path_results_data, FOLDER_NAME_TCM_RESULTS)
+            obj.target_tcm_results_path = os.path.join(target_path_results_data, FOLDER_NAME_UMEP_TCM_RESULTS)
 
             if obj.folder_name_tile_data:
                 obj.target_raster_files_path = os.path.join(obj.target_city_data_path,

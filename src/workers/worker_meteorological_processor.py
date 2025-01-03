@@ -104,20 +104,20 @@ def _reformat_line(line):
     qe = MET_NULL_VALUE
     qs = MET_NULL_VALUE
     qf = MET_NULL_VALUE
-    U = _standardize_string(wind)
-    RH = _standardize_string(rh)
-    Tair = _standardize_string(temp)
+    U = _standardize_string(wind) # wind
+    RH = _standardize_string(rh) # rh
+    Tair = _standardize_string(temp) # temp
     press = MET_NULL_VALUE
     rain = MET_NULL_VALUE
-    kdown = _standardize_string(global_rad)
+    kdown = _standardize_string(global_rad) # sw rad
     snow = MET_NULL_VALUE
-    ldown = _standardize_string(diffuse_rad)
+    ldown = _standardize_string(diffuse_rad) # lw rad
     fcld = MET_NULL_VALUE
     wuh = MET_NULL_VALUE
     xsmd = MET_NULL_VALUE
     lai = MET_NULL_VALUE
     kdiff = MET_NULL_VALUE
-    kdir = _standardize_string(direct_rad)
+    kdir = _standardize_string(direct_rad) # sw rad
     wdir = MET_NULL_VALUE
 
     new_line = ''

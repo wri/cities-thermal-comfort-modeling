@@ -50,11 +50,11 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
    1. Open a Windows command prompt
       1. Enter and run the "gotcm" command to take you to the C:\CTCM_data_setup folder and activate the cities-thermal conda environment. 
       1. To run a pre-check of the configurations in your city folder:
-         1. Execute the _run_CTCM_pre_check.bat script by simply entering the script name and hitting Enter.
+         1. Execute the a_run_CTCM_pre_check.bat script by simply entering the script name and hitting Enter.
          1. Confirm that it returns "Passed all validation checks"
-         1. The _run_CTCM_pre_check.bat script validates your configuration files and source data files (if any).
+         1. The a_run_CTCM_pre_check.bat script validates your configuration files and source data files (if any).
       1. Finally, to run the method you specified in the .config_umep_city_processing.csv file: 
-         1. Execute the _run_CTCM_processing.bat script by simply entering the script name and hitting Enter.
+         1. Execute the b_run_CTCM_processing.bat script by simply entering the script name and hitting Enter.
             * **Tip**: It his highly recommended that you hit the Enter key a couple of time after launch the run to force Windows to properly indicate when the job has completed.
             * **Note**: processing may take an extended period of time even up to 2+ hours per tile depending on the size of your dataset.
          1. Upon completion of the run, confirm that "Processing encountered no errors."

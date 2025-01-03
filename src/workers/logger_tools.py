@@ -9,10 +9,14 @@ def setup_logger(log_filepath):
     path = Path(log_filepath).parent
     create_folder(path)
 
-    logger = logging.getLogger('AppLogger')
-    logger.setLevel(logging.DEBUG)
-    handler = logging.FileHandler(log_filepath)
-    logger.addHandler(handler)
+    logger_name = 'AppLogger'
+
+    logger = logging.getLogger(logger_name)
+    if logging.getLogger(logger_name).hasHandlers() is False:
+        logger.setLevel(logging.DEBUG)
+        handler = logging.FileHandler(log_filepath)
+        logger.addHandler(handler)
+
     return logger
 
 def write_log_message(message, calling_file, logger):

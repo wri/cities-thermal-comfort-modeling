@@ -79,7 +79,8 @@ def run_plugin(task_index, step_index, step_method, folder_name_city_data, folde
             retry_count += 1
 
     if return_code == 0:
-        log_method_completion(start_time, method_title, task_index, None, city_data.target_base_path, logger)
+        # log_method_completion(start_time, method_title, task_index, None, city_data.target_base_path, logger)
+        log_method_completion(start_time, method_title, task_index, datetime.now(), city_data.target_base_path, logger)
     else:
         msg = f'{method_title} processing cancelled after {MAX_RETRY_COUNT} attempts.'
         log_method_failure(start_time, msg, task_index, None, city_data.target_base_path, '')

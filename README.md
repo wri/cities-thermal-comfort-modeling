@@ -62,7 +62,7 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
 
 ### Post-Execution Evaluation of Results
    1. Results of your run are written to the C:\CTCM_outcome folder under your city folder specified in the batch script with a sub-folder for the scenario.
-   1. To see a report of success/failure, see the html files in the .logs\.run_reports for the time that you started your run. 
+   1. To see a report of success/failure, see the html files in the .logs folder for the time that you started your run. 
    1. For details about any failures, see the log file(s) in the .logs folder.
    1. The system also generates a QGIS workfile named 'viewer.qgs' in the .qgis_viewer folder as is an excellent means for verifying the outcome.
       * **Note** The current version of the workfile requires two steps to view your data:

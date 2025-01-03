@@ -63,7 +63,7 @@ def _get_inclusive_between_string(text, start_substring, end_substring):
     except ValueError:
         return None
 
-def report_results(enabled_processing_tasks_df, results_df, target_report_path, city_folder_name):
+def report_results(enabled_processing_tasks_df, results_df, target_log_path, city_folder_name):
     results_df.sort_values(['task_index', 'tile', 'step_index', 'met_filename'], inplace=True)
 
     merged = pd.merge(enabled_processing_tasks_df, results_df, left_index=True, right_on='task_index',
@@ -76,11 +76,11 @@ def report_results(enabled_processing_tasks_df, results_df, target_report_path, 
                     'step_method', 'met_filename',
                     'return_code', 'start_time', 'run_duration_min']]
 
-    create_folder(target_report_path)
+    create_folder(target_log_path)
 
     report_date_str =  datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
     report_name = f'run_report_{report_date_str}.html'
-    report_file_path = os.path.join(target_report_path, report_name)
+    report_file_path = os.path.join(target_log_path, report_name)
 
     reporting_df.to_html(report_file_path)
 

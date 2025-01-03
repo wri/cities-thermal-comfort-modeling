@@ -142,7 +142,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
     write_config_files(source_base_path, target_base_path, city_folder_name)
 
     # Write run_report
-    report_file_path = report_results(enabled_processing_tasks_df, combined_results_df, non_tiled_city_data.target_report_path,
+    report_file_path = report_results(enabled_processing_tasks_df, combined_results_df, non_tiled_city_data.target_log_path,
                                       city_folder_name)
     print(f'\nRun report written to {report_file_path}\n')
 

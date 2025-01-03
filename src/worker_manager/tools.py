@@ -134,6 +134,16 @@ def clean_folder(folder_path):
             except Exception as e_msg:
                 print(f'Failed to delete {file_path}. Reason: {e_msg}')
 
+def delete_files_with_extension(root_folder, extension):
+    for foldername, subfolders, filenames in os.walk(root_folder):
+        for filename in filenames:
+            if filename.endswith(extension):
+                file_path = os.path.join(foldername, filename)
+                try:
+                    os.remove(file_path)
+                except Exception as e_msg:
+                    print(f"Error deleting {file_path}: {e_msg}")
+
 
 def list_files_with_extension(directory, extension):
     return [f for f in os.listdir(directory) if f.endswith(extension)]

@@ -16,10 +16,7 @@ class CityData:
         obj.source_city_primary_data_path = str(os.path.join(obj.source_city_path, FOLDER_NAME_PRIMARY_DATA))
         obj.source_intermediate_data_path = str(os.path.join(obj.source_city_path, FOLDER_NAME_INTERMEDIATE_DATA))
         obj.source_met_filenames_path = os.path.join(obj.source_city_primary_data_path, FOLDER_NAME_PRIMARY_MET_FILENAMES)
-
-        obj.city_processing_config_path = os.path.join(obj.source_city_path, FILENAME_PROCESSING_CSV_CONFIG)
         obj.city_method_config_path = os.path.join(obj.source_city_path, FILENAME_METHOD_YML_CONFIG)
-
 
         # parse config file
         yml_values = read_yaml(obj.city_method_config_path)

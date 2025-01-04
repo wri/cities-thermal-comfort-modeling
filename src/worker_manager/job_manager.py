@@ -34,7 +34,7 @@ def _add_buffer_hack(tile_boundary):
     return str(tile_boundary_out)
 
 
-def start_jobs(source_base_path, target_base_path, city_folder_name, processing_config_df):
+def start_jobs(source_base_path, target_base_path, city_folder_name):
     non_tiled_city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
     source_city_path = str(os.path.join(source_base_path, city_folder_name))
     custom_primary_filenames = non_tiled_city_data.custom_primary_filenames
@@ -52,7 +52,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
     aoi_boundary, tile_side_meters, tile_buffer_meters, utc_offset, crs_str = get_aoi(source_base_path,
                                                                                       city_folder_name)
     combined_results_df = pd.DataFrame(
-        columns=['status', 'task_index', 'tile', 'step_index', 'step_method', 'met_filename', 'return_code',
+        columns=['status', 'tile', 'step_index', 'step_method', 'met_filename', 'return_code',
                  'start_time', 'run_duration_min'])
     combined_delays_passed = []
 
@@ -72,68 +72,65 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
         combined_results_df = pd.concat([combined_results_df, met_results_df])
         combined_delays_passed.append(met_delays_all_passed)
 
-    # build plugin graph
-    enabled_processing_tasks_df = processing_config_df
 
     futures = []
     number_of_tiles = 1000  # Initialize as large number
-    for task_index, config_row in enabled_processing_tasks_df.iterrows():
-        task_method = config_row.method
+    task_method = non_tiled_city_data.new_task_method
 
-        # Retrieve CIF data
-        if custom_primary_filenames:
-            existing_tiles = get_existing_tiles(source_city_path, custom_primary_filenames)
-            tile_unique_values = existing_tiles[['tile_name', 'boundary', 'avg_res', 'source_crs']].drop_duplicates()
-            number_of_tiles = tile_unique_values.shape[0]
+    # Retrieve CIF data
+    if custom_primary_filenames:
+        existing_tiles = get_existing_tiles(source_city_path, custom_primary_filenames)
+        tile_unique_values = existing_tiles[['tile_name', 'boundary', 'avg_res', 'source_crs']].drop_duplicates()
+        number_of_tiles = tile_unique_values.shape[0]
 
-            # TODO update after fixing CIF-321
-            source_crs = 'epsg:4326'
-            # source_crs = tile_unique_values['source_crs'][0]
+        # TODO update after fixing CIF-321
+        source_crs = 'epsg:4326'
+        # source_crs = tile_unique_values['source_crs'][0]
 
-            write_tile_grid(tile_unique_values, source_crs, non_tiled_city_data.target_qgis_viewer_path)
+        write_tile_grid(tile_unique_values, source_crs, non_tiled_city_data.target_qgis_viewer_path)
 
-            print(f'\nProcessing over {len(tile_unique_values)} existing tiles..')
-            for index, tile_metrics in tile_unique_values.iterrows():
-                tile_folder_name = tile_metrics['tile_name']
-                tile_boundary = tile_metrics['boundary']
-                tile_resolution = tile_metrics['avg_res']
+        print(f'\nProcessing over {len(tile_unique_values)} existing tiles..')
+        for index, tile_metrics in tile_unique_values.iterrows():
+            tile_folder_name = tile_metrics['tile_name']
+            tile_boundary = tile_metrics['boundary']
+            tile_resolution = tile_metrics['avg_res']
 
-                proc_array = _construct_tile_proc_array(task_index, task_method, source_base_path, target_base_path,
-                                                        city_folder_name, tile_folder_name, cif_primary_features,
-                                                        ctcm_intermediate_features, tile_boundary, tile_resolution,
-                                                        utc_offset)
+            proc_array = _construct_tile_proc_array(task_method, source_base_path, target_base_path,
+                                                    city_folder_name, tile_folder_name, cif_primary_features,
+                                                    ctcm_intermediate_features, tile_boundary, tile_resolution,
+                                                    utc_offset)
 
-                write_log_message(f'Staging: {proc_array}', __file__, logger)
+            write_log_message(f'Staging: {proc_array}', __file__, logger)
 
-                delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
-                futures.append(delay_tile_array)
-        else:
-            fishnet = get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters)
-            number_of_tiles = fishnet.shape[0]
+            delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
+            futures.append(delay_tile_array)
+    else:
+        fishnet = get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters)
+        number_of_tiles = fishnet.shape[0]
 
-            # TODO update after fixing CIF-321
-            source_crs = 'epsg:4326'
-            write_tile_grid(fishnet, source_crs, non_tiled_city_data.target_qgis_viewer_path)
+        # TODO update after fixing CIF-321
+        source_crs = 'epsg:4326'
+        write_tile_grid(fishnet, source_crs, non_tiled_city_data.target_qgis_viewer_path)
 
-            print(f'\nCreating data for {fishnet.geometry.size} new tiles..')
-            for tile_index, cell in fishnet.iterrows():
-                cell_bounds = cell.geometry.bounds
-                tile_boundary = str(shapely.box(cell_bounds[0], cell_bounds[1], cell_bounds[2], cell_bounds[3]))
+        print(f'\nCreating data for {fishnet.geometry.size} new tiles..')
+        for tile_index, cell in fishnet.iterrows():
+            cell_bounds = cell.geometry.bounds
+            tile_boundary = str(shapely.box(cell_bounds[0], cell_bounds[1], cell_bounds[2], cell_bounds[3]))
 
-                tile_boundary = _add_buffer_hack(tile_boundary)
+            tile_boundary = _add_buffer_hack(tile_boundary)
 
-                tile_id = str(tile_index + 1).zfill(3)
-                tile_folder_name = f'tile_{tile_id}'
+            tile_id = str(tile_index + 1).zfill(3)
+            tile_folder_name = f'tile_{tile_id}'
 
-                proc_array = _construct_tile_proc_array(task_index, task_method, source_base_path, target_base_path,
-                                                        city_folder_name, tile_folder_name, cif_primary_features,
-                                                        ctcm_intermediate_features, tile_boundary, None,
-                                                        utc_offset)
+            proc_array = _construct_tile_proc_array(task_method, source_base_path, target_base_path,
+                                                    city_folder_name, tile_folder_name, cif_primary_features,
+                                                    ctcm_intermediate_features, tile_boundary, None,
+                                                    utc_offset)
 
-                write_log_message(f'Staging: {proc_array}', __file__, logger)
+            write_log_message(f'Staging: {proc_array}', __file__, logger)
 
-                delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
-                futures.append(delay_tile_array)
+            delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
+            futures.append(delay_tile_array)
 
     # TODO consider processing every nth tile and return just those results
     write_log_message('Starting model processing', __file__, logger)
@@ -147,7 +144,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
     write_config_files(source_base_path, target_base_path, city_folder_name)
 
     # Write run_report
-    report_file_path = report_results(enabled_processing_tasks_df, combined_results_df, non_tiled_city_data.target_log_path,
+    report_file_path = report_results(task_method, combined_results_df, non_tiled_city_data.target_log_path,
                                       city_folder_name)
     print(f'\nRun report written to {report_file_path}\n')
 
@@ -172,10 +169,9 @@ def any_value_matches_in_dict_list(dict_list, target_string):
     return False
 
 
-def _construct_met_proc_array(task_index, target_base_path, city_folder_name, aoi_boundary, utc_offset,
+def _construct_met_proc_array(target_base_path, city_folder_name, aoi_boundary, utc_offset,
                               sampling_local_hours):
     proc_array = ['python', MET_PROCESSING_MODULE_PATH,
-                  f'--task_index={task_index}',
                   f'--target_base_path={target_base_path}',
                   f'--city_folder_name={city_folder_name}',
                   f'--aoi_boundary={str(aoi_boundary)}',
@@ -186,7 +182,7 @@ def _construct_met_proc_array(task_index, target_base_path, city_folder_name, ao
     return proc_array
 
 
-def _construct_tile_proc_array(task_index, task_method, source_base_path, target_base_path, city_folder_name,
+def _construct_tile_proc_array(task_method, source_base_path, target_base_path, city_folder_name,
                                tile_folder_name, cif_primary_features, ctcm_intermediate_features,
                                tile_boundary, tile_resolution, utc_offset):
     if cif_primary_features:
@@ -200,7 +196,6 @@ def _construct_tile_proc_array(task_index, task_method, source_base_path, target
         ctcm_features = None
 
     proc_array = ['python', TILE_PROCESSING_MODULE_PATH,
-                  f'--task_index={task_index}',
                   f'--task_method={task_method}',
                   f'--source_base_path={source_base_path}',
                   f'--target_base_path={target_base_path}',

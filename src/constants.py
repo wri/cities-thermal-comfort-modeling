@@ -6,7 +6,6 @@ SRC_DIR = os.path.join(ROOT_DIR, 'src')
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
 
 FILENAME_METHOD_YML_CONFIG = '.config_method_parameters.yml'
-FILENAME_PROCESSING_CSV_CONFIG = '.config_city_processing.csv'
 
 FOLDER_NAME_PRIMARY_DATA = 'primary_data'
 FOLDER_NAME_PRIMARY_RASTER_FILES = 'raster_files'

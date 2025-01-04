@@ -1,17 +1,8 @@
 import os
-import pandas as pd
 
-from src.constants import FILENAME_PROCESSING_CSV_CONFIG
 from src.worker_manager.tools import construct_polygon_from_bounds, coordinates_to_bbox
 from src.workers.city_data import CityData
 from src.workers.worker_tools import get_utm_zone_epsg
-
-
-def build_source_dataframes(source_base_path, city_folder_name):
-    config_processing_file_path = str(os.path.join(source_base_path, city_folder_name, FILENAME_PROCESSING_CSV_CONFIG))
-    processing_config_df = pd.read_csv(config_processing_file_path)
-
-    return processing_config_df
 
 
 def get_aoi(source_base_path, city_folder_name):

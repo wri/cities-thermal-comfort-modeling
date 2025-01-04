@@ -18,7 +18,7 @@ def parse_row_results(dc):
             results.append(obj)
 
     # extract content from the return package and determine if there was a failure
-    results_df = pd.DataFrame(columns=['status', 'task_index', 'tile', 'step_index', 'step_method', 'met_filename', 'return_code', 'start_time', 'run_duration_min'])
+    results_df = pd.DataFrame(columns=['status', 'tile', 'step_index', 'step_method', 'met_filename', 'return_code', 'start_time', 'run_duration_min'])
     all_passed = True
     failed_task_ids = []
     failed_task_details = []
@@ -34,7 +34,6 @@ def parse_row_results(dc):
             if return_info:
                 return_package = json.loads(return_info)['Return_package']
                 for result in return_package:
-                    task_index = result['task_index']
                     tile = result['tile']
                     step_index = result['step_index']
                     step_method = result['step_method']
@@ -44,11 +43,10 @@ def parse_row_results(dc):
                     run_duration_min = result['run_duration_min']
 
                     status = 'success' if return_code == 0 else 'FAILURE'
-                    new_row = [status, task_index, tile, step_index, step_method, met_filename, return_code, start_time, run_duration_min]
+                    new_row = [status, tile, step_index, step_method, met_filename, return_code, start_time, run_duration_min]
                     results_df.loc[len(results_df.index)] = new_row
 
                     if return_code != 0:
-                        failed_task_ids.append(task_index)
                         failed_task_details.append(tile_row)
                         all_passed = False
 
@@ -63,16 +61,15 @@ def _get_inclusive_between_string(text, start_substring, end_substring):
     except ValueError:
         return None
 
-def report_results(enabled_processing_tasks_df, results_df, target_log_path, city_folder_name):
-    results_df.sort_values(['task_index', 'tile', 'step_index', 'met_filename'], inplace=True)
+def report_results(task_method, results_df, target_log_path, city_folder_name):
+    results_df.sort_values(['tile', 'step_index', 'met_filename'], inplace=True)
 
-    merged = pd.merge(enabled_processing_tasks_df, results_df, left_index=True, right_on='task_index',
-                      how='outer')
-    merged['run_status'] = merged['return_code'].apply(_evaluate_return_code)
-    merged['city_folder_name'] = city_folder_name
+    results_df['run_status'] = results_df['return_code'].apply(_evaluate_return_code)
+    results_df['city_folder_name'] = city_folder_name
+    results_df['method'] = task_method
 
-    reporting_df = merged.loc[:,
-                   ['run_status', 'task_index', 'city_folder_name', 'tile', 'method', 'step_index',
+    reporting_df = results_df.loc[:,
+                   ['run_status', 'city_folder_name', 'tile', 'method', 'step_index',
                     'step_method', 'met_filename',
                     'return_code', 'start_time', 'run_duration_min']]
 

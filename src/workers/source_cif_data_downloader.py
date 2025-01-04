@@ -16,14 +16,14 @@ from src.workers.worker_tools import compute_time_diff_mins, reverse_y_dimension
 DEFAULT_LULC_RESOLUTION = 1
 DEBUG = False
 
-def get_cif_data(task_index, source_base_path, target_base_path, folder_name_city_data, tile_id, cif_primary_features,
+def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile_id, cif_primary_features,
                  tile_boundary, tile_resolution):
     start_time = datetime.now()
 
     city_data = CityData(folder_name_city_data, tile_id, source_base_path, target_base_path)
 
     logger = setup_logger(city_data.target_model_log_path)
-    log_method_start(f'CIF download: ({cif_primary_features}) in tile {tile_id}', task_index, None, '', logger)
+    log_method_start(f'CIF download: ({cif_primary_features}) in tile {tile_id}', None, '', logger)
 
     tile_cif_data_path = city_data.target_primary_tile_data_path
 
@@ -49,37 +49,37 @@ def get_cif_data(task_index, source_base_path, target_base_path, folder_name_cit
         if group == 1:
             if 'lulc' in feature_list:
                 time.sleep(wait_time)
-                log_method_start(f'CIF-lulc download for {tile_id}', task_index, None, '', logger)
+                log_method_start(f'CIF-lulc download for {tile_id}', None, '', logger)
                 this_success = _get_lulc(city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
-                log_method_completion(start_time, f'CIF-lulc download for tile {tile_id}', task_index, None, '', logger)
+                log_method_completion(start_time, f'CIF-lulc download for tile {tile_id}', None, '', logger)
         elif group == 2:
             if 'tree_canopy' in feature_list:
                 time.sleep(wait_time)
-                log_method_start(f'CIF-Tree_canopy download for {tile_id}', task_index, None, '', logger)
+                log_method_start(f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
                 this_success = _get_tree_canopy_height(city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
-                log_method_completion(start_time,f'CIF-Tree_canopy download for {tile_id}', task_index, None, '', logger)
+                log_method_completion(start_time,f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
         elif group == 3:
             time.sleep(wait_time)
             if 'dem' in feature_list or 'dsm' in feature_list:
                 retrieve_dem = True if 'dem' in feature_list else False
-                log_method_start(f'CIF-DEM download for {tile_id}', task_index, None, '', logger)
+                log_method_start(f'CIF-DEM download for {tile_id}', None, '', logger)
                 this_success, nasa_dem = _get_dem(city_data, tile_cif_data_path, tiled_aoi_gdf, retrieve_dem, output_resolution, logger)
                 result_flags.append(this_success)
-                log_method_completion(start_time, f'CIF-DEM download for {tile_id}', task_index, None, '', logger)
+                log_method_completion(start_time, f'CIF-DEM download for {tile_id}', None, '', logger)
             else:
                 nasa_dem = None
 
             if 'dsm' in feature_list:
-                log_method_start(f'CIF-DSM download for {tile_id}', task_index, None, '', logger)
+                log_method_start(f'CIF-DSM download for {tile_id}', None, '', logger)
                 this_success, alos_dsm = _get_dsm(tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 this_success, overture_buildings = _get_building_footprints(tile_cif_data_path, tiled_aoi_gdf)
                 result_flags.append(this_success)
                 this_success = _get_building_height_dsm(city_data, tile_cif_data_path, overture_buildings, alos_dsm, nasa_dem)
                 result_flags.append(this_success)
-                log_method_completion(start_time, f'CIF-DSM download for {tile_id}', task_index, None, '', logger)
+                log_method_completion(start_time, f'CIF-DSM download for {tile_id}', None, '', logger)
 
     return_code = 0 if all(result_flags) else 1
     run_duration_min = compute_time_diff_mins(start_time)
@@ -87,11 +87,11 @@ def get_cif_data(task_index, source_base_path, target_base_path, folder_name_cit
     met_filename_str = 'N/A'
     step_method = 'retrieve_cif_data'
     start_time_str = start_time.strftime('%Y_%m_%d_%H:%M:%S')
-    return_stdout = (f'{{"task_index": {task_index}, "tile": "{tile_id}", "step_index": {0}, '
+    return_stdout = (f'{{"tile": "{tile_id}", "step_index": {0}, '
                      f'"step_method": "{step_method}", "met_filename": "{met_filename_str}", "return_code": {return_code}, '
                      f'"start_time": "{start_time_str}", "run_duration_min": {run_duration_min}}}')
 
-    log_method_completion(start_time, f'CIF download: ({cif_primary_features}) in tile {tile_id}', task_index, None, '', logger)
+    log_method_completion(start_time, f'CIF download: ({cif_primary_features}) in tile {tile_id}', None, '', logger)
 
     return return_stdout
 

@@ -4,7 +4,7 @@ import os
 import rasterio
 import pandas as pd
 
-from src.constants import FILENAME_METHOD_YML_CONFIG, FILENAME_PROCESSING_CSV_CONFIG, FOLDER_NAME_PRIMARY_DATA, \
+from src.constants import FILENAME_METHOD_YML_CONFIG, FOLDER_NAME_PRIMARY_DATA, \
     FOLDER_NAME_PRIMARY_RASTER_FILES, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSING_METHODS
 from src.worker_manager.tools import get_aoi_area_in_square_meters, get_existing_tiles, list_files_with_extension
 from src.workers.city_data import CityData
@@ -32,11 +32,6 @@ def verify_fundamental_paths(source_base_path, target_path, city_folder_name):
     if invalids:
         return invalids
 
-    config_processing_file_path = str(os.path.join(city_path, FILENAME_PROCESSING_CSV_CONFIG))
-    if _verify_path(config_processing_file_path) is False:
-        msg = f'Processing registry file does not exist as: {config_processing_file_path}'
-        invalids.append(msg)
-
     return invalids
 
 
@@ -45,7 +40,7 @@ def _verify_path(path):
     return is_valid
 
 
-def _verify_processing_config(processing_config_df, source_base_path, target_base_path, city_folder_name, pre_check_option):
+def _verify_processing_config(source_base_path, target_base_path, city_folder_name, pre_check_option):
     invalids = []
 
     # Gather parameters to be evaluated
@@ -73,86 +68,85 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
     custom_intermediate_features = non_tiled_city_data.custom_intermediate_list
 
     cell_count = None
-    for index, config_row in processing_config_df.iterrows():
-        method = config_row.method
+    task_method = non_tiled_city_data.new_task_method
 
-        if custom_primary_features:
-            existing_tiles_metrics = get_existing_tiles(source_city_path, custom_primary_filenames)
-        else:
-            existing_tiles_metrics = None
+    if custom_primary_features:
+        existing_tiles_metrics = get_existing_tiles(source_city_path, custom_primary_filenames)
+    else:
+        existing_tiles_metrics = None
 
-        valid_methods = PROCESSING_METHODS
-        if method not in valid_methods:
-            invalids.append(
-                f"Invalid 'method' column ({method}) on row {index} in .config_umep_city_processing.csv. Valid values: {valid_methods}")
+    valid_methods = PROCESSING_METHODS
+    if task_method not in valid_methods:
+        invalids.append(
+            f"Invalid 'method' value ({task_method}) in {FILENAME_METHOD_YML_CONFIG} file. Valid values: {valid_methods}")
 
-        # Evaluate AOI
-        if (not isinstance(min_lon, numbers.Number) or not isinstance(min_lat, numbers.Number) or
-                not isinstance(max_lon, numbers.Number) or not isinstance(max_lat, numbers.Number)):
-            msg = f'If there are no custom source tif files, then values in NewProcessingAOI section must be defined in {FILENAME_METHOD_YML_CONFIG}'
+    # Evaluate AOI
+    if (not isinstance(min_lon, numbers.Number) or not isinstance(min_lat, numbers.Number) or
+            not isinstance(max_lon, numbers.Number) or not isinstance(max_lat, numbers.Number)):
+        msg = f'If there are no custom source tif files, then values in NewProcessingAOI section must be defined in {FILENAME_METHOD_YML_CONFIG}'
+        invalids.append(msg)
+
+    if not (-180 <= min_lon <= 180) or not (-180 <= max_lon <= 180):
+        msg = f'Min and max longitude values must be between -180 and 180 in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+        invalids.append(msg)
+
+    if not (-90 <= min_lat <= 90) or not (-90 <= max_lat <= 90):
+        msg = f'Min and max latitude values must be between -90 and 90 in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+        invalids.append(msg)
+
+    if not (min_lon <= max_lon):
+        msg = f'Min longitude must be less than max longitude in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+        invalids.append(msg)
+
+    if not (min_lat <= max_lat):
+        msg = f'Min latitude must be less than max latitude in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+        invalids.append(msg)
+
+    # TODO improve this evaluation
+    if abs(max_lon - min_lon) > 0.3 or abs(max_lon - min_lon) > 0.3:
+        msg = f'Specified AOI must be less than 30km on a side in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+        invalids.append(msg)
+
+    if (tile_side_meters is not None and
+            _is_tile_wider_than_half_aoi_side(min_lat, min_lon, max_lat, max_lon, tile_side_meters)):
+        msg = f"Requested tile_side_meters cannot be larger than half the AOI side length in {FILENAME_METHOD_YML_CONFIG}. Specify None if you don't want to subdivide the aoi."
+        invalids.append(msg)
+
+    if tile_side_meters is not None and tile_side_meters < 150:
+        msg = f"Requested tile_side_meters must be 100 meters or more in {FILENAME_METHOD_YML_CONFIG}. Specify None if you don't want to subdivide the aoi."
+        invalids.append(msg)
+
+    if tile_side_meters is not None and int(tile_side_meters) <= 10:
+        msg = f"tile_side_meters must be greater than 10 in {FILENAME_METHOD_YML_CONFIG}. Specify None if you don't want to subdivide the aoi."
+        invalids.append(msg)
+
+    if tile_buffer_meters is not None and int(tile_buffer_meters) <= 10:
+        msg = f"tile_buffer_meters must be greater than 10 in {FILENAME_METHOD_YML_CONFIG}. Specify None if you don't want to subdivide the aoi."
+        invalids.append(msg)
+
+    if tile_buffer_meters is not None and int(tile_buffer_meters) > 500:
+        msg = f"tile_buffer_meters must be less than 500 in {FILENAME_METHOD_YML_CONFIG}. Specify None if you don't want to subdivide the aoi."
+        invalids.append(msg)
+
+    if tile_side_meters is None and tile_buffer_meters is not None:
+        msg = f"tile_buffer_meters must be None if tile_sider_meters is None in {FILENAME_METHOD_YML_CONFIG}."
+        invalids.append(msg)
+
+    # check that resolution and size of raster files in tile are consistent
+    if custom_primary_features:
+        tile_res_counts = existing_tiles_metrics.groupby('tile_name')['avg_res'].nunique().reset_index(name='unique_avg_res_count')
+        non_consistent_res = tile_res_counts[tile_res_counts['unique_avg_res_count'] > 1]
+        if non_consistent_res.shape[0] > 0:
+            non_consistent_tiles = ', '.join(non_consistent_res['tile_name'])
+            msg = f"Inconsistent raster resolutions found in files in these tiles: {non_consistent_tiles}"
             invalids.append(msg)
 
-        if not (-180 <= min_lon <= 180) or not (-180 <= max_lon <= 180):
-            msg = f'Min and max longitude values must be between -180 and 180 in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+        tile_bounds_counts = existing_tiles_metrics.groupby('tile_name')['boundary'].nunique().reset_index(name='unique_boundary_count')
+        non_consistent_boundary = tile_bounds_counts[tile_bounds_counts['unique_boundary_count'] > 1]
+        if non_consistent_res.shape[0] > 0:
+            non_consistent_tiles = ', '.join(non_consistent_boundary['tile_name'])
+            msg = f"Inconsistent raster boundary found in files in these tiles: {non_consistent_tiles}"
             invalids.append(msg)
-
-        if not (-90 <= min_lat <= 90) or not (-90 <= max_lat <= 90):
-            msg = f'Min and max latitude values must be between -90 and 90 in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
-            invalids.append(msg)
-
-        if not (min_lon <= max_lon):
-            msg = f'Min longitude must be less than max longitude in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
-            invalids.append(msg)
-
-        if not (min_lat <= max_lat):
-            msg = f'Min latitude must be less than max latitude in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
-            invalids.append(msg)
-
-        # TODO improve this evaluation
-        if abs(max_lon - min_lon) > 0.3 or abs(max_lon - min_lon) > 0.3:
-            msg = f'Specified AOI must be less than 30km on a side in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
-            invalids.append(msg)
-
-        if (tile_side_meters is not None and
-                _is_tile_wider_than_half_aoi_side(min_lat, min_lon, max_lat, max_lon, tile_side_meters)):
-            msg = f"Requested tile_side_meters cannot be larger than half the AOI side length in {FILENAME_METHOD_YML_CONFIG}. Specify None if you don't want to subdivide the aoi."
-            invalids.append(msg)
-
-        if tile_side_meters is not None and tile_side_meters < 150:
-            msg = f"Requested tile_side_meters must be 100 meters or more in {FILENAME_METHOD_YML_CONFIG}. Specify None if you don't want to subdivide the aoi."
-            invalids.append(msg)
-
-        if tile_side_meters is not None and int(tile_side_meters) <= 10:
-            msg = f"tile_side_meters must be greater than 10 in {FILENAME_METHOD_YML_CONFIG}. Specify None if you don't want to subdivide the aoi."
-            invalids.append(msg)
-
-        if tile_buffer_meters is not None and int(tile_buffer_meters) <= 10:
-            msg = f"tile_buffer_meters must be greater than 10 in {FILENAME_METHOD_YML_CONFIG}. Specify None if you don't want to subdivide the aoi."
-            invalids.append(msg)
-
-        if tile_buffer_meters is not None and int(tile_buffer_meters) > 500:
-            msg = f"tile_buffer_meters must be less than 500 in {FILENAME_METHOD_YML_CONFIG}. Specify None if you don't want to subdivide the aoi."
-            invalids.append(msg)
-
-        if tile_side_meters is None and tile_buffer_meters is not None:
-            msg = f"tile_buffer_meters must be None if tile_sider_meters is None in {FILENAME_METHOD_YML_CONFIG}."
-            invalids.append(msg)
-
-        # check that resolution and size of raster files in tile are consistent
-        if custom_primary_features:
-            tile_res_counts = existing_tiles_metrics.groupby('tile_name')['avg_res'].nunique().reset_index(name='unique_avg_res_count')
-            non_consistent_res = tile_res_counts[tile_res_counts['unique_avg_res_count'] > 1]
-            if non_consistent_res.shape[0] > 0:
-                non_consistent_tiles = ', '.join(non_consistent_res['tile_name'])
-                msg = f"Inconsistent raster resolutions found in files in these tiles: {non_consistent_tiles}"
-                invalids.append(msg)
-
-            tile_bounds_counts = existing_tiles_metrics.groupby('tile_name')['boundary'].nunique().reset_index(name='unique_boundary_count')
-            non_consistent_boundary = tile_bounds_counts[tile_bounds_counts['unique_boundary_count'] > 1]
-            if non_consistent_res.shape[0] > 0:
-                non_consistent_tiles = ', '.join(non_consistent_boundary['tile_name'])
-                msg = f"Inconsistent raster boundary found in files in these tiles: {non_consistent_tiles}"
-                invalids.append(msg)
 
 
         # Evaluate custom features
@@ -168,47 +162,47 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
 
                 prior_dsm = tiled_city_data.source_dsm_path
                 if cif_features is not None and 'dsm' not in cif_features and _verify_path(prior_dsm) is False:
-                    msg = f'Required source file: {prior_dsm} not found for row {index} in .config_umep_city_processing.csv.'
+                    msg = f'Required source file: {prior_dsm} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
                     invalids.append(msg)
 
-                if method in PROCESSING_METHODS:
+                if task_method in PROCESSING_METHODS:
                     prior_tree_canopy = tiled_city_data.source_tree_canopy_path
                     if cif_features is not None and 'tree_canopy' not in cif_features and _verify_path(prior_tree_canopy) is False:
-                        msg = f'Required source file: {prior_tree_canopy} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
+                        msg = f'Required source file: {prior_tree_canopy} not found for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
                         invalids.append(msg)
 
-                if method in ['solweig_only', 'solweig_full']:
+                if task_method in ['solweig_only', 'solweig_full']:
                     prior_land_cover = tiled_city_data.source_land_cover_path
                     prior_dem = tiled_city_data.source_dem_path
                     if cif_features is not None and 'lulc' not in cif_features and _verify_path(prior_land_cover) is False:
-                        msg = f'Required source file: {prior_land_cover} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
+                        msg = f'Required source file: {prior_land_cover} not found for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
                         invalids.append(msg)
                     if cif_features is not None and 'dem' not in cif_features and _verify_path(prior_dem) is False:
-                        msg = f'Required source file: {prior_dem} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
+                        msg = f'Required source file: {prior_dem} not found for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
                         invalids.append(msg)
                     for met_file_row in tiled_city_data.met_filenames:
                         met_file = met_file_row.get('filename')
                         met_filepath = os.path.join(tiled_city_data.source_met_filenames_path, met_file)
                         if met_file != '<download_era5>' and _verify_path(met_filepath) is False:
-                            msg = f'Required meteorological file: {met_filepath} not found for method: {method} in .config_method_parameters.yml.'
+                            msg = f'Required meteorological file: {met_filepath} not found for method: {task_method} in .config_method_parameters.yml.'
                             invalids.append(msg)
                     utc_offset = tiled_city_data.utc_offset
                     if not -24 <= utc_offset <= 24:
                         msg = f'UTC-offset for: {met_file} not in -24 to 24 hours range as specified in .config_method_parameters.yml.'
                         invalids.append(msg)
 
-                    if method in ['solweig_only']:
+                    if task_method in ['solweig_only']:
                         prior_svfszip = tiled_city_data.target_svfszip_path
                         prior_wallheight = tiled_city_data.target_wallheight_path
                         prior_wallaspect = tiled_city_data.target_wallaspect_path
                         if _verify_path(prior_svfszip) is False:
-                            msg = f'Required source file: {prior_svfszip} currently not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
+                            msg = f'Required source file: {prior_svfszip} currently not found for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
                             invalids.append(msg)
                         if _verify_path(prior_wallheight) is False:
-                            msg = f'Required source file: {prior_wallheight} currently not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
+                            msg = f'Required source file: {prior_wallheight} currently not found for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
                             invalids.append(msg)
                         if _verify_path(prior_wallaspect) is False:
-                            msg = f'Required source file: {prior_wallaspect} currently not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
+                            msg = f'Required source file: {prior_wallaspect} currently not found for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
                             invalids.append(msg)
 
                     full_metrics_df, named_consistency_metrics_df, unique_consistency_metrics_df = (
@@ -247,7 +241,7 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
 
         if custom_primary_features:
             # Get representative cell count
-            if config_row.method == 'solweig_full':
+            if task_method == 'solweig_full':
                 if 'dem' in custom_primary_features:
                     representative_tif = dem_tif_filename
                 elif 'dsm' in custom_primary_features:
@@ -373,14 +367,8 @@ def validate_basic_inputs(source_base_path, target_path, city_folder_name):
     else:
         return 0
 
-def validate_config_inputs(processing_config_df, source_base_path, target_path, city_folder_name, pre_check_option):
-    cell_count, detailed_invalids = _verify_processing_config(processing_config_df, source_base_path, target_path, city_folder_name, pre_check_option)
-    if detailed_invalids:
-        print('\n')
-        _highlighted_print('------------ Invalid configurations ------------ ')
-        for invalid in detailed_invalids:
-            print(invalid)
-        raise Exception("Stopped processing due to invalid configurations.")
+def validate_config_inputs(source_base_path, target_path, city_folder_name, pre_check_option):
+    cell_count, detailed_invalids = _verify_processing_config(source_base_path, target_path, city_folder_name, pre_check_option)
 
     return cell_count, 0
 

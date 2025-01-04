@@ -11,7 +11,7 @@ from src.workers.worker_tools import create_folder, unpack_quoted_value, reverse
 PROCESSING_PAUSE_TIME_SEC = 10
 
 
-def process_tile(task_index, task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
+def process_tile(task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
                  cif_primary_features, ctcm_intermediate_features, tile_boundary, tile_resolution, utc_offset):
     city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
     cif_primary_features = unpack_quoted_value(cif_primary_features)
@@ -20,14 +20,14 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
     utc_offset = unpack_quoted_value(utc_offset)
     met_filenames = city_data.met_filenames
 
-    def _execute_retrieve_cif_data(task_idx, source_path, target_path, folder_city, folder_tile, cif_features,
+    def _execute_retrieve_cif_data(source_path, target_path, folder_city, folder_tile, cif_features,
                                    boundary, resolution):
         from source_cif_data_downloader import get_cif_data
         cif_stdout = \
-            get_cif_data(task_idx, source_path, target_path, folder_city, folder_tile, cif_features, boundary, resolution)
+            get_cif_data(source_path, target_path, folder_city, folder_tile, cif_features, boundary, resolution)
         return cif_stdout
 
-    def _execute_solweig_only_plugin(task_idx, step_index, folder_city, folder_tile, source_path, target_path, met_names, offset_utc):
+    def _execute_solweig_only_plugin(step_index, folder_city, folder_tile, source_path, target_path, met_names, offset_utc):
         from umep_plugin_processor import run_plugin
 
         out_list = []
@@ -37,28 +37,28 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
             else:
                 met_filename = met_file.get('filename')
 
-            solweig_stdout = run_plugin(task_idx, step_index, 'solweig_only', folder_city,
+            solweig_stdout = run_plugin(step_index, 'solweig_only', folder_city,
                                      folder_tile, source_path, target_path, met_filename, offset_utc)
             out_list.append(solweig_stdout)
         return out_list
 
-    def _execute_solweig_full_plugin_steps(task_idx, folder_city, folder_tile, source_path, target_path, met_names,
+    def _execute_solweig_full_plugin_steps(folder_city, folder_tile, source_path, target_path, met_names,
                                            ctcm_intermediate_features, offset_utc):
         from umep_plugin_processor import run_plugin
         out_list = []
         ctcm_intermediates = ctcm_intermediate_features.split(',') if ctcm_intermediate_features is not None else None
         if ctcm_intermediates and ('wallasect' in ctcm_intermediates or 'wallheight' in ctcm_intermediates):
-            this_stdout1 = run_plugin(task_idx, 1, 'wall_height_aspect', folder_city, folder_tile,
+            this_stdout1 = run_plugin(1, 'wall_height_aspect', folder_city, folder_tile,
                        source_path, target_path, None, None)
             out_list.append(this_stdout1)
 
         if ctcm_intermediates and 'skyview_factor' in ctcm_intermediates:
-            this_stdout2 = run_plugin(task_idx, 2, 'skyview_factor', folder_city, folder_tile,
+            this_stdout2 = run_plugin(2, 'skyview_factor', folder_city, folder_tile,
                        source_path, target_path, None, None)
             out_list.append(this_stdout2)
 
         time.sleep(PROCESSING_PAUSE_TIME_SEC)
-        this_stdout3 = _execute_solweig_only_plugin(task_idx, 3, folder_city,
+        this_stdout3 = _execute_solweig_only_plugin(3, folder_city,
                                                     folder_tile, source_path, target_path, met_names, offset_utc)
         out_list.extend(this_stdout3)
 
@@ -76,7 +76,7 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
 
     # get cif data
     if cif_primary_features is not None:
-        return_val = _execute_retrieve_cif_data(task_index, source_base_path, target_base_path, city_folder_name,
+        return_val = _execute_retrieve_cif_data(source_base_path, target_base_path, city_folder_name,
                                                 tile_folder_name, cif_primary_features, tile_boundary,
                                                 tile_resolution)
         return_stdouts.append(return_val)
@@ -87,17 +87,17 @@ def process_tile(task_index, task_method, source_base_path, target_base_path, ci
         ensure_y_dimension_direction(city_data)
 
         if task_method == 'solweig_full':
-            return_vals = _execute_solweig_full_plugin_steps(task_index, city_folder_name, tile_folder_name,
+            return_vals = _execute_solweig_full_plugin_steps(city_folder_name, tile_folder_name,
                                                              source_base_path, target_base_path, met_filenames,
                                                              ctcm_intermediate_features, utc_offset)
             return_stdouts.extend(return_vals)
         elif task_method == 'solweig_only':
-            return_vals = _execute_solweig_only_plugin(task_index, 1, city_folder_name,
+            return_vals = _execute_solweig_only_plugin(1, city_folder_name,
                                          tile_folder_name, source_base_path, target_base_path, met_filenames, utc_offset)
             return_stdouts.extend(return_vals)
         elif task_method in PROCESSING_METHODS:
             from umep_plugin_processor import run_plugin
-            return_val = run_plugin(task_index, 1, task_method, city_folder_name, tile_folder_name,
+            return_val = run_plugin(1, task_method, city_folder_name, tile_folder_name,
                        source_base_path, target_base_path, None, None)
             return_stdouts.append(return_val)
         else:
@@ -167,7 +167,6 @@ def _enforce_tiff_upper_left_origin(tile_data_path, file_path):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Process tile.')
-    parser.add_argument('--task_index', metavar='str', required=True, help='index from the processor config file')
     parser.add_argument('--task_method', metavar='str', required=True, help='method to run')
     parser.add_argument('--source_base_path', metavar='path', required=True, help='folder for source data')
     parser.add_argument('--target_base_path', metavar='path', required=True, help='folder for writing data')
@@ -181,7 +180,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    return_stdout =process_tile(args.task_index, args.task_method, args.source_base_path, args.target_base_path,
+    return_stdout =process_tile(args.task_method, args.source_base_path, args.target_base_path,
                                 args.city_folder_name, args.tile_folder_name,
                                 args.cif_primary_features, args.ctcm_intermediate_features,
                                 args.tile_boundary, args.tile_resolution, args.utc_offset)

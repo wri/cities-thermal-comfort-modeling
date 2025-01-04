@@ -1,9 +1,7 @@
 import os
 import subprocess
-import pandas as pd
 
-from src.workers.city_data import CityData
-from src.constants import DATA_DIR, ROOT_DIR, FILENAME_PROCESSING_CSV_CONFIG
+from src.constants import DATA_DIR, ROOT_DIR
 
 SAMPLE_CITIES_SOURCE_DIR = str(os.path.join(DATA_DIR, 'sample_cities'))
 SCRATCH_TARGET_DIR = str(os.path.join(DATA_DIR, 'scratch_target'))

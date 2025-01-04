@@ -143,6 +143,7 @@ def parse_method_attributes_config(yml_values):
     try:
         method_attributes = yml_values[5]
 
+        new_task_method = method_attributes['method']
         northern_leaf_start = method_attributes['solweig']['seasonal_leaf_coverage']['north_temperate_leaf_start']
         northern_leaf_end = method_attributes['solweig']['seasonal_leaf_coverage']['north_temperate_leaf_end']
         southern_leaf_start = method_attributes['solweig']['seasonal_leaf_coverage']['south_temperate_leaf_start']
@@ -164,6 +165,6 @@ def parse_method_attributes_config(yml_values):
         raise Exception(
             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
 
-    return (northern_leaf_start, northern_leaf_end, southern_leaf_start, southern_leaf_end, wall_lower_limit_height,
+    return (new_task_method, northern_leaf_start, northern_leaf_end, southern_leaf_start, southern_leaf_end, wall_lower_limit_height,
             light_transmissivity, trunk_zone_height, conifer_trees, albedo_walls,
             albedo_ground, emis_walls, emis_ground, output_tmrt, output_sh, sampling_local_hours)

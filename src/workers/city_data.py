@@ -39,8 +39,8 @@ class CityData:
          obj.custom_intermediate_list, obj.ctcm_intermediate_list) =\
             parse_intermediate_filenames_config(yml_values)
 
-        (northern_leaf_start, northern_leaf_end, southern_leaf_start, southern_leaf_end, obj.wall_lower_limit_height,
-         obj.light_transmissivity, obj.trunk_zone_height,
+        (obj.new_task_method, northern_leaf_start, northern_leaf_end, southern_leaf_start, southern_leaf_end,
+         obj.wall_lower_limit_height, obj.light_transmissivity, obj.trunk_zone_height,
          obj.conifer_trees, obj.albedo_walls, obj.albedo_ground, obj.emis_walls, obj.emis_ground, obj.output_tmrt,
          obj.output_sh, obj.sampling_local_hours) = (parse_method_attributes_config(yml_values))
 
@@ -77,9 +77,9 @@ class CityData:
             obj.target_city_data_path = str(os.path.join(obj.target_city_path, FOLDER_NAME_PRIMARY_DATA))
             obj.target_met_filenames_path = os.path.join(obj.target_city_data_path, FOLDER_NAME_PRIMARY_MET_FILENAMES)
 
-            obj.target_log_path = os.path.join(obj.target_city_path, '.logs')
-            obj.target_manager_log_path = os.path.join(obj.target_log_path, 'worker_manager.log')
-            obj.target_model_log_path = os.path.join(obj.target_log_path, 'model_execution.log')
+            obj.target_log_path = os.path.join(obj.target_city_path, '.admin')
+            obj.target_manager_log_path = os.path.join(obj.target_log_path, 'log_worker_manager.log')
+            obj.target_model_log_path = os.path.join(obj.target_log_path, 'log_model_execution.log')
 
             obj.target_qgis_viewer_path = os.path.join(obj.target_city_path, '.qgis_viewer')
 

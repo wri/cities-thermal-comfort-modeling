@@ -73,18 +73,16 @@ def start_jobs(source_base_path, target_base_path, city_folder_name, processing_
         combined_delays_passed.append(met_delays_all_passed)
 
     # build plugin graph
-    enabled_processing_tasks_df = processing_config_df[(processing_config_df['enabled'])]
+    enabled_processing_tasks_df = processing_config_df
 
     futures = []
     number_of_tiles = 1000  # Initialize as large number
     for task_index, config_row in enabled_processing_tasks_df.iterrows():
         task_method = config_row.method
-        start_tile_id = config_row.start_tile_id
-        end_tile_id = config_row.end_tile_id
 
         # Retrieve CIF data
         if custom_primary_filenames:
-            existing_tiles = get_existing_tiles(source_city_path, custom_primary_filenames, start_tile_id, end_tile_id)
+            existing_tiles = get_existing_tiles(source_city_path, custom_primary_filenames)
             tile_unique_values = existing_tiles[['tile_name', 'boundary', 'avg_res', 'source_crs']].drop_duplicates()
             number_of_tiles = tile_unique_values.shape[0]
 
@@ -218,6 +216,8 @@ def _construct_tile_proc_array(task_index, task_method, source_base_path, target
 
 
 def _process_rows(futures, number_of_tiles, logger):
+    # See https://docs.dask.org/en/stable/deploying-python.html
+    # https://blog.dask.org/2021/11/02/choosing-dask-chunk-sizes#what-to-watch-for-on-the-dashboard
     if futures:
         available_cpu_count = int(mp.cpu_count() - 1)
         num_workers = number_of_tiles+1 if number_of_tiles < available_cpu_count else available_cpu_count

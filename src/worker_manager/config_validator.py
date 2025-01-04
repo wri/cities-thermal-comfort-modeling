@@ -47,12 +47,6 @@ def _verify_path(path):
 
 def _verify_processing_config(processing_config_df, source_base_path, target_base_path, city_folder_name, pre_check_option):
     invalids = []
-    for index, config_row in processing_config_df.iterrows():
-        enabled = str(config_row.enabled)
-        valid_enabled = ['true', 'false']
-        if enabled.lower() not in valid_enabled:
-            invalids.append(f"Invalid 'enabled' column ({str(enabled)}) on row {index} in .config_umep_city_processing.csv. Valid values: {valid_enabled}")
-
 
     # Gather parameters to be evaluated
     source_city_path = str(os.path.join(source_base_path, city_folder_name))
@@ -80,14 +74,10 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
 
     cell_count = None
     for index, config_row in processing_config_df.iterrows():
-        start_tile_id = config_row.start_tile_id
-        end_tile_id = config_row.end_tile_id
-        enabled = str(config_row.enabled)
         method = config_row.method
 
         if custom_primary_features:
-            existing_tiles_metrics = get_existing_tiles(source_city_path, custom_primary_filenames, start_tile_id,
-                                                         end_tile_id)
+            existing_tiles_metrics = get_existing_tiles(source_city_path, custom_primary_filenames)
         else:
             existing_tiles_metrics = None
 
@@ -170,43 +160,42 @@ def _verify_processing_config(processing_config_df, source_base_path, target_bas
             unique_tile_names = pd.DataFrame(existing_tiles_metrics['tile_name'].unique(), columns=['tile_name'])
             for idx, tile_row in unique_tile_names.iterrows():
                 tile_folder_name = tile_row['tile_name']
-                if bool(enabled) or pre_check_option == 'pre_check_all':
-                    try:
-                        tiled_city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
-                    except Exception as e_msg:
-                        invalids.append(e_msg)
-                        break
+                try:
+                    tiled_city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
+                except Exception as e_msg:
+                    invalids.append(e_msg)
+                    break
 
-                    prior_dsm = tiled_city_data.source_dsm_path
-                    if cif_features is not None and 'dsm' not in cif_features and _verify_path(prior_dsm) is False:
-                        msg = f'Required source file: {prior_dsm} not found for row {index} in .config_umep_city_processing.csv.'
+                prior_dsm = tiled_city_data.source_dsm_path
+                if cif_features is not None and 'dsm' not in cif_features and _verify_path(prior_dsm) is False:
+                    msg = f'Required source file: {prior_dsm} not found for row {index} in .config_umep_city_processing.csv.'
+                    invalids.append(msg)
+
+                if method in PROCESSING_METHODS:
+                    prior_tree_canopy = tiled_city_data.source_tree_canopy_path
+                    if cif_features is not None and 'tree_canopy' not in cif_features and _verify_path(prior_tree_canopy) is False:
+                        msg = f'Required source file: {prior_tree_canopy} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
                         invalids.append(msg)
 
-                    if method in PROCESSING_METHODS:
-                        prior_tree_canopy = tiled_city_data.source_tree_canopy_path
-                        if cif_features is not None and 'tree_canopy' not in cif_features and _verify_path(prior_tree_canopy) is False:
-                            msg = f'Required source file: {prior_tree_canopy} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
+                if method in ['solweig_only', 'solweig_full']:
+                    prior_land_cover = tiled_city_data.source_land_cover_path
+                    prior_dem = tiled_city_data.source_dem_path
+                    if cif_features is not None and 'lulc' not in cif_features and _verify_path(prior_land_cover) is False:
+                        msg = f'Required source file: {prior_land_cover} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
+                        invalids.append(msg)
+                    if cif_features is not None and 'dem' not in cif_features and _verify_path(prior_dem) is False:
+                        msg = f'Required source file: {prior_dem} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
+                        invalids.append(msg)
+                    for met_file_row in tiled_city_data.met_filenames:
+                        met_file = met_file_row.get('filename')
+                        met_filepath = os.path.join(tiled_city_data.source_met_filenames_path, met_file)
+                        if met_file != '<download_era5>' and _verify_path(met_filepath) is False:
+                            msg = f'Required meteorological file: {met_filepath} not found for method: {method} in .config_method_parameters.yml.'
                             invalids.append(msg)
-
-                    if method in ['solweig_only', 'solweig_full']:
-                        prior_land_cover = tiled_city_data.source_land_cover_path
-                        prior_dem = tiled_city_data.source_dem_path
-                        if cif_features is not None and 'lulc' not in cif_features and _verify_path(prior_land_cover) is False:
-                            msg = f'Required source file: {prior_land_cover} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
-                            invalids.append(msg)
-                        if cif_features is not None and 'dem' not in cif_features and _verify_path(prior_dem) is False:
-                            msg = f'Required source file: {prior_dem} not found for method: {method} on row {index} in .config_umep_city_processing.csv.'
-                            invalids.append(msg)
-                        for met_file_row in tiled_city_data.met_filenames:
-                            met_file = met_file_row.get('filename')
-                            met_filepath = os.path.join(tiled_city_data.source_met_filenames_path, met_file)
-                            if met_file != '<download_era5>' and _verify_path(met_filepath) is False:
-                                msg = f'Required meteorological file: {met_filepath} not found for method: {method} in .config_method_parameters.yml.'
-                                invalids.append(msg)
-                        utc_offset = tiled_city_data.utc_offset
-                        if not -24 <= utc_offset <= 24:
-                            msg = f'UTC-offset for: {met_file} not in -24 to 24 hours range as specified in .config_method_parameters.yml.'
-                            invalids.append(msg)
+                    utc_offset = tiled_city_data.utc_offset
+                    if not -24 <= utc_offset <= 24:
+                        msg = f'UTC-offset for: {met_file} not in -24 to 24 hours range as specified in .config_method_parameters.yml.'
+                        invalids.append(msg)
 
                     if method in ['solweig_only']:
                         prior_svfszip = tiled_city_data.target_svfszip_path

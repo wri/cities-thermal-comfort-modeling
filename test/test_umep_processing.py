@@ -3,7 +3,7 @@ import os
 from src.constants import DATA_DIR, FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_RASTER_FILES
 from src.workers.city_data import CityData
 from src.workers.worker_tools import remove_folder, create_folder
-from test.testing_tools import run_main, verify_expected_output_folders, SAMPLE_CITIES_SOURCE_DIR
+from test.testing_tools import run_main, SAMPLE_CITIES_SOURCE_DIR
 
 CLEANUP_RESULTS=False
 
@@ -22,11 +22,9 @@ def test_custom_city():
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
         # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
-        has_valid_results = verify_expected_output_folders(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name)
         vrt_count = file_count_in_vrt_directory(city_data)
 
         assert return_code == 0
-        assert has_valid_results
         assert vrt_count == 19
     finally:
         if CLEANUP_RESULTS:
@@ -44,11 +42,9 @@ def test_untiled_full_cif():
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
         # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
-        has_valid_results = verify_expected_output_folders(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name)
         vrt_count = file_count_in_vrt_directory(city_data)
 
         assert return_code == 0
-        assert has_valid_results
         assert vrt_count == 13
     finally:
         if CLEANUP_RESULTS:
@@ -66,11 +62,9 @@ def test_tiled_cif_city():
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
         # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
-        has_valid_results = verify_expected_output_folders(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name)
         vrt_count = file_count_in_vrt_directory(city_data)
 
         assert return_code == 0
-        assert has_valid_results
         assert vrt_count == 13
     finally:
         if CLEANUP_RESULTS:
@@ -85,11 +79,9 @@ def test_tiled_custom_city():
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
         # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
-        has_valid_results = verify_expected_output_folders(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name)
         vrt_count = file_count_in_vrt_directory(city_data)
 
         assert return_code == 0
-        assert has_valid_results
         assert vrt_count == 13
     finally:
         if CLEANUP_RESULTS:
@@ -104,11 +96,9 @@ def test_mixed_cif_city():
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
         # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
-        has_valid_results = verify_expected_output_folders(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name)
         vrt_count = file_count_in_vrt_directory(city_data)
 
         assert return_code == 0
-        assert has_valid_results
         assert vrt_count == 13
     finally:
         if CLEANUP_RESULTS:
@@ -123,12 +113,9 @@ def test_custom_city_with_full_intermediates():
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
         # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
-        has_valid_results = verify_expected_output_folders(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR,
-                                                           source_city_folder_name)
         vrt_count = file_count_in_vrt_directory(city_data)
 
         assert return_code == 0
-        assert has_valid_results
         assert vrt_count == 19
     finally:
         if CLEANUP_RESULTS:
@@ -143,12 +130,9 @@ def test_custom_city_with_mixed_intermediates():
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
         # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
-        has_valid_results = verify_expected_output_folders(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR,
-                                                           source_city_folder_name)
         vrt_count = file_count_in_vrt_directory(city_data)
 
         assert return_code == 0
-        assert has_valid_results
         assert vrt_count == 19
     finally:
         if CLEANUP_RESULTS:

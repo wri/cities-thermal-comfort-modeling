@@ -19,6 +19,7 @@ dependencies:
   - rioxarray=0.17.0
   - cdsapi=0.7.4
   - pytest=8.3.3
+  - pytest_check
   - pip=24.3.1
   - pip:
      - git+https://github.com/wri/cities-cif@main

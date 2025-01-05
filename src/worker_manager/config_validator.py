@@ -10,7 +10,7 @@ from src.worker_manager.tools import get_aoi_area_in_square_meters, get_existing
 from src.workers.city_data import CityData
 
 
-def verify_fundamental_paths(source_base_path, target_path, city_folder_name):
+def _verify_fundamental_paths(source_base_path, target_path, city_folder_name):
     invalids = []
     if _verify_path(source_base_path) is False:
         msg = f'Invalid source base path: {source_base_path}'
@@ -149,141 +149,140 @@ def _verify_processing_config(source_base_path, target_base_path, city_folder_na
             invalids.append(msg)
 
 
-        # Evaluate custom features
-        if custom_primary_features:
-            unique_tile_names = pd.DataFrame(existing_tiles_metrics['tile_name'].unique(), columns=['tile_name'])
-            for idx, tile_row in unique_tile_names.iterrows():
-                tile_folder_name = tile_row['tile_name']
-                try:
-                    tiled_city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
-                except Exception as e_msg:
-                    invalids.append(e_msg)
-                    break
+        unique_tile_names = pd.DataFrame(existing_tiles_metrics['tile_name'].unique(), columns=['tile_name'])
+        for idx, tile_row in unique_tile_names.iterrows():
+            tile_folder_name = tile_row['tile_name']
+            try:
+                tiled_city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
+            except Exception as e_msg:
+                invalids.append(e_msg)
+                break
 
-                prior_dsm = tiled_city_data.source_dsm_path
-                if cif_features is not None and 'dsm' not in cif_features and _verify_path(prior_dsm) is False:
-                    msg = f'Required source file: {prior_dsm} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
+            prior_dsm = tiled_city_data.source_dsm_path
+            if cif_features is not None and 'dsm' not in cif_features and _verify_path(prior_dsm) is False:
+                msg = f'Required source file: {prior_dsm} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
+                invalids.append(msg)
+
+            if task_method in PROCESSING_METHODS:
+                prior_tree_canopy = tiled_city_data.source_tree_canopy_path
+                if cif_features is not None and 'tree_canopy' not in cif_features and _verify_path(prior_tree_canopy) is False:
+                    msg = f'Required source file: {prior_tree_canopy} not found for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
                     invalids.append(msg)
 
-                if task_method in PROCESSING_METHODS:
-                    prior_tree_canopy = tiled_city_data.source_tree_canopy_path
-                    if cif_features is not None and 'tree_canopy' not in cif_features and _verify_path(prior_tree_canopy) is False:
-                        msg = f'Required source file: {prior_tree_canopy} not found for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
+            if task_method in ['solweig_only', 'solweig_full']:
+                prior_land_cover = tiled_city_data.source_land_cover_path
+                prior_dem = tiled_city_data.source_dem_path
+                if cif_features is not None and 'lulc' not in cif_features and _verify_path(prior_land_cover) is False:
+                    msg = f'Required source file: {prior_land_cover} not found for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
+                    invalids.append(msg)
+                if cif_features is not None and 'dem' not in cif_features and _verify_path(prior_dem) is False:
+                    msg = f'Required source file: {prior_dem} not found for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
+                    invalids.append(msg)
+                for met_file_row in tiled_city_data.met_filenames:
+                    met_file = met_file_row.get('filename')
+                    met_filepath = os.path.join(tiled_city_data.source_met_filenames_path, met_file)
+                    if met_file != '<download_era5>' and _verify_path(met_filepath) is False:
+                        msg = f'Required meteorological file: {met_filepath} not found for method: {task_method} in .config_method_parameters.yml.'
+                        invalids.append(msg)
+                utc_offset = tiled_city_data.utc_offset
+                if not -24 <= utc_offset <= 24:
+                    msg = f'UTC-offset for: {met_file} not in -24 to 24 hours range as specified in .config_method_parameters.yml.'
+                    invalids.append(msg)
+
+                if task_method in ['solweig_only']:
+                    prior_svfszip = tiled_city_data.target_svfszip_path
+                    prior_wallheight = tiled_city_data.target_wallheight_path
+                    prior_wallaspect = tiled_city_data.target_wallaspect_path
+                    if _verify_path(prior_svfszip) is False:
+                        msg = f'Required source file: {prior_svfszip} currently not found for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
+                        invalids.append(msg)
+                    if _verify_path(prior_wallheight) is False:
+                        msg = f'Required source file: {prior_wallheight} currently not found for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
+                        invalids.append(msg)
+                    if _verify_path(prior_wallaspect) is False:
+                        msg = f'Required source file: {prior_wallaspect} currently not found for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
                         invalids.append(msg)
 
-                if task_method in ['solweig_only', 'solweig_full']:
-                    prior_land_cover = tiled_city_data.source_land_cover_path
-                    prior_dem = tiled_city_data.source_dem_path
-                    if cif_features is not None and 'lulc' not in cif_features and _verify_path(prior_land_cover) is False:
-                        msg = f'Required source file: {prior_land_cover} not found for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
-                        invalids.append(msg)
-                    if cif_features is not None and 'dem' not in cif_features and _verify_path(prior_dem) is False:
-                        msg = f'Required source file: {prior_dem} not found for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
-                        invalids.append(msg)
-                    for met_file_row in tiled_city_data.met_filenames:
-                        met_file = met_file_row.get('filename')
-                        met_filepath = os.path.join(tiled_city_data.source_met_filenames_path, met_file)
-                        if met_file != '<download_era5>' and _verify_path(met_filepath) is False:
-                            msg = f'Required meteorological file: {met_filepath} not found for method: {task_method} in .config_method_parameters.yml.'
+                full_metrics_df, named_consistency_metrics_df, unique_consistency_metrics_df = (
+                    get_parameters_for_custom_tif_files(tiled_city_data, tile_folder_name, cif_features))
+
+                if full_metrics_df['nodata'].isnull().any():
+                    files_with_nan = full_metrics_df.loc[full_metrics_df['nodata'].isnull(), 'filename'].tolist()
+                    files_with_nan_str = ','.join(map(str,files_with_nan))
+                    msg = f"Folder {tile_folder_name} and possibly other folders has forbidden no_data='nan' in file(s) ({files_with_nan_str})."
+                    invalids.append(msg)
+
+                    break
+
+                if 'lulc' in custom_primary_features:
+                    lulc_metrics = full_metrics_df.loc[full_metrics_df['filename'] == tiled_city_data.lulc_tif_filename]
+                    if lulc_metrics is not None:
+                        band_min = lulc_metrics['band_min'].values[0]
+                        band_max = lulc_metrics['band_max'].values[0]
+                        if band_min < 1 or band_max > 7:
+                            msg = f"Folder {tile_folder_name} and possibly other folders has LULC ({tiled_city_data.lulc_tif_filename}) with values outside of range 1-7."
                             invalids.append(msg)
-                    utc_offset = tiled_city_data.utc_offset
-                    if not -24 <= utc_offset <= 24:
-                        msg = f'UTC-offset for: {met_file} not in -24 to 24 hours range as specified in .config_method_parameters.yml.'
-                        invalids.append(msg)
 
-                    if task_method in ['solweig_only']:
-                        prior_svfszip = tiled_city_data.target_svfszip_path
-                        prior_wallheight = tiled_city_data.target_wallheight_path
-                        prior_wallaspect = tiled_city_data.target_wallaspect_path
-                        if _verify_path(prior_svfszip) is False:
-                            msg = f'Required source file: {prior_svfszip} currently not found for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
-                            invalids.append(msg)
-                        if _verify_path(prior_wallheight) is False:
-                            msg = f'Required source file: {prior_wallheight} currently not found for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
-                            invalids.append(msg)
-                        if _verify_path(prior_wallaspect) is False:
-                            msg = f'Required source file: {prior_wallaspect} currently not found for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
-                            invalids.append(msg)
+                            break
 
-                    full_metrics_df, named_consistency_metrics_df, unique_consistency_metrics_df = (
-                        get_parameters_for_custom_tif_files(tiled_city_data, tile_folder_name, cif_features))
+                if unique_consistency_metrics_df.shape[0] > 1:
+                    msg = f'TIF files in folder {tile_folder_name} and possibly other folders has inconsistent parameters with {unique_consistency_metrics_df.shape[0]} unique parameter variants.'
+                    invalids.append(msg)
 
-                    if full_metrics_df['nodata'].isnull().any():
-                        files_with_nan = full_metrics_df.loc[full_metrics_df['nodata'].isnull(), 'filename'].tolist()
-                        files_with_nan_str = ','.join(map(str,files_with_nan))
-                        msg = f"Folder {tile_folder_name} and possibly other folders has forbidden no_data='nan' in file(s) ({files_with_nan_str})."
-                        invalids.append(msg)
+                    msg = f'TIF parameters: {named_consistency_metrics_df.to_json(orient='records')}'
+                    invalids.append(msg)
 
-                        break
+                    msg = 'Stopping analysis at first set of inconsistent TIF files.'
+                    invalids.append(msg)
 
-                    if 'lulc' in custom_primary_features:
-                        lulc_metrics = full_metrics_df.loc[full_metrics_df['filename'] == tiled_city_data.lulc_tif_filename]
-                        if lulc_metrics is not None:
-                            band_min = lulc_metrics['band_min'].values[0]
-                            band_max = lulc_metrics['band_max'].values[0]
-                            if band_min < 1 or band_max > 7:
-                                msg = f"Folder {tile_folder_name} and possibly other folders has LULC ({tiled_city_data.lulc_tif_filename}) with values outside of range 1-7."
-                                invalids.append(msg)
+                    break
 
-                                break
+        # Get representative cell count
+        if task_method == 'solweig_full':
+            if 'dem' in custom_primary_features:
+                representative_tif = dem_tif_filename
+            elif 'dsm' in custom_primary_features:
+                representative_tif = dsm_tif_filename
+            elif 'tree_canopy' in custom_primary_features:
+                representative_tif = tree_canopy_tif_filename
+            else:
+                representative_tif = lulc_tif_filename
 
-                    if unique_consistency_metrics_df.shape[0] > 1:
-                        msg = f'TIF files in folder {tile_folder_name} and possibly other folders has inconsistent parameters with {unique_consistency_metrics_df.shape[0]} unique parameter variants.'
-                        invalids.append(msg)
+            tiff_file_path = os.path.join(source_city_path, FOLDER_NAME_PRIMARY_DATA,
+                                          FOLDER_NAME_PRIMARY_RASTER_FILES, 'tile_001', representative_tif)
+            with rasterio.open(tiff_file_path) as dataset:
+                width = dataset.profile["width"]
+                height = dataset.profile["height"]
+                cell_count = width * height
 
-                        msg = f'TIF parameters: {named_consistency_metrics_df.to_json(orient='records')}'
-                        invalids.append(msg)
 
-                        msg = 'Stopping analysis at first set of inconsistent TIF files.'
-                        invalids.append(msg)
-
-                        break
-
-        if custom_primary_features:
-            # Get representative cell count
-            if task_method == 'solweig_full':
-                if 'dem' in custom_primary_features:
-                    representative_tif = dem_tif_filename
-                elif 'dsm' in custom_primary_features:
-                    representative_tif = dsm_tif_filename
-                elif 'tree_canopy' in custom_primary_features:
-                    representative_tif = tree_canopy_tif_filename
-                else:
-                    representative_tif = lulc_tif_filename
-
-                tiff_file_path = os.path.join(source_city_path, FOLDER_NAME_PRIMARY_DATA,
-                                              FOLDER_NAME_PRIMARY_RASTER_FILES, 'tile_001', representative_tif)
-                with rasterio.open(tiff_file_path) as dataset:
-                    width = dataset.profile["width"]
-                    height = dataset.profile["height"]
-                    cell_count = width * height
-        elif non_tiled_city_data.max_lat is not None and non_tiled_city_data.max_lon is not None:
+    if not custom_primary_features:
+        if non_tiled_city_data.max_lat is not None and non_tiled_city_data.max_lon is not None:
             # Infer raster cell count from aoi
             square_meters = get_aoi_area_in_square_meters(non_tiled_city_data.min_lon, non_tiled_city_data.min_lat,
                                                           non_tiled_city_data.max_lon, non_tiled_city_data.max_lat)
             # Assume 1-meter resolution of target cif files
             cell_count = math.ceil(square_meters)
 
-        if custom_intermediate_features:
-            # wall dependencies
-            if not ('wallaspect' in custom_intermediate_features and 'wallheight' in custom_intermediate_features):
-                msg = 'Both wall_aspect_filename and wall_height_filename must both be specified if one of them is specified as not None.'
-                invalids.append(msg)
-            else:
-                if 'dsm' in non_tiled_city_data.cif_primary_feature_list:
-                    msg = 'dsm_tif_filename cannot be None if wallaspect and wallheight are not None due, to dependency conflict.'
-                    invalids.append(msg)
-
-            if 'skyview_factor' in custom_intermediate_features and 'dsm' in non_tiled_city_data.cif_primary_feature_list:
-                msg = 'dsm_tif_filename cannot be None if skyview_factor_filename is not None, due to dependency conflict.'
+    if custom_intermediate_features:
+        # wall dependencies
+        if not ('wallaspect' in custom_intermediate_features and 'wallheight' in custom_intermediate_features):
+            msg = 'Both wall_aspect_filename and wall_height_filename must both be specified if one of them is specified as not None.'
+            invalids.append(msg)
+        else:
+            if 'dsm' in non_tiled_city_data.cif_primary_feature_list:
+                msg = 'dsm_tif_filename cannot be None if wallaspect and wallheight are not None due, to dependency conflict.'
                 invalids.append(msg)
 
-            if 'skyview_factor' in custom_intermediate_features and 'tree_canopy' in non_tiled_city_data.cif_primary_feature_list:
-                msg = 'tree_canopy_tif_filename cannot be None if skyview_factor_filename is not None, due to dependency conflict.'
-                invalids.append(msg)
+        if 'skyview_factor' in custom_intermediate_features and 'dsm' in non_tiled_city_data.cif_primary_feature_list:
+            msg = 'dsm_tif_filename cannot be None if skyview_factor_filename is not None, due to dependency conflict.'
+            invalids.append(msg)
 
-            #TODO ensure that the dsm has not changed since last run using checksum???
+        if 'skyview_factor' in custom_intermediate_features and 'tree_canopy' in non_tiled_city_data.cif_primary_feature_list:
+            msg = 'tree_canopy_tif_filename cannot be None if skyview_factor_filename is not None, due to dependency conflict.'
+            invalids.append(msg)
 
+        #TODO ensure that the dsm has not changed since last run using checksum???
 
     return cell_count, invalids
 
@@ -357,23 +356,38 @@ def _is_tile_wider_than_half_aoi_side(min_lat, min_lon, max_lat, max_lon, tile_s
 
 
 def validate_basic_inputs(source_base_path, target_path, city_folder_name):
-    invalids = verify_fundamental_paths(source_base_path, target_path, city_folder_name)
+    invalids = _verify_fundamental_paths(source_base_path, target_path, city_folder_name)
     if invalids:
         print('\n')
-        _highlighted_print('------------ Invalid source/target folders ------------ ')
-        for invalid in invalids:
-            print(invalid)
-        raise Exception("Stopped processing due to invalid source/target folders.")
+        _highlighted_red_print(' vvvvvvvvvvvv Invalid source/target folders vvvvvvvvvvvv ')
+        _print_invalids(invalids)
+        _highlighted_red_print(' ^^^^^^^^^^^^ Invalid source/target folders ^^^^^^^^^^^^ \n')
+        raise Exception('Invalid configurations')
     else:
         return 0
 
 def validate_config_inputs(source_base_path, target_path, city_folder_name, pre_check_option):
     cell_count, detailed_invalids = _verify_processing_config(source_base_path, target_path, city_folder_name, pre_check_option)
+    if detailed_invalids:
+        print('\n')
+        _highlighted_red_print(' vvvvvvvvvvvv Invalid configurations vvvvvvvvvvvv ')
+        _print_invalids(detailed_invalids)
+        _highlighted_red_print(' ^^^^^^^^^^^^ Invalid configurations ^^^^^^^^^^^^ \n')
+        raise Exception('Invalid configurations')
+    else:
+        return cell_count,0
 
-    return cell_count, 0
 
-def _highlighted_print(msg):
-    print('\n\x1b[6;30;42m' + msg + '\x1b[0m')
+def _print_invalids(invalids):
+    i=1
+    for invalid in invalids:
+        print(f'{i}) {invalid}')
+        i +=1
+
+
+def _highlighted_red_print(msg):
+    print('\n\x1b[6;30;41m' + msg + '\x1b[0m')
+
 
 def offset_meters_to_geographic_degrees(decimal_latitude, length_m):
     earth_radius_m = 6378137

@@ -2,8 +2,7 @@ import os
 import math
 import datetime
 
-from src.worker_manager.config_validator import validate_basic_inputs, validate_config_inputs
-from src.worker_manager.graph_builder import build_source_dataframes
+from src.worker_manager.config_validator import validate_basic_inputs, validate_config_inputs, _verify_processing_config
 from src.worker_manager.job_manager import start_jobs
 
 """
@@ -18,15 +17,13 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
 
     return_code_basic = validate_basic_inputs(abs_source_base_path, abs_target_base_path, city_folder_name)
 
-    processing_config_df = build_source_dataframes(abs_source_base_path, city_folder_name)
-
     if processing_option == 'run_pipeline':
         precheck_option = 'pre_check'
     else:
         precheck_option = processing_option
 
-    solweig_full_cell_count, return_code_configs = validate_config_inputs(processing_config_df, abs_source_base_path,
-                                                                          abs_target_base_path, city_folder_name, precheck_option)
+    solweig_full_cell_count, return_code_configs  = validate_config_inputs(abs_source_base_path, abs_target_base_path,
+                                                                           city_folder_name, precheck_option)
 
     # Print runtime estimate
     if solweig_full_cell_count is not None:
@@ -37,37 +34,31 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
                 x = solweig_full_cell_count
                 est_runtime_mins = math.ceil((7E-5 * x) + 6.9158)
             else:
-                x = pow(solweig_full_cell_count, 6)
-                est_runtime_mins = math.ceil((8E-79 * x**2) + (4E-38 * x) + 39.571)
+                x = pow(solweig_full_cell_count, 9)
+                est_runtime_mins = math.ceil((4E-58 * x) + 77.95)
             _print_runtime_estimate(est_runtime_mins)
 
     if processing_option == 'run_pipeline':
-        return_code, return_str = start_jobs(abs_source_base_path, abs_target_base_path, city_folder_name, processing_config_df)
+        return_code, return_str = start_jobs(abs_source_base_path, abs_target_base_path, city_folder_name)
 
         if return_code == 0:
             print(return_str)
         else:
-            _highlighted_print(return_str)
+            _highlighted_yellow_print(return_str)
         return return_code
-    else:
-        if return_code_basic == 0 and return_code_configs == 0:
-            print("\nPassed all validation checks")
-            return 0
-        else:
-            _highlighted_print('Pre-check encountered errors.')
-            return -99
+
 
 def _print_runtime_estimate(est_runtime_mins):
     est_runtime_hours = round(est_runtime_mins / 60, 1)
     now = datetime.datetime.now()
     time_change = datetime.timedelta(minutes=est_runtime_mins)
     est_end_time = now + time_change
-    print(f'\nEstimated runtime: {est_runtime_hours} hours')
+    print(f'\nEstimated runtime: {est_runtime_hours} hours.')
     print(f'Estimated completion time for processing of tile_001: {est_end_time.strftime('%m/%d/%Y %I:%M %p')}\n')
 
 
-def _highlighted_print(msg):
-    print('\n\x1b[6;30;42m' + msg + '\x1b[0m')
+def _highlighted_yellow_print(msg):
+    print('\n\x1b[6;30;43m' + msg + '\x1b[0m')
 
 
 if __name__ == "__main__":
@@ -84,6 +75,4 @@ if __name__ == "__main__":
                         help=f'specifies type of configuration pre-check. Options are: {valid_methods}')
     args = parser.parse_args()
 
-    return_code = start_processing(args.source_base_path, args.target_base_path, args.city_folder_name, args.processing_option)
-
-    print(f'return code: {return_code}')
+    start_processing(args.source_base_path, args.target_base_path, args.city_folder_name, args.processing_option)

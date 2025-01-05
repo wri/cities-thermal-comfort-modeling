@@ -13,7 +13,7 @@ from pathlib import Path
 from src.constants import FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_PRIMARY_DATA
 
 
-def get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_tile_id, include_extended_metrics = False):
+def get_existing_tiles(source_city_path, custom_file_names, include_extended_metrics = False):
     tiles_folders = str(os.path.join(source_city_path, FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_RASTER_FILES))
 
     if include_extended_metrics:
@@ -28,41 +28,23 @@ def get_existing_tiles(source_city_path, custom_file_names, start_tile_id, end_t
             tile_path = os.path.join(tiles_folders, dir_obj)
             tile_name = os.path.basename(tile_path)
 
-            if start_tile_id == '*' or end_tile_id == '*':
-                tile_range = []
-            else:
-                tile_range = _get_tile_range(start_tile_id, end_tile_id)
+            for file_obj in Path(tile_path).iterdir():
+                if file_obj.name in custom_file_names and file_obj.is_file() and Path(file_obj).suffix == '.tif':
+                    # get bounds for first tiff file found in folder, assuming all other geotiffs have same bounds
+                    file_stem = Path(file_obj.name).stem
 
-            if not tile_range or tile_name in tile_range:
-                for file_obj in Path(tile_path).iterdir():
-                    if file_obj.name in custom_file_names and file_obj.is_file() and Path(file_obj).suffix == '.tif':
-                        # get bounds for first tiff file found in folder, assuming all other geotiffs have same bounds
-                        file_stem = Path(file_obj.name).stem
+                    if include_extended_metrics:
+                        chksum = calculate_checksum(file_obj)
+                        new_row = {'tile_name': tile_name, 'primary_file': file_stem,
+                                   'checksum': chksum}
+                    else:
+                        tile_boundary, avg_res, source_crs = _get_spatial_dimensions_of_geotiff_file(file_obj)
+                        new_row = {'tile_name': tile_name, 'primary_file': file_stem,
+                                   'boundary': tile_boundary, 'avg_res': avg_res, 'source_crs': source_crs}
 
-                        if include_extended_metrics:
-                            chksum = calculate_checksum(file_obj)
-                            new_row = {'tile_name': tile_name, 'primary_file': file_stem,
-                                       'checksum': chksum}
-                        else:
-                            tile_boundary, avg_res, source_crs = _get_spatial_dimensions_of_geotiff_file(file_obj)
-                            new_row = {'tile_name': tile_name, 'primary_file': file_stem,
-                                       'boundary': tile_boundary, 'avg_res': avg_res, 'source_crs': source_crs}
-
-                        tile_metrics_df = tile_metrics_df._append(new_row, ignore_index=True)
+                    tile_metrics_df = tile_metrics_df._append(new_row, ignore_index=True)
 
     return tile_metrics_df
-
-
-def _get_tile_range(start_tile_id, end_tile_id):
-    t_len = len('tile_')
-    start_id = int(start_tile_id[t_len:])
-    end_id = int(end_tile_id[t_len:])
-    tile_range = []
-    for x in range(start_id, end_id+1):
-        pad_x = str(x).zfill(3)
-        tile_name = f'tile_{pad_x}'
-        tile_range.append(tile_name)
-    return tile_range
 
 
 def _get_spatial_dimensions_of_geotiff_file(file_path):

@@ -6,7 +6,6 @@ SRC_DIR = os.path.join(ROOT_DIR, 'src')
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
 
 FILENAME_METHOD_YML_CONFIG = '.config_method_parameters.yml'
-FILENAME_PROCESSING_CSV_CONFIG = '.config_city_processing.csv'
 
 FOLDER_NAME_PRIMARY_DATA = 'primary_data'
 FOLDER_NAME_PRIMARY_RASTER_FILES = 'raster_files'
@@ -21,5 +20,5 @@ FILENAME_SVFS_ZIP = 'svfs.zip'
 FILENAME_ERA5 = 'met_era5_hottest_days.txt'
 
 METHOD_TRIGGER_ERA5_DOWNLOAD = '<download_era5>'
-PROCESSING_METHODS = ['cif_download_only', 'wall_height_aspect', 'skyview_factor', 'solweig_only', 'solweig_full']
+PROCESSING_METHODS = ['cif_download_only', 'solweig_full']
 

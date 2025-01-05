@@ -22,14 +22,14 @@ MAX_RETRY_COUNT = 3
 RETRY_PAUSE_TIME_SEC = 10
 
 
-def run_plugin(task_index, step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path,
+def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path,
                target_base_path, met_filename, utc_offset):
     start_time = datetime.now()
 
     city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
     logger = setup_logger(city_data.target_model_log_path)
     method_title = _assign_method_title(step_method)
-    log_method_start(method_title, task_index, None, city_data.target_base_path, logger)
+    log_method_start(method_title, None, city_data.target_base_path, logger)
 
     # Initiate QGIS and UMEP processing
     try:
@@ -66,28 +66,28 @@ def run_plugin(task_index, step_index, step_method, folder_name_city_data, folde
                             shutil.move(str(temp_result_path), str(target_base_path))
                 except Exception as e_msg:
                     msg = (f'{method_title} processing succeeded but could not create target folder or move files: {city_data.target_intermediate_tile_data_path}')
-                    log_method_failure(start_time, msg, task_index, None, city_data.target_base_path, e_msg, logger)
+                    log_method_failure(start_time, msg, None, city_data.target_base_path, e_msg, logger)
                     return 1
 
                 return_code = 0
             except Exception as e_msg:
-                msg = f'task:{task_index} {method_title} failure. Retrying. ({e_msg})'
-                log_method_failure(start_time, msg, task_index, None, city_data.target_base_path, e_msg, logger)
+                msg = f'task:{method_title} failure. Retrying. ({e_msg})'
+                log_method_failure(start_time, msg, None, city_data.target_base_path, e_msg, logger)
                 if retry_count < MAX_RETRY_COUNT:
                     time.sleep(RETRY_PAUSE_TIME_SEC)
                 return_code = 3
             retry_count += 1
 
     if return_code == 0:
-        log_method_completion(start_time, method_title, task_index, None, city_data.target_base_path, logger)
+        log_method_completion(start_time, method_title,  None, city_data.target_base_path, logger)
     else:
         msg = f'{method_title} processing cancelled after {MAX_RETRY_COUNT} attempts.'
-        log_method_failure(start_time, msg, task_index, None, city_data.target_base_path, '')
+        log_method_failure(start_time, msg, None, city_data.target_base_path, '')
 
     run_duration_min = compute_time_diff_mins(start_time)
 
     start_time_str = start_time.strftime('%Y_%m_%d_%H:%M:%S')
-    return_stdout = (f'{{"task_index": {task_index}, "tile": "{folder_name_tile_data}", "step_index": {step_index}, '
+    return_stdout = (f'{{"tile": "{folder_name_tile_data}", "step_index": {step_index}, '
                      f'"step_method": "{step_method}", "met_filename": "{met_filename}", "return_code": {return_code}, '
                      f'"start_time": "{start_time_str}", "run_duration_min": {run_duration_min}}}')
 

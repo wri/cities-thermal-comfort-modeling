@@ -10,7 +10,7 @@ from src.workers.worker_tools import compute_time_diff_mins, remove_file
 MET_NULL_VALUE = -999
 TARGET_HEADING =  '%iy id it imin qn qh qe qs qf U RH Tair press rain kdown snow ldown fcld wuh xsmd lai kdiff kdir wdir'
 
-def get_met_data(task_index, target_base_path, folder_name_city_data, aoi_boundary, utc_offset, sampling_local_hours):
+def get_met_data(target_base_path, folder_name_city_data, aoi_boundary, utc_offset, sampling_local_hours):
     start_time = datetime.now()
 
     d = {'geometry': [shapely.wkt.loads(aoi_boundary)]}
@@ -24,7 +24,7 @@ def get_met_data(task_index, target_base_path, folder_name_city_data, aoi_bounda
     met_filename = FILENAME_ERA5
     start_time_str = start_time.strftime('%Y_%m_%d_%H:%M:%S')
     run_duration_min = compute_time_diff_mins(start_time)
-    return_stdout = (f'{{"task_index": {task_index}, "tile": "None", "step_index": {0}, '
+    return_stdout = (f'{{"tile": "None", "step_index": {0}, '
                      f'"step_method": "{step_method}", "met_filename": "{met_filename}", "return_code": {return_code}, '
                      f'"start_time": "{start_time_str}", "run_duration_min": {run_duration_min}}}')
 
@@ -147,7 +147,6 @@ def _day_of_year(date_time):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Retrieve meteorological data.')
-    parser.add_argument('--task_index', metavar='str', required=True, help='index from the processor config file')
     parser.add_argument('--target_base_path', metavar='path', required=True, help='folder for source data')
     parser.add_argument('--city_folder_name', metavar='str', required=True, help='name of city folder')
     parser.add_argument('--aoi_boundary', metavar='str', required=True, help='geographic boundary of the AOI')
@@ -156,6 +155,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    result_json = get_met_data(args.task_index, args.target_base_path, args.city_folder_name, args.aoi_boundary, args.utc_offset, args.sampling_local_hours)
+    result_json = get_met_data(args.target_base_path, args.city_folder_name, args.aoi_boundary, args.utc_offset, args.sampling_local_hours)
 
     print(result_json)

@@ -27,16 +27,15 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
 
     # Print runtime estimate
     if solweig_full_cell_count is not None:
+        x = solweig_full_cell_count
         if solweig_full_cell_count < 2E3:
-            print('\nEstimated runtime is a few minutes or less.\n')
+            print(f'\nEstimated runtime for full solweig without intermediate files is a few minutes or less over {x:,} raster cells.\n')
         else:
-            if solweig_full_cell_count < 1E6:
-                x = solweig_full_cell_count
-                est_runtime_mins = math.ceil((7E-5 * x) + 6.9158)
+            if solweig_full_cell_count < 4E6:
+                est_runtime_mins = math.ceil(3.82863E-5*x +24.89)
             else:
-                x = pow(solweig_full_cell_count, 9)
-                est_runtime_mins = math.ceil((4E-58 * x) + 77.95)
-            _print_runtime_estimate(est_runtime_mins)
+                est_runtime_mins = math.ceil(-1.2132938098E-10*pow(x,2) + 0.0020671567558*x -6306.9)
+            _print_runtime_estimate(x, est_runtime_mins)
 
     if processing_option == 'run_pipeline':
         return_code, return_str = start_jobs(abs_source_base_path, abs_target_base_path, city_folder_name)
@@ -48,12 +47,12 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
         return return_code
 
 
-def _print_runtime_estimate(est_runtime_mins):
+def _print_runtime_estimate(cell_count, est_runtime_mins):
     est_runtime_hours = round(est_runtime_mins / 60, 1)
     now = datetime.datetime.now()
     time_change = datetime.timedelta(minutes=est_runtime_mins)
     est_end_time = now + time_change
-    print(f'\nEstimated runtime: {est_runtime_hours} hours.')
+    print(f'\nEstimated runtime for full solweig without intermediate files is {est_runtime_hours} hours over {cell_count:,} raster cells.')
     print(f'Estimated completion time for processing of tile_001: {est_end_time.strftime('%m/%d/%Y %I:%M %p')}\n')
 
 

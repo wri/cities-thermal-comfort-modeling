@@ -2,7 +2,6 @@
 cls
 
 SET path_to_main=C:\Users\Administrator\Github\cities-thermal-comfort-modeling\main.py
-REM FOR %%A IN ("%~dp0.") DO SET parent_path=%%~dpA
 SET source_base_path=C:\CTCM_data_setup
 SET target_base_path=C:\CTCM_outcome
 FOR %%* IN (.) DO SET city_folder=%%~n*

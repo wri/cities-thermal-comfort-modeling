@@ -30,6 +30,40 @@ def test_custom_city():
             remove_folder(city_data.target_city_parent_path)
 
 
+def test_tiled_custom_city():
+    source_city_folder_name = 'NLD_Amsterdam_custom_tiled'
+    city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+
+    try:
+        return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+        # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+
+        vrt_count = file_count_in_vrt_directory(city_data)
+
+        equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
+        equal(13, vrt_count, msg=f"Expected VRT count of 13 files, but actual count is {vrt_count}")
+    finally:
+        if CLEANUP_RESULTS:
+            remove_folder(city_data.target_city_parent_path)
+
+
+def test_mixed_custom_city():
+    source_city_folder_name = 'ZAF_Capetown_small_mixed_cif'
+    city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+
+    try:
+        return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+        # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+
+        vrt_count = file_count_in_vrt_directory(city_data)
+
+        equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
+        equal(13, vrt_count, msg=f"Expected VRT count of 13 files, but actual count is {vrt_count}")
+    finally:
+        if CLEANUP_RESULTS:
+            remove_folder(city_data.target_city_parent_path)
+
+
 def test_untiled_full_cif():
     source_city_folder_name = 'ZAF_Capetown_full_cif'
     city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
@@ -56,40 +90,6 @@ def test_tiled_cif_city():
 
     primary_data = os.path.join(SAMPLE_CITIES_SOURCE_DIR, source_city_folder_name, FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_RASTER_FILES)
     remove_folder(primary_data)
-
-    try:
-        return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
-        # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
-
-        vrt_count = file_count_in_vrt_directory(city_data)
-
-        equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        equal(13, vrt_count, msg=f"Expected VRT count of 13 files, but actual count is {vrt_count}")
-    finally:
-        if CLEANUP_RESULTS:
-            remove_folder(city_data.target_city_parent_path)
-
-
-def test_tiled_custom_city():
-    source_city_folder_name = 'NLD_Amsterdam_custom_tiled'
-    city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
-
-    try:
-        return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
-        # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
-
-        vrt_count = file_count_in_vrt_directory(city_data)
-
-        equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        equal(13, vrt_count, msg=f"Expected VRT count of 13 files, but actual count is {vrt_count}")
-    finally:
-        if CLEANUP_RESULTS:
-            remove_folder(city_data.target_city_parent_path)
-
-
-def test_mixed_cif_city():
-    source_city_folder_name = 'ZAF_Capetown_small_mixed_cif'
-    city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')

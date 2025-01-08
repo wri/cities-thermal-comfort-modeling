@@ -2,8 +2,10 @@ import os
 import math
 import datetime
 
+from src.worker_manager.ancillary_files import write_config_files
 from src.worker_manager.config_validator import validate_basic_inputs, validate_config_inputs, _verify_processing_config
 from src.worker_manager.job_manager import start_jobs
+from src.workers.worker_tools import remove_folder
 
 """
 Guide to creating standalone app for calling QGIS: https://docs.qgis.org/3.16/en/docs/pyqgis_developer_cookbook/intro.html
@@ -17,13 +19,8 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
 
     return_code_basic = validate_basic_inputs(abs_source_base_path, abs_target_base_path, city_folder_name)
 
-    if processing_option == 'run_pipeline':
-        precheck_option = 'pre_check'
-    else:
-        precheck_option = processing_option
-
-    umep_solweig_cell_count, return_code_configs  = validate_config_inputs(abs_source_base_path, abs_target_base_path,
-                                                                           city_folder_name, precheck_option)
+    target_scenario_path, umep_solweig_cell_count, update_aoi, return_code_configs  = (
+        validate_config_inputs(abs_source_base_path, abs_target_base_path, city_folder_name, processing_option))
 
     # Print runtime estimate
     if umep_solweig_cell_count is not None:
@@ -38,6 +35,12 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
             _print_runtime_estimate(x, est_runtime_mins)
 
     if processing_option == 'run_pipeline':
+        # Remove existing target scenario folder
+        remove_folder(target_scenario_path)
+
+        # write configs and last run metrics
+        write_config_files(source_base_path, target_base_path, city_folder_name, update_aoi)
+
         return_code, return_str = start_jobs(abs_source_base_path, abs_target_base_path, city_folder_name)
 
         if return_code == 0:
@@ -69,7 +72,7 @@ if __name__ == "__main__":
                         help='the path to city-based target data')
     parser.add_argument('--city_folder_name', metavar='str', required=True,
                         help='name of source city_folder')
-    valid_methods = ['run_pipeline', 'pre_check_all', 'pre_check']
+    valid_methods = ['run_pipeline', 'pre_check']
     parser.add_argument('--processing_option', metavar='str', choices=valid_methods, required=True,
                         help=f'specifies type of configuration pre-check. Options are: {valid_methods}')
     args = parser.parse_args()

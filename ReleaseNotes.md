@@ -1,5 +1,13 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/01/08
+1. For datasets with customer primary files, changed handling of discrepancies between the yml AOI and the tile-grid extent of the custom tiles as:
+   1. For pre-check option:
+      1. For any discrepancy, the code reports a warning with the lat/long values for the tile grid from the raster files.
+   1. For processing option:
+      1. For small discrepancies, the code reports a warning and automatically updates the target yml file with updated lat/long values. Small discrepancies are definded as being < 100m.
+      1. For large discrepancies, the code reports an integrity failure and also lists the lat/long values for the tile grid in the error message. The user then has option to update the AOI in the yml file with these values.
+
 ## 2025/01/07
 1. Methods renamed as:
    1. cif_download_only renamed to download_only

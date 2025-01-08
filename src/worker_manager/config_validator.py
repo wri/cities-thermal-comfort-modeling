@@ -430,9 +430,10 @@ def validate_basic_inputs(source_base_path, target_path, city_folder_name):
     invalids = _verify_fundamental_paths(source_base_path, target_path, city_folder_name)
     if invalids:
         print('\n')
-        _highlighted_red_print(' vvvvvvvvvvvv Invalid source/target folders vvvvvvvvvvvv ')
+        print(' vvvvvvvvvvvv Invalid source/target folders vvvvvvvvvvvv ')
         _print_invalids(invalids)
-        _highlighted_red_print(' ^^^^^^^^^^^^ Invalid source/target folders ^^^^^^^^^^^^ \n')
+        print(' ^^^^^^^^^^^^ Invalid source/target folders ^^^^^^^^^^^^ ')
+        print('\n')
         raise Exception('Invalid configurations')
     else:
         return 0
@@ -469,9 +470,9 @@ def validate_config_inputs(source_base_path, target_path, city_folder_name, proc
 
 def _print_banner(has_fatal_error, msg):
     if has_fatal_error:
-        _highlighted_red_print(msg)
+        print(msg)
     else:
-        _highlighted_yellow_print((msg))
+        print((msg))
 
 
 def _print_invalids(invalids):
@@ -479,14 +480,6 @@ def _print_invalids(invalids):
     for invalid in invalids:
         print(f'{i}) {invalid[0]}')
         i +=1
-
-
-def _highlighted_red_print(msg):
-    print('\n\x1b[6;30;41m' + msg + '\x1b[0m')
-
-
-def _highlighted_yellow_print(msg):
-    print('\n\x1b[6;30;43m' + msg + '\x1b[0m')
 
 
 def offset_meters_to_geographic_degrees(decimal_latitude, length_m):

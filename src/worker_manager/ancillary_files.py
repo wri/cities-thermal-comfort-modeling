@@ -206,14 +206,14 @@ def _write_raster_vrt(output_file_path:str, raster_files):
         raise f'VRT creation failed for {raster_files} due to {e_msg}.'
 
 
-def write_config_files(source_base_path, target_base_path, city_folder_name):
+def write_config_files(source_base_path, target_base_path, city_folder_name, updated_aoi):
     city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
 
     # write updated config files to target
     source_yml_config_path = city_data.city_method_config_path
     target_yml_config_path = os.path.join(city_data.target_city_path, FILENAME_METHOD_YML_CONFIG)
 
-    updated_yml_config = _update_custom_filenames_yml(city_data)
+    updated_yml_config = _update_custom_yml_parameters(city_data, updated_aoi)
     write_commented_yaml(updated_yml_config, target_yml_config_path)
 
     # write source config files to cache subdirectory
@@ -225,11 +225,23 @@ def write_config_files(source_base_path, target_base_path, city_folder_name):
     # TODO write primary checksums to source_config subdirectory
 
 
-def _update_custom_filenames_yml(city_data:CityData):
+def _update_custom_yml_parameters(city_data:CityData, updated_aoi):
     from src.workers.worker_tools import read_yaml
     city_configs = os.path.join(city_data.source_city_path, FILENAME_METHOD_YML_CONFIG)
 
     list_doc = read_commented_yaml(city_configs)
+
+    if updated_aoi:
+        updated_min_lon = updated_aoi.bounds[0]
+        updated_min_lat = updated_aoi.bounds[1]
+        updated_max_lon = updated_aoi.bounds[2]
+        updated_max_lat = updated_aoi.bounds[3]
+
+        processing_area = list_doc[1]
+        processing_area['min_lon'] = updated_min_lon
+        processing_area['min_lat'] = updated_min_lat
+        processing_area['max_lon'] = updated_max_lon
+        processing_area['max_lat'] = updated_max_lat
 
     custom_primary_filenames = list_doc[3]
     custom_primary_filenames['dem_tif_filename'] = city_data.dem_tif_filename
@@ -270,13 +282,13 @@ def write_tile_grid(tile_grid, source_crs, target_qgis_viewer_path):
     else:
         raise Exception("inconvertible")
 
-    projected_gdf = gpd.GeoDataFrame(modified_tile_grid, crs=source_crs)
+    # projected_gdf = gpd.GeoDataFrame(modified_tile_grid, crs=source_crs)
 
     target_file_name = 'tile_grid.geojson'
     target_path = target_qgis_viewer_path
     create_folder(target_path)
     file_path = os.path.join(target_path, target_file_name)
 
-    projected_gdf.to_file(file_path, driver='GeoJSON')
+    modified_tile_grid.to_file(file_path, driver='GeoJSON')
 
 

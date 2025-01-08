@@ -8,13 +8,12 @@ import dask
 from shapely.lib import envelope
 
 from src.constants import SRC_DIR, METHOD_TRIGGER_ERA5_DOWNLOAD
-from src.worker_manager.ancillary_files import write_config_files, write_tile_grid, write_qgis_files
+from src.worker_manager.ancillary_files import write_tile_grid, write_qgis_files
 from src.worker_manager.graph_builder import get_aoi_fishnet, get_aoi
 from src.workers.logger_tools import setup_logger, write_log_message
 from src.worker_manager.reporter import parse_row_results, report_results
-from src.worker_manager.tools import get_existing_tiles
+from src.worker_manager.tools import get_existing_tile_metrics
 from src.workers.city_data import CityData
-from src.workers.worker_tools import remove_folder
 
 warnings.filterwarnings('ignore')
 dask.config.set({'logging.distributed': 'warning'})
@@ -40,9 +39,6 @@ def start_jobs(source_base_path, target_base_path, city_folder_name):
     custom_primary_filenames = non_tiled_city_data.custom_primary_filenames
     cif_primary_features = non_tiled_city_data.cif_primary_feature_list
     ctcm_intermediate_features = non_tiled_city_data.ctcm_intermediate_list
-
-    # Remove existing target folder
-    remove_folder(non_tiled_city_data.target_city_path)
 
     logger = setup_logger(non_tiled_city_data.target_manager_log_path)
     write_log_message('Starting jobs', __file__, logger)
@@ -79,7 +75,7 @@ def start_jobs(source_base_path, target_base_path, city_folder_name):
 
     # Retrieve CIF data
     if custom_primary_filenames:
-        existing_tiles = get_existing_tiles(source_city_path, custom_primary_filenames)
+        existing_tiles = get_existing_tile_metrics(source_city_path, custom_primary_filenames, project_to_wgs84=True)
         tile_unique_values = existing_tiles[['tile_name', 'boundary', 'avg_res', 'source_crs']].drop_duplicates()
         number_of_tiles = tile_unique_values.shape[0]
 
@@ -132,16 +128,12 @@ def start_jobs(source_base_path, target_base_path, city_folder_name):
             delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
             futures.append(delay_tile_array)
 
-    # TODO consider processing every nth tile and return just those results
     write_log_message('Starting model processing', __file__, logger)
     delays_all_passed, results_df = _process_rows(futures, number_of_tiles, logger)
 
     # Combine processing return values
     combined_results_df = pd.concat([combined_results_df, results_df])
     combined_delays_passed.append(delays_all_passed)
-
-    # write configs and last run metrics
-    write_config_files(source_base_path, target_base_path, city_folder_name)
 
     # Write run_report
     report_file_path = report_results(task_method, combined_results_df, non_tiled_city_data.target_log_path,

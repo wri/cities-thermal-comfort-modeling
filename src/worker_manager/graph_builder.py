@@ -48,19 +48,3 @@ def get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters):
                                       tile_units_in_degrees=False)
 
     return geom_gpd
-
-# def _get_distance_between_points(lon1, lat1, lon2, lat2):
-#     # Convert decimal degrees to radians
-#     lon1, lat1, lon2, lat2 = map(math.radians, [lon1, lat1, lon2, lat2])
-#
-#     # Haversine formula
-#     dlon = lon2 - lon1
-#     dlat = lat2 - lat1
-#     a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
-#     c = 2 * math.asin(math.sqrt(a))
-#
-#     # Global average radius of Earth in kilometers.
-#     r = 6371000
-#
-#     # Calculate the result
-#     return c * r

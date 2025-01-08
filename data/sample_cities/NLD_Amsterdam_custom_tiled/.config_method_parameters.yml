@@ -10,10 +10,10 @@
 - ProcessingAOI:
   utc_offset: 2
   min_lon: 4.9012
-  min_lat: 52.3720
-  max_lon: 4.9083
-  max_lat: 52.3752
-  tile_side_meters: 170
+  min_lat: 52.372
+  max_lon: 4.9062057
+  max_lat: 52.374 # yml value is invalid
+  tile_side_meters: None
   tile_buffer_meters: None
 # Names of meteorological files used by SOLWEIG method in "UMEP for Processing" plugin.
 # Specify custom files or "<download_era5>" method to automatically download ERA5 data into a file named met_era5_hottest_days.txt

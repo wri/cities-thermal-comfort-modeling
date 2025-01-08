@@ -1,5 +1,10 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/01/07
+1. Methods renamed as:
+   2. cif_download_only renamed to download_only
+   3. solweig_full renamed to umep_solweig
+4. Available methods now listed in the yml file
 
 ## 2024/12/30
 1. Added option to provide intermediate data files.

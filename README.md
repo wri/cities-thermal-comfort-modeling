@@ -24,12 +24,10 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
 ### Configuration for a city
    #### In your city folder:
    1. Modify the .config_umep_city_processing.csv file to specify which method to run and whether you want it run on all tiles or a range of tiles.
-      1. There are 5 available methods, but the majority of the time choose "solweig_full". This option will first generate files needed for solweig before running the solweig plugin itself.
-         * **Note**: The other four options allow runs of specific methods (cif_download_only, wall_height_aspect, skyview_factor, solweig_only) in case you want to separately run each method.
+      1. There are 2 available methods (umep_solweig and download_only), but the majority of the time choose "umep_solweig". This option will first generate intermediate files needed for solweig before running the solweig plugin itself.
          * Methods:
-           * cif_download_only - retrieves base TIF data from the CIF system without other processing.
-           * wall_height_aspect, skyview_factor, solweig_only - runs each of these UMEP functions by itself.
-           * solweig_full - this option runs cif-download (where needed), wall_height_aspect, skyview_factor, and finally solweig_only
+           * download_only - retrieves base TIF data from the CIF system without other processing.
+           * umep_solweig - this option runs cif-download (where needed), intermediate files, and umep_solweig
    1. Modify the four sections of the .config_method_parameters.yml file to specify:
       1. methods attributes (the file already contains default values which you may want to leave unaltered)
          * **IMPORTANT** The default values for the leaf start and leaf end dates are configurable for both the northern and southern hemispheres. The code determines which hemispheric values to use based on the center latitude of the AOI. Equitorial AOIs are assign start/end dates as 0/365.

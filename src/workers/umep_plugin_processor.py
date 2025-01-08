@@ -11,9 +11,10 @@ from processing_umep.processing_umep import ProcessingUMEPProvider
 from pathlib import Path
 from datetime import datetime
 from qgis.core import QgsApplication
+
+from src.constants import FILENAME_SVFS_ZIP
 from src.workers.worker_tools import remove_file, remove_folder, compute_time_diff_mins, create_folder, get_configurations
 from src.workers.city_data import CityData
-from src.constants import FILENAME_WALL_HEIGHT, FILENAME_WALL_ASPECT, FILENAME_SVFS_ZIP
 from src.workers.logger_tools import setup_logger, log_method_start, log_method_failure, log_method_completion
 
 warnings.filterwarnings("ignore")
@@ -56,7 +57,7 @@ def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_
 
                 # Prepare target folder and transfer over the temporary results
                 try:
-                    if step_method == 'solweig_only':
+                    if step_method == 'umep_solweig_only':
                         for temp_result_path, target_base_path in keepers.items():
                             remove_folder(target_base_path)
                             shutil.move(str(temp_result_path), str(target_base_path))
@@ -116,7 +117,8 @@ def _prepare_method_execution(method, city_data, tmpdirname, met_filename=None, 
         create_folder(city_data.target_intermediate_tile_data_path)
 
         temp_svfs_file_no_extension = os.path.join(tmpdirname, Path(city_data.target_svfszip_path).stem)
-        temp_svfs_file_with_extension = os.path.join(tmpdirname, FILENAME_SVFS_ZIP)
+        skview_factor_plugin_output_default_filename = FILENAME_SVFS_ZIP
+        temp_svfs_file_with_extension = os.path.join(tmpdirname, skview_factor_plugin_output_default_filename)
         input_params = {
             'INPUT_DSM': city_data.target_dsm_path,
             'INPUT_CDSM': city_data.target_tree_canopy_path,

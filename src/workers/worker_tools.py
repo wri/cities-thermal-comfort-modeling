@@ -1,10 +1,12 @@
 import shutil
 import os
+
 import yaml
 import utm
 from datetime import datetime
 from shapely.geometry import box
 from src.constants import ROOT_DIR
+
 
 toBool = {'true': True, 'false': False}
 
@@ -37,6 +39,7 @@ def remove_file(file_path):
     if os.path.isfile(file_path):
         os.remove(file_path)
 
+
 def get_configurations():
     import configparser
     config_file = os.path.join(ROOT_DIR, '.config.ini')
@@ -51,7 +54,9 @@ def get_configurations():
 
 def read_yaml(config_path):
     with open(config_path, 'r') as stream:
-        values = list(yaml.safe_load_all(stream))[0]
+        data = yaml.safe_load_all(stream)
+        values = list(data)[0]
+        b=2
     return values
 
 
@@ -60,6 +65,23 @@ def write_yaml(data, config_path):
     create_folder(dir)
     with open(config_path, 'w') as file:
         yaml.safe_dump(data, file, sort_keys=False)
+
+
+def read_commented_yaml(config_path):
+    from ruamel.yaml import YAML
+    yaml = YAML()
+    with open(config_path) as stream:
+        data = yaml.load(stream)
+    return data
+
+
+def write_commented_yaml(data, config_path):
+    from ruamel.yaml import YAML
+    yaml = YAML()
+    dir = os.path.dirname(config_path)
+    create_folder(dir)
+    with open(config_path, 'w') as file:
+        yaml.dump(data, file)
 
 
 def get_substring_after(s, delim):

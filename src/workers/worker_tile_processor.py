@@ -27,7 +27,7 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
             get_cif_data(source_path, target_path, folder_city, folder_tile, cif_features, boundary, resolution)
         return cif_stdout
 
-    def _execute_solweig_only_plugin(step_index, folder_city, folder_tile, source_path, target_path, met_names, offset_utc):
+    def _execute_umep_solweig_only_plugin(step_index, folder_city, folder_tile, source_path, target_path, met_names, offset_utc):
         from umep_plugin_processor import run_plugin
 
         out_list = []
@@ -37,12 +37,12 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
             else:
                 met_filename = met_file.get('filename')
 
-            solweig_stdout = run_plugin(step_index, 'solweig_only', folder_city,
+            solweig_stdout = run_plugin(step_index, 'umep_solweig_only', folder_city,
                                      folder_tile, source_path, target_path, met_filename, offset_utc)
             out_list.append(solweig_stdout)
         return out_list
 
-    def _execute_solweig_full_plugin_steps(folder_city, folder_tile, source_path, target_path, met_names,
+    def _execute_umep_solweig_plugin_steps(folder_city, folder_tile, source_path, target_path, met_names,
                                            ctcm_intermediate_features, offset_utc):
         from umep_plugin_processor import run_plugin
         out_list = []
@@ -58,7 +58,7 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
             out_list.append(this_stdout2)
 
         time.sleep(PROCESSING_PAUSE_TIME_SEC)
-        this_stdout3 = _execute_solweig_only_plugin(3, folder_city,
+        this_stdout3 = _execute_umep_solweig_only_plugin(3, folder_city,
                                                     folder_tile, source_path, target_path, met_names, offset_utc)
         out_list.extend(this_stdout3)
 
@@ -82,17 +82,17 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
         return_stdouts.append(return_val)
         time.sleep(PROCESSING_PAUSE_TIME_SEC)
 
-    if task_method != 'cif_download_only':
+    if task_method != 'download_only':
         # ensure all source TIFF files have negative NS y direction
         ensure_y_dimension_direction(city_data)
 
-        if task_method == 'solweig_full':
-            return_vals = _execute_solweig_full_plugin_steps(city_folder_name, tile_folder_name,
+        if task_method == 'umep_solweig':
+            return_vals = _execute_umep_solweig_plugin_steps(city_folder_name, tile_folder_name,
                                                              source_base_path, target_base_path, met_filenames,
                                                              ctcm_intermediate_features, utc_offset)
             return_stdouts.extend(return_vals)
-        elif task_method == 'solweig_only':
-            return_vals = _execute_solweig_only_plugin(1, city_folder_name,
+        elif task_method == 'umep_solweig_only':
+            return_vals = _execute_umep_solweig_only_plugin(1, city_folder_name,
                                          tile_folder_name, source_base_path, target_base_path, met_filenames, utc_offset)
             return_stdouts.extend(return_vals)
         elif task_method in PROCESSING_METHODS:

@@ -1,7 +1,7 @@
 # Description of scenario
 - Scenario:
   short_title: first scenario
-  version: 1
+  version: 2
   description: Scenario that demonstrates blah.
   author: author@wri.org
 # Processing Area of Interest used for tile construction and ERA5-data download. If any custom files
@@ -34,9 +34,10 @@
   wall_aspect_filename: None
   wall_height_filename: None
 # Configurable attribute values for method processing
+# Valid methods are [download_only, umep_solweig]
 # sampling_local_hours specifies hours for <download_era5> method.
 - MethodAttributes:
-  method: solweig_full
+  method: umep_solweig
   wall_height_aspect:
     lower_limit_for_wall_height: 3
   skyview_factor:

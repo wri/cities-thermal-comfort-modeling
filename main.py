@@ -22,16 +22,16 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
     else:
         precheck_option = processing_option
 
-    solweig_full_cell_count, return_code_configs  = validate_config_inputs(abs_source_base_path, abs_target_base_path,
+    umep_solweig_cell_count, return_code_configs  = validate_config_inputs(abs_source_base_path, abs_target_base_path,
                                                                            city_folder_name, precheck_option)
 
     # Print runtime estimate
-    if solweig_full_cell_count is not None:
-        x = solweig_full_cell_count
-        if solweig_full_cell_count < 1E4:
+    if umep_solweig_cell_count is not None:
+        x = umep_solweig_cell_count
+        if umep_solweig_cell_count < 1E4:
             print(f'\nEstimated runtime for full solweig without intermediate files is a few minutes or less for {x:,} raster cells.\n')
         else:
-            if solweig_full_cell_count < 4E6:
+            if umep_solweig_cell_count < 4E6:
                 est_runtime_mins = math.ceil(3.0166957E-5*x +3.2689E1)
             else:
                 est_runtime_mins = math.ceil(6.26228065090E-4*x -2.28907E3)

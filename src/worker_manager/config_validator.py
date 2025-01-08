@@ -169,7 +169,7 @@ def _verify_processing_config(source_base_path, target_base_path, city_folder_na
                     msg = f'Required source file: {prior_tree_canopy} not found for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
                     invalids.append(msg)
 
-            if task_method in ['solweig_only', 'solweig_full']:
+            if task_method in ['umep_solweig_only', 'umep_solweig']:
                 prior_land_cover = tiled_city_data.source_land_cover_path
                 prior_dem = tiled_city_data.source_dem_path
                 if cif_features is not None and 'lulc' not in cif_features and _verify_path(prior_land_cover) is False:
@@ -189,7 +189,7 @@ def _verify_processing_config(source_base_path, target_base_path, city_folder_na
                     msg = f'UTC-offset for: {met_file} not in -24 to 24 hours range as specified in .config_method_parameters.yml.'
                     invalids.append(msg)
 
-                if task_method in ['solweig_only']:
+                if task_method in ['umep_solweig_only']:
                     prior_svfszip = tiled_city_data.target_svfszip_path
                     prior_wallheight = tiled_city_data.target_wallheight_path
                     prior_wallaspect = tiled_city_data.target_wallaspect_path
@@ -238,7 +238,7 @@ def _verify_processing_config(source_base_path, target_base_path, city_folder_na
                     break
 
         # Get representative cell count
-        if task_method == 'solweig_full':
+        if task_method == 'umep_solweig':
             if 'dem' in custom_primary_features:
                 representative_tif = dem_tif_filename
             elif 'dsm' in custom_primary_features:

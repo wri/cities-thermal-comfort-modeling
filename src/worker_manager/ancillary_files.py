@@ -7,7 +7,7 @@ from src.constants import DATA_DIR, FILENAME_METHOD_YML_CONFIG, FILENAME_ERA5, M
 from src.worker_manager.reporter import _find_files_with_name
 from src.worker_manager.tools import clean_folder, delete_files_with_extension
 from src.workers.city_data import CityData
-from src.workers.worker_tools import create_folder
+from src.workers.worker_tools import create_folder, write_commented_yaml, read_commented_yaml
 
 
 def write_qgis_files(city_data, crs_str):
@@ -207,8 +207,6 @@ def _write_raster_vrt(output_file_path:str, raster_files):
 
 
 def write_config_files(source_base_path, target_base_path, city_folder_name):
-    from src.workers.worker_tools import write_yaml
-
     city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
 
     # write updated config files to target
@@ -216,7 +214,7 @@ def write_config_files(source_base_path, target_base_path, city_folder_name):
     target_yml_config_path = os.path.join(city_data.target_city_path, FILENAME_METHOD_YML_CONFIG)
 
     updated_yml_config = _update_custom_filenames_yml(city_data)
-    write_yaml(updated_yml_config, target_yml_config_path)
+    write_commented_yaml(updated_yml_config, target_yml_config_path)
 
     # write source config files to cache subdirectory
     source_config_dir = str(os.path.join(city_data.target_log_path, 'last_run_cache'))
@@ -231,7 +229,7 @@ def _update_custom_filenames_yml(city_data:CityData):
     from src.workers.worker_tools import read_yaml
     city_configs = os.path.join(city_data.source_city_path, FILENAME_METHOD_YML_CONFIG)
 
-    list_doc = read_yaml(city_configs)
+    list_doc = read_commented_yaml(city_configs)
 
     custom_primary_filenames = list_doc[3]
     custom_primary_filenames['dem_tif_filename'] = city_data.dem_tif_filename

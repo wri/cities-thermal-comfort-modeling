@@ -19,7 +19,7 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
     abs_source_base_path = os.path.abspath(source_base_path)
     abs_target_base_path = os.path.abspath(target_base_path)
 
-    non_tiled_city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
+    non_tiled_city_data = CityData(city_folder_name, None, abs_source_base_path, abs_target_base_path)
     existing_tiles_metrics = _get_existing_tiles(non_tiled_city_data)
 
     updated_aoi, config_return_code = validate_config(non_tiled_city_data, existing_tiles_metrics, processing_option)
@@ -46,9 +46,10 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
         remove_folder(target_scenario_path)
 
         # write configs and last run metrics
-        write_config_files(source_base_path, target_base_path, city_folder_name, updated_aoi)
+        write_config_files(non_tiled_city_data, updated_aoi)
 
-        return_code, return_str = start_jobs(abs_source_base_path, abs_target_base_path, city_folder_name)
+        # Process data
+        return_code, return_str = start_jobs(non_tiled_city_data)
 
         if return_code == 0:
             print(return_str)

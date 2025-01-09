@@ -13,7 +13,6 @@ from src.worker_manager.graph_builder import get_aoi_fishnet, get_aoi
 from src.workers.logger_tools import setup_logger, write_log_message
 from src.worker_manager.reporter import parse_row_results, report_results
 from src.worker_manager.tools import get_existing_tile_metrics
-from src.workers.city_data import CityData
 
 warnings.filterwarnings('ignore')
 dask.config.set({'logging.distributed': 'warning'})
@@ -33,9 +32,12 @@ def _add_buffer_hack(tile_boundary):
     return str(tile_boundary_out)
 
 
-def start_jobs(source_base_path, target_base_path, city_folder_name):
-    non_tiled_city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
-    source_city_path = str(os.path.join(source_base_path, city_folder_name))
+def start_jobs(non_tiled_city_data):
+    source_base_path = non_tiled_city_data.source_base_path
+    target_base_path = non_tiled_city_data.target_base_path
+    city_folder_name = non_tiled_city_data.folder_name_city_data
+    source_city_path = non_tiled_city_data.source_city_path
+
     custom_primary_filenames = non_tiled_city_data.custom_primary_filenames
     cif_primary_features = non_tiled_city_data.cif_primary_feature_list
     ctcm_intermediate_features = non_tiled_city_data.ctcm_intermediate_list
@@ -45,8 +47,8 @@ def start_jobs(source_base_path, target_base_path, city_folder_name):
 
     out_list = []
 
-    aoi_boundary, tile_side_meters, tile_buffer_meters, utc_offset, crs_str = get_aoi(source_base_path,
-                                                                                      city_folder_name)
+    aoi_boundary, tile_side_meters, tile_buffer_meters, utc_offset, crs_str = get_aoi(non_tiled_city_data)
+
     combined_results_df = pd.DataFrame(
         columns=['status', 'tile', 'step_index', 'step_method', 'met_filename', 'return_code',
                  'start_time', 'run_duration_min'])

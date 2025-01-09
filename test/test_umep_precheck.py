@@ -34,7 +34,7 @@ def test_main_check_invalid_city_1_configs():
         try:
             start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'pre_check')
         except Exception as e_msg:
-            assert e_msg == Exception('Invalid configurations')
+            assert e_msg == Exception('Invalid configuration(s). Stopping.')
 
 
 def test_main_check_invalid_city_2_configs():
@@ -44,6 +44,6 @@ def test_main_check_invalid_city_2_configs():
         try:
             start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'pre_check')
         except Exception as e_msg:
-            assert e_msg == Exception('Invalid configurations')
+            assert e_msg == Exception('Invalid configuration(s). Stopping.')
 
 

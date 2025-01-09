@@ -6,7 +6,6 @@ from pathlib import Path
 from src.constants import DATA_DIR, FILENAME_METHOD_YML_CONFIG, FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD
 from src.worker_manager.reporter import _find_files_with_name
 from src.worker_manager.tools import clean_folder, delete_files_with_extension
-from src.workers.city_data import CityData
 from src.workers.worker_tools import create_folder, write_commented_yaml, read_commented_yaml
 
 
@@ -206,18 +205,16 @@ def _write_raster_vrt(output_file_path:str, raster_files):
         raise f'VRT creation failed for {raster_files} due to {e_msg}.'
 
 
-def write_config_files(source_base_path, target_base_path, city_folder_name, updated_aoi):
-    city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
-
+def write_config_files(non_tiled_city_data, updated_aoi):
     # write updated config files to target
-    source_yml_config_path = city_data.city_method_config_path
-    target_yml_config_path = os.path.join(city_data.target_city_path, FILENAME_METHOD_YML_CONFIG)
+    source_yml_config_path = non_tiled_city_data.city_method_config_path
+    target_yml_config_path = os.path.join(non_tiled_city_data.target_city_path, FILENAME_METHOD_YML_CONFIG)
 
-    updated_yml_config = _update_custom_yml_parameters(city_data, updated_aoi)
+    updated_yml_config = _update_custom_yml_parameters(non_tiled_city_data, updated_aoi)
     write_commented_yaml(updated_yml_config, target_yml_config_path)
 
     # write source config files to cache subdirectory
-    source_config_dir = str(os.path.join(city_data.target_log_path, 'last_run_cache'))
+    source_config_dir = str(os.path.join(non_tiled_city_data.target_log_path, 'last_run_cache'))
     create_folder(source_config_dir)
     target_original_yml_config_path = os.path.join(source_config_dir, FILENAME_METHOD_YML_CONFIG)
     shutil.copyfile(source_yml_config_path, target_original_yml_config_path)
@@ -225,7 +222,7 @@ def write_config_files(source_base_path, target_base_path, city_folder_name, upd
     # TODO write primary checksums to source_config subdirectory
 
 
-def _update_custom_yml_parameters(city_data:CityData, updated_aoi):
+def _update_custom_yml_parameters(city_data, updated_aoi):
     from src.workers.worker_tools import read_yaml
     city_configs = os.path.join(city_data.source_city_path, FILENAME_METHOD_YML_CONFIG)
 

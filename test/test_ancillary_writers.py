@@ -5,16 +5,16 @@ from src.workers.city_data import CityData
 
 def test_vrt_writer():
     city_folder_name = 'ZAF_Capetown_small_tile'
-    city_data = CityData(city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+    non_tiled_city_data = CityData(city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     crs_str = 'EPSG:32734'
-    write_qgis_files(city_data, crs_str)
+    write_qgis_files(non_tiled_city_data, crs_str)
 
 def test_vrt_writer_amsterdam():
     city_folder_name = 'NLD_Amsterdam'
-    city_data = CityData(city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+    non_tiled_city_data = CityData(city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     crs_str = 'EPSG:32631'
-    write_qgis_files(city_data, crs_str)
+    write_qgis_files(non_tiled_city_data, crs_str)
 
 

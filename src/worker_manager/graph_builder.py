@@ -1,15 +1,8 @@
-import os
-
 from src.worker_manager.tools import construct_polygon_from_bounds, coordinates_to_bbox
-from src.workers.city_data import CityData
 from src.workers.worker_tools import get_utm_zone_epsg
 
 
-def get_aoi(source_base_path, city_folder_name):
-    source_city_path = str(os.path.join(source_base_path, city_folder_name))
-
-    non_tiled_city_data = CityData(city_folder_name, None, source_base_path, None)
-
+def get_aoi(non_tiled_city_data):
     # AOI metrics
     utc_offset = non_tiled_city_data.utc_offset
     min_lon = non_tiled_city_data.min_lon

@@ -27,10 +27,10 @@ def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_
                target_base_path, met_filename, utc_offset):
     start_time = datetime.now()
 
-    city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
-    logger = setup_logger(city_data.target_model_log_path)
+    tiled_city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
+    logger = setup_logger(tiled_city_data.target_model_log_path)
     method_title = _assign_method_title(step_method)
-    log_method_start(method_title, None, city_data.target_base_path, logger)
+    log_method_start(method_title, None, tiled_city_data.target_base_path, logger)
 
     # Initiate QGIS and UMEP processing
     try:
@@ -48,7 +48,7 @@ def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_
     retry_count = 0
     with (tempfile.TemporaryDirectory() as tmpdirname):
         # Get the UMEP processing parameters and prepare for the method
-        input_params, umep_method_title, keepers = _prepare_method_execution(step_method, city_data, tmpdirname, met_filename, utc_offset)
+        input_params, umep_method_title, keepers = _prepare_method_execution(step_method, tiled_city_data, tmpdirname, met_filename, utc_offset)
 
         while retry_count < MAX_RETRY_COUNT and return_code != 0:
             try:
@@ -66,24 +66,24 @@ def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_
                             remove_file(target_base_path)
                             shutil.move(str(temp_result_path), str(target_base_path))
                 except Exception as e_msg:
-                    msg = (f'{method_title} processing succeeded but could not create target folder or move files: {city_data.target_intermediate_tile_data_path}')
-                    log_method_failure(start_time, msg, None, city_data.target_base_path, e_msg, logger)
+                    msg = (f'{method_title} processing succeeded but could not create target folder or move files: {tiled_city_data.target_intermediate_tile_data_path}')
+                    log_method_failure(start_time, msg, None, tiled_city_data.target_base_path, e_msg, logger)
                     return 1
 
                 return_code = 0
             except Exception as e_msg:
                 msg = f'task:{method_title} failure. Retrying. ({e_msg})'
-                log_method_failure(start_time, msg, None, city_data.target_base_path, e_msg, logger)
+                log_method_failure(start_time, msg, None, tiled_city_data.target_base_path, e_msg, logger)
                 if retry_count < MAX_RETRY_COUNT:
                     time.sleep(RETRY_PAUSE_TIME_SEC)
                 return_code = 3
             retry_count += 1
 
     if return_code == 0:
-        log_method_completion(start_time, method_title,  None, city_data.target_base_path, logger)
+        log_method_completion(start_time, method_title,  None, tiled_city_data.target_base_path, logger)
     else:
         msg = f'{method_title} processing cancelled after {MAX_RETRY_COUNT} attempts.'
-        log_method_failure(start_time, msg, None, city_data.target_base_path, '')
+        log_method_failure(start_time, msg, None, tiled_city_data.target_base_path, '')
 
     run_duration_min = compute_time_diff_mins(start_time)
 

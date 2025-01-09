@@ -13,12 +13,12 @@ PROCESSING_PAUSE_TIME_SEC = 10
 
 def process_tile(task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
                  cif_primary_features, ctcm_intermediate_features, tile_boundary, tile_resolution, utc_offset):
-    city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
+    tiled_city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
     cif_primary_features = unpack_quoted_value(cif_primary_features)
     ctcm_intermediate_features = unpack_quoted_value(ctcm_intermediate_features)
     tile_resolution = unpack_quoted_value(tile_resolution)
     utc_offset = unpack_quoted_value(utc_offset)
-    met_filenames = city_data.met_filenames
+    met_filenames = tiled_city_data.met_filenames
 
     def _execute_retrieve_cif_data(source_path, target_path, folder_city, folder_tile, cif_features,
                                    boundary, resolution):
@@ -68,11 +68,11 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
 
     # transfer custom files
     if met_filenames:
-        _transfer_met_files(city_data)
-    if city_data.custom_primary_feature_list:
-        _transfer_custom_files(city_data, city_data.custom_primary_feature_list)
-    if city_data.custom_intermediate_list:
-        _transfer_custom_files(city_data, city_data.custom_intermediate_list)
+        _transfer_met_files(tiled_city_data)
+    if tiled_city_data.custom_primary_feature_list:
+        _transfer_custom_files(tiled_city_data, tiled_city_data.custom_primary_feature_list)
+    if tiled_city_data.custom_intermediate_list:
+        _transfer_custom_files(tiled_city_data, tiled_city_data.custom_intermediate_list)
 
     # get cif data
     if cif_primary_features is not None:
@@ -84,7 +84,7 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
 
     if task_method != 'download_only':
         # ensure all source TIFF files have negative NS y direction
-        ensure_y_dimension_direction(city_data)
+        ensure_y_dimension_direction(tiled_city_data)
 
         if task_method == 'umep_solweig':
             return_vals = _execute_umep_solweig_plugin_steps(city_folder_name, tile_folder_name,

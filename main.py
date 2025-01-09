@@ -5,6 +5,7 @@ import datetime
 from src.data_validation.manager import validate_config
 from src.worker_manager.ancillary_files import write_config_files
 from src.worker_manager.job_manager import start_jobs
+from src.worker_manager.tools import get_existing_tile_metrics, get_aoi_area_in_square_meters
 from src.workers.city_data import CityData
 from src.workers.worker_tools import remove_folder
 
@@ -18,14 +19,16 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
     abs_source_base_path = os.path.abspath(source_base_path)
     abs_target_base_path = os.path.abspath(target_base_path)
 
-    non_tiled_city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
+    non_tiled_city_data = CityData(city_folder_name, None, abs_source_base_path, abs_target_base_path)
+    existing_tiles_metrics = _get_existing_tiles(non_tiled_city_data)
 
-    umep_solweig_cell_count, updated_aoi, config_return_code  = validate_config(non_tiled_city_data, processing_option)
+    updated_aoi, config_return_code = validate_config(non_tiled_city_data, existing_tiles_metrics, processing_option)
 
     if config_return_code != 0:
         raise ValueError('Invalid configuration(s). Stopping.')
 
     # Print runtime estimate
+    umep_solweig_cell_count = _get_tile_counts(non_tiled_city_data, existing_tiles_metrics)
     if umep_solweig_cell_count is not None:
         x = umep_solweig_cell_count
         if umep_solweig_cell_count < 1E4:
@@ -43,9 +46,10 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
         remove_folder(target_scenario_path)
 
         # write configs and last run metrics
-        write_config_files(source_base_path, target_base_path, city_folder_name, updated_aoi)
+        write_config_files(non_tiled_city_data, updated_aoi)
 
-        return_code, return_str = start_jobs(abs_source_base_path, abs_target_base_path, city_folder_name)
+        # Process data
+        return_code, return_str = start_jobs(non_tiled_city_data)
 
         if return_code == 0:
             print(return_str)
@@ -53,6 +57,29 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
             _highlighted_yellow_print(return_str)
         return return_code
 
+
+def _get_existing_tiles(non_tiled_city_data):
+    if non_tiled_city_data.custom_primary_feature_list:
+        existing_tiles_metrics = (
+            get_existing_tile_metrics(non_tiled_city_data.source_city_path,
+                                      non_tiled_city_data.custom_primary_filenames,
+                                      project_to_wgs84=True))
+    else:
+        existing_tiles_metrics = None
+    return existing_tiles_metrics
+
+
+def _get_tile_counts(non_tiled_city_data, existing_tiles_metrics):
+    if non_tiled_city_data.custom_primary_feature_list:
+        # Get representative cell count
+        cell_count = existing_tiles_metrics['cell_count'][0]
+    else:
+        # Infer raster cell count from aoi
+        square_meters = get_aoi_area_in_square_meters(non_tiled_city_data.min_lon, non_tiled_city_data.min_lat,
+                                                      non_tiled_city_data.max_lon, non_tiled_city_data.max_lat)
+        # Assume 1-meter resolution of target cif files
+        cell_count = math.ceil(square_meters)
+    return cell_count
 
 def _print_runtime_estimate(cell_count, est_runtime_mins):
     est_runtime_hours = round(est_runtime_mins / 60, 1)

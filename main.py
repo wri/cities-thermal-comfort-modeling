@@ -2,9 +2,10 @@ import os
 import math
 import datetime
 
+from src.data_validation.manager import validate_config
 from src.worker_manager.ancillary_files import write_config_files
-from src.worker_manager.config_validator import validate_basic_inputs, validate_config_inputs, _verify_processing_config
 from src.worker_manager.job_manager import start_jobs
+from src.workers.city_data import CityData
 from src.workers.worker_tools import remove_folder
 
 """
@@ -17,10 +18,12 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
     abs_source_base_path = os.path.abspath(source_base_path)
     abs_target_base_path = os.path.abspath(target_base_path)
 
-    return_code_basic = validate_basic_inputs(abs_source_base_path, abs_target_base_path, city_folder_name)
+    non_tiled_city_data = CityData(city_folder_name, None, source_base_path, target_base_path)
 
-    target_scenario_path, umep_solweig_cell_count, update_aoi, return_code_configs  = (
-        validate_config_inputs(abs_source_base_path, abs_target_base_path, city_folder_name, processing_option))
+    umep_solweig_cell_count, updated_aoi, config_return_code  = validate_config(non_tiled_city_data, processing_option)
+
+    if config_return_code != 0:
+        raise ValueError('Invalid configuration(s). Stopping.')
 
     # Print runtime estimate
     if umep_solweig_cell_count is not None:
@@ -36,10 +39,11 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
 
     if processing_option == 'run_pipeline':
         # Remove existing target scenario folder
+        target_scenario_path = non_tiled_city_data.target_city_path
         remove_folder(target_scenario_path)
 
         # write configs and last run metrics
-        write_config_files(source_base_path, target_base_path, city_folder_name, update_aoi)
+        write_config_files(source_base_path, target_base_path, city_folder_name, updated_aoi)
 
         return_code, return_str = start_jobs(abs_source_base_path, abs_target_base_path, city_folder_name)
 

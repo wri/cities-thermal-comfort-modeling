@@ -1,4 +1,5 @@
 import os
+import pytest
 from pytest_check import equal # https://github.com/okken/pytest-check
 
 from src.constants import DATA_DIR, FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_RASTER_FILES
@@ -12,6 +13,8 @@ SCRATCH_TARGET_DIR = os.path.join(DATA_DIR, 'scratch_target')
 create_folder(SCRATCH_TARGET_DIR)
 
 # test fpr era5
+
+RUN_CORE_TESTS_ONLY = False
 
 def test_custom_city():
     source_city_folder_name = 'ZAF_Capetown_small_tile'
@@ -30,6 +33,7 @@ def test_custom_city():
             remove_folder(city_data.target_city_parent_path)
 
 
+@pytest.mark.skipif(RUN_CORE_TESTS_ONLY == True, reason='Skipping since RUN_CORE_TESTS_ONLY set to True')
 def test_tiled_custom_city():
     source_city_folder_name = 'NLD_Amsterdam_custom_tiled'
     city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
@@ -47,6 +51,7 @@ def test_tiled_custom_city():
             remove_folder(city_data.target_city_parent_path)
 
 
+@pytest.mark.skipif(RUN_CORE_TESTS_ONLY == True, reason='Skipping since RUN_CORE_TESTS_ONLY set to True')
 def test_mixed_custom_city():
     source_city_folder_name = 'ZAF_Capetown_small_mixed_cif'
     city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
@@ -84,6 +89,7 @@ def test_untiled_full_cif():
             remove_folder(city_data.target_city_parent_path)
 
 
+@pytest.mark.skipif(RUN_CORE_TESTS_ONLY == True, reason='Skipping since RUN_CORE_TESTS_ONLY set to True')
 def test_tiled_cif_city():
     source_city_folder_name = 'NLD_Amsterdam'
     city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
@@ -104,6 +110,7 @@ def test_tiled_cif_city():
             remove_folder(city_data.target_city_parent_path)
 
 
+@pytest.mark.skipif(RUN_CORE_TESTS_ONLY == True, reason='Skipping since RUN_CORE_TESTS_ONLY set to True')
 def test_custom_city_with_full_intermediates():
     source_city_folder_name = 'ZAF_Capetown_with_full_intermediates'
     city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
@@ -121,6 +128,7 @@ def test_custom_city_with_full_intermediates():
             remove_folder(city_data.target_city_parent_path)
 
 
+@pytest.mark.skipif(RUN_CORE_TESTS_ONLY == True, reason='Skipping since RUN_CORE_TESTS_ONLY set to True')
 def test_custom_city_with_mixed_intermediates():
     source_city_folder_name = 'ZAF_Capetown_with_mixed_intermediates'
     city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
@@ -138,6 +146,7 @@ def test_custom_city_with_mixed_intermediates():
             remove_folder(city_data.target_city_parent_path)
 
 
+@pytest.mark.skipif(RUN_CORE_TESTS_ONLY == True, reason='Skipping since RUN_CORE_TESTS_ONLY set to True')
 def test_download_only_cif_city():
     source_city_folder_name = 'ZAF_Capetown_cif_download_only'
     city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)

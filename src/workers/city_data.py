@@ -1,4 +1,6 @@
-from src.constants import *
+import os
+from src.constants import FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_INTERMEDIATE_DATA, FOLDER_NAME_PRIMARY_MET_FILENAMES, \
+    FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_RESULTS, FOLDER_NAME_UMEP_TCM_RESULTS
 from src.workers.config_processor import *
 
 

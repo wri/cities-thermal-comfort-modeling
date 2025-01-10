@@ -7,14 +7,20 @@ import time
 
 from rasterio.enums import Resampling
 from datetime import datetime
+
+from src.constants import VALID_PRIMARY_TYPES
 from src.workers.city_data import CityData
 from src.workers.logger_tools import setup_logger, log_method_start, log_method_completion, log_method_failure
 from src.workers.worker_tools import compute_time_diff_mins, reverse_y_dimension_as_needed, save_tiff_file, save_geojson_file, \
     unpack_quoted_value
 
+DEBUG = False
+
 # Unify the layers on the same resolution
 DEFAULT_LULC_RESOLUTION = 1
-DEBUG = False
+
+MINIMUM_QUERY_WAIT_SEC = 10
+MAXIMUM_QUERY_WAIT_SEC = 30
 
 def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile_id, cif_primary_features,
                  tile_boundary, tile_resolution):
@@ -27,11 +33,6 @@ def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile
 
     tile_cif_data_path = tiled_city_data.target_primary_tile_data_path
 
-    # has_custom_features = unpack_quoted_value(has_custom_features)
-    # if has_custom_features is False:
-    #     primary_target_data = os.path.join(city_data.target_city_data_path, FOLDER_NAME_PRIMARY_RASTER_FILES)
-    #     remove_folder(primary_target_data)
-
     d = {'geometry': [shapely.wkt.loads(tile_boundary)]}
     tiled_aoi_gdf = gp.GeoDataFrame(d, crs="EPSG:4326")
 
@@ -42,26 +43,26 @@ def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile
 
     result_flags = []
     # randomize retrieval to reduce contention against GEE
-    random_group= _generate_unique_random_list(1, 3, 3)
+    random_group= _generate_unique_random_list(start=1, end=3, count = len(VALID_PRIMARY_TYPES)-1)
     for group in random_group:
-        # wait random length of time to help reduce contention and GEE throttling
-        wait_time = random.uniform(10, 30)
+        # wait random length of time to help reduce contention between threads and GEE throttling
+        wait_time_sec = random.uniform(MINIMUM_QUERY_WAIT_SEC, MAXIMUM_QUERY_WAIT_SEC)
         if group == 1:
             if 'lulc' in feature_list:
-                time.sleep(wait_time)
+                time.sleep(wait_time_sec)
                 log_method_start(f'CIF-lulc download for {tile_id}', None, '', logger)
                 this_success = _get_lulc(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-lulc download for tile {tile_id}', None, '', logger)
         elif group == 2:
             if 'tree_canopy' in feature_list:
-                time.sleep(wait_time)
+                time.sleep(wait_time_sec)
                 log_method_start(f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
                 this_success = _get_tree_canopy_height(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time,f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
         elif group == 3:
-            time.sleep(wait_time)
+            time.sleep(wait_time_sec)
             if 'dem' in feature_list or 'dsm' in feature_list:
                 retrieve_dem = True if 'dem' in feature_list else False
                 log_method_start(f'CIF-DEM download for {tile_id}', None, '', logger)

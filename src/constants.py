@@ -47,5 +47,5 @@ VALID_PRIMARY_TYPES = [
         "short_name": "lulc",
         "yml_tag": "lulc_tif_filename",
         "cif_template_name": 'cif_lulc.tif'
-    },
+    }
 ]

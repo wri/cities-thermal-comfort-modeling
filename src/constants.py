@@ -22,3 +22,30 @@ FILENAME_ERA5 = 'met_era5_hottest_days.txt'
 METHOD_TRIGGER_ERA5_DOWNLOAD = '<download_era5>'
 PROCESSING_METHODS = ['download_only', 'umep_solweig']
 
+VALID_PRIMARY_TYPES = [
+    {
+        "short_name": "albedo",
+        "yml_tag": "albedo_tif_filename",
+        "cif_template_name": 'cif_albedo.tif',
+    },
+    {
+        "short_name": "dem",
+        "yml_tag": "dem_tif_filename",
+        "cif_template_name": 'cif_dem.tif',
+    },
+    {
+        "short_name": "dsm",
+        "yml_tag": "dsm_tif_filename",
+        "cif_template_name": 'cif_dsm_ground_build.tif'
+    },
+    {
+        "short_name": "tree_canopy",
+        "yml_tag": "tree_canopy_tif_filename",
+        "cif_template_name": 'cif_tree_canopy.tif'
+    },
+    {
+        "short_name": "lulc",
+        "yml_tag": "lulc_tif_filename",
+        "cif_template_name": 'cif_lulc.tif'
+    },
+]

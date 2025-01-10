@@ -225,9 +225,8 @@ def write_config_files(non_tiled_city_data, updated_aoi):
     # TODO write primary checksums to source_config subdirectory
 
 
-def _update_custom_yml_parameters(city_data, updated_aoi):
-    from src.workers.worker_tools import read_yaml
-    city_configs = os.path.join(city_data.source_city_path, FILENAME_METHOD_YML_CONFIG)
+def _update_custom_yml_parameters(non_tiled_city_data, updated_aoi):
+    city_configs = os.path.join(non_tiled_city_data.source_city_path, FILENAME_METHOD_YML_CONFIG)
 
     list_doc = read_commented_yaml(city_configs)
 
@@ -244,15 +243,15 @@ def _update_custom_yml_parameters(city_data, updated_aoi):
         processing_area['max_lat'] = updated_max_lat
 
     custom_primary_filenames = list_doc[3]
-    custom_primary_filenames['dem_tif_filename'] = city_data.dem_tif_filename
-    custom_primary_filenames['dsm_tif_filename'] = city_data.dsm_tif_filename
-    custom_primary_filenames['lulc_tif_filename'] = city_data.lulc_tif_filename
-    custom_primary_filenames['tree_canopy_tif_filename'] = city_data.tree_canopy_tif_filename
+    custom_primary_filenames['dem_tif_filename'] = non_tiled_city_data.dem_tif_filename
+    custom_primary_filenames['dsm_tif_filename'] = non_tiled_city_data.dsm_tif_filename
+    custom_primary_filenames['lulc_tif_filename'] = non_tiled_city_data.lulc_tif_filename
+    custom_primary_filenames['tree_canopy_tif_filename'] = non_tiled_city_data.tree_canopy_tif_filename
 
     custom_intermediate_filenames = list_doc[4]
-    custom_intermediate_filenames['skyview_factor_filename'] = city_data.skyview_factor_filename
-    custom_intermediate_filenames['wall_aspect_filename'] = city_data.wall_aspect_filename
-    custom_intermediate_filenames['wall_height_filename'] = city_data.wall_height_filename
+    custom_intermediate_filenames['skyview_factor_filename'] = non_tiled_city_data.skyview_factor_filename
+    custom_intermediate_filenames['wall_aspect_filename'] = non_tiled_city_data.wall_aspect_filename
+    custom_intermediate_filenames['wall_height_filename'] = non_tiled_city_data.wall_height_filename
 
     return list_doc
 

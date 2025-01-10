@@ -13,7 +13,7 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
    1. Copy the ZZZ_template_city folder and rename to the country and city for your dataset, such as "USA_WashingtonDC". (This is **"your city folder"** in below instructions.)
    1. If you will be processing your own "custom" source TIFF files, then follow below steps, skip this step if you instead want the system to automatically retrieve the base TIFF files.
       1. Copy TIFF files for your city into subfolders under .\primary_data\raster_files underneath your city folder.
-         * **Note**: You can provide up to four source files for DSM, DEM, LULC, and TreeCanopy, but you can also have a partial set of these files.
+         * **Note**: You can provide up to five source files for Albedo, DSM, DEM, LULC, and TreeCanopy, but you can also have a partial set of these files.
          1. The subfolders must be named 'tile_001', 'tile_002', and so on.
             1. See the ZAF_Capetown_small_tile\primary_data\raster_files folder for an example setup.
             1. **Tip**: You can use the "aws s3" command to download files from S3.

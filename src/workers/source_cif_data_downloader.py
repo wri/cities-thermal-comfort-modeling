@@ -42,25 +42,32 @@ def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile
 
     result_flags = []
     # randomize retrieval to reduce contention against GEE
-    random_group= _generate_unique_random_list(1, 3, 3)
+    random_group= _generate_unique_random_list(1, 4, 4)
     for group in random_group:
         # wait random length of time to help reduce contention and GEE throttling
         wait_time = random.uniform(10, 30)
         if group == 1:
+            if 'albedo' in feature_list:
+                time.sleep(wait_time)
+                log_method_start(f'CIF-albedo download for {tile_id}', None, '', logger)
+                this_success = _get_albedo(city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
+                result_flags.append(this_success)
+                log_method_completion(start_time, f'CIF-albedo download for tile {tile_id}', None, '', logger)
+        elif group == 2:
             if 'lulc' in feature_list:
                 time.sleep(wait_time)
                 log_method_start(f'CIF-lulc download for {tile_id}', None, '', logger)
                 this_success = _get_lulc(city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-lulc download for tile {tile_id}', None, '', logger)
-        elif group == 2:
+        elif group == 3:
             if 'tree_canopy' in feature_list:
                 time.sleep(wait_time)
                 log_method_start(f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
                 this_success = _get_tree_canopy_height(city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time,f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
-        elif group == 3:
+        elif group == 4:
             time.sleep(wait_time)
             if 'dem' in feature_list or 'dsm' in feature_list:
                 retrieve_dem = True if 'dem' in feature_list else False
@@ -104,6 +111,28 @@ def _generate_unique_random_list(start, end, count):
 def _random_list(in_list):
     random.shuffle(in_list)
     return in_list
+
+
+def _get_albedo(city_data, tile_data_path, aoi_gdf, output_resolution, logger):
+    try:
+        from city_metrix.layers import Albedo
+
+        # Load layer
+        albedo = (Albedo(spatial_resolution=output_resolution, resampling_method='bilinear')
+                  .get_data(aoi_gdf.total_bounds))
+        albedo_float32 = albedo.astype('float32')
+
+        # reverse y direction, if y values increase in NS direction from LL corner
+        was_reversed, albedo_float32 = reverse_y_dimension_as_needed(albedo_float32)
+
+        save_tiff_file(albedo_float32, tile_data_path, city_data.albedo_tif_filename)
+
+        return True
+
+    except Exception as e_msg:
+        msg = f'Albedo processing cancelled due to failure.'
+        log_method_failure(datetime.now(), msg, None, None, city_data.source_base_path, '', logger)
+        return False
 
 
 def _get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution, logger):
@@ -176,7 +205,8 @@ def _get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution
     try:
         from city_metrix.layers import NasaDEM
 
-        nasa_dem = NasaDEM(spatial_resolution=output_resolution).get_data(aoi_gdf.total_bounds)
+        nasa_dem = (NasaDEM(spatial_resolution=output_resolution, resampling_method='bilinear')
+                    .get_data(aoi_gdf.total_bounds))
 
         # reverse y direction, if y values increase in NS direction from LL corner
         was_reversed, nasa_dem = reverse_y_dimension_as_needed(nasa_dem)
@@ -196,7 +226,8 @@ def _get_dsm(tile_data_path, aoi_gdf, output_resolution, logger):
     try:
         from city_metrix.layers import AlosDSM
 
-        alos_dsm = AlosDSM(spatial_resolution=output_resolution).get_data(aoi_gdf.total_bounds)
+        alos_dsm = (AlosDSM(spatial_resolution=output_resolution, resampling_method='bilinear')
+                    .get_data(aoi_gdf.total_bounds))
 
         # reverse y direction, if y values increase in NS direction from LL corner
         was_reversed, alos_dsm = reverse_y_dimension_as_needed(alos_dsm)

@@ -22,9 +22,10 @@
 #  - filename: <download_era5>
 # Mapping to name of custom TIFF source file or specify None where custom file is not available for processing.
 # If None is specified, then the system will auto-generate a TIFF file from CIF.
-# Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif
-# Auto-generated filenames from CIF: cif_dem.tif, cif_dsm_ground_build.tif, cif_tree_canopy.tif, cif_lulc.tif
+# Recommended filenames: albedo.tif, dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif
+# Auto-generated filenames from CIF: cif_albedo.tif, cif_dem.tif, cif_dsm_ground_build.tif, cif_tree_canopy.tif, cif_lulc.tif
 - CustomTiffFilenames:
+  albedo_tif_filename: bad_name2.tif
   dem_tif_filename: bad_name.tif
   dsm_tif_filename: dsm_ground_build.tif
   lulc_tif_filename: lulc.tif

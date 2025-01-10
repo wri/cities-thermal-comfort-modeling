@@ -122,7 +122,9 @@ def _transfer_met_files(city_data):
 def _transfer_custom_files(city_data, custom_feature_list):
     source_paths = []
     for feature in custom_feature_list:
-        if feature == 'dem':
+        if feature == 'albedo':
+            source_paths.append((city_data.source_dem_path, city_data.target_albedo_path))
+        elif feature == 'dem':
             source_paths.append((city_data.source_dem_path, city_data.target_dem_path))
         elif feature == 'dsm':
             source_paths.append((city_data.source_dsm_path, city_data.target_dsm_path))
@@ -146,6 +148,7 @@ def _transfer_custom_files(city_data, custom_feature_list):
 def ensure_y_dimension_direction(city_data):
     tile_data_path = city_data.target_primary_tile_data_path
 
+    _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_albedo_path)
     _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_dem_path)
     _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_dsm_path)
     _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_land_cover_path)

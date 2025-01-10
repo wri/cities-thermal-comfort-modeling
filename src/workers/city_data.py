@@ -28,7 +28,7 @@ class CityData:
 
         obj.met_filenames = parse_met_files_config(yml_values)
 
-        (obj.dem_tif_filename, obj.dsm_tif_filename, obj.tree_canopy_tif_filename, obj.lulc_tif_filename,
+        (obj.albedo_tif_filename, obj.dem_tif_filename, obj.dsm_tif_filename, obj.tree_canopy_tif_filename, obj.lulc_tif_filename,
          obj.custom_primary_feature_list, obj.custom_primary_filenames, obj.cif_primary_feature_list) = (
             parse_primary_filenames_config(yml_values))
 
@@ -49,6 +49,7 @@ class CityData:
         if obj.folder_name_tile_data:
             obj.source_raster_files_path = os.path.join(obj.source_city_primary_data_path, FOLDER_NAME_PRIMARY_RASTER_FILES)
             obj.source_primary_raster_tile_data_path = os.path.join(obj.source_raster_files_path, obj.folder_name_tile_data)
+            obj.source_albedo_path = os.path.join(obj.source_primary_raster_tile_data_path, obj.albedo_tif_filename)
             obj.source_dem_path = os.path.join(obj.source_primary_raster_tile_data_path, obj.dem_tif_filename)
             obj.source_dsm_path = os.path.join(obj.source_primary_raster_tile_data_path, obj.dsm_tif_filename)
             obj.source_tree_canopy_path = os.path.join(obj.source_primary_raster_tile_data_path, obj.tree_canopy_tif_filename)
@@ -90,6 +91,7 @@ class CityData:
                                                             FOLDER_NAME_PRIMARY_RASTER_FILES)
                 obj.target_primary_tile_data_path = os.path.join(obj.target_raster_files_path, obj.folder_name_tile_data)
 
+                obj.target_albedo_path = os.path.join(obj.target_primary_tile_data_path, obj.albedo_tif_filename)
                 obj.target_dem_path = os.path.join(obj.target_primary_tile_data_path, obj.dem_tif_filename)
                 obj.target_dsm_path = os.path.join(obj.target_primary_tile_data_path, obj.dsm_tif_filename)
                 obj.target_tree_canopy_path = os.path.join(obj.target_primary_tile_data_path,

@@ -61,10 +61,15 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
             invalids.append(e_msg)
             break
 
+        prior_albedo = tiled_city_data.source_albedo_path
         prior_dem = tiled_city_data.source_dem_path
         prior_dsm = tiled_city_data.source_dsm_path
         prior_lulc = tiled_city_data.source_land_cover_path
         prior_tree_canopy = tiled_city_data.source_tree_canopy_path
+
+        if cif_features is not None and 'albedo' not in cif_features and verify_path(prior_dem) is False:
+            msg = f'Specified custom source file: {prior_albedo} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
+            invalids.append((msg, True))
 
         if cif_features is not None and 'dem' not in cif_features and verify_path(prior_dem) is False:
             msg = f'Specified custom source file: {prior_dem} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'

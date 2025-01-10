@@ -27,7 +27,7 @@ def test_custom_city():
         vrt_count = file_count_in_vrt_directory(city_data)
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        equal(19, vrt_count, msg=f"Expected VRT count of 19 files, but actual count is {vrt_count}")
+        equal(20, vrt_count, msg=f"Expected VRT count of 19 files, but actual count is {vrt_count}")
     finally:
         if CLEANUP_RESULTS:
             remove_folder(city_data.target_city_parent_path)
@@ -45,7 +45,7 @@ def test_tiled_custom_city():
         vrt_count = file_count_in_vrt_directory(city_data)
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        equal(13, vrt_count, msg=f"Expected VRT count of 13 files, but actual count is {vrt_count}")
+        equal(14, vrt_count, msg=f"Expected VRT count of 13 files, but actual count is {vrt_count}")
     finally:
         if CLEANUP_RESULTS:
             remove_folder(city_data.target_city_parent_path)
@@ -63,7 +63,7 @@ def test_mixed_custom_city():
         vrt_count = file_count_in_vrt_directory(city_data)
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        equal(13, vrt_count, msg=f"Expected VRT count of 13 files, but actual count is {vrt_count}")
+        equal(14, vrt_count, msg=f"Expected VRT count of 13 files, but actual count is {vrt_count}")
     finally:
         if CLEANUP_RESULTS:
             remove_folder(city_data.target_city_parent_path)
@@ -83,7 +83,7 @@ def test_untiled_full_cif():
         vrt_count = file_count_in_vrt_directory(city_data)
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        equal(13, vrt_count, msg=f"Expected VRT count of 13 files, but actual count is {vrt_count}")
+        equal(14, vrt_count, msg=f"Expected VRT count of 14 files, but actual count is {vrt_count}")
     finally:
         if CLEANUP_RESULTS:
             remove_folder(city_data.target_city_parent_path)
@@ -104,7 +104,7 @@ def test_tiled_cif_city():
         vrt_count = file_count_in_vrt_directory(city_data)
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        equal(13, vrt_count, msg=f"Expected VRT count of 13 files, but actual count is {vrt_count}")
+        equal(14, vrt_count, msg=f"Expected VRT count of 13 files, but actual count is {vrt_count}")
     finally:
         if CLEANUP_RESULTS:
             remove_folder(city_data.target_city_parent_path)
@@ -122,7 +122,7 @@ def test_custom_city_with_full_intermediates():
         vrt_count = file_count_in_vrt_directory(city_data)
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        equal(19, vrt_count, msg=f"Expected VRT count of 19 files, but actual count is {vrt_count}")
+        equal(20, vrt_count, msg=f"Expected VRT count of 19 files, but actual count is {vrt_count}")
     finally:
         if CLEANUP_RESULTS:
             remove_folder(city_data.target_city_parent_path)
@@ -140,7 +140,7 @@ def test_custom_city_with_mixed_intermediates():
         vrt_count = file_count_in_vrt_directory(city_data)
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        equal(19, vrt_count, msg=f"Expected VRT count of 19 files, but actual count is {vrt_count}")
+        equal(20, vrt_count, msg=f"Expected VRT count of 19 files, but actual count is {vrt_count}")
     finally:
         if CLEANUP_RESULTS:
             remove_folder(city_data.target_city_parent_path)

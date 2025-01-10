@@ -49,6 +49,7 @@ def parse_met_files_config(yml_values):
     return met_filenames
 
 def parse_primary_filenames_config(yml_values):
+    template_name_cif_albedo = 'cif_albedo.tif'
     template_name_cif_dem = 'cif_dem.tif'
     template_name_cif_dsm = 'cif_dsm_ground_build.tif'
     template_name_cif_tree_canopy = 'cif_tree_canopy.tif'
@@ -60,6 +61,15 @@ def parse_primary_filenames_config(yml_values):
         custom_feature_list = []
         custom_primary_filenames = []
         cif_feature_list = []
+
+        albedo_tif_filename = unpack_quoted_value(filenames['albedo_tif_filename'])
+        if albedo_tif_filename is None:
+            albedo_tif_filename = template_name_cif_albedo
+            cif_feature_list.append('albedo')
+        else:
+            custom_feature_list.append('albedo')
+            custom_primary_filenames.append(albedo_tif_filename)
+
         dem_tif_filename = unpack_quoted_value(filenames['dem_tif_filename'])
         if dem_tif_filename is None:
             dem_tif_filename = template_name_cif_dem
@@ -96,7 +106,7 @@ def parse_primary_filenames_config(yml_values):
         raise Exception(
             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
 
-    return (dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename,
+    return (albedo_tif_filename, dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename,
             custom_feature_list, custom_primary_filenames, cif_feature_list)
 
 

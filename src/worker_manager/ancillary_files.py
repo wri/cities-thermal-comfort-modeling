@@ -20,6 +20,7 @@ def write_qgis_files(city_data, crs_str):
 
     # Build VRTs for base layers
     target_folder = city_data.target_city_data_path
+    albedo_file_name = city_data.albedo_tif_filename
     dem_file_name = city_data.dem_tif_filename
     dsm_file_name = city_data.dsm_tif_filename
     tree_canopy_file_name = city_data.tree_canopy_tif_filename
@@ -27,6 +28,8 @@ def write_qgis_files(city_data, crs_str):
 
     target_raster_files = []
     target_bucket = Path(target_folder).stem
+    albedo = _build_file_dict(target_bucket, 'base', 'albedo', 0, [albedo_file_name])
+    target_raster_files += albedo
     dem = _build_file_dict(target_bucket, 'base', 'dem', 0, [dem_file_name])
     target_raster_files += dem
     dsm = _build_file_dict(target_bucket, 'base','dsm', 0, [dsm_file_name])

@@ -15,7 +15,7 @@ def validate_config(non_tiled_city_data, existing_tiles_metrics, processing_opti
     basic_invalids = evaluate_basic_config(non_tiled_city_data)
     combined_invalids.extend(basic_invalids)
 
-    if len(existing_tiles_metrics) == 0:
+    if non_tiled_city_data.custom_primary_feature_list and len(existing_tiles_metrics) == 0:
         source_raster_folder = os.path.join(non_tiled_city_data.source_city_primary_data_path, FOLDER_NAME_PRIMARY_RASTER_FILES)
         msg = f"Primary custom raster files not found in {source_raster_folder}."
         combined_invalids.append((msg, True))

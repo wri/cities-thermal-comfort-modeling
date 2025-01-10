@@ -20,6 +20,8 @@ def test_custom_city():
     source_city_folder_name = 'ZAF_Capetown_small_tile'
     non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
+    remove_folder(non_tiled_city_data.target_city_parent_path)
+
     try:
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
         # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
@@ -37,6 +39,8 @@ def test_custom_city():
 def test_tiled_custom_city():
     source_city_folder_name = 'NLD_Amsterdam_custom_tiled'
     non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+
+    remove_folder(non_tiled_city_data.target_city_parent_path)
 
     try:
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
@@ -56,6 +60,8 @@ def test_mixed_custom_city():
     source_city_folder_name = 'ZAF_Capetown_small_mixed_cif'
     non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
+    remove_folder(non_tiled_city_data.target_city_parent_path)
+
     try:
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
         # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
@@ -73,8 +79,7 @@ def test_untiled_full_cif():
     source_city_folder_name = 'ZAF_Capetown_full_cif'
     non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
-    primary_data = os.path.join(SAMPLE_CITIES_SOURCE_DIR, source_city_folder_name, FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_RASTER_FILES)
-    remove_folder(primary_data)
+    remove_folder(non_tiled_city_data.target_city_parent_path)
 
     try:
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
@@ -94,8 +99,7 @@ def test_tiled_cif_city():
     source_city_folder_name = 'NLD_Amsterdam'
     non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
-    primary_data = os.path.join(SAMPLE_CITIES_SOURCE_DIR, source_city_folder_name, FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_RASTER_FILES)
-    remove_folder(primary_data)
+    remove_folder(non_tiled_city_data.target_city_parent_path)
 
     try:
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
@@ -115,6 +119,8 @@ def test_custom_city_with_full_intermediates():
     source_city_folder_name = 'ZAF_Capetown_with_full_intermediates'
     non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
+    remove_folder(non_tiled_city_data.target_city_parent_path)
+
     try:
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
         # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
@@ -132,6 +138,8 @@ def test_custom_city_with_full_intermediates():
 def test_custom_city_with_mixed_intermediates():
     source_city_folder_name = 'ZAF_Capetown_with_mixed_intermediates'
     non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+
+    remove_folder(non_tiled_city_data.target_city_parent_path)
 
     try:
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
@@ -151,8 +159,7 @@ def test_download_only_cif_city():
     source_city_folder_name = 'ZAF_Capetown_cif_download_only'
     non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
-    primary_data = os.path.join(SAMPLE_CITIES_SOURCE_DIR, source_city_folder_name, FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_RASTER_FILES)
-    remove_folder(primary_data)
+    remove_folder(non_tiled_city_data.target_city_parent_path)
 
     try:
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')

@@ -7,26 +7,11 @@ from src.data_validation.custom_intermediate_validator import evaluate_custom_in
 from src.data_validation.custom_primary_validator import evaluate_custom_primary_config
 from src.worker_manager.tools import get_existing_tile_metrics, get_aoi_area_in_square_meters
 
-def validate_config(non_tiled_city_data, processing_option):
+def validate_config(non_tiled_city_data, existing_tiles_metrics, processing_option):
     combined_invalids = []
 
     basic_invalids = evaluate_basic_config(non_tiled_city_data)
     combined_invalids.extend(basic_invalids)
-
-    existing_tiles_metrics = None
-    if non_tiled_city_data.custom_primary_feature_list:
-        source_city_path = non_tiled_city_data.source_city_path
-        custom_primary_filenames = non_tiled_city_data.custom_primary_filenames
-        existing_tiles_metrics = get_existing_tile_metrics(source_city_path, custom_primary_filenames,
-                                                           project_to_wgs84=True)
-        # Get representative cell count
-        cell_count = existing_tiles_metrics['cell_count'][0]
-    else:
-        # Infer raster cell count from aoi
-        square_meters = get_aoi_area_in_square_meters(non_tiled_city_data.min_lon, non_tiled_city_data.min_lat,
-                                                      non_tiled_city_data.max_lon, non_tiled_city_data.max_lat)
-        # Assume 1-meter resolution of target cif files
-        cell_count = math.ceil(square_meters)
 
     aoi_invalids, updated_aoi = evaluate_aoi(non_tiled_city_data, existing_tiles_metrics, processing_option)
     combined_invalids.extend(aoi_invalids)
@@ -47,11 +32,9 @@ def validate_config(non_tiled_city_data, processing_option):
         print(tail_msg)
         print('\n')
 
-    has_fatal_error = True if _invalid_has_fatal_error(combined_invalids) else False
-    if has_fatal_error:
-        return cell_count, updated_aoi, 1
-    else:
-        return cell_count, updated_aoi, 0
+    return_code = 1 if _invalid_has_fatal_error(combined_invalids) else 0
+
+    return updated_aoi, return_code
 
 
 def _invalid_has_fatal_error(detailed_invalids):

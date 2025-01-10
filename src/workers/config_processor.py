@@ -1,5 +1,5 @@
 from attr.converters import to_bool
-from src.constants import FILENAME_METHOD_YML_CONFIG
+from src.constants import FILENAME_METHOD_YML_CONFIG, VALID_PRIMARY_TYPES
 from src.workers.worker_tools import read_yaml, unpack_quoted_value
 
 
@@ -49,55 +49,66 @@ def parse_met_files_config(yml_values):
     return met_filenames
 
 def parse_primary_filenames_config(yml_values):
-    template_name_cif_dem = 'cif_dem.tif'
-    template_name_cif_dsm = 'cif_dsm_ground_build.tif'
-    template_name_cif_tree_canopy = 'cif_tree_canopy.tif'
-    template_name_cif_lulc = 'cif_lulc.tif'
-    template_name_cif_era5 = '?????'
     try:
-        filenames = yml_values[3]
-        
-        custom_feature_list = []
+        custom_features = []
         custom_primary_filenames = []
-        cif_feature_list = []
-        dem_tif_filename = unpack_quoted_value(filenames['dem_tif_filename'])
-        if dem_tif_filename is None:
-            dem_tif_filename = template_name_cif_dem
-            cif_feature_list.append('dem')
-        else:
-            custom_feature_list.append('dem')
-            custom_primary_filenames.append(dem_tif_filename)
+        cif_features = []
 
-        dsm_tif_filename = unpack_quoted_value(filenames['dsm_tif_filename'])
-        if dsm_tif_filename is None:
-            dsm_tif_filename = template_name_cif_dsm
-            cif_feature_list.append('dsm')
-        else:
-            custom_feature_list.append('dsm')
-            custom_primary_filenames.append(dsm_tif_filename)
+        dem_tif_filename, this_cif_feature_list, this_custom_feature_list, this_custom_primary_filenames =\
+            _assign_primary_type_variables('dem', yml_values)
+        cif_features.extend(this_cif_feature_list)
+        custom_features.extend(this_custom_feature_list)
+        custom_primary_filenames.extend(this_custom_primary_filenames)
 
-        tree_canopy_tif_filename = unpack_quoted_value(filenames['tree_canopy_tif_filename'])
-        if tree_canopy_tif_filename is None:
-            tree_canopy_tif_filename = template_name_cif_tree_canopy
-            cif_feature_list.append('tree_canopy')
-        else:
-            custom_feature_list.append('tree_canopy')
-            custom_primary_filenames.append(tree_canopy_tif_filename)
+        dsm_tif_filename, this_cif_feature_list, this_custom_feature_list, this_custom_primary_filenames =\
+            _assign_primary_type_variables('dsm', yml_values)
+        cif_features.extend(this_cif_feature_list)
+        custom_features.extend(this_custom_feature_list)
+        custom_primary_filenames.extend(this_custom_primary_filenames)
 
-        lulc_tif_filename = unpack_quoted_value(filenames['lulc_tif_filename'])
-        if lulc_tif_filename is None:
-            lulc_tif_filename = template_name_cif_lulc
-            cif_feature_list.append('lulc')
-        else:
-            custom_feature_list.append('lulc')
-            custom_primary_filenames.append(lulc_tif_filename)
+        tree_canopy_tif_filename, this_cif_feature_list, this_custom_feature_list, this_custom_primary_filenames =\
+            _assign_primary_type_variables('tree_canopy', yml_values)
+        cif_features.extend(this_cif_feature_list)
+        custom_features.extend(this_custom_feature_list)
+        custom_primary_filenames.extend(this_custom_primary_filenames)
+
+        lulc_tif_filename, this_cif_feature_list, this_custom_feature_list, this_custom_primary_filenames =\
+            _assign_primary_type_variables('lulc', yml_values)
+        cif_features.extend(this_cif_feature_list)
+        custom_features.extend(this_custom_feature_list)
+        custom_primary_filenames.extend(this_custom_primary_filenames)
 
     except Exception as e_msg:
         raise Exception(
             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
 
     return (dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename,
-            custom_feature_list, custom_primary_filenames, cif_feature_list)
+            custom_features, custom_primary_filenames, cif_features)
+
+
+def _assign_primary_type_variables(primary_type_short_name, yml_values):
+    this_custom_features = []
+    this_custom_primary_filenames = []
+    this_cif_features = []
+    filenames = yml_values[3]
+
+    type_dict = _find_dict_in_list(VALID_PRIMARY_TYPES, 'short_name', primary_type_short_name)
+    yml_tif_filename = unpack_quoted_value(filenames[type_dict['yml_tag']])
+    if yml_tif_filename is None:
+        yml_tif_filename = type_dict['cif_template_name']
+        this_cif_features.append(primary_type_short_name)
+    else:
+        this_custom_features.append(primary_type_short_name)
+        this_custom_primary_filenames.append(yml_tif_filename)
+
+    return yml_tif_filename, this_cif_features, this_custom_features, this_custom_primary_filenames
+
+
+def _find_dict_in_list(dict_list, key, value):
+    for dictionary in dict_list:
+        if dictionary.get(key) == value:
+            return dictionary
+    return None
 
 
 def parse_intermediate_filenames_config(yml_values):

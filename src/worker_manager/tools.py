@@ -23,32 +23,33 @@ def get_existing_tile_metrics(source_city_path, custom_file_names, include_exten
 
     tile_metrics_df = pd.DataFrame(columns=columns)
 
-    for dir_obj in Path(tiles_folders).iterdir():
-        if dir_obj.is_dir() and os.path.basename(dir_obj).startswith('tile_'):
-            tile_path = os.path.join(tiles_folders, dir_obj)
-            tile_name = os.path.basename(tile_path)
+    if os.path.isdir(tiles_folders):
+        for dir_obj in Path(tiles_folders).iterdir():
+            if dir_obj.is_dir() and os.path.basename(dir_obj).startswith('tile_'):
+                tile_path = os.path.join(tiles_folders, dir_obj)
+                tile_name = os.path.basename(tile_path)
 
-            for file_obj in Path(tile_path).iterdir():
-                if file_obj.name in custom_file_names and file_obj.is_file() and Path(file_obj).suffix == '.tif':
-                    # get bounds for first tiff file found in folder, assuming all other geotiffs have same bounds
-                    file_stem = Path(file_obj.name).stem
+                for file_obj in Path(tile_path).iterdir():
+                    if file_obj.name in custom_file_names and file_obj.is_file() and Path(file_obj).suffix == '.tif':
+                        # get bounds for first tiff file found in folder, assuming all other geotiffs have same bounds
+                        file_stem = Path(file_obj.name).stem
 
-                    if include_extended_metrics:
-                        chksum = calculate_checksum(file_obj)
-                        new_row = {'tile_name': tile_name, 'primary_file': file_stem,
-                                   'checksum': chksum}
-                        tile_metrics_df = tile_metrics_df._append(new_row, ignore_index=True)
-                    else:
-                        tile_boundary, avg_res, cell_count, source_crs = (
-                            _get_spatial_dimensions_of_geotiff_file(file_obj, project_to_wgs84))
-                        new_row = {'tile_name': tile_name, 'primary_file': file_stem,
-                                   'boundary': tile_boundary, 'avg_res': avg_res, 'cell_count': cell_count,
-                                   'source_crs': source_crs}
+                        if include_extended_metrics:
+                            chksum = calculate_checksum(file_obj)
+                            new_row = {'tile_name': tile_name, 'primary_file': file_stem,
+                                       'checksum': chksum}
+                            tile_metrics_df = tile_metrics_df._append(new_row, ignore_index=True)
+                        else:
+                            tile_boundary, avg_res, cell_count, source_crs = (
+                                _get_spatial_dimensions_of_geotiff_file(file_obj, project_to_wgs84))
+                            new_row = {'tile_name': tile_name, 'primary_file': file_stem,
+                                       'boundary': tile_boundary, 'avg_res': avg_res, 'cell_count': cell_count,
+                                       'source_crs': source_crs}
 
-                        tile_metrics_df = tile_metrics_df._append(new_row, ignore_index=True)
-                        import geopandas as gpd
-                        output_crs = 'epsg:4326' if project_to_wgs84 else source_crs
-                        tile_metrics_df = gpd.GeoDataFrame(tile_metrics_df, geometry="boundary", crs=output_crs)
+                            tile_metrics_df = tile_metrics_df._append(new_row, ignore_index=True)
+                            import geopandas as gpd
+                            output_crs = 'epsg:4326' if project_to_wgs84 else source_crs
+                            tile_metrics_df = gpd.GeoDataFrame(tile_metrics_df, geometry="boundary", crs=output_crs)
 
     return tile_metrics_df
 

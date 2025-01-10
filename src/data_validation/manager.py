@@ -1,5 +1,7 @@
 import math
+import os
 
+from src.constants import FOLDER_NAME_PRIMARY_RASTER_FILES
 from src.data_validation.aoi_evaluator import evaluate_aoi
 from src.data_validation.basic_validation import evaluate_basic_config
 
@@ -13,14 +15,20 @@ def validate_config(non_tiled_city_data, existing_tiles_metrics, processing_opti
     basic_invalids = evaluate_basic_config(non_tiled_city_data)
     combined_invalids.extend(basic_invalids)
 
-    aoi_invalids, updated_aoi = evaluate_aoi(non_tiled_city_data, existing_tiles_metrics, processing_option)
-    combined_invalids.extend(aoi_invalids)
+    if len(existing_tiles_metrics) == 0:
+        source_raster_folder = os.path.join(non_tiled_city_data.source_city_primary_data_path, FOLDER_NAME_PRIMARY_RASTER_FILES)
+        msg = f"Primary custom raster files not found in {source_raster_folder}."
+        combined_invalids.append((msg, True))
+        updated_aoi = None
+    else:
+        custom_primary_invalids = evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics)
+        combined_invalids.extend(custom_primary_invalids)
 
-    custom_primary_invalids = evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics)
-    combined_invalids.extend(custom_primary_invalids)
+        aoi_invalids, updated_aoi = evaluate_aoi(non_tiled_city_data, existing_tiles_metrics, processing_option)
+        combined_invalids.extend(aoi_invalids)
 
-    custom_intermediate_invalids = evaluate_custom_intermediate_config(non_tiled_city_data)
-    combined_invalids.extend(custom_intermediate_invalids)
+        custom_intermediate_invalids = evaluate_custom_intermediate_config(non_tiled_city_data)
+        combined_invalids.extend(custom_intermediate_invalids)
 
     if combined_invalids:
         head_msg = ' vvvvvvvvvvvv Invalid configurations vvvvvvvvvvvv '

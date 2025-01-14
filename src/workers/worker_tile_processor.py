@@ -67,8 +67,6 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
     return_stdouts = []
 
     # transfer custom files
-    if met_filenames:
-        _transfer_met_files(tiled_city_data)
     if tiled_city_data.custom_primary_feature_list:
         _transfer_custom_files(tiled_city_data, tiled_city_data.custom_primary_feature_list)
     if tiled_city_data.custom_intermediate_list:
@@ -110,32 +108,23 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
     return result_json
 
 
-def _transfer_met_files(city_data):
-    create_folder(city_data.target_met_filenames_path)
-    for met_file in city_data.met_filenames:
-        if met_file != METHOD_TRIGGER_ERA5_DOWNLOAD:
-            source_path = os.path.join(city_data.source_met_filenames_path, met_file['filename'])
-            target_path = os.path.join(city_data.target_met_filenames_path, met_file['filename'])
-            shutil.copyfile(source_path, target_path)
-
-
-def _transfer_custom_files(city_data, custom_feature_list):
+def _transfer_custom_files(tiled_city_data, custom_feature_list):
     source_paths = []
     for feature in custom_feature_list:
         if feature == 'dem':
-            source_paths.append((city_data.source_dem_path, city_data.target_dem_path))
+            source_paths.append((tiled_city_data.source_dem_path, tiled_city_data.target_dem_path))
         elif feature == 'dsm':
-            source_paths.append((city_data.source_dsm_path, city_data.target_dsm_path))
+            source_paths.append((tiled_city_data.source_dsm_path, tiled_city_data.target_dsm_path))
         elif feature == 'lulc':
-            source_paths.append((city_data.source_land_cover_path, city_data.target_land_cover_path))
+            source_paths.append((tiled_city_data.source_land_cover_path, tiled_city_data.target_land_cover_path))
         elif feature == 'tree_canopy':
-            source_paths.append((city_data.source_tree_canopy_path, city_data.target_tree_canopy_path))
+            source_paths.append((tiled_city_data.source_tree_canopy_path, tiled_city_data.target_tree_canopy_path))
         elif feature == 'wallaspect':
-            source_paths.append((city_data.source_wallaspect_path, city_data.target_wallaspect_path))
+            source_paths.append((tiled_city_data.source_wallaspect_path, tiled_city_data.target_wallaspect_path))
         elif feature == 'wallheight':
-            source_paths.append((city_data.source_wallheight_path, city_data.target_wallheight_path))
+            source_paths.append((tiled_city_data.source_wallheight_path, tiled_city_data.target_wallheight_path))
         elif feature == 'skyview_factor':
-            source_paths.append((city_data.source_svfszip_path, city_data.target_svfszip_path))
+            source_paths.append((tiled_city_data.source_svfszip_path, tiled_city_data.target_svfszip_path))
 
     for file_paths in source_paths:
         to_tile_dir = Path(file_paths[1]).parent

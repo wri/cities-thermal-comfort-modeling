@@ -147,3 +147,9 @@ def reverse_y_dimension_as_needed(dataarray):
         was_reversed = True
     return was_reversed, dataarray
 
+
+def any_value_matches_in_dict_list(dict_list, target_string):
+    for dictionary in dict_list:
+        if target_string in dictionary.values():
+            return True
+    return False

@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import multiprocessing as mp
 import warnings
@@ -7,12 +8,13 @@ import shapely
 import dask
 from shapely.lib import envelope
 
-from src.constants import SRC_DIR, METHOD_TRIGGER_ERA5_DOWNLOAD
+from src.constants import SRC_DIR, FILENAME_ERA5
 from src.worker_manager.ancillary_files import write_tile_grid, write_qgis_files
 from src.worker_manager.graph_builder import get_aoi_fishnet, get_aoi
 from src.workers.logger_tools import setup_logger, write_log_message
 from src.worker_manager.reporter import parse_row_results, report_results
 from src.worker_manager.tools import get_existing_tile_metrics
+from src.workers.worker_tools import create_folder
 
 warnings.filterwarnings('ignore')
 dask.config.set({'logging.distributed': 'warning'})
@@ -54,21 +56,26 @@ def start_jobs(non_tiled_city_data):
                  'start_time', 'run_duration_min'])
     combined_delays_passed = []
 
-    has_era_met_download = any_value_matches_in_dict_list(non_tiled_city_data.met_filenames, METHOD_TRIGGER_ERA5_DOWNLOAD)
     # meteorological data
-    if has_era_met_download:
+    if non_tiled_city_data.has_era_met_download:
         write_log_message('Retrieving ERA meteorological data', __file__, logger)
         sampling_local_hours = non_tiled_city_data.sampling_local_hours
-        proc_array = _construct_met_proc_array(-1, target_base_path, city_folder_name, aoi_boundary, utc_offset,
-                                               sampling_local_hours)
+
+        target_met_files_path = non_tiled_city_data.target_met_files_path
+        proc_array = _construct_met_proc_array(target_met_files_path, aoi_boundary, utc_offset, sampling_local_hours)
         delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
+
         met_futures = []
         met_futures.append(delay_tile_array)
-        met_delays_all_passed, met_results_df = _process_rows(met_futures, logger)
+        number_of_processing_units = 1
+        met_delays_all_passed, met_results_df = _process_rows(met_futures, number_of_processing_units, logger)
         out_list.extend(met_results_df)
 
         combined_results_df = pd.concat([combined_results_df, met_results_df])
         combined_delays_passed.append(met_delays_all_passed)
+
+    # Transfer custom met files to target
+    _transfer_custom_met_files(non_tiled_city_data)
 
 
     futures = []
@@ -131,7 +138,8 @@ def start_jobs(non_tiled_city_data):
             futures.append(delay_tile_array)
 
     write_log_message('Starting model processing', __file__, logger)
-    delays_all_passed, results_df = _process_rows(futures, number_of_tiles, logger)
+    number_number_of_tiles = number_of_tiles
+    delays_all_passed, results_df = _process_rows(futures, number_number_of_tiles, logger)
 
     # Combine processing return values
     combined_results_df = pd.concat([combined_results_df, results_df])
@@ -156,18 +164,19 @@ def start_jobs(non_tiled_city_data):
     return return_code, return_str
 
 
-def any_value_matches_in_dict_list(dict_list, target_string):
-    for dictionary in dict_list:
-        if target_string in dictionary.values():
-            return True
-    return False
+def _transfer_custom_met_files(non_tiled_city_data):
+    create_folder(non_tiled_city_data.target_met_files_path)
+    for met_file in non_tiled_city_data.met_filenames:
+        if not(non_tiled_city_data.has_era_met_download and met_file['filename'] == FILENAME_ERA5):
+            source_path = os.path.join(non_tiled_city_data.source_met_filenames_path, met_file['filename'])
+            target_path = os.path.join(non_tiled_city_data.target_met_files_path, met_file['filename'])
+            shutil.copyfile(source_path, target_path)
 
 
-def _construct_met_proc_array(target_base_path, city_folder_name, aoi_boundary, utc_offset,
+def _construct_met_proc_array(target_met_files_path, aoi_boundary, utc_offset,
                               sampling_local_hours):
     proc_array = ['python', MET_PROCESSING_MODULE_PATH,
-                  f'--target_base_path={target_base_path}',
-                  f'--city_folder_name={city_folder_name}',
+                  f'--target_met_files_path={target_met_files_path}',
                   f'--aoi_boundary={str(aoi_boundary)}',
                   f'--utc_offset={utc_offset}',
                   f'--sampling_local_hours={sampling_local_hours}'
@@ -204,12 +213,12 @@ def _construct_tile_proc_array(task_method, source_base_path, target_base_path, 
     return proc_array
 
 
-def _process_rows(futures, number_of_tiles, logger):
+def _process_rows(futures, number_of_units, logger):
     # See https://docs.dask.org/en/stable/deploying-python.html
     # https://blog.dask.org/2021/11/02/choosing-dask-chunk-sizes#what-to-watch-for-on-the-dashboard
     if futures:
         available_cpu_count = int(mp.cpu_count() - 1)
-        num_workers = number_of_tiles+1 if number_of_tiles < available_cpu_count else available_cpu_count
+        num_workers = number_of_units + 1 if number_of_units < available_cpu_count else available_cpu_count
 
         from dask.distributed import Client
         with Client(n_workers=num_workers,

@@ -9,7 +9,7 @@ FILENAME_METHOD_YML_CONFIG = '.config_method_parameters.yml'
 
 FOLDER_NAME_PRIMARY_DATA = 'primary_data'
 FOLDER_NAME_PRIMARY_RASTER_FILES = 'raster_files'
-FOLDER_NAME_PRIMARY_MET_FILENAMES = 'met_files'
+FOLDER_NAME_PRIMARY_MET_FILES = 'met_files'
 FOLDER_NAME_INTERMEDIATE_DATA = 'processed_data'
 FOLDER_NAME_RESULTS = 'results_data'
 FOLDER_NAME_UMEP_TCM_RESULTS = 'umep_tcm_results'

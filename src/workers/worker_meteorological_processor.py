@@ -11,27 +11,16 @@ from src.workers.worker_tools import compute_time_diff_mins, remove_file, create
 MET_NULL_VALUE = -999
 TARGET_HEADING =  '%iy id it imin qn qh qe qs qf U RH Tair press rain kdown snow ldown fcld wuh xsmd lai kdiff kdir wdir'
 
-def get_met_data(target_met_files_path, aoi_boundary, utc_offset, sampling_local_hours):
+def get_met_data(target_met_files_path, aoi_boundary_poly, utc_offset, sampling_local_hours):
     start_time = datetime.now()
 
-    d = {'geometry': [shapely.wkt.loads(aoi_boundary)]}
-    aoi_gdf = gp.GeoDataFrame(d, crs="EPSG:4326")
+    # Create a GeoDataFrame with the polygon
+    aoi_gdf = gp.GeoDataFrame(index=[0], crs="EPSG:4326", geometry=[aoi_boundary_poly])
 
     # Retrieve and write ERA5 data
     return_code = _get_era5(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours)
 
-    # Wrap up results
-    step_method = 'ERA5_download'
-    met_filename = FILENAME_ERA5
-    start_time_str = start_time.strftime('%Y_%m_%d_%H:%M:%S')
-    run_duration_min = compute_time_diff_mins(start_time)
-    return_stdout = (f'{{"tile": "None", "step_index": {0}, '
-                     f'"step_method": "{step_method}", "met_filename": "{met_filename}", "return_code": {return_code}, '
-                     f'"start_time": "{start_time_str}", "run_duration_min": {run_duration_min}}}')
-
-    result_json = f'{{"Return_package": [{return_stdout}]}}'
-
-    return result_json
+    return return_code
 
 
 def _get_era5(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours):
@@ -50,7 +39,7 @@ def _get_era5(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours):
     if aoi_era_5 is None:
         raise Exception('failed to retrieve era5 data')
 
-    # round all numbers to two decimal places, which is the precision needed by the model
+    # round all numbers to two decimal places, which is the precision needed by the umep model
     aoi_era_5 = aoi_era_5.round(2)
 
     # adjust for utc
@@ -142,18 +131,3 @@ def _standardize_string(value):
 def _day_of_year(date_time):
     return (date_time - datetime(date_time.year, 1, 1)).days + 1
 
-
-
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description='Retrieve meteorological data.')
-    parser.add_argument('--target_met_files_path', metavar='path', required=True, help='target folder for met data')
-    parser.add_argument('--aoi_boundary', metavar='str', required=True, help='geographic boundary of the AOI')
-    parser.add_argument('--utc_offset', metavar='str', required=True, help='hour offset from utc')
-    parser.add_argument('--sampling_local_hours', metavar='str', required=True, help='comma-delimited string of sampling local hours')
-
-    args = parser.parse_args()
-
-    result_json = get_met_data(args.target_met_files_path, args.aoi_boundary, args.utc_offset, args.sampling_local_hours)
-
-    print(result_json)

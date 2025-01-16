@@ -9,18 +9,19 @@ import dask
 from shapely.lib import envelope
 
 from src.constants import SRC_DIR, FILENAME_ERA5
+from src.data_validation.manager import print_invalids
+from src.data_validation.meteorological_data_validator import evaluate_meteorological_data
 from src.worker_manager.ancillary_files import write_tile_grid, write_qgis_files
 from src.worker_manager.graph_builder import get_aoi_fishnet, get_aoi
 from src.workers.logger_tools import setup_logger, write_log_message
 from src.worker_manager.reporter import parse_row_results, report_results
 from src.worker_manager.tools import get_existing_tile_metrics
+from src.workers.worker_meteorological_processor import get_met_data
 from src.workers.worker_tools import create_folder
 
 warnings.filterwarnings('ignore')
 dask.config.set({'logging.distributed': 'warning'})
 
-MET_PROCESSING_MODULE_PATH = os.path.abspath(
-    os.path.join(SRC_DIR, 'workers', 'worker_meteorological_processor.py'))
 TILE_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(SRC_DIR, 'workers', 'worker_tile_processor.py'))
 
 
@@ -49,7 +50,7 @@ def start_jobs(non_tiled_city_data):
 
     out_list = []
 
-    aoi_boundary, tile_side_meters, tile_buffer_meters, utc_offset, crs_str = get_aoi(non_tiled_city_data)
+    aoi_boundary_polygon, tile_side_meters, tile_buffer_meters, utc_offset, crs_str = get_aoi(non_tiled_city_data)
 
     combined_results_df = pd.DataFrame(
         columns=['status', 'tile', 'step_index', 'step_method', 'met_filename', 'return_code',
@@ -62,20 +63,19 @@ def start_jobs(non_tiled_city_data):
         sampling_local_hours = non_tiled_city_data.sampling_local_hours
 
         target_met_files_path = non_tiled_city_data.target_met_files_path
-        proc_array = _construct_met_proc_array(target_met_files_path, aoi_boundary, utc_offset, sampling_local_hours)
-        delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
-
-        met_futures = []
-        met_futures.append(delay_tile_array)
-        number_of_processing_units = 1
-        met_delays_all_passed, met_results_df = _process_rows(met_futures, number_of_processing_units, logger)
-        out_list.extend(met_results_df)
-
-        combined_results_df = pd.concat([combined_results_df, met_results_df])
-        combined_delays_passed.append(met_delays_all_passed)
+        return_code = get_met_data(target_met_files_path, aoi_boundary_polygon, utc_offset, sampling_local_hours)
+        if return_code != 0:
+            print("Stopping. Failed downloading ERA5 meteorological data")
+            exit(1)
 
     # Transfer custom met files to target
     _transfer_custom_met_files(non_tiled_city_data)
+
+    invalids = evaluate_meteorological_data(non_tiled_city_data, in_target_folder=True)
+    if invalids:
+        print_invalids(invalids)
+        print("Stopping. Identified invalid values in meteorological files(s)")
+        exit(1)
 
 
     futures = []
@@ -110,7 +110,7 @@ def start_jobs(non_tiled_city_data):
             delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
             futures.append(delay_tile_array)
     else:
-        fishnet = get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters)
+        fishnet = get_aoi_fishnet(aoi_boundary_polygon, tile_side_meters, tile_buffer_meters)
         number_of_tiles = fishnet.shape[0]
 
         # TODO update after fixing CIF-321
@@ -168,21 +168,9 @@ def _transfer_custom_met_files(non_tiled_city_data):
     create_folder(non_tiled_city_data.target_met_files_path)
     for met_file in non_tiled_city_data.met_filenames:
         if not(non_tiled_city_data.has_era_met_download and met_file['filename'] == FILENAME_ERA5):
-            source_path = os.path.join(non_tiled_city_data.source_met_filenames_path, met_file['filename'])
+            source_path = os.path.join(non_tiled_city_data.source_met_files_path, met_file['filename'])
             target_path = os.path.join(non_tiled_city_data.target_met_files_path, met_file['filename'])
             shutil.copyfile(source_path, target_path)
-
-
-def _construct_met_proc_array(target_met_files_path, aoi_boundary, utc_offset,
-                              sampling_local_hours):
-    proc_array = ['python', MET_PROCESSING_MODULE_PATH,
-                  f'--target_met_files_path={target_met_files_path}',
-                  f'--aoi_boundary={str(aoi_boundary)}',
-                  f'--utc_offset={utc_offset}',
-                  f'--sampling_local_hours={sampling_local_hours}'
-                  ]
-
-    return proc_array
 
 
 def _construct_tile_proc_array(task_method, source_base_path, target_base_path, city_folder_name,

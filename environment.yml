@@ -22,5 +22,6 @@ dependencies:
   - pytest_check
   - pip=24.3.1
   - pip:
-     - git+https://github.com/wri/cities-cif@main
+      - git+https://github.com/wri/cities-cif@CIF-346-ERA5HottestDay-returns-nan-for-three-properties
+#     - git+https://github.com/wri/cities-cif@main
  #   - git+https://github.com/wri/cities-cif@v0.1.2

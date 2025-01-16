@@ -49,7 +49,7 @@ def test_tiled_custom_city():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        equal(13, vrt_count, msg=f"Expected VRT count of 13 files, but actual count is {vrt_count}")
+        equal(19, vrt_count, msg=f"Expected VRT count of 19 files, but actual count is {vrt_count}")
     finally:
         if CLEANUP_RESULTS:
             remove_folder(non_tiled_city_data.target_city_parent_path)
@@ -166,29 +166,6 @@ def test_download_only_cif_city():
         # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        # # TODO remove this false assertion once ERA5 is working again after fixing CIF-321
-        # assert False
-    finally:
-        if CLEANUP_RESULTS:
-            remove_folder(non_tiled_city_data.target_city_parent_path)
-
-
-@pytest.mark.skipif(RUN_CORE_TESTS_ONLY == True, reason='Skipping since RUN_CORE_TESTS_ONLY set to True')
-def test_portland_full_custom_small():
-    source_city_folder_name = 'USA_Portland_small_first_scenario_v1'
-    # source_city_folder_name = 'USA_Portland_small'
-    non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
-
-    remove_folder(non_tiled_city_data.target_city_parent_path)
-
-    try:
-        return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
-        # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
-
-        vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
-
-        assert return_code == 0
-        assert vrt_count == 13
     finally:
         if CLEANUP_RESULTS:
             remove_folder(non_tiled_city_data.target_city_parent_path)

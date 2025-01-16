@@ -17,7 +17,7 @@ class CityData:
         obj.source_city_path = str(os.path.join(source_base_path, folder_name_city_data))
         obj.source_city_primary_data_path = str(os.path.join(obj.source_city_path, FOLDER_NAME_PRIMARY_DATA))
         obj.source_intermediate_data_path = str(os.path.join(obj.source_city_path, FOLDER_NAME_INTERMEDIATE_DATA))
-        obj.source_met_filenames_path = os.path.join(obj.source_city_primary_data_path, FOLDER_NAME_PRIMARY_MET_FILES)
+        obj.source_met_files_path = os.path.join(obj.source_city_primary_data_path, FOLDER_NAME_PRIMARY_MET_FILES)
         obj.city_method_config_path = os.path.join(obj.source_city_path, FILENAME_METHOD_YML_CONFIG)
 
         # parse config file

@@ -43,13 +43,13 @@ def write_qgis_files(city_data, crs_str):
     if os.path.exists(target_preproc_first_tile_folder):
         wall_aspect_file_stem = Path(city_data.wall_aspect_filename).stem
         wall_aspect_file_names = find_files_with_substring_in_name(target_preproc_first_tile_folder, wall_aspect_file_stem, '.tif')
-        wall_aspect_files = _build_file_dict('preprocessed_data', 'preproc', wall_aspect_file_stem, 0, wall_aspect_file_names)
+        wall_aspect_files = _build_file_dict('preprocessed_data', 'preproc', 'wallaspect', 0, wall_aspect_file_names)
         write_raster_vrt_file_for_folder(target_preproc_folder, wall_aspect_files, target_vrt_folder)
         preprocessed_files += wall_aspect_files
 
         wall_height_file_stem = Path(city_data.wall_height_filename).stem
         wall_height_file_names = find_files_with_substring_in_name(target_preproc_first_tile_folder, wall_height_file_stem, '.tif')
-        wall_height_files = _build_file_dict('preprocessed_data', 'preproc', wall_height_file_stem, 0, wall_height_file_names)
+        wall_height_files = _build_file_dict('preprocessed_data', 'preproc', 'wallheight', 0, wall_height_file_names)
         write_raster_vrt_file_for_folder(target_preproc_folder, wall_height_files, target_vrt_folder)
         preprocessed_files += wall_height_files
 
@@ -238,6 +238,14 @@ def _update_custom_yml_parameters(non_tiled_city_data, updated_aoi):
         processing_area['min_lat'] = updated_min_lat
         processing_area['max_lon'] = updated_max_lon
         processing_area['max_lat'] = updated_max_lat
+
+    met_filenames = list_doc[2].get('MetFiles')
+    has_era_met_download = non_tiled_city_data.has_era_met_download
+    # Replace era_download keyword with standard name for era data file
+    if has_era_met_download:
+        for item in met_filenames:
+            if item["filename"] == METHOD_TRIGGER_ERA5_DOWNLOAD:
+                item["filename"] = FILENAME_ERA5
 
     custom_primary_filenames = list_doc[3]
     custom_primary_filenames['dem_tif_filename'] = non_tiled_city_data.dem_tif_filename

@@ -107,7 +107,7 @@ def _random_list(in_list):
     return in_list
 
 
-def _get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution, logger):
+def _get_lulc(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
         from open_urban import OpenUrban, reclass_map
 
@@ -139,13 +139,13 @@ def _get_lulc(city_data, tile_data_path, aoi_gdf, output_resolution, logger):
         was_reversed, lulc_to_solweig_class = reverse_y_dimension_as_needed(lulc_to_solweig_class)
 
         # Save data to file
-        save_tiff_file(lulc_to_solweig_class, tile_data_path, city_data.lulc_tif_filename)
+        save_tiff_file(lulc_to_solweig_class, tile_data_path, tiled_city_data.lulc_tif_filename)
 
         return True
 
     except Exception as e_msg:
         msg = f'Lulc processing cancelled due to failure.'
-        log_method_failure(datetime.now(), msg, None, None, city_data.source_base_path, '', logger)
+        log_method_failure(datetime.now(), msg, None, None, tiled_city_data.source_base_path, '', logger)
         return False
 
 
@@ -153,7 +153,7 @@ def _count_occurrences(data, value):
     return data.where(data == value).count().item()
 
 
-def _get_tree_canopy_height(city_data, tile_data_path, aoi_gdf, output_resolution, logger):
+def _get_tree_canopy_height(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
         from city_metrix.layers import TreeCanopyHeight
 
@@ -164,16 +164,16 @@ def _get_tree_canopy_height(city_data, tile_data_path, aoi_gdf, output_resolutio
         # reverse y direction, if y values increase in NS direction from LL corner
         was_reversed, tree_canopy_height_float32 = reverse_y_dimension_as_needed(tree_canopy_height_float32)
 
-        save_tiff_file(tree_canopy_height_float32, tile_data_path, city_data.tree_canopy_tif_filename)
+        save_tiff_file(tree_canopy_height_float32, tile_data_path, tiled_city_data.tree_canopy_tif_filename)
 
         return True
 
     except Exception as e_msg:
         msg = f'Tree-canopy processing cancelled due to failure.'
-        log_method_failure(datetime.now(), msg, None, None, city_data.source_base_path, '', logger)
+        log_method_failure(datetime.now(), msg, None, None, tiled_city_data.source_base_path, '', logger)
         return False
 
-def _get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution, logger):
+def _get_dem(tiled_city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution, logger):
     try:
         from city_metrix.layers import NasaDEM
 
@@ -183,13 +183,13 @@ def _get_dem(city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution
         was_reversed, nasa_dem = reverse_y_dimension_as_needed(nasa_dem)
 
         if retrieve_dem:
-            save_tiff_file(nasa_dem, tile_data_path, city_data.dem_tif_filename)
+            save_tiff_file(nasa_dem, tile_data_path, tiled_city_data.dem_tif_filename)
 
         return True, nasa_dem
 
     except Exception as e_msg:
         msg = f'DEM processing cancelled due to failure.'
-        log_method_failure(datetime.now(), msg, None, None, city_data.source_base_path, '', logger)
+        log_method_failure(datetime.now(), msg, None, None, tiled_city_data.source_base_path, '', logger)
         return False, None
 
 
@@ -229,7 +229,7 @@ def _get_building_footprints(tile_data_path, aoi_gdf):
         return False, None
 
 
-def _get_building_height_dsm(city_data, tile_data_path, overture_buildings, alos_dsm, nasa_dem):
+def _get_building_height_dsm(tiled_city_data, tile_data_path, overture_buildings, alos_dsm, nasa_dem):
     try:
         from exactextract import exact_extract
 
@@ -266,7 +266,7 @@ def _get_building_height_dsm(city_data, tile_data_path, overture_buildings, alos
         composite_bldg_dem = _combine_building_and_dem(nasa_dem, overture_buildings_raster, target_crs)
 
         # Save data to file
-        save_tiff_file(composite_bldg_dem, tile_data_path, city_data.dsm_tif_filename)
+        save_tiff_file(composite_bldg_dem, tile_data_path, tiled_city_data.dsm_tif_filename)
         return True
 
     except Exception as e_msg:

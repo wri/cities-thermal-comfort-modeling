@@ -1,5 +1,11 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/01/16
+1. Updated ERA5 retrieval and validation
+2. QGIS viewer
+   1. Improved symbology
+   2. Restored rendering of intermediate layers
+
 ## 2025/01/08
 1. For datasets with customer primary files, changed handling of discrepancies between the yml AOI and the tile-grid extent of the custom tiles as:
    1. For pre-check option:

@@ -4,15 +4,16 @@ import time
 import rioxarray
 
 from pathlib import Path
+
+from city_metrix.layers.layer_tools import standardize_y_dimension_direction
 from src.constants import FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSING_METHODS
 from src.workers.city_data import CityData
-from src.workers.worker_tools import create_folder, unpack_quoted_value, reverse_y_dimension_as_needed, save_tiff_file
+from src.workers.worker_tools import create_folder, unpack_quoted_value, save_tiff_file
 
 PROCESSING_PAUSE_TIME_SEC = 10
 
-
 def process_tile(task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
-                 cif_primary_features, ctcm_intermediate_features, tile_boundary, tile_resolution, utc_offset):
+                 cif_primary_features, ctcm_intermediate_features, tile_boundary, crs, tile_resolution, utc_offset):
     tiled_city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
     cif_primary_features = unpack_quoted_value(cif_primary_features)
     ctcm_intermediate_features = unpack_quoted_value(ctcm_intermediate_features)
@@ -21,10 +22,10 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
     met_filenames = tiled_city_data.met_filenames
 
     def _execute_retrieve_cif_data(source_path, target_path, folder_city, folder_tile, cif_features,
-                                   boundary, resolution):
+                                   boundary, crs, resolution):
         from source_cif_data_downloader import get_cif_data
         cif_stdout = \
-            get_cif_data(source_path, target_path, folder_city, folder_tile, cif_features, boundary, resolution)
+            get_cif_data(source_path, target_path, folder_city, folder_tile, cif_features, boundary, crs, resolution)
         return cif_stdout
 
     def _execute_umep_solweig_only_plugin(step_index, folder_city, folder_tile, source_path, target_path, met_names, offset_utc):
@@ -75,7 +76,7 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
     # get cif data
     if cif_primary_features is not None:
         return_val = _execute_retrieve_cif_data(source_base_path, target_base_path, city_folder_name,
-                                                tile_folder_name, cif_primary_features, tile_boundary,
+                                                tile_folder_name, cif_primary_features, tile_boundary, crs,
                                                 tile_resolution)
         return_stdouts.append(return_val)
         time.sleep(PROCESSING_PAUSE_TIME_SEC)
@@ -147,7 +148,7 @@ def _enforce_tiff_upper_left_origin(tile_data_path, file_path):
     geotiff_2d = geotiff_da.sel(band=1).squeeze()
     geotiff_da.close()
 
-    was_reversed, reversed_arr = reverse_y_dimension_as_needed(geotiff_2d)
+    was_reversed, reversed_arr = standardize_y_dimension_direction(geotiff_2d)
     if was_reversed:
         data_file = os.path.basename(file_path)
         save_tiff_file(reversed_arr, tile_data_path, data_file)
@@ -164,6 +165,7 @@ if __name__ == "__main__":
     parser.add_argument('--cif_primary_features', metavar='str', required=True, help='coma-delimited list of cif features to retrieve')
     parser.add_argument('--ctcm_intermediate_features', metavar='str', required=True, help='coma-delimited list of intermediates to be created')
     parser.add_argument('--tile_boundary', metavar='str', required=True, help='geographic boundary of tile')
+    parser.add_argument('--crs', metavar='str', required=True, help='coordinate reference system')
     parser.add_argument('--tile_resolution', metavar='str', required=True, help='resolution of tile in m.')
     parser.add_argument('--utc_offset', metavar='str', required=True, help='hour offset from utc')
 
@@ -172,7 +174,6 @@ if __name__ == "__main__":
     return_stdout =process_tile(args.task_method, args.source_base_path, args.target_base_path,
                                 args.city_folder_name, args.tile_folder_name,
                                 args.cif_primary_features, args.ctcm_intermediate_features,
-                                args.tile_boundary, args.tile_resolution, args.utc_offset)
+                                args.tile_boundary, args.crs, args.tile_resolution, args.utc_offset)
 
     print(return_stdout)
-

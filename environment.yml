@@ -22,5 +22,7 @@ dependencies:
   - pytest_check
   - pip=24.3.1
   - pip:
-    - git+https://github.com/wri/cities-cif@main
+     - git+https://github.com/wri/cities-cif@CIF-321-version-with-separate-layer-geometry
+     # - git+https://github.com/wri/cities-cif@CIF-321-Support-multiple-CRS-for-AOI-of-Layer-classes
+#    - git+https://github.com/wri/cities-cif@main
  #   - git+https://github.com/wri/cities-cif@v0.1.2

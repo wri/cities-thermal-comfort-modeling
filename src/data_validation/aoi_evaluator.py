@@ -3,10 +3,11 @@ import shapely
 import numbers
 import math
 
+from city_metrix.layers.layer_geometry import reproject_units
+from city_metrix.layers.layer_tools import get_haversine_distance
 from shapely.geometry import box
+from src.constants import FILENAME_METHOD_YML_CONFIG, WGS_CRS
 
-from src.constants import FILENAME_METHOD_YML_CONFIG
-from src.worker_manager.tools import get_distance_between_geographic_points
 
 def evaluate_aoi(non_tiled_city_data, existing_tiles_metrics, processing_option):
     combined_invalids = []
@@ -120,8 +121,14 @@ def evaluate_aoi_discrepancy(non_tiled_city_data, existing_tiles_metrics, proces
     tile_grid_max_lon = round(tile_grid_total_bounds.geometry.bounds.maxx[0],7)
     tile_grid_max_lat = round(tile_grid_total_bounds.geometry.bounds.maxy[0],7)
 
-    sw_distance = get_distance_between_geographic_points(aoi_min_lon, aoi_min_lat, tile_grid_min_lon, tile_grid_min_lat)
-    ne_distance = get_distance_between_geographic_points(aoi_max_lon, aoi_max_lat, tile_grid_max_lon, tile_grid_max_lat)
+    existing_tiles_crs = existing_tiles_metrics.crs.srs
+    if existing_tiles_crs != WGS_CRS:
+        reproj_bbox = reproject_units(tile_grid_min_lon, tile_grid_min_lat,
+                                      tile_grid_max_lon, tile_grid_max_lat, existing_tiles_crs, WGS_CRS)
+        tile_grid_min_lon, tile_grid_min_lat, tile_grid_max_lon, tile_grid_max_lat = reproj_bbox
+
+    sw_distance = get_haversine_distance(aoi_min_lon, aoi_min_lat, tile_grid_min_lon, tile_grid_min_lat)
+    ne_distance = get_haversine_distance(aoi_max_lon, aoi_max_lat, tile_grid_max_lon, tile_grid_max_lat)
 
     updated_aoi = None
     if sw_distance > 0 or ne_distance > 0:

@@ -1,28 +1,38 @@
 import ee
 from city_metrix.layers import layer, Layer
+from city_metrix.layers.layer_geometry import GeoExtent
+
 
 class OpenUrban(Layer):
     def __init__(self, band='b1', **kwargs):
         super().__init__(**kwargs)
         self.band = band
 
-    def get_data(self, bbox):
+    def get_data(self, bbox: GeoExtent, spatial_resolution:int=None,
+                 resampling_method:str=None):
         dataset = ee.ImageCollection("projects/wri-datalab/cities/OpenUrban/OpenUrban_LULC")
         ## It is important if the cif code is pulling data from GEE to take the maximum value where the image tiles overlap
 
         # Check for data
-        if dataset.filterBounds(ee.Geometry.BBox(*bbox)).size().getInfo() == 0:
-            print("No Data Available")
+        data = None
+        ee_rectangle = bbox.to_ee_rectangle()
+        if dataset.filterBounds(ee_rectangle['ee_geometry']).size().getInfo() == 0:
+            print("No OpenUrban Data Available")
         else:
             ulu = ee.ImageCollection(dataset
-                                     .filterBounds(ee.Geometry.BBox(*bbox))
+                                     .filterBounds(ee_rectangle['ee_geometry'])
                                      .select(self.band)
                                      .max()
                                      .reduce(ee.Reducer.firstNonNull())
                                      .rename('lulc')
                                      )
 
-        data = layer.get_image_collection(ulu, bbox, 1, "urban land use").lulc
+            data = layer.get_image_collection(
+                ulu,
+                ee_rectangle,
+                1,
+                "urban land use"
+            ).lulc
 
         return data
 

@@ -125,6 +125,28 @@ def test_tiled_cif_city():
 
 
 @pytest.mark.skipif(RUN_CORE_TESTS_ONLY == True, reason='Skipping since RUN_CORE_TESTS_ONLY set to True')
+def test_tiled_buffered_cif_city():
+    source_city_folder_name = 'NLD_Amsterdam_buffered'
+    non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+
+    remove_folder(non_tiled_city_data.target_city_parent_path)
+
+    try:
+        return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+        # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+
+        vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
+
+        equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
+        expected_count = 13
+        equal(vrt_count, expected_count,
+              msg=f"Expected VRT count of {expected_count} files, but actual count is {vrt_count}")
+    finally:
+        if CLEANUP_RESULTS:
+            remove_folder(non_tiled_city_data.target_city_parent_path)
+
+
+@pytest.mark.skipif(RUN_CORE_TESTS_ONLY == True, reason='Skipping since RUN_CORE_TESTS_ONLY set to True')
 def test_custom_city_with_full_intermediates():
     source_city_folder_name = 'ZAF_Capetown_with_full_intermediates'
     non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)

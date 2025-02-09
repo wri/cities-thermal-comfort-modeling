@@ -13,6 +13,8 @@ def test_vrt_writer():
     # Hack the paths to point to the source data rather than target data
     hacked_city_data = _create_hacked_city_data(non_tiled_city_data)
 
+    remove_folder(hacked_city_data.target_city_parent_path)
+
     try:
         crs = 'EPSG:32734'
         write_qgis_files(hacked_city_data, crs)
@@ -31,6 +33,8 @@ def test_vrt_writer_amsterdam():
 
     # Hack the paths to point to the source data rather than target data
     hacked_city_data = _create_hacked_city_data(non_tiled_city_data)
+
+    remove_folder(hacked_city_data.target_city_parent_path)
 
     try:
         crs = 'EPSG:32631'

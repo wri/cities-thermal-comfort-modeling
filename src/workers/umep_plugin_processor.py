@@ -39,9 +39,9 @@ def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_
         qgis_app.processingRegistry().addProvider(umep_provider)
         Processing.initialize()
     except Exception as e_msg:
-        msg = 'Processing could not initialize UMEP processing'
-        log_method_failure(datetime.now(), msg, None, None, None, e_msg, logger)
-        # return
+        msg = f'Processing could not initialize UMEP processing {e_msg}'
+        log_method_failure(datetime.now(), 'UMEP', tiled_city_data.source_base_path, msg, logger)
+
 
     e_msg = ''
     return_code = -999
@@ -66,14 +66,15 @@ def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_
                             remove_file(target_base_path)
                             shutil.move(str(temp_result_path), str(target_base_path))
                 except Exception as e_msg:
-                    msg = (f'{method_title} processing succeeded but could not create target folder or move files: {tiled_city_data.target_intermediate_tile_data_path}')
-                    log_method_failure(start_time, msg, None, tiled_city_data.target_base_path, e_msg, logger)
+                    msg = (f'{method_title} processing succeeded but could not create target folder or move files: '
+                           f'{tiled_city_data.target_intermediate_tile_data_path} due to {e_msg}')
+                    log_method_failure(datetime.now(), method_title, tiled_city_data.source_base_path, msg, logger)
                     return 1
 
                 return_code = 0
             except Exception as e_msg:
                 msg = f'task:{method_title} failure. Retrying. ({e_msg})'
-                log_method_failure(start_time, msg, None, tiled_city_data.target_base_path, e_msg, logger)
+                log_method_failure(datetime.now(), method_title, tiled_city_data.source_base_path, msg, logger)
                 if retry_count < MAX_RETRY_COUNT:
                     time.sleep(RETRY_PAUSE_TIME_SEC)
                 return_code = 3
@@ -83,7 +84,7 @@ def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_
         log_method_completion(start_time, method_title,  None, tiled_city_data.target_base_path, logger)
     else:
         msg = f'{method_title} processing cancelled after {MAX_RETRY_COUNT} attempts.'
-        log_method_failure(start_time, msg, None, tiled_city_data.target_base_path, '')
+        log_method_failure(datetime.now(), method_title, tiled_city_data.source_base_path, msg, logger)
 
     run_duration_min = compute_time_diff_mins(start_time)
 

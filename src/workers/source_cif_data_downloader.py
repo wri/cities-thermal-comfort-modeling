@@ -5,13 +5,15 @@ import numpy as np
 import random
 import time
 
+from city_metrix.layers.layer_geometry import GeoExtent
+from city_metrix.layers.layer_tools import standardize_y_dimension_direction
 from rasterio.enums import Resampling
 from datetime import datetime
 
 from src.constants import VALID_PRIMARY_TYPES
 from src.workers.city_data import CityData
 from src.workers.logger_tools import setup_logger, log_method_start, log_method_completion, log_method_failure
-from src.workers.worker_tools import compute_time_diff_mins, reverse_y_dimension_as_needed, save_tiff_file, save_geojson_file, \
+from src.workers.worker_tools import compute_time_diff_mins, save_tiff_file, save_geojson_file, \
     unpack_quoted_value
 
 DEBUG = False
@@ -23,7 +25,7 @@ MINIMUM_QUERY_WAIT_SEC = 10
 MAXIMUM_QUERY_WAIT_SEC = 30
 
 def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile_id, cif_primary_features,
-                 tile_boundary, tile_resolution):
+                 tile_boundary, crs, tile_resolution):
     start_time = datetime.now()
 
     tiled_city_data = CityData(folder_name_city_data, tile_id, source_base_path, target_base_path)
@@ -34,7 +36,7 @@ def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile
     tile_cif_data_path = tiled_city_data.target_primary_tile_data_path
 
     d = {'geometry': [shapely.wkt.loads(tile_boundary)]}
-    tiled_aoi_gdf = gp.GeoDataFrame(d, crs="EPSG:4326")
+    tiled_aoi_gdf = gp.GeoDataFrame(d, crs=crs)
 
     feature_list = cif_primary_features.split(',')
 
@@ -76,9 +78,9 @@ def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile
                 log_method_start(f'CIF-DSM download for {tile_id}', None, '', logger)
                 this_success, alos_dsm = _get_dsm(tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
-                this_success, overture_buildings = _get_building_footprints(tile_cif_data_path, tiled_aoi_gdf)
+                this_success, overture_buildings = _get_building_footprints(tile_cif_data_path, tiled_aoi_gdf, logger)
                 result_flags.append(this_success)
-                this_success = _get_building_height_dsm(tiled_city_data, tile_cif_data_path, overture_buildings, alos_dsm, nasa_dem)
+                this_success = _get_building_height_dsm(tiled_city_data, tile_cif_data_path, overture_buildings, alos_dsm, nasa_dem, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-DSM download for {tile_id}', None, '', logger)
 
@@ -109,10 +111,11 @@ def _random_list(in_list):
 
 def _get_lulc(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
-        from open_urban import OpenUrban, reclass_map
+        from src.workers.open_urban import OpenUrban, reclass_map
 
         # Load data
-        lulc = OpenUrban().get_data(aoi_gdf.total_bounds)
+        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
+        lulc = OpenUrban().get_data(bbox)
 
         # Get resolution of the data
         # lulc.rio.resolution()
@@ -132,11 +135,12 @@ def _get_lulc(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logge
         else:
             print(f'There were no occurrences of the value {remove_value} found in data.')
 
+        # TODO Can we specify resolution through GEE and avoid below?
         if output_resolution != DEFAULT_LULC_RESOLUTION:
             lulc_to_solweig_class = _resample_categorical_raster(lulc_to_solweig_class, output_resolution)
 
         # reverse y direction, if y values increase in NS direction from LL corner
-        was_reversed, lulc_to_solweig_class = reverse_y_dimension_as_needed(lulc_to_solweig_class)
+        was_reversed, lulc_to_solweig_class = standardize_y_dimension_direction(lulc_to_solweig_class)
 
         # Save data to file
         save_tiff_file(lulc_to_solweig_class, tile_data_path, tiled_city_data.lulc_tif_filename)
@@ -144,8 +148,8 @@ def _get_lulc(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logge
         return True
 
     except Exception as e_msg:
-        msg = f'Lulc processing cancelled due to failure.'
-        log_method_failure(datetime.now(), msg, None, None, tiled_city_data.source_base_path, '', logger)
+        msg = f'Lulc processing cancelled due to failure {e_msg}.'
+        log_method_failure(datetime.now(), 'lulc', tiled_city_data.source_base_path, msg, logger)
         return False
 
 
@@ -158,29 +162,32 @@ def _get_tree_canopy_height(tiled_city_data, tile_data_path, aoi_gdf, output_res
         from city_metrix.layers import TreeCanopyHeight
 
         # Load layer
-        tree_canopy_height = TreeCanopyHeight(spatial_resolution=output_resolution).get_data(aoi_gdf.total_bounds)
+        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
+        tree_canopy_height = TreeCanopyHeight().get_data(bbox, spatial_resolution=output_resolution)
         tree_canopy_height_float32 = tree_canopy_height.astype('float32')
 
         # reverse y direction, if y values increase in NS direction from LL corner
-        was_reversed, tree_canopy_height_float32 = reverse_y_dimension_as_needed(tree_canopy_height_float32)
+        was_reversed, tree_canopy_height_float32 = standardize_y_dimension_direction(tree_canopy_height_float32)
 
         save_tiff_file(tree_canopy_height_float32, tile_data_path, tiled_city_data.tree_canopy_tif_filename)
 
         return True
 
     except Exception as e_msg:
-        msg = f'Tree-canopy processing cancelled due to failure.'
-        log_method_failure(datetime.now(), msg, None, None, tiled_city_data.source_base_path, '', logger)
+        msg = f'Tree-canopy processing cancelled due to failure {e_msg}.'
+        log_method_failure(datetime.now(), 'tree_canopy_height', tiled_city_data.source_base_path, msg, logger)
         return False
+
 
 def _get_dem(tiled_city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution, logger):
     try:
         from city_metrix.layers import NasaDEM
 
-        nasa_dem = NasaDEM(spatial_resolution=output_resolution).get_data(aoi_gdf.total_bounds)
+        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
+        nasa_dem = NasaDEM().get_data(bbox, spatial_resolution=output_resolution)
 
         # reverse y direction, if y values increase in NS direction from LL corner
-        was_reversed, nasa_dem = reverse_y_dimension_as_needed(nasa_dem)
+        was_reversed, nasa_dem = standardize_y_dimension_direction(nasa_dem)
 
         if retrieve_dem:
             save_tiff_file(nasa_dem, tile_data_path, tiled_city_data.dem_tif_filename)
@@ -188,8 +195,8 @@ def _get_dem(tiled_city_data, tile_data_path, aoi_gdf, retrieve_dem, output_reso
         return True, nasa_dem
 
     except Exception as e_msg:
-        msg = f'DEM processing cancelled due to failure.'
-        log_method_failure(datetime.now(), msg, None, None, tiled_city_data.source_base_path, '', logger)
+        msg = f'DEM processing cancelled due to failure {e_msg}.'
+        log_method_failure(datetime.now(), 'DEM', tiled_city_data.source_base_path, msg, logger)
         return False, None
 
 
@@ -197,10 +204,11 @@ def _get_dsm(tile_data_path, aoi_gdf, output_resolution, logger):
     try:
         from city_metrix.layers import AlosDSM
 
-        alos_dsm = AlosDSM(spatial_resolution=output_resolution).get_data(aoi_gdf.total_bounds)
+        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
+        alos_dsm = AlosDSM().get_data(bbox, spatial_resolution=output_resolution)
 
         # reverse y direction, if y values increase in NS direction from LL corner
-        was_reversed, alos_dsm = reverse_y_dimension_as_needed(alos_dsm)
+        was_reversed, alos_dsm = standardize_y_dimension_direction(alos_dsm)
 
         if DEBUG:
             save_tiff_file(alos_dsm, tile_data_path, 'debug_alos_dsm.tif')
@@ -208,28 +216,29 @@ def _get_dsm(tile_data_path, aoi_gdf, output_resolution, logger):
         return True, alos_dsm
 
     except Exception as e_msg:
-        msg = f'DSM processing cancelled due to failure.'
-        log_method_failure(datetime.now(), msg, None, None, None, '', logger)
+        msg = f'DSM processing cancelled due to failure f{e_msg}.'
+        log_method_failure(datetime.now(), 'DSM', tile_data_path, msg, logger)
         return False, None
 
 
-def _get_building_footprints(tile_data_path, aoi_gdf):
+def _get_building_footprints(tile_data_path, aoi_gdf, logger):
     try:
         from city_metrix.layers import OvertureBuildings
 
-        overture_buildings = OvertureBuildings().get_data(aoi_gdf.total_bounds)
+        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
+        overture_buildings = OvertureBuildings().get_data(bbox)
         if DEBUG:
             save_geojson_file(overture_buildings, tile_data_path, 'debug_building_footprints.geojson')
 
         return True, overture_buildings
 
     except Exception as e_msg:
-        msg = f'Building-footprint processing cancelled due to failure.'
-        log_method_failure(datetime.now(), msg, None, None, None, '')
+        msg = f'Building-footprint processing cancelled due to failure {e_msg}.'
+        log_method_failure(datetime.now(), 'Building_footprint', tile_data_path, msg, logger)
         return False, None
 
 
-def _get_building_height_dsm(tiled_city_data, tile_data_path, overture_buildings, alos_dsm, nasa_dem):
+def _get_building_height_dsm(tiled_city_data, tile_data_path, overture_buildings, alos_dsm, nasa_dem, logger):
     try:
         from exactextract import exact_extract
 
@@ -270,8 +279,8 @@ def _get_building_height_dsm(tiled_city_data, tile_data_path, overture_buildings
         return True
 
     except Exception as e_msg:
-        msg = f'Building DSM processing cancelled due to failure.'
-        log_method_failure(datetime.now(), msg, None, None, None, '')
+        msg = f'Building DSM processing cancelled due to failure {e_msg}.'
+        log_method_failure(datetime.now(), 'Building DSM', tiled_city_data.source_base_path, msg, logger)
         return False
 
 def _create_base_dtm(dsm, dem):

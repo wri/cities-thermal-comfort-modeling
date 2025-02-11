@@ -139,15 +139,6 @@ def compute_time_diff_mins(start_time):
     return round(((datetime.now() - start_time).seconds)/60, 1)
 
 
-def reverse_y_dimension_as_needed(dataarray):
-    was_reversed= False
-    y_dimensions = dataarray.shape[0]
-    if dataarray.y.data[0] < dataarray.y.data[y_dimensions - 1]:
-        dataarray = dataarray.isel({dataarray.rio.y_dim: slice(None, None, -1)})
-        was_reversed = True
-    return was_reversed, dataarray
-
-
 def any_value_matches_in_dict_list(dict_list, target_string):
     for dictionary in dict_list:
         if target_string in dictionary.values():

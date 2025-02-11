@@ -18,7 +18,7 @@ def write_qgis_files(city_data, crs_str):
     clean_folder(target_vrt_folder)
 
     # Build VRTs for base layers
-    target_folder = city_data.target_city_data_path
+    target_folder = city_data.target_city_primary_data_path
     dem_file_name = city_data.dem_tif_filename
     dsm_file_name = city_data.dsm_tif_filename
     tree_canopy_file_name = city_data.tree_canopy_tif_filename

@@ -73,8 +73,8 @@ class CityData:
             obj.target_city_parent_path = str(os.path.join(target_base_path, folder_name_city_data))
             obj.target_city_path = str(os.path.join(obj.target_city_parent_path, scenario_sub_folder))
 
-            obj.target_city_data_path = str(os.path.join(obj.target_city_path, FOLDER_NAME_PRIMARY_DATA))
-            obj.target_met_files_path = os.path.join(obj.target_city_data_path, FOLDER_NAME_PRIMARY_MET_FILES)
+            obj.target_city_primary_data_path = str(os.path.join(obj.target_city_path, FOLDER_NAME_PRIMARY_DATA))
+            obj.target_met_files_path = os.path.join(obj.target_city_primary_data_path, FOLDER_NAME_PRIMARY_MET_FILES)
 
             obj.target_log_path = os.path.join(obj.target_city_path, '.admin')
             obj.target_manager_log_path = os.path.join(obj.target_log_path, 'log_worker_manager.log')
@@ -88,7 +88,7 @@ class CityData:
             obj.target_tcm_results_path = os.path.join(target_path_results_data, FOLDER_NAME_UMEP_TCM_RESULTS)
 
             if obj.folder_name_tile_data:
-                obj.target_raster_files_path = os.path.join(obj.target_city_data_path,
+                obj.target_raster_files_path = os.path.join(obj.target_city_primary_data_path,
                                                             FOLDER_NAME_PRIMARY_RASTER_FILES)
                 obj.target_primary_tile_data_path = os.path.join(obj.target_raster_files_path, obj.folder_name_tile_data)
 

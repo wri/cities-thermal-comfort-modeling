@@ -2,6 +2,7 @@ import math
 import os
 import rasterio
 import pandas as pd
+from city_metrix.layers.layer_tools import get_projection_name
 
 from src.constants import FILENAME_METHOD_YML_CONFIG, \
     FOLDER_NAME_PRIMARY_RASTER_FILES, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSING_METHODS, FILENAME_ERA5
@@ -26,6 +27,7 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
     tile_buffer_meters = non_tiled_city_data.tile_buffer_meters
 
     cif_features = non_tiled_city_data.cif_primary_feature_list
+    custom_features = non_tiled_city_data.custom_primary_feature_list
     task_method = non_tiled_city_data.new_task_method
 
 
@@ -37,19 +39,40 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
         msg = f"tile_buffer_meters cannot be specified for a dataset with custom primary raster files."
         invalids.append((msg, True))
 
+    # Evaluate resolution for mixed CIF datasource
+    if cif_features and custom_features:
+        tile_resolution_xy_values = existing_tiles_metrics[['resolution_x', 'resolution_y']]
+        for idx, tile_res_xy in tile_resolution_xy_values.iterrows():
+            if tile_res_xy['resolution_x'] != tile_res_xy['resolution_y']:
+                msg = f'Raster resolution must match in x and y directions in custom primary raster files.'
+                invalids.append((msg, True))
+                break
+        for idx, tile_res_xy in tile_resolution_xy_values.iterrows():
+            if not (tile_res_xy['resolution_x'].is_integer() and tile_res_xy['resolution_y'].is_integer()):
+                msg = f'Raster resolution must be an integer.'
+                invalids.append((msg, True))
+                break
+
     tile_res_counts = existing_tiles_metrics.groupby('tile_name')['avg_res'].nunique().reset_index(name='unique_avg_res_count')
-    non_consistent_res = tile_res_counts[tile_res_counts['unique_avg_res_count'] > 1]
-    if non_consistent_res.shape[0] > 0:
-        non_consistent_tiles = ', '.join(non_consistent_res['tile_name'])
-        msg = f"Inconsistent raster resolutions found in files in these tiles: {non_consistent_tiles}"
+    multiple_resolutions = tile_res_counts[tile_res_counts['unique_avg_res_count'] > 1]
+    if multiple_resolutions.shape[0] > 0:
+        inconsistent_tiles = ', '.join(multiple_resolutions['tile_name'])
+        msg = f"Inconsistent raster resolutions found between files in these tiles: {inconsistent_tiles}"
         invalids.append((msg, True))
 
     tile_bounds_counts = existing_tiles_metrics.groupby('tile_name')['boundary'].nunique().reset_index(name='unique_boundary_count')
-    non_consistent_boundary = tile_bounds_counts[tile_bounds_counts['unique_boundary_count'] > 1]
-    if non_consistent_res.shape[0] > 0:
-        non_consistent_tiles = ', '.join(non_consistent_boundary['tile_name'])
-        msg = f"Inconsistent raster boundary found in files in these tiles: {non_consistent_tiles}"
+    multiple_boundaries = tile_bounds_counts[tile_bounds_counts['unique_boundary_count'] > 1]
+    if multiple_boundaries.shape[0] > 0:
+        inconsistent_tiles = ', '.join(multiple_boundaries['tile_name'])
+        msg = f"Inconsistent raster boundary found in files in these tiles: {inconsistent_tiles}"
         invalids.append((msg, True))
+
+    tile_crs_values = existing_tiles_metrics['source_crs'].unique()
+    for tile_crs in tile_crs_values:
+        if get_projection_name(tile_crs) == 'geographic':
+            msg = f'Custom files can not have geographic coordinates.'
+            invalids.append((msg, True))
+            break
 
     # Loop through tiles
     unique_tile_names = pd.DataFrame(existing_tiles_metrics['tile_name'].unique(), columns=['tile_name'])

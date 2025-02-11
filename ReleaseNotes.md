@@ -1,5 +1,11 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/02/09
+1. Broadly updated to utilize the new CIF get_data interface with GeoExtent instead of tuple[float] parameter for specifying bbox selection area
+2. Change in behavior for custom primary files, as result of updated CIF bounding-box handling:
+      1. Raster resolution must match in x and y directions in custom primary raster files, e.g. both have value of 1.
+      2. Raster resolution must be an integer for custom primary raster files.
+
 ## 2025/01/16
 1. Updated ERA5 retrieval and validation
 2. QGIS viewer

@@ -7,6 +7,7 @@ from src.data_validation.basic_validation import evaluate_basic_config
 
 from src.data_validation.custom_intermediate_validator import evaluate_custom_intermediate_config
 from src.data_validation.custom_primary_validator import evaluate_custom_primary_config
+from src.data_validation.meteorological_data_validator import evaluate_meteorological_data
 from src.worker_manager.tools import get_existing_tile_metrics, get_aoi_area_in_square_meters
 
 def validate_config(non_tiled_city_data, existing_tiles_metrics, processing_option):
@@ -27,18 +28,14 @@ def validate_config(non_tiled_city_data, existing_tiles_metrics, processing_opti
         aoi_invalids, updated_aoi = evaluate_aoi(non_tiled_city_data, existing_tiles_metrics, processing_option)
         combined_invalids.extend(aoi_invalids)
 
+        met_invalids = evaluate_meteorological_data(non_tiled_city_data, in_target_folder=False)
+        combined_invalids.extend(met_invalids)
+
         custom_intermediate_invalids = evaluate_custom_intermediate_config(non_tiled_city_data)
         combined_invalids.extend(custom_intermediate_invalids)
 
     if combined_invalids:
-        head_msg = ' vvvvvvvvvvvv Invalid configurations vvvvvvvvvvvv '
-        tail_msg = ' ^^^^^^^^^^^^ Invalid configurations ^^^^^^^^^^^^ '
-
-        print('\n')
-        print(head_msg)
-        _print_invalids(combined_invalids)
-        print(tail_msg)
-        print('\n')
+        print_invalids(combined_invalids)
 
     return_code = 1 if _invalid_has_fatal_error(combined_invalids) else 0
 
@@ -57,3 +54,13 @@ def _print_invalids(invalids):
         print(f'{i}) {invalid[0]}')
         i +=1
 
+
+def print_invalids(invalids):
+    head_msg = ' vvvvvvvvvvvv Invalid configurations vvvvvvvvvvvv '
+    tail_msg = ' ^^^^^^^^^^^^ Invalid configurations ^^^^^^^^^^^^ '
+
+    print('\n')
+    print(head_msg)
+    _print_invalids(invalids)
+    print(tail_msg)
+    print('\n')

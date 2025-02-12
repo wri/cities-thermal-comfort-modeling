@@ -1,6 +1,6 @@
 from attr.converters import to_bool
-from src.constants import FILENAME_METHOD_YML_CONFIG, VALID_PRIMARY_TYPES
-from src.workers.worker_tools import read_yaml, unpack_quoted_value
+from src.constants import FILENAME_METHOD_YML_CONFIG, VALID_PRIMARY_TYPES, METHOD_TRIGGER_ERA5_DOWNLOAD, FILENAME_ERA5
+from src.workers.worker_tools import read_yaml, unpack_quoted_value, any_value_matches_in_dict_list
 
 
 def parse_scenario_config(yml_values):
@@ -41,12 +41,18 @@ def parse_processing_areas_config(yml_values):
 def parse_met_files_config(yml_values):
     try:
         met_filenames = yml_values[2].get('MetFiles')
+        has_era_met_download = any_value_matches_in_dict_list(met_filenames, METHOD_TRIGGER_ERA5_DOWNLOAD)
+        # Replace era_download keyword with standard name for era data file
+        if has_era_met_download:
+            for item in met_filenames:
+                if item["filename"] == METHOD_TRIGGER_ERA5_DOWNLOAD:
+                    item["filename"] = FILENAME_ERA5
 
     except Exception as e_msg:
         raise Exception(
             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
 
-    return met_filenames
+    return met_filenames, has_era_met_download
 
 
 def parse_primary_filenames_config(yml_values):

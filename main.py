@@ -49,7 +49,7 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
         write_config_files(non_tiled_city_data, updated_aoi)
 
         # Process data
-        return_code, return_str = start_jobs(non_tiled_city_data)
+        return_code, return_str = start_jobs(non_tiled_city_data, existing_tiles_metrics)
 
         if return_code == 0:
             print(return_str)
@@ -62,8 +62,7 @@ def _get_existing_tiles(non_tiled_city_data):
     if non_tiled_city_data.custom_primary_feature_list:
         existing_tiles_metrics = (
             get_existing_tile_metrics(non_tiled_city_data.source_city_path,
-                                      non_tiled_city_data.custom_primary_filenames,
-                                      project_to_wgs84=True))
+                                      non_tiled_city_data.custom_primary_filenames))
     else:
         existing_tiles_metrics = None
     return existing_tiles_metrics

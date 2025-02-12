@@ -18,8 +18,7 @@
 # Names of meteorological files used by SOLWEIG method in "UMEP for Processing" plugin.
 # Specify custom files or "<download_era5>" method to automatically download ERA5 data into a file named met_era5_hottest_days.txt
 - MetFiles:
-#  - filename: <download_era5>
-  - filename: met_20jan2022.txt
+  - filename: <download_era5>
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
 # All four file mappings must be specified here. Specify None for filename where custom file is not available for processing.
 # Recommended filenames: albedo.tif, dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif

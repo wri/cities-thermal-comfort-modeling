@@ -26,7 +26,7 @@
 - CustomTiffFilenames:
   albedo_tif_filename: albedo.tif
   dem_tif_filename: dem.tif
-  dsm_tif_filename: dsm.tif
+  dsm_tif_filename: dsm_ground_build.tif
   lulc_tif_filename: lulc.tif
   tree_canopy_tif_filename: tree_canopy.tif
 - PreparedIntermediateFilenames:

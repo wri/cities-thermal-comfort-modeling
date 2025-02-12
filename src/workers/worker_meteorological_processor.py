@@ -2,38 +2,28 @@ import shapely.wkt
 import geopandas as gp
 import pandas as pd
 import os
+import numpy as np
 
 from datetime import datetime
-from src.constants import FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_MET_FILENAMES, FILENAME_ERA5
-from src.workers.worker_tools import compute_time_diff_mins, remove_file
+from src.constants import FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_MET_FILES, FILENAME_ERA5
+from src.workers.worker_tools import compute_time_diff_mins, remove_file, create_folder
 
 MET_NULL_VALUE = -999
 TARGET_HEADING =  '%iy id it imin qn qh qe qs qf U RH Tair press rain kdown snow ldown fcld wuh xsmd lai kdiff kdir wdir'
 
-def get_met_data(target_base_path, folder_name_city_data, aoi_boundary, utc_offset, sampling_local_hours):
+def get_met_data(target_met_files_path, aoi_boundary_poly, utc_offset, sampling_local_hours):
     start_time = datetime.now()
 
-    d = {'geometry': [shapely.wkt.loads(aoi_boundary)]}
-    aoi_gdf = gp.GeoDataFrame(d, crs="EPSG:4326")
+    # Create a GeoDataFrame with the polygon
+    aoi_gdf = gp.GeoDataFrame(index=[0], crs="EPSG:4326", geometry=[aoi_boundary_poly])
 
     # Retrieve and write ERA5 data
-    return_code = _get_era5(aoi_gdf, target_base_path, folder_name_city_data, utc_offset, sampling_local_hours)
+    return_code = _get_era5(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours)
 
-    # Wrap up results
-    step_method = 'ERA5_download'
-    met_filename = FILENAME_ERA5
-    start_time_str = start_time.strftime('%Y_%m_%d_%H:%M:%S')
-    run_duration_min = compute_time_diff_mins(start_time)
-    return_stdout = (f'{{"tile": "None", "step_index": {0}, '
-                     f'"step_method": "{step_method}", "met_filename": "{met_filename}", "return_code": {return_code}, '
-                     f'"start_time": "{start_time_str}", "run_duration_min": {run_duration_min}}}')
-
-    result_json = f'{{"Return_package": [{return_stdout}]}}'
-
-    return result_json
+    return return_code
 
 
-def _get_era5(aoi_gdf, output_base_path, folder_name_city_data, utc_offset, sampling_local_hours):
+def _get_era5(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours):
     from city_metrix.metrics import era_5_met_preprocessing
 
     # Attempt to download data with up to 3 tries
@@ -49,7 +39,7 @@ def _get_era5(aoi_gdf, output_base_path, folder_name_city_data, utc_offset, samp
     if aoi_era_5 is None:
         raise Exception('failed to retrieve era5 data')
 
-    # round all numbers to two decimal places, which is the precision needed by the model
+    # round all numbers to two decimal places, which is the precision needed by the umep model
     aoi_era_5 = aoi_era_5.round(2)
 
     # adjust for utc
@@ -70,11 +60,10 @@ def _get_era5(aoi_gdf, output_base_path, folder_name_city_data, utc_offset, samp
         reformatted_data.append(_reformat_line(row))
 
     # Write results to text file
-    met_filename = FILENAME_ERA5
-    target_file_path = os.path.join(output_base_path, folder_name_city_data, FOLDER_NAME_PRIMARY_DATA,
-                                    FOLDER_NAME_PRIMARY_MET_FILENAMES, met_filename)
-    remove_file(target_file_path)
-    with open(target_file_path, 'w') as file:
+    target_met_file = os.path.join(target_met_files_path, FILENAME_ERA5)
+    create_folder(target_met_files_path)
+    remove_file(target_met_file)
+    with open(target_met_file, 'w') as file:
         for row in reformatted_data:
             file.write('%s\n' % row)
 
@@ -104,7 +93,7 @@ def _reformat_line(line):
     qe = MET_NULL_VALUE
     qs = MET_NULL_VALUE
     qf = MET_NULL_VALUE
-    U = _standardize_string(wind) # wind
+    U = _standardize_string(wind) # wind  (ERA5 10u, 10m_u_component_of_wind)
     RH = _standardize_string(rh) # rh
     Tair = _standardize_string(temp) # temp
     press = MET_NULL_VALUE
@@ -132,7 +121,7 @@ def _reformat_line(line):
     return new_line
 
 def _standardize_string(value):
-    if value == '':
+    if value == '' or value == 'nan' or np.isnan(value):
         str_value = MET_NULL_VALUE
     else:
         str_value = f"{value:.2f}"
@@ -142,19 +131,3 @@ def _standardize_string(value):
 def _day_of_year(date_time):
     return (date_time - datetime(date_time.year, 1, 1)).days + 1
 
-
-
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description='Retrieve meteorological data.')
-    parser.add_argument('--target_base_path', metavar='path', required=True, help='folder for source data')
-    parser.add_argument('--city_folder_name', metavar='str', required=True, help='name of city folder')
-    parser.add_argument('--aoi_boundary', metavar='str', required=True, help='geographic boundary of the AOI')
-    parser.add_argument('--utc_offset', metavar='str', required=True, help='hour offset from utc')
-    parser.add_argument('--sampling_local_hours', metavar='str', required=True, help='comma-delimited string of sampling local hours')
-
-    args = parser.parse_args()
-
-    result_json = get_met_data(args.target_base_path, args.city_folder_name, args.aoi_boundary, args.utc_offset, args.sampling_local_hours)
-
-    print(result_json)

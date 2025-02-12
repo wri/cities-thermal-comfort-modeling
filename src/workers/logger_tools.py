@@ -39,11 +39,9 @@ def log_method_completion(start_time, method, step, source_base_path, logger):
         logger.info(f"Finished '{method}' for met_series:{step}, runtime:{runtime} mins\tconfig:'{source_base_path}'")
 
 
-def log_method_failure(start_time, feature, step, source_base_path, e_msg, logger):
+def log_method_failure(start_time, feature, source_base_path, e_msg, logger):
     print('Method failure. See log file.')
     runtime = compute_time_diff_mins(start_time)
-    if step is None:
-        logger.error(f"**** FAILED execution of '{feature}' after runtime:{runtime} mins\tconfig:'{source_base_path}'({e_msg})")
-    else:
-        logger.error(f"**** FAILED execution of '{feature}' fpr met_series:{step} after runtime:{runtime} mins\tconfig:'{source_base_path}'({e_msg})")
+    logger.error(f"**** FAILED execution of '{feature}' after runtime:{runtime} mins\tconfig:'{source_base_path}'({e_msg})")
+
 

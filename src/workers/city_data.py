@@ -1,5 +1,5 @@
 import os
-from src.constants import FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_INTERMEDIATE_DATA, FOLDER_NAME_PRIMARY_MET_FILENAMES, \
+from src.constants import FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_INTERMEDIATE_DATA, FOLDER_NAME_PRIMARY_MET_FILES, \
     FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_RESULTS, FOLDER_NAME_UMEP_TCM_RESULTS
 from src.workers.config_processor import *
 
@@ -17,7 +17,7 @@ class CityData:
         obj.source_city_path = str(os.path.join(source_base_path, folder_name_city_data))
         obj.source_city_primary_data_path = str(os.path.join(obj.source_city_path, FOLDER_NAME_PRIMARY_DATA))
         obj.source_intermediate_data_path = str(os.path.join(obj.source_city_path, FOLDER_NAME_INTERMEDIATE_DATA))
-        obj.source_met_filenames_path = os.path.join(obj.source_city_primary_data_path, FOLDER_NAME_PRIMARY_MET_FILENAMES)
+        obj.source_met_files_path = os.path.join(obj.source_city_primary_data_path, FOLDER_NAME_PRIMARY_MET_FILES)
         obj.city_method_config_path = os.path.join(obj.source_city_path, FILENAME_METHOD_YML_CONFIG)
 
         # parse config file
@@ -28,7 +28,7 @@ class CityData:
         obj.utc_offset, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat, obj.tile_side_meters, obj.tile_buffer_meters = \
             parse_processing_areas_config(yml_values)
 
-        obj.met_filenames = parse_met_files_config(yml_values)
+        obj.met_filenames, obj.has_era_met_download = parse_met_files_config(yml_values)
 
         (obj.albedo_tif_filename, obj.dem_tif_filename, obj.dsm_tif_filename, obj.tree_canopy_tif_filename, obj.lulc_tif_filename,
          obj.custom_primary_feature_list, obj.custom_primary_filenames, obj.cif_primary_feature_list) = (
@@ -74,8 +74,8 @@ class CityData:
             obj.target_city_parent_path = str(os.path.join(target_base_path, folder_name_city_data))
             obj.target_city_path = str(os.path.join(obj.target_city_parent_path, scenario_sub_folder))
 
-            obj.target_city_data_path = str(os.path.join(obj.target_city_path, FOLDER_NAME_PRIMARY_DATA))
-            obj.target_met_filenames_path = os.path.join(obj.target_city_data_path, FOLDER_NAME_PRIMARY_MET_FILENAMES)
+            obj.target_city_primary_data_path = str(os.path.join(obj.target_city_path, FOLDER_NAME_PRIMARY_DATA))
+            obj.target_met_files_path = os.path.join(obj.target_city_primary_data_path, FOLDER_NAME_PRIMARY_MET_FILES)
 
             obj.target_log_path = os.path.join(obj.target_city_path, '.admin')
             obj.target_manager_log_path = os.path.join(obj.target_log_path, 'log_worker_manager.log')
@@ -89,7 +89,7 @@ class CityData:
             obj.target_tcm_results_path = os.path.join(target_path_results_data, FOLDER_NAME_UMEP_TCM_RESULTS)
 
             if obj.folder_name_tile_data:
-                obj.target_raster_files_path = os.path.join(obj.target_city_data_path,
+                obj.target_raster_files_path = os.path.join(obj.target_city_primary_data_path,
                                                             FOLDER_NAME_PRIMARY_RASTER_FILES)
                 obj.target_primary_tile_data_path = os.path.join(obj.target_raster_files_path, obj.folder_name_tile_data)
 

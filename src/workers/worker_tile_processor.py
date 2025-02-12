@@ -4,15 +4,16 @@ import time
 import rioxarray
 
 from pathlib import Path
+
+from city_metrix.layers.layer_tools import standardize_y_dimension_direction
 from src.constants import FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSING_METHODS
 from src.workers.city_data import CityData
-from src.workers.worker_tools import create_folder, unpack_quoted_value, reverse_y_dimension_as_needed, save_tiff_file
+from src.workers.worker_tools import create_folder, unpack_quoted_value, save_tiff_file
 
 PROCESSING_PAUSE_TIME_SEC = 10
 
-
 def process_tile(task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
-                 cif_primary_features, ctcm_intermediate_features, tile_boundary, tile_resolution, utc_offset):
+                 cif_primary_features, ctcm_intermediate_features, tile_boundary, crs, tile_resolution, utc_offset):
     tiled_city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
     cif_primary_features = unpack_quoted_value(cif_primary_features)
     ctcm_intermediate_features = unpack_quoted_value(ctcm_intermediate_features)
@@ -21,10 +22,10 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
     met_filenames = tiled_city_data.met_filenames
 
     def _execute_retrieve_cif_data(source_path, target_path, folder_city, folder_tile, cif_features,
-                                   boundary, resolution):
+                                   boundary, crs, resolution):
         from source_cif_data_downloader import get_cif_data
         cif_stdout = \
-            get_cif_data(source_path, target_path, folder_city, folder_tile, cif_features, boundary, resolution)
+            get_cif_data(source_path, target_path, folder_city, folder_tile, cif_features, boundary, crs, resolution)
         return cif_stdout
 
     def _execute_umep_solweig_only_plugin(step_index, folder_city, folder_tile, source_path, target_path, met_names, offset_utc):
@@ -67,8 +68,6 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
     return_stdouts = []
 
     # transfer custom files
-    if met_filenames:
-        _transfer_met_files(tiled_city_data)
     if tiled_city_data.custom_primary_feature_list:
         _transfer_custom_files(tiled_city_data, tiled_city_data.custom_primary_feature_list)
     if tiled_city_data.custom_intermediate_list:
@@ -77,7 +76,7 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
     # get cif data
     if cif_primary_features is not None:
         return_val = _execute_retrieve_cif_data(source_base_path, target_base_path, city_folder_name,
-                                                tile_folder_name, cif_primary_features, tile_boundary,
+                                                tile_folder_name, cif_primary_features, tile_boundary, crs,
                                                 tile_resolution)
         return_stdouts.append(return_val)
         time.sleep(PROCESSING_PAUSE_TIME_SEC)
@@ -110,34 +109,25 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
     return result_json
 
 
-def _transfer_met_files(city_data):
-    create_folder(city_data.target_met_filenames_path)
-    for met_file in city_data.met_filenames:
-        if met_file != METHOD_TRIGGER_ERA5_DOWNLOAD:
-            source_path = os.path.join(city_data.source_met_filenames_path, met_file['filename'])
-            target_path = os.path.join(city_data.target_met_filenames_path, met_file['filename'])
-            shutil.copyfile(source_path, target_path)
-
-
-def _transfer_custom_files(city_data, custom_feature_list):
+def _transfer_custom_files(tiled_city_data, custom_feature_list):
     source_paths = []
     for feature in custom_feature_list:
         if feature == 'albedo':
-            source_paths.append((city_data.source_dem_path, city_data.target_albedo_path))
+            source_paths.append((tiled_city_data.source_dem_path, tiled_city_data.target_albedo_path))
         elif feature == 'dem':
-            source_paths.append((city_data.source_dem_path, city_data.target_dem_path))
+            source_paths.append((tiled_city_data.source_dem_path, tiled_city_data.target_dem_path))
         elif feature == 'dsm':
-            source_paths.append((city_data.source_dsm_path, city_data.target_dsm_path))
+            source_paths.append((tiled_city_data.source_dsm_path, tiled_city_data.target_dsm_path))
         elif feature == 'lulc':
-            source_paths.append((city_data.source_land_cover_path, city_data.target_land_cover_path))
+            source_paths.append((tiled_city_data.source_land_cover_path, tiled_city_data.target_land_cover_path))
         elif feature == 'tree_canopy':
-            source_paths.append((city_data.source_tree_canopy_path, city_data.target_tree_canopy_path))
+            source_paths.append((tiled_city_data.source_tree_canopy_path, tiled_city_data.target_tree_canopy_path))
         elif feature == 'wallaspect':
-            source_paths.append((city_data.source_wallaspect_path, city_data.target_wallaspect_path))
+            source_paths.append((tiled_city_data.source_wallaspect_path, tiled_city_data.target_wallaspect_path))
         elif feature == 'wallheight':
-            source_paths.append((city_data.source_wallheight_path, city_data.target_wallheight_path))
+            source_paths.append((tiled_city_data.source_wallheight_path, tiled_city_data.target_wallheight_path))
         elif feature == 'skyview_factor':
-            source_paths.append((city_data.source_svfszip_path, city_data.target_svfszip_path))
+            source_paths.append((tiled_city_data.source_svfszip_path, tiled_city_data.target_svfszip_path))
 
     for file_paths in source_paths:
         to_tile_dir = Path(file_paths[1]).parent
@@ -161,7 +151,7 @@ def _enforce_tiff_upper_left_origin(tile_data_path, file_path):
     geotiff_2d = geotiff_da.sel(band=1).squeeze()
     geotiff_da.close()
 
-    was_reversed, reversed_arr = reverse_y_dimension_as_needed(geotiff_2d)
+    was_reversed, reversed_arr = standardize_y_dimension_direction(geotiff_2d)
     if was_reversed:
         data_file = os.path.basename(file_path)
         save_tiff_file(reversed_arr, tile_data_path, data_file)
@@ -178,6 +168,7 @@ if __name__ == "__main__":
     parser.add_argument('--cif_primary_features', metavar='str', required=True, help='coma-delimited list of cif features to retrieve')
     parser.add_argument('--ctcm_intermediate_features', metavar='str', required=True, help='coma-delimited list of intermediates to be created')
     parser.add_argument('--tile_boundary', metavar='str', required=True, help='geographic boundary of tile')
+    parser.add_argument('--crs', metavar='str', required=True, help='coordinate reference system')
     parser.add_argument('--tile_resolution', metavar='str', required=True, help='resolution of tile in m.')
     parser.add_argument('--utc_offset', metavar='str', required=True, help='hour offset from utc')
 
@@ -186,7 +177,6 @@ if __name__ == "__main__":
     return_stdout =process_tile(args.task_method, args.source_base_path, args.target_base_path,
                                 args.city_folder_name, args.tile_folder_name,
                                 args.cif_primary_features, args.ctcm_intermediate_features,
-                                args.tile_boundary, args.tile_resolution, args.utc_offset)
+                                args.tile_boundary, args.crs, args.tile_resolution, args.utc_offset)
 
     print(return_stdout)
-

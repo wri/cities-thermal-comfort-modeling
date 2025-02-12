@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import multiprocessing as mp
 import warnings
@@ -7,36 +8,27 @@ import shapely
 import dask
 from shapely.lib import envelope
 
-from src.constants import SRC_DIR, METHOD_TRIGGER_ERA5_DOWNLOAD
+from src.constants import SRC_DIR, FILENAME_ERA5
+from src.data_validation.manager import print_invalids
+from src.data_validation.meteorological_data_validator import evaluate_meteorological_data
 from src.worker_manager.ancillary_files import write_tile_grid, write_qgis_files
-from src.worker_manager.graph_builder import get_aoi_fishnet, get_aoi
+from src.worker_manager.graph_builder import get_aoi_fishnet, get_aoi_from_config
 from src.workers.logger_tools import setup_logger, write_log_message
 from src.worker_manager.reporter import parse_row_results, report_results
 from src.worker_manager.tools import get_existing_tile_metrics
+from src.workers.worker_meteorological_processor import get_met_data
+from src.workers.worker_tools import create_folder
 
 warnings.filterwarnings('ignore')
 dask.config.set({'logging.distributed': 'warning'})
 
-MET_PROCESSING_MODULE_PATH = os.path.abspath(
-    os.path.join(SRC_DIR, 'workers', 'worker_meteorological_processor.py'))
 TILE_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(SRC_DIR, 'workers', 'worker_tile_processor.py'))
 
 
-def _add_buffer_hack(tile_boundary):
-    # TODO Remove after fixing CIF-321
-    # from shapely.geometry import Polygon
-    # Define the outer envelop of the tile boundary
-
-    tile_boundary_out = envelope(shapely.buffer(shapely.from_wkt(tile_boundary), 0.00005))
-
-    return str(tile_boundary_out)
-
-
-def start_jobs(non_tiled_city_data):
+def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     source_base_path = non_tiled_city_data.source_base_path
     target_base_path = non_tiled_city_data.target_base_path
     city_folder_name = non_tiled_city_data.folder_name_city_data
-    source_city_path = non_tiled_city_data.source_city_path
 
     custom_primary_filenames = non_tiled_city_data.custom_primary_filenames
     cif_primary_features = non_tiled_city_data.cif_primary_feature_list
@@ -45,47 +37,46 @@ def start_jobs(non_tiled_city_data):
     logger = setup_logger(non_tiled_city_data.target_manager_log_path)
     write_log_message('Starting jobs', __file__, logger)
 
-    out_list = []
-
-    aoi_boundary, tile_side_meters, tile_buffer_meters, utc_offset, crs_str = get_aoi(non_tiled_city_data)
+    aoi_boundary_polygon, tile_side_meters, tile_buffer_meters, utc_offset, config_crs = get_aoi_from_config(non_tiled_city_data)
 
     combined_results_df = pd.DataFrame(
         columns=['status', 'tile', 'step_index', 'step_method', 'met_filename', 'return_code',
                  'start_time', 'run_duration_min'])
     combined_delays_passed = []
 
-    has_era_met_download = any_value_matches_in_dict_list(non_tiled_city_data.met_filenames, METHOD_TRIGGER_ERA5_DOWNLOAD)
     # meteorological data
-    if has_era_met_download:
+    if non_tiled_city_data.has_era_met_download:
         write_log_message('Retrieving ERA meteorological data', __file__, logger)
         sampling_local_hours = non_tiled_city_data.sampling_local_hours
-        proc_array = _construct_met_proc_array(-1, target_base_path, city_folder_name, aoi_boundary, utc_offset,
-                                               sampling_local_hours)
-        delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
-        met_futures = []
-        met_futures.append(delay_tile_array)
-        met_delays_all_passed, met_results_df = _process_rows(met_futures, logger)
-        out_list.extend(met_results_df)
 
-        combined_results_df = pd.concat([combined_results_df, met_results_df])
-        combined_delays_passed.append(met_delays_all_passed)
+        target_met_files_path = non_tiled_city_data.target_met_files_path
+        return_code = get_met_data(target_met_files_path, aoi_boundary_polygon, utc_offset, sampling_local_hours)
+        if return_code != 0:
+            print("Stopping. Failed downloading ERA5 meteorological data")
+            exit(1)
+
+    # Transfer custom met files to target
+    _transfer_custom_met_files(non_tiled_city_data)
+
+    invalids = evaluate_meteorological_data(non_tiled_city_data, in_target_folder=True)
+    if invalids:
+        print_invalids(invalids)
+        print("Stopping. Identified invalid values in meteorological files(s)")
+        exit(1)
 
 
     futures = []
-    number_of_tiles = 1000  # Initialize as large number
     task_method = non_tiled_city_data.new_task_method
 
     # Retrieve CIF data
     if custom_primary_filenames:
-        existing_tiles = get_existing_tile_metrics(source_city_path, custom_primary_filenames, project_to_wgs84=True)
-        tile_unique_values = existing_tiles[['tile_name', 'boundary', 'avg_res', 'source_crs']].drop_duplicates()
-        number_of_tiles = tile_unique_values.shape[0]
+        tile_unique_values = existing_tiles_metrics[['tile_name', 'boundary', 'avg_res', 'source_crs']].drop_duplicates()
+        number_of_tiles = len(tile_unique_values.tile_name)
 
-        # TODO update after fixing CIF-321
-        source_crs = 'epsg:4326'
-        # source_crs = tile_unique_values['source_crs'][0]
+        # TODO  Assume customer files are always in UTM
+        utm_crs = tile_unique_values['source_crs'].values[0]
 
-        write_tile_grid(tile_unique_values, source_crs, non_tiled_city_data.target_qgis_viewer_path)
+        write_tile_grid(tile_unique_values, utm_crs, non_tiled_city_data.target_qgis_viewer_path)
 
         print(f'\nProcessing over {len(tile_unique_values)} existing tiles..')
         for index, tile_metrics in tile_unique_values.iterrows():
@@ -95,7 +86,7 @@ def start_jobs(non_tiled_city_data):
 
             proc_array = _construct_tile_proc_array(task_method, source_base_path, target_base_path,
                                                     city_folder_name, tile_folder_name, cif_primary_features,
-                                                    ctcm_intermediate_features, tile_boundary, tile_resolution,
+                                                    ctcm_intermediate_features, tile_boundary, utm_crs, tile_resolution,
                                                     utc_offset)
 
             write_log_message(f'Staging: {proc_array}', __file__, logger)
@@ -103,26 +94,23 @@ def start_jobs(non_tiled_city_data):
             delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
             futures.append(delay_tile_array)
     else:
-        fishnet = get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters)
+        fishnet = get_aoi_fishnet(aoi_boundary_polygon, tile_side_meters, tile_buffer_meters, config_crs)
         number_of_tiles = fishnet.shape[0]
+        utm_crs = fishnet.crs.srs
 
-        # TODO update after fixing CIF-321
-        source_crs = 'epsg:4326'
-        write_tile_grid(fishnet, source_crs, non_tiled_city_data.target_qgis_viewer_path)
+        write_tile_grid(fishnet, utm_crs, non_tiled_city_data.target_qgis_viewer_path)
 
         print(f'\nCreating data for {fishnet.geometry.size} new tiles..')
         for tile_index, cell in fishnet.iterrows():
             cell_bounds = cell.geometry.bounds
             tile_boundary = str(shapely.box(cell_bounds[0], cell_bounds[1], cell_bounds[2], cell_bounds[3]))
 
-            tile_boundary = _add_buffer_hack(tile_boundary)
-
             tile_id = str(tile_index + 1).zfill(3)
             tile_folder_name = f'tile_{tile_id}'
 
             proc_array = _construct_tile_proc_array(task_method, source_base_path, target_base_path,
                                                     city_folder_name, tile_folder_name, cif_primary_features,
-                                                    ctcm_intermediate_features, tile_boundary, None,
+                                                    ctcm_intermediate_features, tile_boundary, utm_crs, None,
                                                     utc_offset)
 
             write_log_message(f'Staging: {proc_array}', __file__, logger)
@@ -131,7 +119,8 @@ def start_jobs(non_tiled_city_data):
             futures.append(delay_tile_array)
 
     write_log_message('Starting model processing', __file__, logger)
-    delays_all_passed, results_df = _process_rows(futures, number_of_tiles, logger)
+    number_number_of_tiles = number_of_tiles
+    delays_all_passed, results_df = _process_rows(futures, number_number_of_tiles, logger)
 
     # Combine processing return values
     combined_results_df = pd.concat([combined_results_df, results_df])
@@ -146,7 +135,7 @@ def start_jobs(non_tiled_city_data):
 
     if return_code == 0 and delays_all_passed:
         write_log_message('Building QGIS viewer objects', __file__, logger)
-        write_qgis_files(non_tiled_city_data, crs_str)
+        write_qgis_files(non_tiled_city_data, utm_crs)
         return_str = "Processing encountered no errors."
     else:
         return_str = 'Processing encountered errors. See log file.'
@@ -156,29 +145,18 @@ def start_jobs(non_tiled_city_data):
     return return_code, return_str
 
 
-def any_value_matches_in_dict_list(dict_list, target_string):
-    for dictionary in dict_list:
-        if target_string in dictionary.values():
-            return True
-    return False
-
-
-def _construct_met_proc_array(target_base_path, city_folder_name, aoi_boundary, utc_offset,
-                              sampling_local_hours):
-    proc_array = ['python', MET_PROCESSING_MODULE_PATH,
-                  f'--target_base_path={target_base_path}',
-                  f'--city_folder_name={city_folder_name}',
-                  f'--aoi_boundary={str(aoi_boundary)}',
-                  f'--utc_offset={utc_offset}',
-                  f'--sampling_local_hours={sampling_local_hours}'
-                  ]
-
-    return proc_array
+def _transfer_custom_met_files(non_tiled_city_data):
+    create_folder(non_tiled_city_data.target_met_files_path)
+    for met_file in non_tiled_city_data.met_filenames:
+        if not(non_tiled_city_data.has_era_met_download and met_file['filename'] == FILENAME_ERA5):
+            source_path = os.path.join(non_tiled_city_data.source_met_files_path, met_file['filename'])
+            target_path = os.path.join(non_tiled_city_data.target_met_files_path, met_file['filename'])
+            shutil.copyfile(source_path, target_path)
 
 
 def _construct_tile_proc_array(task_method, source_base_path, target_base_path, city_folder_name,
                                tile_folder_name, cif_primary_features, ctcm_intermediate_features,
-                               tile_boundary, tile_resolution, utc_offset):
+                               tile_boundary, crs, tile_resolution, utc_offset):
     if cif_primary_features:
         cif_features = ','.join(cif_primary_features)
     else:
@@ -198,18 +176,19 @@ def _construct_tile_proc_array(task_method, source_base_path, target_base_path, 
                   f'--cif_primary_features={cif_features}',
                   f'--ctcm_intermediate_features={ctcm_features}',
                   f'--tile_boundary={tile_boundary}',
+                  f'--crs={crs}',
                   f'--tile_resolution={tile_resolution}',
                   f'--utc_offset={utc_offset}'
                   ]
     return proc_array
 
 
-def _process_rows(futures, number_of_tiles, logger):
+def _process_rows(futures, number_of_units, logger):
     # See https://docs.dask.org/en/stable/deploying-python.html
     # https://blog.dask.org/2021/11/02/choosing-dask-chunk-sizes#what-to-watch-for-on-the-dashboard
     if futures:
         available_cpu_count = int(mp.cpu_count() - 1)
-        num_workers = number_of_tiles+1 if number_of_tiles < available_cpu_count else available_cpu_count
+        num_workers = number_of_units + 1 if number_of_units < available_cpu_count else available_cpu_count
 
         from dask.distributed import Client
         with Client(n_workers=num_workers,

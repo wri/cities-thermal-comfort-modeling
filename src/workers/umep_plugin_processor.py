@@ -39,9 +39,9 @@ def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_
         qgis_app.processingRegistry().addProvider(umep_provider)
         Processing.initialize()
     except Exception as e_msg:
-        msg = 'Processing could not initialize UMEP processing'
-        log_method_failure(datetime.now(), msg, None, None, None, e_msg, logger)
-        # return
+        msg = f'Processing could not initialize UMEP processing {e_msg}'
+        log_method_failure(datetime.now(), 'UMEP', tiled_city_data.source_base_path, msg, logger)
+
 
     e_msg = ''
     return_code = -999
@@ -66,14 +66,15 @@ def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_
                             remove_file(target_base_path)
                             shutil.move(str(temp_result_path), str(target_base_path))
                 except Exception as e_msg:
-                    msg = (f'{method_title} processing succeeded but could not create target folder or move files: {tiled_city_data.target_intermediate_tile_data_path}')
-                    log_method_failure(start_time, msg, None, tiled_city_data.target_base_path, e_msg, logger)
+                    msg = (f'{method_title} processing succeeded but could not create target folder or move files: '
+                           f'{tiled_city_data.target_intermediate_tile_data_path} due to {e_msg}')
+                    log_method_failure(datetime.now(), method_title, tiled_city_data.source_base_path, msg, logger)
                     return 1
 
                 return_code = 0
             except Exception as e_msg:
                 msg = f'task:{method_title} failure. Retrying. ({e_msg})'
-                log_method_failure(start_time, msg, None, tiled_city_data.target_base_path, e_msg, logger)
+                log_method_failure(datetime.now(), method_title, tiled_city_data.source_base_path, msg, logger)
                 if retry_count < MAX_RETRY_COUNT:
                     time.sleep(RETRY_PAUSE_TIME_SEC)
                 return_code = 3
@@ -83,7 +84,7 @@ def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_
         log_method_completion(start_time, method_title,  None, tiled_city_data.target_base_path, logger)
     else:
         msg = f'{method_title} processing cancelled after {MAX_RETRY_COUNT} attempts.'
-        log_method_failure(start_time, msg, None, tiled_city_data.target_base_path, '')
+        log_method_failure(datetime.now(), method_title, tiled_city_data.source_base_path, msg, logger)
 
     run_duration_min = compute_time_diff_mins(start_time)
 
@@ -95,33 +96,33 @@ def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_
     return return_stdout
 
 
-def _prepare_method_execution(method, city_data, tmpdirname, met_filename=None, utc_offset=None):
+def _prepare_method_execution(method, tiled_city_data, tmpdirname, met_filename=None, utc_offset=None):
     keepers = {}
 
     if method == 'wall_height_aspect':
-        create_folder(city_data.target_intermediate_tile_data_path)
+        create_folder(tiled_city_data.target_intermediate_tile_data_path)
 
-        temp_target_wallheight_path = os.path.join(tmpdirname, city_data.wall_height_filename)
-        temp_target_wallaspect_path = os.path.join(tmpdirname, city_data.wall_aspect_filename)
+        temp_target_wallheight_path = os.path.join(tmpdirname, tiled_city_data.wall_height_filename)
+        temp_target_wallaspect_path = os.path.join(tmpdirname, tiled_city_data.wall_aspect_filename)
         input_params = {
-            'INPUT': city_data.target_dsm_path,
-            'INPUT_LIMIT': city_data.wall_lower_limit_height,
+            'INPUT': tiled_city_data.target_dsm_path,
+            'INPUT_LIMIT': tiled_city_data.wall_lower_limit_height,
             'OUTPUT_HEIGHT': temp_target_wallheight_path,
             'OUTPUT_ASPECT': temp_target_wallaspect_path,
         }
         umep_method_title = "umep:Urban Geometry: Wall Height and Aspect"
-        keepers[temp_target_wallheight_path] = city_data.target_wallheight_path
-        keepers[temp_target_wallaspect_path] = city_data.target_wallaspect_path
+        keepers[temp_target_wallheight_path] = tiled_city_data.target_wallheight_path
+        keepers[temp_target_wallaspect_path] = tiled_city_data.target_wallaspect_path
 
     elif method == 'skyview_factor':
-        create_folder(city_data.target_intermediate_tile_data_path)
+        create_folder(tiled_city_data.target_intermediate_tile_data_path)
 
-        temp_svfs_file_no_extension = os.path.join(tmpdirname, Path(city_data.target_svfszip_path).stem)
+        temp_svfs_file_no_extension = os.path.join(tmpdirname, Path(tiled_city_data.target_svfszip_path).stem)
         skview_factor_plugin_output_default_filename = FILENAME_SVFS_ZIP
         temp_svfs_file_with_extension = os.path.join(tmpdirname, skview_factor_plugin_output_default_filename)
         input_params = {
-            'INPUT_DSM': city_data.target_dsm_path,
-            'INPUT_CDSM': city_data.target_tree_canopy_path,
+            'INPUT_DSM': tiled_city_data.target_dsm_path,
+            'INPUT_CDSM': tiled_city_data.target_tree_canopy_path,
             'TRANS_VEG': 3,
             'INPUT_TDSM': None,
             'INPUT_THEIGHT': 25,
@@ -130,33 +131,33 @@ def _prepare_method_execution(method, city_data, tmpdirname, met_filename=None, 
             'OUTPUT_FILE': temp_svfs_file_no_extension
         }
         umep_method_title = 'umep:Urban Geometry: Sky View Factor'
-        keepers[temp_svfs_file_with_extension] = city_data.target_svfszip_path
+        keepers[temp_svfs_file_with_extension] = tiled_city_data.target_svfszip_path
     else:
-        target_met_file_path = os.path.join(city_data.target_met_filenames_path, met_filename)
-        temp_met_folder = os.path.join(tmpdirname, Path(met_filename).stem, city_data.folder_name_tile_data)
+        target_met_file_path = os.path.join(tiled_city_data.target_met_files_path, met_filename)
+        temp_met_folder = os.path.join(tmpdirname, Path(met_filename).stem, tiled_city_data.folder_name_tile_data)
         create_folder(temp_met_folder)
-        target_met_folder = os.path.join(city_data.target_tcm_results_path, Path(met_filename).stem, city_data.folder_name_tile_data)
+        target_met_folder = os.path.join(tiled_city_data.target_tcm_results_path, Path(met_filename).stem, tiled_city_data.folder_name_tile_data)
         input_params = {
-            "INPUT_DSM": city_data.target_dsm_path,
-            "INPUT_SVF": city_data.target_svfszip_path,
-            "INPUT_HEIGHT": city_data.target_wallheight_path,
-            "INPUT_ASPECT": city_data.target_wallaspect_path,
-            "INPUT_CDSM": city_data.target_tree_canopy_path,
+            "INPUT_DSM": tiled_city_data.target_dsm_path,
+            "INPUT_SVF": tiled_city_data.target_svfszip_path,
+            "INPUT_HEIGHT": tiled_city_data.target_wallheight_path,
+            "INPUT_ASPECT": tiled_city_data.target_wallaspect_path,
+            "INPUT_CDSM": tiled_city_data.target_tree_canopy_path,
             "TRANS_VEG": 3,
-            "LEAF_START": city_data.leaf_start,
-            "LEAF_END": city_data.leaf_end,
-            "CONIFER_TREES": city_data.conifer_trees,
+            "LEAF_START": tiled_city_data.leaf_start,
+            "LEAF_END": tiled_city_data.leaf_end,
+            "CONIFER_TREES": tiled_city_data.conifer_trees,
             "INPUT_TDSM": None,
             "INPUT_THEIGHT": 25,
-            "INPUT_LC": city_data.target_land_cover_path,
+            "INPUT_LC": tiled_city_data.target_land_cover_path,
             "USE_LC_BUILD": False,
-            "INPUT_DEM": city_data.target_dem_path,
+            "INPUT_DEM": tiled_city_data.target_dem_path,
             "SAVE_BUILD": False,
             "INPUT_ANISO": "",
-            "ALBEDO_WALLS": city_data.albedo_walls,
-            "ALBEDO_GROUND": city_data.albedo_ground,
-            "EMIS_WALLS": city_data.emis_walls,
-            "EMIS_GROUND": city_data.emis_ground,
+            "ALBEDO_WALLS": tiled_city_data.albedo_walls,
+            "ALBEDO_GROUND": tiled_city_data.albedo_ground,
+            "EMIS_WALLS": tiled_city_data.emis_walls,
+            "EMIS_GROUND": tiled_city_data.emis_ground,
             "ABS_S": 0.7,
             "ABS_L": 0.95,
             "POSTURE": 0,
@@ -173,12 +174,12 @@ def _prepare_method_execution(method, city_data, tmpdirname, met_filename=None, 
             "HEIGHT": 180,
             "SEX": 0,
             "SENSOR_HEIGHT": 10,
-            "OUTPUT_TMRT": city_data.output_tmrt,
+            "OUTPUT_TMRT": tiled_city_data.output_tmrt,
             "OUTPUT_KDOWN": False,
             "OUTPUT_KUP": False,
             "OUTPUT_LDOWN": False,
             "OUTPUT_LUP": False,
-            "OUTPUT_SH": city_data.output_sh,
+            "OUTPUT_SH": tiled_city_data.output_sh,
             "OUTPUT_TREEPLANTER": False,
             "OUTPUT_DIR": temp_met_folder
         }

@@ -70,7 +70,8 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
 
     # Retrieve CIF data
     if custom_primary_filenames:
-        tile_unique_values = existing_tiles_metrics[['tile_name', 'boundary', 'avg_res', 'source_crs']].drop_duplicates()
+        tile_unique_values = existing_tiles_metrics[['tile_name', 'source_tile_boundary', 'target_tile_boundary',
+                                                     'avg_res', 'source_crs']].drop_duplicates()
         number_of_tiles = len(tile_unique_values.tile_name)
 
         # TODO  Assume customer files are always in UTM
@@ -81,12 +82,14 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
         print(f'\nProcessing over {len(tile_unique_values)} existing tiles..')
         for index, tile_metrics in tile_unique_values.iterrows():
             tile_folder_name = tile_metrics['tile_name']
-            tile_boundary = tile_metrics['boundary']
+            source_tile_boundary = tile_metrics['source_tile_boundary']
+            target_tile_boundary = tile_metrics['target_tile_boundary']
             tile_resolution = tile_metrics['avg_res']
 
             proc_array = _construct_tile_proc_array(task_method, source_base_path, target_base_path,
                                                     city_folder_name, tile_folder_name, cif_primary_features,
-                                                    ctcm_intermediate_features, tile_boundary, utm_crs, tile_resolution,
+                                                    ctcm_intermediate_features, source_tile_boundary, target_tile_boundary,
+                                                    utm_crs, tile_resolution,
                                                     utc_offset)
 
             write_log_message(f'Staging: {proc_array}', __file__, logger)
@@ -103,15 +106,15 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
         print(f'\nCreating data for {fishnet.geometry.size} new tiles..')
         for tile_index, cell in fishnet.iterrows():
             cell_bounds = cell.geometry.bounds
-            tile_boundary = str(shapely.box(cell_bounds[0], cell_bounds[1], cell_bounds[2], cell_bounds[3]))
+            source_tile_boundary = str(shapely.box(cell_bounds[0], cell_bounds[1], cell_bounds[2], cell_bounds[3]))
 
             tile_id = str(tile_index + 1).zfill(3)
             tile_folder_name = f'tile_{tile_id}'
 
             proc_array = _construct_tile_proc_array(task_method, source_base_path, target_base_path,
                                                     city_folder_name, tile_folder_name, cif_primary_features,
-                                                    ctcm_intermediate_features, tile_boundary, utm_crs, None,
-                                                    utc_offset)
+                                                    ctcm_intermediate_features, source_tile_boundary, None,
+                                                    utm_crs, None, utc_offset)
 
             write_log_message(f'Staging: {proc_array}', __file__, logger)
 
@@ -156,7 +159,7 @@ def _transfer_custom_met_files(non_tiled_city_data):
 
 def _construct_tile_proc_array(task_method, source_base_path, target_base_path, city_folder_name,
                                tile_folder_name, cif_primary_features, ctcm_intermediate_features,
-                               tile_boundary, crs, tile_resolution, utc_offset):
+                               source_tile_boundary, target_tile_boundary, crs, tile_resolution, utc_offset):
     if cif_primary_features:
         cif_features = ','.join(cif_primary_features)
     else:
@@ -175,7 +178,8 @@ def _construct_tile_proc_array(task_method, source_base_path, target_base_path, 
                   f'--tile_folder_name={tile_folder_name}',
                   f'--cif_primary_features={cif_features}',
                   f'--ctcm_intermediate_features={ctcm_features}',
-                  f'--tile_boundary={tile_boundary}',
+                  f'--source_tile_boundary={source_tile_boundary}',
+                  f'--target_tile_boundary={target_tile_boundary}',
                   f'--crs={crs}',
                   f'--tile_resolution={tile_resolution}',
                   f'--utc_offset={utc_offset}'

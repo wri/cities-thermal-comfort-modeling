@@ -277,10 +277,10 @@ def write_tile_grid(tile_grid, source_crs, target_qgis_viewer_path):
         else:
             modified_tile_grid = tile_grid
     elif isinstance(tile_grid, pd.DataFrame):
-        modified_tile_grid = pd.DataFrame(columns=['id', 'geometry'])
+        modified_tile_grid = gpd.GeoDataFrame(columns=['id', 'geometry'], crs=source_crs)
         for index, value in tile_grid.iterrows():
             tile_id = value['tile_name']
-            geom = value['boundary']
+            geom = value['target_tile_boundary']
             poly = wkt.loads(str(geom))
             modified_tile_grid.loc[len(modified_tile_grid)] = [tile_id, poly]
     else:

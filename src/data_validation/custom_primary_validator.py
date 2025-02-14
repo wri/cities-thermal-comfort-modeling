@@ -60,7 +60,7 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
         msg = f"Inconsistent raster resolutions found between files in these tiles: {inconsistent_tiles}"
         invalids.append((msg, True))
 
-    tile_bounds_counts = existing_tiles_metrics.groupby('tile_name')['boundary'].nunique().reset_index(name='unique_boundary_count')
+    tile_bounds_counts = existing_tiles_metrics.groupby('tile_name')['source_tile_boundary'].nunique().reset_index(name='unique_boundary_count')
     multiple_boundaries = tile_bounds_counts[tile_bounds_counts['unique_boundary_count'] > 1]
     if multiple_boundaries.shape[0] > 0:
         inconsistent_tiles = ', '.join(multiple_boundaries['tile_name'])
@@ -162,6 +162,14 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
                 msg = (f"Folder {tile_folder_name} and possibly other folders has forbidden no_data='nan' "
                        f"in file(s) ({files_with_nan_str}).")
                 invalids.append((msg, True))
+
+            if full_metrics_df['band_min'].isnull().any():
+                files_with_band_nan = full_metrics_df.loc[full_metrics_df['band_min'].isnull(), 'filename'].tolist()
+                files_with_band_nan_str = ','.join(map(str,files_with_band_nan))
+                msg = (f"Folder {tile_folder_name} and possibly other folders has band values ='nan' "
+                       f"in file(s) ({files_with_band_nan_str}). This setting will produce invalid results for TCM.")
+                invalids.append((msg, False))
+
 
             if 'lulc' in custom_primary_features:
                 lulc_metrics = full_metrics_df.loc[full_metrics_df['filename'] == tiled_city_data.lulc_tif_filename]

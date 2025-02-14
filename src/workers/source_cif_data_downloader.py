@@ -25,7 +25,7 @@ MINIMUM_QUERY_WAIT_SEC = 10
 MAXIMUM_QUERY_WAIT_SEC = 30
 
 def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile_id, cif_primary_features,
-                 tile_boundary, crs, tile_resolution):
+                 target_tile_boundary, crs, tile_resolution):
     start_time = datetime.now()
 
     tiled_city_data = CityData(folder_name_city_data, tile_id, source_base_path, target_base_path)
@@ -35,7 +35,7 @@ def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile
 
     tile_cif_data_path = tiled_city_data.target_primary_tile_data_path
 
-    d = {'geometry': [shapely.wkt.loads(tile_boundary)]}
+    d = {'geometry': [shapely.wkt.loads(target_tile_boundary)]}
     tiled_aoi_gdf = gp.GeoDataFrame(d, crs=crs)
 
     feature_list = cif_primary_features.split(',')

@@ -13,7 +13,8 @@ from src.workers.worker_tools import create_folder, unpack_quoted_value, save_ti
 PROCESSING_PAUSE_TIME_SEC = 10
 
 def process_tile(task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
-                 cif_primary_features, ctcm_intermediate_features, tile_boundary, crs, tile_resolution, utc_offset):
+                 cif_primary_features, ctcm_intermediate_features, source_tile_boundary, target_tile_boundary,
+                 crs, tile_resolution, utc_offset):
     tiled_city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
     cif_primary_features = unpack_quoted_value(cif_primary_features)
     ctcm_intermediate_features = unpack_quoted_value(ctcm_intermediate_features)
@@ -22,10 +23,10 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
     met_filenames = tiled_city_data.met_filenames
 
     def _execute_retrieve_cif_data(source_path, target_path, folder_city, folder_tile, cif_features,
-                                   boundary, crs, resolution):
+                                   target_boundary, crs, resolution):
         from source_cif_data_downloader import get_cif_data
         cif_stdout = \
-            get_cif_data(source_path, target_path, folder_city, folder_tile, cif_features, boundary, crs, resolution)
+            get_cif_data(source_path, target_path, folder_city, folder_tile, cif_features, target_boundary, crs, resolution)
         return cif_stdout
 
     def _execute_umep_solweig_only_plugin(step_index, folder_city, folder_tile, source_path, target_path, met_names, offset_utc):
@@ -69,14 +70,14 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
 
     # transfer custom files
     if tiled_city_data.custom_primary_feature_list:
-        _transfer_custom_files(tiled_city_data, tiled_city_data.custom_primary_feature_list)
+        _transfer_custom_files(tiled_city_data, tiled_city_data.custom_primary_feature_list, source_tile_boundary, target_tile_boundary)
     if tiled_city_data.custom_intermediate_list:
-        _transfer_custom_files(tiled_city_data, tiled_city_data.custom_intermediate_list)
+        _transfer_custom_files(tiled_city_data, tiled_city_data.custom_intermediate_list, None, None)
 
     # get cif data
     if cif_primary_features is not None:
         return_val = _execute_retrieve_cif_data(source_base_path, target_base_path, city_folder_name,
-                                                tile_folder_name, cif_primary_features, tile_boundary, crs,
+                                                tile_folder_name, cif_primary_features, target_tile_boundary, crs,
                                                 tile_resolution)
         return_stdouts.append(return_val)
         time.sleep(PROCESSING_PAUSE_TIME_SEC)
@@ -109,7 +110,7 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
     return result_json
 
 
-def _transfer_custom_files(tiled_city_data, custom_feature_list):
+def _transfer_custom_files(tiled_city_data, custom_feature_list, source_tile_boundary, target_tile_boundary):
     source_paths = []
     for feature in custom_feature_list:
         if feature == 'dem':
@@ -130,7 +131,67 @@ def _transfer_custom_files(tiled_city_data, custom_feature_list):
     for file_paths in source_paths:
         to_tile_dir = Path(file_paths[1]).parent
         create_folder(to_tile_dir)
+        # if source_tile_boundary == target_tile_boundary:
         shutil.copyfile(file_paths[0], file_paths[1])
+        # else:
+        #     _write_translate_file(file_paths[0], file_paths[1], source_tile_boundary, target_tile_boundary)
+
+def _write_translate_file(from_file, to_file, source_tile_boundary, target_tile_boundary):
+    import rasterio
+    import shapely
+    from rasterio.transform import Affine
+
+    # Open the GeoTIFF file
+    with rasterio.open(from_file) as src:
+        data = src.read()
+        transform = src.transform
+        crs = src.crs
+
+    source_minx, source_miny, source_maxx, source_maxy = shapely.from_wkt(source_tile_boundary).bounds
+    target_minx, target_miny, target_maxx, target_maxy = shapely.from_wkt(target_tile_boundary).bounds
+
+    minx_offset = target_minx - source_minx
+    miny_offset = target_miny - source_miny
+
+    # Create a translation matrix
+    translation = Affine.translation(minx_offset, miny_offset)
+
+    # Apply the translation to the original transform
+    new_transform = transform * translation
+
+    # Write the translated GeoTIFF
+    with rasterio.open(
+            to_file,
+            'w',
+            driver='GTiff',
+            height=data.shape[1],
+            width=data.shape[2],
+            count=data.shape[0],
+            dtype=data.dtype,
+            crs=crs,
+            transform=new_transform
+    ) as dst:
+        dst.write(data)
+
+        # # Open the source raster
+        # with rasterio.open('input_raster.tif') as src:
+        #     # Get the original transform
+        #     original_transform = src.transform
+        #
+        #     # Create the translation transform
+        #     translation_transform = original_transform * Affine.translation(translate_x, translate_y)
+        #
+        #     # Update the metadata with the new transform
+        #     metadata = src.meta.copy()
+        #     metadata.update({"transform": translation_transform})
+        #
+        #     # Read the data from the source raster
+        #     data = src.read()
+        #
+        #     # Write the translated raster to a new file
+        #     with rasterio.open('translated_raster.tif', 'w', **metadata) as dst:
+        #         dst.write(data)
+
 
 
 def ensure_y_dimension_direction(city_data):
@@ -164,7 +225,8 @@ if __name__ == "__main__":
     parser.add_argument('--tile_folder_name', metavar='str', required=True, help='name of tile folder')
     parser.add_argument('--cif_primary_features', metavar='str', required=True, help='coma-delimited list of cif features to retrieve')
     parser.add_argument('--ctcm_intermediate_features', metavar='str', required=True, help='coma-delimited list of intermediates to be created')
-    parser.add_argument('--tile_boundary', metavar='str', required=True, help='geographic boundary of tile')
+    parser.add_argument('--source_tile_boundary', metavar='str', required=True, help='geographic boundary of tile')
+    parser.add_argument('--target_tile_boundary', metavar='str', required=True, help='geographic boundary of tile')
     parser.add_argument('--crs', metavar='str', required=True, help='coordinate reference system')
     parser.add_argument('--tile_resolution', metavar='str', required=True, help='resolution of tile in m.')
     parser.add_argument('--utc_offset', metavar='str', required=True, help='hour offset from utc')
@@ -174,6 +236,7 @@ if __name__ == "__main__":
     return_stdout =process_tile(args.task_method, args.source_base_path, args.target_base_path,
                                 args.city_folder_name, args.tile_folder_name,
                                 args.cif_primary_features, args.ctcm_intermediate_features,
-                                args.tile_boundary, args.crs, args.tile_resolution, args.utc_offset)
+                                args.source_tile_boundary, args.target_tile_boundary,
+                                args.crs, args.tile_resolution, args.utc_offset)
 
     print(return_stdout)

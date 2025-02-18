@@ -80,7 +80,7 @@ class CityData:
             obj.target_manager_log_path = os.path.join(obj.target_log_path, 'log_worker_manager.log')
             obj.target_model_log_path = os.path.join(obj.target_log_path, 'log_model_execution.log')
 
-            obj.target_qgis_viewer_path = os.path.join(obj.target_city_path, '.qgis_viewer')
+            obj.target_qgis_viewer_path = os.path.join(obj.target_city_path, 'qgis_viewer')
 
             obj.target_intermediate_data_path = os.path.join(obj.target_city_path, FOLDER_NAME_INTERMEDIATE_DATA)
 

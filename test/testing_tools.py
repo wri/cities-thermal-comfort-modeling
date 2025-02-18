@@ -28,7 +28,7 @@ def run_main(target_base_path:str, source_city_folder_name:str, processing_optio
 
 
 def file_count_in_vrt_directory(non_tiled_city_data):
-    vrt_dir = os.path.join(non_tiled_city_data.target_qgis_viewer_path, 'vrt_files')
+    vrt_dir = non_tiled_city_data.target_qgis_data_path
     lst = os.listdir(vrt_dir)
     number_files = len(lst)
     return number_files

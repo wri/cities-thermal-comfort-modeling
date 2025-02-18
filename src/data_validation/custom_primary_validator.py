@@ -44,12 +44,12 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
         tile_resolution_xy_values = existing_tiles_metrics[['resolution_x', 'resolution_y']]
         for idx, tile_res_xy in tile_resolution_xy_values.iterrows():
             if tile_res_xy['resolution_x'] != tile_res_xy['resolution_y']:
-                msg = f'Raster resolution must match in x and y directions in custom primary raster files.'
+                msg = f'Raster resolution must match in x and y directions in custom primary raster files, e.g. both have value of 1.'
                 invalids.append((msg, True))
                 break
         for idx, tile_res_xy in tile_resolution_xy_values.iterrows():
             if not (tile_res_xy['resolution_x'].is_integer() and tile_res_xy['resolution_y'].is_integer()):
-                msg = f'Raster resolution must be an integer.'
+                msg = f'Raster resolution must be an integer in custom primary raster files.'
                 invalids.append((msg, True))
                 break
 

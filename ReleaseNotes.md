@@ -1,5 +1,18 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/02/18
+1. Moved the QGIS viewer to the top level of the city folder and renamed to "qgis_viewer.qgs".
+2. Renamed the ".qgis_viewer" folder to ".qgis_data".
+3. Eliminated the "results_data" folder and moved the "tcm_results_umep" folder to the top level.
+4. Modified the VRT files so they are now portable to other locations.
+5. Added the new "Sharing the City Folder" section to the README.md file including stating that the city folder must be compressed using 7-Zip in order to preserve all folders. 
+
+## 2025/02/09
+1. Broadly updated to utilize the new CIF get_data interface with GeoExtent instead of tuple[float] parameter for specifying bbox selection area
+2. Change in behavior for custom primary files, as result of updated CIF bounding-box handling:
+      1. Raster resolution must match in x and y directions in custom primary raster files, e.g. both have value of 1.
+      2. Raster resolution must be an integer for custom primary raster files.
+
 ## 2025/01/16
 1. Updated ERA5 retrieval and validation
 2. QGIS viewer

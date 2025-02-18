@@ -206,7 +206,7 @@ data
 cif_*.tif
 viewer.*
 met_era5_hottest_days.txt
-.qgis_viewer
+qgis_viewer
 *.qgs~
 *_attachments.zip
 *.html

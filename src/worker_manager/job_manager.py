@@ -76,7 +76,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
         # TODO  Assume customer files are always in UTM
         utm_crs = tile_unique_values['source_crs'].values[0]
 
-        write_tile_grid(tile_unique_values, utm_crs, non_tiled_city_data.target_qgis_viewer_path)
+        write_tile_grid(tile_unique_values, utm_crs, non_tiled_city_data.target_qgis_data_path)
 
         print(f'\nProcessing over {len(tile_unique_values)} existing tiles..')
         for index, tile_metrics in tile_unique_values.iterrows():
@@ -98,7 +98,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
         number_of_tiles = fishnet.shape[0]
         utm_crs = fishnet.crs.srs
 
-        write_tile_grid(fishnet, utm_crs, non_tiled_city_data.target_qgis_viewer_path)
+        write_tile_grid(fishnet, utm_crs, non_tiled_city_data.target_qgis_data_path)
 
         print(f'\nCreating data for {fishnet.geometry.size} new tiles..')
         for tile_index, cell in fishnet.iterrows():

@@ -12,7 +12,7 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
    1. Open Windows File Explorer and go to the C:\CTCM_data_setup folder
    1. Copy the ZZZ_template_city folder and rename to the country and city for your dataset, such as "USA_WashingtonDC". (This is **"your city folder"** in below instructions.)
    1. If you will be processing your own "custom" source TIFF files, then follow below steps, skip this step if you instead want the system to automatically retrieve the base TIFF files.
-      1. Copy TIFF files for your city into subfolders under .\primary_data\raster_files underneath your city folder.
+      1. Copy TIFF files for your city into subfoqlders under .\primary_data\raster_files underneath your city folder.
          * **Note**: You can provide up to four source files for DSM, DEM, LULC, and TreeCanopy, but you can also have a partial set of these files.
          1. The subfolders must be named 'tile_001', 'tile_002', and so on.
             1. See the ZAF_Capetown_small_tile\primary_data\raster_files folder for an example setup.
@@ -62,7 +62,7 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
    1. Results of your run are written to the C:\CTCM_outcome folder under your city folder specified in the batch script with a sub-folder for the scenario.
    1. To see a report of success/failure, see the html files in the .logs folder for the time that you started your run. 
    1. For details about any failures, see the log file(s) in the .logs folder.
-   1. The system also generates a QGIS workfile named 'viewer.qgs' in the qgis_viewer folder as is an excellent means for verifying the outcome.
+   1. The system also generates a QGIS workfile named 'qgis_viewer.qgs' and is an excellent means for verifying and examining the outcome.
       * **Note** The current version of the workfile requires two steps to view your data:
         1. After opening the file in QGIS, it will likely give the warning that several files are unavailable. Click on the "Remove Unavailable Layers" and OK to continue.
         2. Next, right click on one of the layers and select "Zoom to Layer(s)" option. Your data should now be viewable.
@@ -70,51 +70,56 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
         1. The viewer only supports results for up to two meteorological files in the tcm_tmrt and tcm_shadow groups.
         2. Each meteorological group only supports up to five hourly layers
    
+### Sharing the City Folder
+   1. Zip the city folder using the 7-Zip compression tool. (Other compression tools may not preserver all folders and files.)
+   2. Copy the zipped file to S3 or other locations.
+   3. Note: Do not uncompress the city folder into a directory that is deeply nested in the directory tree, since the VRT files may not properly function.
 
 
 ## Installation Instructions
 
 ### Setup
-1. Create environment variable named PYTHONPATH and set to the location of the source code.
-2. Download and install Miniconda3 for all users
-3. Add install location to system path under environment variables, such as "C:\ProgramData\miniconda3\Scripts"
-3. Install QGIS (v3.34.11) standalone app and add "UMEP for Processing" plugin.
+1. Install the 7-ZIP compression tool
+2. Create environment variable named PYTHONPATH and set to the location of the source code.
+3. Download and install Miniconda3 for all users
+4. Add install location to system path under environment variables, such as "C:\ProgramData\miniconda3\Scripts"
+5. Install QGIS (v3.34.11) standalone app and add "UMEP for Processing" plugin.
    * **Note**: The plugin is periodically updated and it's a good idea to stay current with the latest, so periodically check in QGIS plugins for updates.
-4. Install PyCharm and create batch script with name "pycharm" pointing to PyCharm.bat such as "C:\Program Files\JetBrains\PyCharm Community Edition 2024.2.1\bin\pycharm.bat"
-5. Determine paths to both QGIS and QGIS plugins and modify existing config.ini file as follows:
+6. Install PyCharm and create batch script with name "pycharm" pointing to PyCharm.bat such as "C:\Program Files\JetBrains\PyCharm Community Edition 2024.2.1\bin\pycharm.bat"
+7. Determine paths to both QGIS and QGIS plugins and modify existing config.ini file as follows:
    * Open QGIS app, enter the following in the python console:
  ~~~
 import sys
 print(sys.path)
  ~~~
    * Parse through the results and determine paths to both QGIS app and QGIS plugins:
-6. Copy the .config_sample.ini file and rename as .config.ini
+8. Copy the .config_sample.ini file and rename as .config.ini
    * Using the paths determined from QGIS python console above, populated the paths in the .config.ini file for qgis_home_path and qgis_plugin_path
-7. Copy the environment_post_processing_sample.bat file and rename as environment_post_processing_local.bat
+9. Copy the environment_post_processing_sample.bat file and rename as environment_post_processing_local.bat
    * Substitute <qgis_plugin_path> with the path determined above.
-8. Use Conda with the environment.yml file to configure the Conda environment.
+10. Use Conda with the environment.yml file to configure the Conda environment.
 ~~~
 'conda env create -f environment.yml`
 ~~~
    * Activate the cities-thermal conda environment
    * Execute the environment_post_processing.bat file
    * For later runs, you can simply execute the setup_conda.bat file
-9. Add credentials for Google Earth Engine and ERA5
+11. Add credentials for Google Earth Engine and ERA5
    * Install <https://cloud.google.com/sdk/docs/install>
    * If you want to use the ERA5 layer, you need to install the  [Climate Data Store (CDS) Application Program Interface (API)](https://cds.climate.copernicus.eu/how-to-api)
-10. Create the C:\CTCM_data_setup folder
+12. Create the C:\CTCM_data_setup folder
    * Copy the ZAF_Capetown_small_tile and ZZZ_template_city folders from the codebase into C:\CTCM_data_setup folder.
    * In these folders, modify the two "._run_CTCM_.." batch files to include the path to the main.py module if it does not already point to the correct local repository on the machine.
-11. Create a batch file for navigating to the C:\CTCM_data_setup folder and starting the conda environment.
+13. Create a batch file for navigating to the C:\CTCM_data_setup folder and starting the conda environment.
    * Create the "gotcm.bat" file in some directory such as C:\Users\Administrator\Documents\Batches with following content:
      ~~~
      cd C:\CTCM_data_setup
      conda activate cities-thermal
      ~~~
    * Add location of the batch file to the system path
-12. Confirm processing by running the test_processing_runs.py tests in the local repository code
+14. Confirm processing by running the test_processing_runs.py tests in the local repository code
     * **Note**: tests may show exceptions even though the tests pass
-13. Confirm processing using the C:\CTCM_data_setup folder
+15. Confirm processing using the C:\CTCM_data_setup folder
    * in windows command prompt, execute "gotcm" to go to the processing folder and start the conda environment.
    * Execute the _sample_run_CTM_processing_pre_check.bat batch script and ensure that no errors are report.
    * Execute the _sample_run_CTM_processing and then confirm:

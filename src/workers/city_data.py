@@ -1,6 +1,6 @@
 import os
 from src.constants import FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_INTERMEDIATE_DATA, FOLDER_NAME_PRIMARY_MET_FILES, \
-    FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_RESULTS, FOLDER_NAME_UMEP_TCM_RESULTS
+    FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_UMEP_TCM_RESULTS
 from src.workers.config_processor import *
 
 
@@ -80,12 +80,11 @@ class CityData:
             obj.target_manager_log_path = os.path.join(obj.target_log_path, 'log_worker_manager.log')
             obj.target_model_log_path = os.path.join(obj.target_log_path, 'log_model_execution.log')
 
-            obj.target_qgis_viewer_path = os.path.join(obj.target_city_path, 'qgis_viewer')
+            obj.target_qgis_data_path = os.path.join(obj.target_city_path, '.qgis_data')
 
             obj.target_intermediate_data_path = os.path.join(obj.target_city_path, FOLDER_NAME_INTERMEDIATE_DATA)
 
-            target_path_results_data = str(os.path.join(obj.target_city_path, FOLDER_NAME_RESULTS))
-            obj.target_tcm_results_path = os.path.join(target_path_results_data, FOLDER_NAME_UMEP_TCM_RESULTS)
+            obj.target_tcm_results_path = os.path.join(obj.target_city_path, FOLDER_NAME_UMEP_TCM_RESULTS)
 
             if obj.folder_name_tile_data:
                 obj.target_raster_files_path = os.path.join(obj.target_city_primary_data_path,

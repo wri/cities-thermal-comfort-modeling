@@ -1,0 +1,36 @@
+min/max
+whole raster
+actual
+
+tmrt
+20-80
+user-defined
+discrete
+precision 0
+equal interval 12
+classify
+color ramp: cpt-city: arenda-temperature
+
+
+aspect
+no data value: 0 display as grey
+0-359
+user-defined
+discrete
+equal interval 8
+classify
+color ramp: cpt-city: grass-wave
+
+height
+0-100
+user-defined
+discrete
+equal interval 20
+color ramp: inverted cpt-city: ggr-wood-1
+
+dsm and dem
+hillshade
+   tested but rejected: color ramp: cpt-city: td-dem-print
+
+range 10-120 cum count 0-100 quantile 20 - then classify
+

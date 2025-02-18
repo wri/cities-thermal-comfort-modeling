@@ -1,0 +1,58 @@
+# Description of scenario
+- Scenario:
+  short_title: first scenario
+  version: 1
+  description: Scenario that demonstrates blah.
+  author: author@wri.org
+# Processing Area of Interest used for tile construction and ERA5-data download. If any custom files
+# are specified above, then the system will not construct a new tile grid and will instead use the existing one.
+# If you don't want to subdivide the AOI, specify None for tile_side_meters and tile_buffer_meters.
+- ProcessingAOI:
+  utc_offset: -8
+  min_lon: -122.7037
+  min_lat: 45.51994999999983
+  max_lon: -122.69231170703861
+  max_lat: 45.52327730437852
+  tile_side_meters: None
+  tile_buffer_meters: None
+# Names of meteorological files used by SOLWEIG method in "UMEP for Processing" plugin.
+# Specify custom files or "<download_era5>" method to automatically download ERA5 data into a file named met_era5_hottest_days.txt
+- MetFiles:
+  - filename: met_era5_hottest_days.txt
+# Custom source-files that were independently created and will replace standard files pulled from CIF system.
+# All four file mappings must be specified here. Specify None for filename where custom file is not available for processing.
+# Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif
+# Auto-generated filenames from CIF: cif_dem.tif, cif_dsm_ground_build.tif, cif_tree_canopy.tif, cif_lulc.tif
+- CustomTiffFilenames:
+  dem_tif_filename: dem.tif
+  dsm_tif_filename: dsm.tif
+  lulc_tif_filename: lulc.tif
+  tree_canopy_tif_filename: tree_canopy.tif
+- PreparedIntermediateFilenames:
+  skyview_factor_filename: None
+  wall_aspect_filename: None
+  wall_height_filename: None
+# Configurable attribute values for method processing
+# Valid methods are [download_only, umep_solweig]
+# sampling_local_hours specifies hours for <download_era5> method.
+- MethodAttributes:
+  method: umep_solweig
+  wall_height_aspect:
+    lower_limit_for_wall_height: 3
+  skyview_factor:
+    transmissivity_of_light_through_vegetation: 3
+    trunk_zone_height: 25
+  solweig:
+    seasonal_leaf_coverage:
+      north_temperate_leaf_start: 97
+      north_temperate_leaf_end: 300
+      south_temperate_leaf_start: 283
+      south_temperate_leaf_end: 96
+    conifer_trees: False
+    albedo_walls: 0.2
+    albedo_ground: 0.15
+    emis_walls: 0.9
+    emis_ground: 0.95
+    output_tmrt: True
+    output_sh: True
+    sampling_local_hours: 12,15,18

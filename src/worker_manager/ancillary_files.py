@@ -5,17 +5,16 @@ import pandas as pd
 from pathlib import Path
 from src.constants import DATA_DIR, FILENAME_METHOD_YML_CONFIG, FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD
 from src.worker_manager.reporter import _find_files_with_name
-from src.worker_manager.tools import clean_folder, delete_files_with_extension
+from src.worker_manager.tools import delete_files_with_extension
 from src.workers.worker_tools import create_folder, write_commented_yaml, read_commented_yaml
 
 
 def write_qgis_files(city_data, crs_str):
     from src.worker_manager.reporter import find_files_with_substring_in_name
 
-    target_viewer_folder = city_data.target_qgis_viewer_path
-    target_vrt_folder = str(os.path.join(target_viewer_folder, 'vrt_files'))
-    create_folder(target_vrt_folder)
-    clean_folder(target_vrt_folder)
+    target_city_path = city_data.target_city_path
+    target_qgis_data_folder = city_data.target_qgis_data_path
+    create_folder(target_qgis_data_folder)
 
     # Build VRTs for base layers
     target_folder = city_data.target_city_primary_data_path
@@ -34,7 +33,7 @@ def write_qgis_files(city_data, crs_str):
     target_raster_files += tree_canopy
     lulc = _build_file_dict(target_bucket, 'base','lulc', 0, [lulc_file_name])
     target_raster_files += lulc
-    write_raster_vrt_file_for_folder(target_folder, target_raster_files, target_vrt_folder)
+    _write_raster_vrt_file_for_folder(target_folder, target_raster_files, target_qgis_data_folder)
 
     # Build VRTs for preprocessed results
     preprocessed_files = []
@@ -44,13 +43,13 @@ def write_qgis_files(city_data, crs_str):
         wall_aspect_file_stem = Path(city_data.wall_aspect_filename).stem
         wall_aspect_file_names = find_files_with_substring_in_name(target_preproc_first_tile_folder, wall_aspect_file_stem, '.tif')
         wall_aspect_files = _build_file_dict('preprocessed_data', 'preproc', 'wallaspect', 0, wall_aspect_file_names)
-        write_raster_vrt_file_for_folder(target_preproc_folder, wall_aspect_files, target_vrt_folder)
+        _write_raster_vrt_file_for_folder(target_preproc_folder, wall_aspect_files, target_qgis_data_folder)
         preprocessed_files += wall_aspect_files
 
         wall_height_file_stem = Path(city_data.wall_height_filename).stem
         wall_height_file_names = find_files_with_substring_in_name(target_preproc_first_tile_folder, wall_height_file_stem, '.tif')
         wall_height_files = _build_file_dict('preprocessed_data', 'preproc', 'wallheight', 0, wall_height_file_names)
-        write_raster_vrt_file_for_folder(target_preproc_folder, wall_height_files, target_vrt_folder)
+        _write_raster_vrt_file_for_folder(target_preproc_folder, wall_height_files, target_qgis_data_folder)
         preprocessed_files += wall_height_files
 
 
@@ -70,26 +69,39 @@ def write_qgis_files(city_data, crs_str):
         if os.path.exists(target_tcm_first_tile_folder):
             shadow_file_names = find_files_with_substring_in_name(target_tcm_first_tile_folder, 'Shadow_', '.tif')
             shadow_files = _build_file_dict(met_folder_name, 'tcm', 'shadow', set_id, shadow_file_names)
-            write_raster_vrt_file_for_folder(target_tcm_folder, shadow_files, target_vrt_folder)
+            _write_raster_vrt_file_for_folder(target_tcm_folder, shadow_files, target_qgis_data_folder)
             met_filenames += shadow_files
 
             tmrt_file_names = find_files_with_substring_in_name(target_tcm_first_tile_folder, 'Tmrt_', '.tif')
             tmrt_files = _build_file_dict(met_folder_name, 'tcm', 'tmrt', set_id, tmrt_file_names)
-            write_raster_vrt_file_for_folder(target_tcm_folder, tmrt_files, target_vrt_folder)
+            _write_raster_vrt_file_for_folder(target_tcm_folder, tmrt_files, target_qgis_data_folder)
             met_filenames += tmrt_files
 
             set_id += 1
 
     # write the QGIS viewer file
     vrt_files = target_raster_files + preprocessed_files + met_filenames
-    _modify_and_write_qgis_file(vrt_files, city_data, crs_str, target_viewer_folder)
+    _modify_and_write_qgis_file(vrt_files, city_data, crs_str, target_city_path)
 
     # remove tif.aux.xml files
     delete_files_with_extension(city_data.target_city_path, '.tif.aux.xml')
 
+    _convert_vrts_to_relative_path(target_qgis_data_folder, target_city_path)
 
-def _modify_and_write_qgis_file(vrt_files, city_data, crs_str, target_viewer_folder):
-    source_qgs_file = os.path.join(DATA_DIR, 'support', 'qgis_viewer', 'template_viewer.qgs')
+def _convert_vrts_to_relative_path(target_vrt_folder:str, target_city_path):
+    target_vrt_directory = Path(target_vrt_folder)
+    for file_path in target_vrt_directory.iterdir():
+        if file_path.is_file() and Path(file_path).suffix == '.vrt':
+            with open(file_path, "r") as file:
+                data = file.read()
+                data = data.replace('relativeToVRT="0"', 'relativeToVRT="1"')
+                data = data.replace(target_city_path, '..')
+            with open(file_path, 'w') as file:
+                file.write(data)
+
+
+def _modify_and_write_qgis_file(vrt_files, city_data, crs_str, target_city_path):
+    source_qgs_file = os.path.join(DATA_DIR, 'support', 'template_viewer.qgs')
 
     with open(source_qgs_file, "r") as file:
         data = file.read()
@@ -131,7 +143,7 @@ def _modify_and_write_qgis_file(vrt_files, city_data, crs_str, target_viewer_fol
 
         data = data.replace(source_line, target_line)
 
-    target_qgs_file = os.path.join(target_viewer_folder, 'viewer.qgs')
+    target_qgs_file = os.path.join(target_city_path, 'qgis_viewer.qgs')
     with open(target_qgs_file, 'w') as file:
         file.write(data)
 
@@ -183,7 +195,7 @@ def _build_file_dict(target_folder_name, group_name, type_name, set_id, file_nam
     return files
 
 
-def write_raster_vrt_file_for_folder(source_folder, files, target_viewer_folder):
+def _write_raster_vrt_file_for_folder(source_folder, files, target_viewer_folder):
     # get list of files in tiles
     for file in files:
         output_vrt_file = file.get('vrt_name')
@@ -197,10 +209,12 @@ def write_raster_vrt_file_for_folder(source_folder, files, target_viewer_folder)
 
 
 def _write_raster_vrt(output_file_path:str, raster_files):
-    import subprocess
-    command = ['gdalbuildvrt', '-r', 'nearest', output_file_path] + raster_files
+    from osgeo import gdal
+
+    # Create the VRT
+    vrt_options = gdal.BuildVRTOptions(resampleAlg='nearest', addAlpha=True)
     try:
-        vrt_run = subprocess.run(command, check=True, capture_output=True, text=True)
+        vrt_run = gdal.BuildVRT(output_file_path, raster_files, options=vrt_options)
     except Exception as e_msg:
         raise f'VRT creation failed for {raster_files} due to {e_msg}.'
 
@@ -261,7 +275,7 @@ def _update_custom_yml_parameters(non_tiled_city_data, updated_aoi):
     return list_doc
 
 
-def write_tile_grid(tile_grid, source_crs, target_qgis_viewer_path):
+def write_tile_grid(tile_grid, source_crs, target_qgis_data_path):
     from shapely import wkt
     import geopandas as gpd
 
@@ -289,7 +303,7 @@ def write_tile_grid(tile_grid, source_crs, target_qgis_viewer_path):
     # projected_gdf = gpd.GeoDataFrame(modified_tile_grid, crs=source_crs)
 
     target_file_name = 'tile_grid.geojson'
-    target_path = target_qgis_viewer_path
+    target_path = target_qgis_data_path
     create_folder(target_path)
     file_path = os.path.join(target_path, target_file_name)
 

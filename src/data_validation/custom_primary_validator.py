@@ -159,9 +159,9 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
             if full_metrics_df['nodata'].isnull().any():
                 files_with_nan = full_metrics_df.loc[full_metrics_df['nodata'].isnull(), 'filename'].tolist()
                 files_with_nan_str = ','.join(map(str,files_with_nan))
-                msg = (f"Folder {tile_folder_name} and possibly other folders has forbidden no_data='nan' "
-                       f"in file(s) ({files_with_nan_str}).")
-                invalids.append((msg, True))
+                msg = (f"Tile {tile_folder_name} has no_data='nan' in file(s) ({files_with_nan_str}). This can lead "
+                       f"to unexpected or invalid results.")
+                invalids.append((msg, False))
 
             if 'lulc' in custom_primary_features:
                 lulc_metrics = full_metrics_df.loc[full_metrics_df['filename'] == tiled_city_data.lulc_tif_filename]

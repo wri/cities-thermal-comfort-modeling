@@ -48,19 +48,23 @@ def _invalid_has_fatal_error(detailed_invalids):
     return has_fatal_error
 
 
-def _print_invalids(invalids):
-    i=1
-    for invalid in invalids:
-        print(f'{i}) {invalid[0]}')
-        i +=1
-
-
 def print_invalids(invalids):
     head_msg = ' vvvvvvvvvvvv Invalid configurations vvvvvvvvvvvv '
     tail_msg = ' ^^^^^^^^^^^^ Invalid configurations ^^^^^^^^^^^^ '
 
     print('\n')
     print(head_msg)
-    _print_invalids(invalids)
+    _print_invalid_statements(invalids)
     print(tail_msg)
     print('\n')
+
+
+def _print_invalid_statements(invalids):
+    i=1
+    for invalid in invalids:
+        is_failure = invalid[1]
+        if is_failure:
+            print(f'({i}) ERROR: {invalid[0]}')
+        else:
+            print(f'({i}) WARNING: {invalid[0]}')
+        i +=1

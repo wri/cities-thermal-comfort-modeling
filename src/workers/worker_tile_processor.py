@@ -116,6 +116,13 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
     return result_json
 
 def _trim_mrt_buffer(target_tcm_results_path, tile_folder_name, met_filenames, tile_boundary, buffer_meters):
+    """
+    See https://gfw.atlassian.net/browse/CDB-182 for logic behind this function.
+    Briefly, the concept is that the code buffers out some hundreds of meters from a tiled area and then clips back to
+    the given tiled area. The buffering provides the opportunity for a shadow from a remote building to extend back
+    into the tiled area. The technique basically allows the broader context to affect the local space of the given tile.
+    TODO investigate variable buffering to further ensure proper inclusion of shadows and improved performance https://gfw.atlassian.net/browse/CDB-206
+    """
     from shapely import wkt
     import rasterio
     from rasterio.mask import mask

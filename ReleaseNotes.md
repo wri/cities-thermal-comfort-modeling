@@ -2,6 +2,7 @@
 
 ## 2025/02/25
 1. Buffered areas are now automatically clipped from the MRT results per https://gfw.atlassian.net/browse/CDB-182
+2. Primary files and intermediate files are not impacted by this change.
 
 ## 2025/02/18
 1. Moved the QGIS viewer to the top level of the city folder and renamed to "qgis_viewer.qgs".

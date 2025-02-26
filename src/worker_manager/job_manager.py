@@ -76,7 +76,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
         # TODO  Assume customer files are always in UTM
         utm_crs = tile_unique_values['source_crs'].values[0]
 
-        write_tile_grid(tile_unique_values, utm_crs, non_tiled_city_data.target_qgis_data_path)
+        write_tile_grid(tile_unique_values, utm_crs, non_tiled_city_data.target_qgis_data_path, 'tile_grid')
 
         print(f'\nProcessing over {len(tile_unique_values)} existing tiles..')
         for index, tile_metrics in tile_unique_values.iterrows():
@@ -94,14 +94,16 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
             delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
             futures.append(delay_tile_array)
     else:
-        fishnet = get_aoi_fishnet(aoi_boundary_polygon, tile_side_meters, tile_buffer_meters, config_crs)
-        number_of_tiles = fishnet.shape[0]
-        utm_crs = fishnet.crs.srs
+        tile_grid, unbuffered_tile_grid = get_aoi_fishnet(aoi_boundary_polygon, tile_side_meters, tile_buffer_meters, config_crs)
+        number_of_tiles = tile_grid.shape[0]
+        utm_crs = tile_grid.crs.srs
 
-        write_tile_grid(fishnet, utm_crs, non_tiled_city_data.target_qgis_data_path)
+        write_tile_grid(tile_grid, utm_crs, non_tiled_city_data.target_qgis_data_path, 'tile_grid')
+        if unbuffered_tile_grid is not None:
+            write_tile_grid(unbuffered_tile_grid, utm_crs, non_tiled_city_data.target_qgis_data_path, 'unbuffered_tile_grid')
 
-        print(f'\nCreating data for {fishnet.geometry.size} new tiles..')
-        for tile_index, cell in fishnet.iterrows():
+        print(f'\nCreating data for {tile_grid.geometry.size} new tiles..')
+        for tile_index, cell in tile_grid.iterrows():
             cell_bounds = cell.geometry.bounds
             tile_boundary = str(shapely.box(cell_bounds[0], cell_bounds[1], cell_bounds[2], cell_bounds[3]))
 

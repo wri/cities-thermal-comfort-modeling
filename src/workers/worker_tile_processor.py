@@ -8,7 +8,7 @@ from pathlib import Path
 from city_metrix.layers.layer_tools import standardize_y_dimension_direction
 from src.constants import FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSING_METHODS
 from src.workers.city_data import CityData
-from src.workers.worker_tools import create_folder, unpack_quoted_value, save_tiff_file
+from src.workers.worker_tools import create_folder, unpack_quoted_value, save_tiff_file, remove_file
 
 PROCESSING_PAUSE_TIME_SEC = 10
 
@@ -16,6 +16,8 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
                  cif_primary_features, ctcm_intermediate_features, tile_boundary, crs, tile_resolution, utc_offset):
     tiled_city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
     cif_primary_features = unpack_quoted_value(cif_primary_features)
+    custom_primary_features = tiled_city_data.custom_primary_feature_list
+    target_tcm_results_path = tiled_city_data.target_tcm_results_path
     ctcm_intermediate_features = unpack_quoted_value(ctcm_intermediate_features)
     tile_resolution = unpack_quoted_value(tile_resolution)
     utc_offset = unpack_quoted_value(utc_offset)
@@ -82,7 +84,7 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
         time.sleep(PROCESSING_PAUSE_TIME_SEC)
 
     if task_method != 'download_only':
-        # ensure all source TIFF files have negative NS y direction
+        # ensure all source TIFF files have negative NS y-direction
         ensure_y_dimension_direction(tiled_city_data)
 
         if task_method == 'umep_solweig':
@@ -102,11 +104,62 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
         else:
             return ''
 
+        # Remove buffered area from mrt results
+        buffer_meters = tiled_city_data.tile_buffer_meters
+        if buffer_meters is not None and len(custom_primary_features) == 0:
+            _trim_mrt_buffer(target_tcm_results_path, tile_folder_name, met_filenames, tile_boundary, buffer_meters)
+
     # Construct json of combined return values
     result_str = ','.join(return_stdouts)
     result_json = f'{{"Return_package": [{result_str}]}}'
 
     return result_json
+
+def _trim_mrt_buffer(target_tcm_results_path, tile_folder_name, met_filenames, tile_boundary, buffer_meters):
+    """
+    See https://gfw.atlassian.net/browse/CDB-182 for logic behind this function.
+    Briefly, the concept is that the code buffers out some hundreds of meters from a tiled area and then clips back to
+    the given tiled area. The buffering provides the opportunity for a shadow from a remote building to extend back
+    into the tiled area. The technique basically allows the broader context to affect the local space of the given tile.
+    TODO investigate variable buffering to further ensure proper inclusion of shadows and improved performance https://gfw.atlassian.net/browse/CDB-206
+    """
+    from shapely import wkt
+    import rasterio
+    from rasterio.mask import mask
+    import geopandas as gpd
+    from shapely.geometry import box
+
+    unbufferred_tile_boundary = wkt.loads(tile_boundary)
+    minx, miny, maxx, maxy = unbufferred_tile_boundary.bounds
+    west = minx + buffer_meters
+    south = miny + buffer_meters
+    east = maxx - buffer_meters
+    north = maxy - buffer_meters
+    bounds = (west, south, east, north)
+    polygon = gpd.GeoSeries([box(*bounds)])
+
+    for met_file_folder in met_filenames:
+        met_folder = Path(met_file_folder['filename']).stem
+        tile_path = str(os.path.join(target_tcm_results_path, met_folder, tile_folder_name))
+        for file in os.listdir(tile_path):
+            if file.endswith('.tif'):
+                file_path = os.path.join(tile_path, file)
+                with rasterio.open(file_path) as src:
+                    out_image, out_transform = mask(src, polygon, crop=True)
+                    out_meta = src.meta.copy()  # copy the metadata of the source DEM
+
+                out_meta.update({
+                    "driver": "COG",
+                    "height": out_image.shape[1],  # height starts with shape[1]
+                    "width": out_image.shape[2],  # width starts with shape[2]
+                    "transform": out_transform
+                })
+
+                remove_file(file_path)
+                with rasterio.open(file_path, 'w', **out_meta) as dst:
+                    dst.write(out_image)
+            else:
+                continue
 
 
 def _transfer_custom_files(tiled_city_data, custom_feature_list):

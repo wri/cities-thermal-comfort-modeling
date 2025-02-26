@@ -275,7 +275,7 @@ def _update_custom_yml_parameters(non_tiled_city_data, updated_aoi):
     return list_doc
 
 
-def write_tile_grid(tile_grid, source_crs, target_qgis_data_path):
+def write_tile_grid(tile_grid, source_crs, target_qgis_data_path, filename):
     from shapely import wkt
     import geopandas as gpd
 
@@ -302,7 +302,7 @@ def write_tile_grid(tile_grid, source_crs, target_qgis_data_path):
 
     # projected_gdf = gpd.GeoDataFrame(modified_tile_grid, crs=source_crs)
 
-    target_file_name = 'tile_grid.geojson'
+    target_file_name = f'{filename}.geojson'
     target_path = target_qgis_data_path
     create_folder(target_path)
     file_path = os.path.join(target_path, target_file_name)

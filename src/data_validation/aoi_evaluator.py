@@ -68,7 +68,12 @@ def evaluate_aoi_configs_for_tiling(non_tiled_city_data):
     aoi_min_lon, aoi_min_lat, aoi_max_lon, aoi_max_lat = _parse_aoi_dimensions(non_tiled_city_data)
 
     invalids = []
-    if not custom_primary_features:
+    if custom_primary_features:
+        if tile_side_meters is not None:
+            msg = f"tile_buffer_meters is not used and ignored if the dataset contains custom primary files in {FILENAME_METHOD_YML_CONFIG}."
+            invalids.append((msg, False))
+
+    else:
         if tile_side_meters is not None:
             is_tile_wider_than_half = _is_tile_wider_than_half_aoi_side(aoi_min_lat, aoi_min_lon, aoi_max_lat,
                                                                         aoi_max_lon, tile_side_meters)
@@ -98,7 +103,7 @@ def evaluate_aoi_configs_for_tiling(non_tiled_city_data):
             invalids.append((msg, True))
 
         if tile_side_meters is None and tile_buffer_meters is not None:
-            msg = f"tile_buffer_meters must be None if tile_sider_meters is None in {FILENAME_METHOD_YML_CONFIG}."
+            msg = f"tile_buffer_meters must be None if tile_side_meters is None in {FILENAME_METHOD_YML_CONFIG}."
             invalids.append((msg, True))
 
     return invalids

@@ -9,7 +9,7 @@ discrete
 precision 0
 equal interval 12
 classify
-color ramp: cpt-city: arenda-temperature
+color ramp: cpt-city: arendal-temperature
 
 
 aspect

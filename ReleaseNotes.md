@@ -1,5 +1,10 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/03/31
+1. Upgraded QGIS to 3.40.4
+2. Upgraded for compatibility with CIF handling of cached layers.
+
+
 ## 2025/02/25
 1. Buffered areas are now automatically clipped from the MRT results per https://gfw.atlassian.net/browse/CDB-182
 2. Primary files and intermediate files are not impacted by this change.

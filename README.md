@@ -82,7 +82,7 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
 2. Create environment variable named PYTHONPATH and set to the location of the source code.
 3. Download and install Miniconda3 for all users
 4. Add install location to system path under environment variables, such as "C:\ProgramData\miniconda3\Scripts"
-5. Install QGIS (v3.34.11) standalone app and add "UMEP for Processing" plugin.
+5. Install QGIS (v3.40.4) standalone app and add "UMEP for Processing" plugin.
    * **Note**: The plugin is periodically updated and it's a good idea to stay current with the latest, so periodically check in QGIS plugins for updates.
 6. Install PyCharm and create batch script with name "pycharm" pointing to PyCharm.bat such as "C:\Program Files\JetBrains\PyCharm Community Edition 2024.2.1\bin\pycharm.bat"
 7. Determine paths to both QGIS and QGIS plugins and modify existing config.ini file as follows:

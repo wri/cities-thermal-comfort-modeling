@@ -23,5 +23,4 @@ dependencies:
   - pip=25.0.1
   - pip:
     - git+https://github.com/wri/cities-cif@main
-   # - git+https://github.com/wri/cities-cif@CDB-237-Get-CIF-layers-from-s3-when-available
   #   - git+https://github.com/wri/cities-cif@v0.1.2

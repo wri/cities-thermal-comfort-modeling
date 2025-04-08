@@ -5,7 +5,7 @@ from pytest_check import equal # https://github.com/okken/pytest-check
 from src.constants import DATA_DIR, FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_RASTER_FILES
 from src.workers.city_data import CityData
 from src.workers.worker_tools import remove_folder, create_folder
-from test.testing_tools import run_main, SAMPLE_CITIES_SOURCE_DIR, file_count_in_vrt_directory
+from tests.testing_tools import run_main, SAMPLE_CITIES_SOURCE_DIR, file_count_in_vrt_directory
 
 CLEANUP_RESULTS=False
 

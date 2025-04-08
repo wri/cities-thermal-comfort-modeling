@@ -3,7 +3,7 @@ import os
 from main import start_processing
 from src.constants import DATA_DIR
 from src.workers.worker_tools import create_folder
-from test.testing_tools import run_main, SAMPLE_CITIES_SOURCE_DIR
+from tests.testing_tools import run_main, SAMPLE_CITIES_SOURCE_DIR
 import pytest
 
 SCRATCH_TARGET_DIR = os.path.join(DATA_DIR, 'scratch_target')

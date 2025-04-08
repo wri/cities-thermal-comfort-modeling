@@ -5,7 +5,7 @@ import shapely
 import hashlib
 import pandas as pd
 
-from pyproj import Transformer
+from pyproj import Transformer, CRS
 from shapely.geometry import Polygon
 from pyproj import Geod
 from pathlib import Path
@@ -63,7 +63,8 @@ def _get_spatial_dimensions_of_geotiff_file(file_path):
         height = dataset.height
         width = dataset.width
 
-        source_crs = dataset.crs.data.get('init')
+        source_epsg = CRS.from_wkt(dataset.crs.wkt).to_epsg()
+        source_crs = f'EPSG:{source_epsg}'
         tile_boundary = coordinates_to_bbox(min_x, min_y, max_x, max_y)
         # tile_boundary = (min_x, min_y, max_x, max_y)
 

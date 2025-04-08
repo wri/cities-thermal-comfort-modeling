@@ -5,7 +5,7 @@ from src.constants import FILENAME_ERA5
 from src.workers.city_data import CityData
 from src.workers.source_cif_data_downloader import get_cif_data
 from src.workers.worker_tools import remove_folder, remove_file
-from test.testing_tools import SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, is_valid_output_file
+from tests.testing_tools import SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, is_valid_output_file
 
 crs = 'EPSG:4326'
 min_lon= -122.701

@@ -5,6 +5,9 @@ import os
 import numpy as np
 
 from datetime import datetime
+
+from city_metrix import Era5MetPreprocessing
+
 from src.constants import FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_MET_FILES, FILENAME_ERA5
 from src.workers.worker_tools import compute_time_diff_mins, remove_file, create_folder
 
@@ -24,20 +27,20 @@ def get_met_data(target_met_files_path, aoi_boundary_poly, utc_offset, sampling_
 
 
 def _get_era5(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours):
-    from city_metrix.metrics import era_5_met_preprocessing
-
     # Attempt to download data with up to 3 tries
     count = 0
     aoi_era_5 = None
+    era5_failure_msg = ''
     while count < 3:
         try:
-            aoi_era_5 = era_5_met_preprocessing(aoi_gdf)
+            aoi_era_5 = Era5MetPreprocessing().get_data(aoi_gdf)
             break
         except Exception as e_msg:
+            era5_failure_msg = e_msg
             count +=1
 
     if aoi_era_5 is None:
-        raise Exception('failed to retrieve era5 data')
+        raise Exception(f'Failed to retrieve era5 data with error: {era5_failure_msg}')
 
     # round all numbers to two decimal places, which is the precision needed by the umep model
     aoi_era_5 = aoi_era_5.round(2)

@@ -125,7 +125,7 @@ def save_tiff_file(raster_data_array, tile_data_path, tiff_filename):
     try:
         raster_data_array.rio.to_raster(raster_path=file_path, driver="COG")
     except Exception as e_msg:
-        raise Exception(f'GeoTiff file {tiff_filename} not written to {tile_data_path}.')
+        print(f'GeoTiff file {tiff_filename} not written to {tile_data_path}.')
 
 
 def save_geojson_file(vector_geodataframe, tile_data_path, tiff_data_FILENAME):
@@ -144,3 +144,17 @@ def any_value_matches_in_dict_list(dict_list, target_string):
         if target_string in dictionary.values():
             return True
     return False
+
+def ctcm_standardize_y_dimension_direction(data_array):
+    """
+    Function resets y-values so they comply with the standard GDAL top-down increasing order, as needed.
+    """
+    was_reversed= False
+    y_dimensions = data_array.shape[0]
+    if data_array.y.data[0] < data_array.y.data[y_dimensions - 1]:
+        data_array = data_array.isel({data_array.rio.y_dim: slice(None, None, -1)})
+        was_reversed = True
+
+    return was_reversed, data_array
+
+

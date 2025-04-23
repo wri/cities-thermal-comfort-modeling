@@ -68,6 +68,7 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
       * **Notes on current limitations**
         1. The viewer only supports results for up to two meteorological files in the tcm_tmrt and tcm_shadow groups.
         2. Each meteorological group only supports up to five hourly layers
+        3. QGIS has may not properly render a layer if the root folder of the workfile is multiple folder levels deep.
    
 ### Sharing the City Folder
    1. Zip the city folder using the 7-Zip compression tool. (Other compression tools may not preserver all folders and files.)

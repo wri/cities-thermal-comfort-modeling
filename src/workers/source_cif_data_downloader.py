@@ -6,7 +6,6 @@ import random
 import time
 
 from city_metrix.layers.layer_geometry import GeoExtent
-from city_metrix.layers.layer_tools import standardize_y_dimension_direction
 from rasterio.enums import Resampling
 from datetime import datetime
 
@@ -14,7 +13,7 @@ from src.constants import VALID_PRIMARY_TYPES
 from src.workers.city_data import CityData
 from src.workers.logger_tools import setup_logger, log_method_start, log_method_completion, log_method_failure
 from src.workers.worker_tools import compute_time_diff_mins, save_tiff_file, save_geojson_file, \
-    unpack_quoted_value
+    unpack_quoted_value, ctcm_standardize_y_dimension_direction
 
 DEBUG = False
 
@@ -139,11 +138,14 @@ def _get_lulc(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logge
         if output_resolution != DEFAULT_LULC_RESOLUTION:
             lulc_to_solweig_class = _resample_categorical_raster(lulc_to_solweig_class, output_resolution)
 
-        # reverse y direction, if y values increase in NS direction from LL corner
-        was_reversed, lulc_to_solweig_class = standardize_y_dimension_direction(lulc_to_solweig_class)
-
-        # Save data to file
-        save_tiff_file(lulc_to_solweig_class, tile_data_path, tiled_city_data.lulc_tif_filename)
+        try:
+            # first attempt to save the file in the preferred NS direction
+            was_reversed, standardized_lulc_to_solweig_class = ctcm_standardize_y_dimension_direction(
+                lulc_to_solweig_class)
+            save_tiff_file(standardized_lulc_to_solweig_class, tile_data_path, tiled_city_data.lulc_tif_filename)
+        except:
+            # otherwise save without flipping direction
+            save_tiff_file(lulc_to_solweig_class, tile_data_path, tiled_city_data.lulc_tif_filename)
 
         return True
 
@@ -166,10 +168,14 @@ def _get_tree_canopy_height(tiled_city_data, tile_data_path, aoi_gdf, output_res
         tree_canopy_height = TreeCanopyHeight().get_data(bbox, spatial_resolution=output_resolution)
         tree_canopy_height_float32 = tree_canopy_height.astype('float32')
 
-        # reverse y direction, if y values increase in NS direction from LL corner
-        was_reversed, tree_canopy_height_float32 = standardize_y_dimension_direction(tree_canopy_height_float32)
-
-        save_tiff_file(tree_canopy_height_float32, tile_data_path, tiled_city_data.tree_canopy_tif_filename)
+        try:
+            # first attempt to save the file in the preferred NS direction
+            was_reversed, standardized_tree_canopy_height_float32 = ctcm_standardize_y_dimension_direction(
+                tree_canopy_height_float32)
+            save_tiff_file(standardized_tree_canopy_height_float32, tile_data_path, tiled_city_data.tree_canopy_tif_filename)
+        except:
+            # otherwise save without flipping direction
+            save_tiff_file(tree_canopy_height_float32, tile_data_path, tiled_city_data.tree_canopy_tif_filename)
 
         return True
 
@@ -186,13 +192,15 @@ def _get_dem(tiled_city_data, tile_data_path, aoi_gdf, retrieve_dem, output_reso
         bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
         nasa_dem = NasaDEM().get_data(bbox, spatial_resolution=output_resolution)
 
-        # reverse y direction, if y values increase in NS direction from LL corner
-        was_reversed, nasa_dem = standardize_y_dimension_direction(nasa_dem)
-
-        if retrieve_dem:
+        try:
+            # first attempt to save the file in the preferred NS direction
+            was_reversed, standardized_nasa_dem = ctcm_standardize_y_dimension_direction(nasa_dem)
+            save_tiff_file(standardized_nasa_dem, tile_data_path, tiled_city_data.dem_tif_filename)
+            return True, standardized_nasa_dem
+        except:
+            # otherwise save without flipping direction
             save_tiff_file(nasa_dem, tile_data_path, tiled_city_data.dem_tif_filename)
-
-        return True, nasa_dem
+            return True, nasa_dem
 
     except Exception as e_msg:
         msg = f'DEM processing cancelled due to failure {e_msg}.'
@@ -207,13 +215,16 @@ def _get_dsm(tile_data_path, aoi_gdf, output_resolution, logger):
         bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
         alos_dsm = AlosDSM().get_data(bbox, spatial_resolution=output_resolution)
 
-        # reverse y direction, if y values increase in NS direction from LL corner
-        was_reversed, alos_dsm = standardize_y_dimension_direction(alos_dsm)
-
+        was_reversed, standardized_alos_dsm = ctcm_standardize_y_dimension_direction(alos_dsm)
         if DEBUG:
-            save_tiff_file(alos_dsm, tile_data_path, 'debug_alos_dsm.tif')
+            try:
+                # first attempt to save the file in the preferred NS direction
+                save_tiff_file(standardized_alos_dsm, tile_data_path, 'debug_alos_dsm.tif')
+            except:
+                # otherwise save without flipping direction
+                save_tiff_file(alos_dsm, tile_data_path, 'debug_alos_dsm.tif')
 
-        return True, alos_dsm
+        return True, standardized_alos_dsm
 
     except Exception as e_msg:
         msg = f'DSM processing cancelled due to failure f{e_msg}.'

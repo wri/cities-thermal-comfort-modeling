@@ -6,7 +6,8 @@ from pathlib import Path
 from src.constants import DATA_DIR, FILENAME_METHOD_YML_CONFIG, FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD
 from src.worker_manager.reporter import _find_files_with_name
 from src.worker_manager.tools import delete_files_with_extension
-from src.workers.worker_tools import create_folder, write_commented_yaml, read_commented_yaml
+from src.workers.worker_dao import write_raster_vrt_gdal, write_raster_vrt_wri
+from src.workers.worker_tools import create_folder, write_commented_yaml, read_commented_yaml, remove_file
 
 
 def write_qgis_files(city_data, crs_str):
@@ -204,19 +205,14 @@ def _write_raster_vrt_file_for_folder(source_folder, files, target_viewer_folder
         filename = file.get('filename')
         source_raster_files = _find_files_with_name(source_folder, filename)
 
-        if source_raster_files:
-            _write_raster_vrt(output_file_path, source_raster_files)
+        # Below logic compensates for the fact that failures of gdal.BuildVRT cannot be caught.
+        remove_file(output_file_path)
+        write_raster_vrt_gdal(output_file_path, source_raster_files)
+        if not os.path.exists(output_file_path):
+            write_raster_vrt_wri(output_file_path, source_raster_files)
+            if not os.path.exists(output_file_path):
+                print(f"Failed to create VRT for {output_file_path}")
 
-
-def _write_raster_vrt(output_file_path:str, raster_files):
-    from osgeo import gdal
-
-    # Create the VRT
-    vrt_options = gdal.BuildVRTOptions(resampleAlg='nearest', addAlpha=True)
-    try:
-        vrt_run = gdal.BuildVRT(output_file_path, raster_files, options=vrt_options)
-    except Exception as e_msg:
-        raise f'VRT creation failed for {raster_files} due to {e_msg}.'
 
 
 def write_config_files(non_tiled_city_data, updated_aoi):

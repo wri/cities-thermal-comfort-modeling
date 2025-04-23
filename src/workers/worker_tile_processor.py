@@ -5,10 +5,10 @@ import rioxarray
 
 from pathlib import Path
 
-from city_metrix.layers.layer_tools import standardize_y_dimension_direction
 from src.constants import FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSING_METHODS
 from src.workers.city_data import CityData
-from src.workers.worker_tools import create_folder, unpack_quoted_value, save_tiff_file, remove_file
+from src.workers.worker_tools import create_folder, unpack_quoted_value, save_tiff_file, remove_file, \
+    ctcm_standardize_y_dimension_direction
 
 PROCESSING_PAUSE_TIME_SEC = 10
 
@@ -85,7 +85,8 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
 
     if task_method != 'download_only':
         # ensure all source TIFF files have negative NS y-direction
-        ensure_y_dimension_direction(tiled_city_data)
+        # TODO Commenting out for now until we have a better solution. See https://gfw.atlassian.net/browse/CDB-274
+        # ensure_y_dimension_direction(tiled_city_data)
 
         if task_method == 'umep_solweig':
             return_vals = _execute_umep_solweig_plugin_steps(city_folder_name, tile_folder_name,
@@ -201,7 +202,7 @@ def _enforce_tiff_upper_left_origin(tile_data_path, file_path):
     geotiff_2d = geotiff_da.sel(band=1).squeeze()
     geotiff_da.close()
 
-    was_reversed, reversed_arr = standardize_y_dimension_direction(geotiff_2d)
+    was_reversed, reversed_arr = ctcm_standardize_y_dimension_direction(geotiff_2d)
     if was_reversed:
         data_file = os.path.basename(file_path)
         save_tiff_file(reversed_arr, tile_data_path, data_file)

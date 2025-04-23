@@ -30,7 +30,8 @@ def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_
     tiled_city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
     logger = setup_logger(tiled_city_data.target_model_log_path)
     method_title = _assign_method_title(step_method)
-    log_method_start(method_title, None, tiled_city_data.target_base_path, logger)
+    method_title_with_tile = f'{method_title} for {folder_name_tile_data}'
+    log_method_start(method_title_with_tile, None, tiled_city_data.target_base_path, logger)
 
     # Initiate QGIS and UMEP processing
     try:

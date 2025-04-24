@@ -5,7 +5,7 @@ import numpy as np
 import random
 import time
 
-from city_metrix.layers.layer_geometry import GeoExtent
+from city_metrix.metrix_model import GeoExtent
 from rasterio.enums import Resampling
 from datetime import datetime
 
@@ -138,6 +138,9 @@ def _get_lulc(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logge
         if output_resolution != DEFAULT_LULC_RESOLUTION:
             lulc_to_solweig_class = _resample_categorical_raster(lulc_to_solweig_class, output_resolution)
 
+        if lulc_to_solweig_class is None:
+            return False
+
         try:
             # first attempt to save the file in the preferred NS direction
             was_reversed, standardized_lulc_to_solweig_class = ctcm_standardize_y_dimension_direction(
@@ -168,6 +171,9 @@ def _get_tree_canopy_height(tiled_city_data, tile_data_path, aoi_gdf, output_res
         tree_canopy_height = TreeCanopyHeight().get_data(bbox, spatial_resolution=output_resolution)
         tree_canopy_height_float32 = tree_canopy_height.astype('float32')
 
+        if tree_canopy_height_float32 is None:
+            return False
+
         try:
             # first attempt to save the file in the preferred NS direction
             was_reversed, standardized_tree_canopy_height_float32 = ctcm_standardize_y_dimension_direction(
@@ -192,6 +198,9 @@ def _get_dem(tiled_city_data, tile_data_path, aoi_gdf, retrieve_dem, output_reso
         bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
         nasa_dem = NasaDEM().get_data(bbox, spatial_resolution=output_resolution)
 
+        if nasa_dem is None:
+            return False, None
+
         try:
             # first attempt to save the file in the preferred NS direction
             was_reversed, standardized_nasa_dem = ctcm_standardize_y_dimension_direction(nasa_dem)
@@ -214,6 +223,9 @@ def _get_dsm(tile_data_path, aoi_gdf, output_resolution, logger):
 
         bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
         alos_dsm = AlosDSM().get_data(bbox, spatial_resolution=output_resolution)
+
+        if alos_dsm is None:
+            return False, None
 
         was_reversed, standardized_alos_dsm = ctcm_standardize_y_dimension_direction(alos_dsm)
         if DEBUG:

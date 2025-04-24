@@ -3,8 +3,8 @@ import shapely
 import numbers
 import math
 
-from city_metrix.layers.layer_geometry import reproject_units
-from city_metrix.layers.layer_tools import get_haversine_distance
+from city_metrix.metrix_tools import reproject_units
+from city_metrix.metrix_model import get_haversine_distance
 from shapely.geometry import box
 from src.constants import FILENAME_METHOD_YML_CONFIG, WGS_CRS
 

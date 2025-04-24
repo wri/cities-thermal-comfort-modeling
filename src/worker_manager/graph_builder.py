@@ -1,4 +1,6 @@
-from city_metrix.layers.layer_geometry import get_utm_zone_from_latlon_point, reproject_units, GeoExtent, create_fishnet_grid
+from city_metrix.constants import ProjectionType
+from city_metrix.metrix_model import GeoExtent, create_fishnet_grid
+from city_metrix.metrix_tools import get_utm_zone_from_latlon_point, reproject_units
 from shapely.geometry.point import Point
 from src.constants import WGS_CRS
 from src.worker_manager.tools import construct_polygon_from_bounds, coordinates_to_bbox
@@ -42,7 +44,8 @@ def get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters, in_crs):
         unbuffered_tile_gpd = None
     else:
         bbox = GeoExtent((minx, miny, maxx, maxy), utm_crs)
-        unbuffered_tile_gpd = create_fishnet_grid(bbox, tile_side_meters, 0, length_units="meters", output_as='utm')
+        unbuffered_tile_gpd = create_fishnet_grid(bbox, tile_side_meters, 0, length_units="meters",
+                                                  output_as=ProjectionType.UTM)
 
     if tile_side_meters is None:
         import geopandas as gpd
@@ -50,6 +53,7 @@ def get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters, in_crs):
         tile_gpd = gpd.GeoDataFrame(index=[0], crs=utm_crs, geometry=[bbox_poly])
     else:
         bbox = GeoExtent((minx, miny, maxx, maxy), utm_crs)
-        tile_gpd = create_fishnet_grid(bbox, tile_side_meters, tile_buffer_meters, length_units="meters", output_as='utm')
+        tile_gpd = create_fishnet_grid(bbox, tile_side_meters, tile_buffer_meters, length_units="meters",
+                                       output_as=ProjectionType.UTM)
 
     return tile_gpd, unbuffered_tile_gpd

@@ -1,7 +1,5 @@
 import ee
-from city_metrix.layers import layer, Layer
-from city_metrix.layers.layer_geometry import GeoExtent
-
+from city_metrix.metrix_model import Layer, GeoExtent, get_image_collection
 
 class OpenUrban(Layer):
     def __init__(self, band='b1', **kwargs):
@@ -27,7 +25,7 @@ class OpenUrban(Layer):
                                      .rename('lulc')
                                      )
 
-            data = layer.get_image_collection(
+            data = get_image_collection(
                 ulu,
                 ee_rectangle,
                 1,

@@ -7,8 +7,8 @@ import os
 import numpy as np
 
 from datetime import datetime
-
-from city_metrix import Era5MetPreprocessing
+from city_metrix.metrics import Era5MetPreprocessing
+from city_metrix.metrix_model import GeoZone
 
 from src.constants import FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_MET_FILES, FILENAME_ERA5
 from src.workers.worker_tools import compute_time_diff_mins, remove_file, create_folder
@@ -33,9 +33,10 @@ def _get_era5(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours):
     aoi_era_5 = None
     era5_failure_msg = ''
     count = 1
+    geo_zone = GeoZone(aoi_gdf)
     while count <= 5:
         try:
-            aoi_era_5 = Era5MetPreprocessing().get_data(aoi_gdf)
+            aoi_era_5 = Era5MetPreprocessing().get_metric(geo_zone)
             break
         except Exception as e_msg:
             era5_failure_msg = e_msg

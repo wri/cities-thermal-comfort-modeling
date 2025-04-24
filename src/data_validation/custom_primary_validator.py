@@ -2,7 +2,8 @@ import math
 import os
 import rasterio
 import pandas as pd
-from city_metrix.layers.layer_tools import get_projection_name
+from city_metrix.constants import ProjectionType
+from city_metrix.metrix_tools import get_projection_type
 
 from src.constants import FILENAME_METHOD_YML_CONFIG, \
     FOLDER_NAME_PRIMARY_RASTER_FILES, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSING_METHODS, FILENAME_ERA5
@@ -69,7 +70,7 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
 
     tile_crs_values = existing_tiles_metrics['source_crs'].unique()
     for tile_crs in tile_crs_values:
-        if get_projection_name(tile_crs) == 'geographic':
+        if get_projection_type(tile_crs) == ProjectionType.GEOGRAPHIC:
             msg = f'Custom files can not have geographic coordinates.'
             invalids.append((msg, True))
             break

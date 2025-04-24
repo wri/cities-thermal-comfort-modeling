@@ -1,10 +1,11 @@
-%echo off
+@echo off
 
-echo Recreating cities-thermal environment
-cmd "/c conda activate base && call conda remove -n cities-thermal --all --yes && conda env create --file environment.yml --yes"
+call conda activate base
 
-echo Switching back to cities-thermal env
+call conda remove -n cities-thermal --all --yes
+
+call conda env create --file environment.yml --yes
+
 call conda activate cities-thermal
 
-echo Adding plugins 
 call environment_post_processing.bat

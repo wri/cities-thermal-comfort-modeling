@@ -9,10 +9,10 @@
 # If you don't want to subdivide the AOI, specify None for tile_side_meters and tile_buffer_meters.
 - ProcessingAOI:
   utc_offset: 2
-  min_lon: 4.9012
-  min_lat: 52.372
-  max_lon: 4.9062057
-  max_lat: 52.374 # yml value is invalid
+  min_lon: 4.90119
+  min_lat: 52.37199
+  max_lon: 4.906313
+  max_lat: 52.37497
   tile_side_meters: None
   tile_buffer_meters: None
 # Names of meteorological files used by SOLWEIG method in "UMEP for Processing" plugin.
@@ -25,10 +25,10 @@
 # Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif
 # Auto-generated filenames from CIF: cif_dem.tif, cif_dsm_ground_build.tif, cif_tree_canopy.tif, cif_lulc.tif
 - CustomTiffFilenames:
-  dem_tif_filename: cif_dem.tif
-  dsm_tif_filename: cif_dsm_ground_build.tif
-  lulc_tif_filename: cif_lulc.tif
-  tree_canopy_tif_filename: cif_tree_canopy.tif
+  dem_tif_filename: dem.tif
+  dsm_tif_filename: dsm_ground_build.tif
+  lulc_tif_filename: lulc.tif
+  tree_canopy_tif_filename: tree_canopy.tif
 - PreparedIntermediateFilenames:
   skyview_factor_filename: None
   wall_aspect_filename: None

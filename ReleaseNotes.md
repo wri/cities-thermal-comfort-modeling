@@ -1,5 +1,9 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/04/28
+1. Replaced ground_build_dsm with data from OvertureHeightDSM CIF layer
+2. Adjusted symbology in qgis viewer.
+
 ## 2025/03/31
 1. Upgraded QGIS to 3.40.4
 2. Upgraded for compatibility with CIF handling of cached layers.

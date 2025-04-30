@@ -20,8 +20,8 @@ DEBUG = False
 # Unify the layers on the same resolution
 DEFAULT_LULC_RESOLUTION = 1
 
-MINIMUM_QUERY_WAIT_SEC = 10
-MAXIMUM_QUERY_WAIT_SEC = 30
+MINIMUM_QUERY_WAIT_SEC = 5
+MAXIMUM_QUERY_WAIT_SEC = 10
 
 def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile_id, cif_primary_features,
                  tile_boundary, crs, tile_resolution):
@@ -44,42 +44,36 @@ def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile
 
     result_flags = []
     # randomize retrieval to reduce contention against GEE
-    random_group= _generate_unique_random_list(start=1, end=3, count = len(VALID_PRIMARY_TYPES)-1)
-    for group in random_group:
+    random_feature_sequence= random.sample(range(1, len(VALID_PRIMARY_TYPES) + 1), len(VALID_PRIMARY_TYPES))
+    for feature_sequence_id in random_feature_sequence:
         # wait random length of time to help reduce contention between threads and GEE throttling
         wait_time_sec = random.uniform(MINIMUM_QUERY_WAIT_SEC, MAXIMUM_QUERY_WAIT_SEC)
-        if group == 1:
+        if feature_sequence_id == 1:
             if 'lulc' in feature_list:
                 time.sleep(wait_time_sec)
                 log_method_start(f'CIF-lulc download for {tile_id}', None, '', logger)
                 this_success = _get_lulc(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-lulc download for tile {tile_id}', None, '', logger)
-        elif group == 2:
+        elif feature_sequence_id == 2:
             if 'tree_canopy' in feature_list:
                 time.sleep(wait_time_sec)
                 log_method_start(f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
                 this_success = _get_tree_canopy_height(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time,f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
-        elif group == 3:
-            time.sleep(wait_time_sec)
-            if 'dem' in feature_list or 'dsm' in feature_list:
-                retrieve_dem = True if 'dem' in feature_list else False
+        elif feature_sequence_id == 3:
+            if 'dem' in feature_list:
+                time.sleep(wait_time_sec)
                 log_method_start(f'CIF-DEM download for {tile_id}', None, '', logger)
-                this_success, nasa_dem = _get_dem(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, retrieve_dem, output_resolution, logger)
+                this_success = _get_dem(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-DEM download for {tile_id}', None, '', logger)
-            else:
-                nasa_dem = None
-
+        elif feature_sequence_id == 4:
             if 'dsm' in feature_list:
+                time.sleep(wait_time_sec)
                 log_method_start(f'CIF-DSM download for {tile_id}', None, '', logger)
-                this_success, alos_dsm = _get_dsm(tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
-                result_flags.append(this_success)
-                this_success, overture_buildings = _get_building_footprints(tile_cif_data_path, tiled_aoi_gdf, logger)
-                result_flags.append(this_success)
-                this_success = _get_building_height_dsm(tiled_city_data, tile_cif_data_path, overture_buildings, alos_dsm, nasa_dem, logger)
+                this_success = _get_building_height_dsm(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-DSM download for {tile_id}', None, '', logger)
 
@@ -96,16 +90,6 @@ def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile
     log_method_completion(start_time, f'CIF download: ({cif_primary_features}) in tile {tile_id}', None, '', logger)
 
     return return_stdout
-
-def _generate_unique_random_list(start, end, count):
-    if count > (end - start + 1):
-        raise ValueError("Count is larger than the range of unique values available.")
-    return random.sample(range(start, end + 1), count)
-
-
-def _random_list(in_list):
-    random.shuffle(in_list)
-    return in_list
 
 
 def _get_lulc(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
@@ -191,7 +175,7 @@ def _get_tree_canopy_height(tiled_city_data, tile_data_path, aoi_gdf, output_res
         return False
 
 
-def _get_dem(tiled_city_data, tile_data_path, aoi_gdf, retrieve_dem, output_resolution, logger):
+def _get_dem(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
         from city_metrix.layers import NasaDEM
 
@@ -199,139 +183,49 @@ def _get_dem(tiled_city_data, tile_data_path, aoi_gdf, retrieve_dem, output_reso
         nasa_dem = NasaDEM().get_data(bbox, spatial_resolution=output_resolution)
 
         if nasa_dem is None:
-            return False, None
+            return False
 
         try:
             # first attempt to save the file in the preferred NS direction
             was_reversed, standardized_nasa_dem = ctcm_standardize_y_dimension_direction(nasa_dem)
             save_tiff_file(standardized_nasa_dem, tile_data_path, tiled_city_data.dem_tif_filename)
-            return True, standardized_nasa_dem
+            return True
         except:
             # otherwise save without flipping direction
             save_tiff_file(nasa_dem, tile_data_path, tiled_city_data.dem_tif_filename)
-            return True, nasa_dem
+            return True
 
     except Exception as e_msg:
         msg = f'DEM processing cancelled due to failure {e_msg}.'
         log_method_failure(datetime.now(), 'DEM', tiled_city_data.source_base_path, msg, logger)
-        return False, None
+        return False
 
-
-def _get_dsm(tile_data_path, aoi_gdf, output_resolution, logger):
+def _get_building_height_dsm(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
-        from city_metrix.layers import AlosDSM
+        from city_metrix.layers import OvertureBuildingsDSM
 
         bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
-        alos_dsm = AlosDSM().get_data(bbox, spatial_resolution=output_resolution)
+        building_dsm = OvertureBuildingsDSM().get_data(bbox, spatial_resolution=output_resolution)
 
-        if alos_dsm is None:
-            return False, None
+        if building_dsm is None:
+            return False
 
-        was_reversed, standardized_alos_dsm = ctcm_standardize_y_dimension_direction(alos_dsm)
-        if DEBUG:
-            try:
-                # first attempt to save the file in the preferred NS direction
-                save_tiff_file(standardized_alos_dsm, tile_data_path, 'debug_alos_dsm.tif')
-            except:
-                # otherwise save without flipping direction
-                save_tiff_file(alos_dsm, tile_data_path, 'debug_alos_dsm.tif')
-
-        return True, standardized_alos_dsm
-
-    except Exception as e_msg:
-        msg = f'DSM processing cancelled due to failure f{e_msg}.'
-        log_method_failure(datetime.now(), 'DSM', tile_data_path, msg, logger)
-        return False, None
-
-
-def _get_building_footprints(tile_data_path, aoi_gdf, logger):
-    try:
-        from city_metrix.layers import OvertureBuildings
-
-        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
-        overture_buildings = OvertureBuildings().get_data(bbox)
-        if DEBUG:
-            save_geojson_file(overture_buildings, tile_data_path, 'debug_building_footprints.geojson')
-
-        return True, overture_buildings
-
-    except Exception as e_msg:
-        msg = f'Building-footprint processing cancelled due to failure {e_msg}.'
-        log_method_failure(datetime.now(), 'Building_footprint', tile_data_path, msg, logger)
-        return False, None
-
-
-def _get_building_height_dsm(tiled_city_data, tile_data_path, overture_buildings, alos_dsm, nasa_dem, logger):
-    try:
-        from exactextract import exact_extract
-
-        # re-apply crs
-        target_crs = alos_dsm.rio.crs
-        overture_buildings = overture_buildings.to_crs(target_crs)
-
-        base_dtm = _create_base_dtm(alos_dsm, nasa_dem)
-
-        # Determine extreme height ranges using the 1-meter terrain models. The higher resolution smooths the surface
-        # where it changes abruptly from a tall structure to lower ones and generally improves estimates.
-        overture_buildings['AlosDSM_max'] = (
-            exact_extract(alos_dsm, overture_buildings, ["max"], output='pandas')['max'])
-        overture_buildings['BaseDTM_max'] = (
-            exact_extract(nasa_dem, overture_buildings, ["max"], output='pandas')['max'])
-        overture_buildings['BaseDTM_min'] = (
-            exact_extract(nasa_dem, overture_buildings, ["min"], output='pandas')['min'])
-
-        overture_buildings['Height_diff'] = (
-                overture_buildings['AlosDSM_max'] - overture_buildings['BaseDTM_min'])
-        overture_buildings['Elevation_estimate'] = (
-                overture_buildings['Height_diff'] + overture_buildings['BaseDTM_max'])
-
-        overture_buildings['Elevation_estimate'] = round(overture_buildings['Elevation_estimate'], 0)
-
-        # TODO Prototype for building-height refinement
-        # prototype_refinement_building_Elevation_estimates(overture_buildings)
-
-        overture_buildings_raster = _rasterize_polygons(overture_buildings, values=["Elevation_estimate"],
-                                                        snap_to_raster=nasa_dem)
-        if DEBUG:
-            save_tiff_file(overture_buildings_raster, tile_data_path, 'debug_raw_building_footprints.tif')
-
-        composite_bldg_dem = _combine_building_and_dem(nasa_dem, overture_buildings_raster, target_crs)
-
-        # Save data to file
-        save_tiff_file(composite_bldg_dem, tile_data_path, tiled_city_data.dsm_tif_filename)
-        return True
+        try:
+            # first attempt to save the file in the preferred NS direction
+            was_reversed, standardized_nasa_dem = ctcm_standardize_y_dimension_direction(building_dsm)
+            save_tiff_file(standardized_nasa_dem, tile_data_path, tiled_city_data.dsm_tif_filename)
+            return True
+        except:
+            # otherwise save without flipping direction
+            save_tiff_file(building_dsm, tile_data_path, tiled_city_data.dsm_tif_filename)
+            return True
 
     except Exception as e_msg:
         msg = f'Building DSM processing cancelled due to failure {e_msg}.'
-        log_method_failure(datetime.now(), 'Building DSM', tiled_city_data.source_base_path, msg, logger)
+        log_method_failure(datetime.now(), 'DEM', tiled_city_data.source_base_path, msg, logger)
         return False
 
-def _create_base_dtm(dsm, dem):
-    min_raster = np.minimum(dsm, dem)
-    return min_raster
 
-
-def _combine_building_and_dem(dem, buildings, target_crs):
-    coords_dict = {dim: dem.coords[dim].values for dim in dem.dims}
-
-    # Convert to ndarray in order to mask and combine layers
-    dem_nda = dem.to_numpy()
-    bldg_nda = buildings.to_dataarray().to_numpy().reshape(dem_nda.shape)
-
-    # Mask of building cells
-    mask = (bldg_nda != -9999) & (~np.isnan(bldg_nda))
-
-    # Mask buildings onto DEM
-    dem_nda[mask] = bldg_nda[mask]
-
-    #Convert results into DataArray and re-add coordinates and CRS
-    composite_xa = xr.DataArray(dem_nda,
-                      dims = ["y","x"],
-                      coords = coords_dict
-                      )
-    composite_xa.rio.write_crs(target_crs, inplace=True)
-
-    return composite_xa
 
 def _resample_categorical_raster(xarray, resolution_m):
     resampled_array = xarray.rio.reproject(
@@ -342,19 +236,6 @@ def _resample_categorical_raster(xarray, resolution_m):
     return resampled_array
 
 
-def _rasterize_polygons(gdf, values=["Value"], snap_to_raster=None):
-    from geocube.api.core import make_geocube
-    if gdf.empty:
-        feature_1m = xr.zeros_like(snap_to_raster)
-    else:
-        feature_1m = make_geocube(
-            vector_data=gdf,
-            measurements=values,
-            like=snap_to_raster,
-            # fill=0
-        )
-
-    return feature_1m
 
 
 def prototype_refinement_building_Elevation_estimates(overture_bldgs):

@@ -10,9 +10,9 @@
 - ProcessingAOI:
   utc_offset: -8
   min_lon: -122.7037
-  min_lat: 45.51994999999983
-  max_lon: -122.69231170703861
-  max_lat: 45.52327730437852
+  min_lat: 45.51995
+  max_lon: -122.6923117
+  max_lat: 45.5232773
   tile_side_meters: None
   tile_buffer_meters: None
 # Names of meteorological files used by SOLWEIG method in "UMEP for Processing" plugin.
@@ -25,7 +25,7 @@
 # Auto-generated filenames from CIF: cif_dem.tif, cif_dsm_ground_build.tif, cif_tree_canopy.tif, cif_lulc.tif
 - CustomTiffFilenames:
   dem_tif_filename: dem.tif
-  dsm_tif_filename: dsm.tif
+  dsm_tif_filename: dsm_ground_build.tif
   lulc_tif_filename: lulc.tif
   tree_canopy_tif_filename: tree_canopy.tif
 - PreparedIntermediateFilenames:

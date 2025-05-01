@@ -4,6 +4,19 @@ from pathlib import Path
 
 from src.workers.worker_tools import create_folder, compute_time_diff_mins
 
+def setup_metadata_logger(log_filepath):
+    path = Path(log_filepath).parent
+    create_folder(path)
+
+    logger_name = 'MetadataLogger'
+
+    logger = logging.getLogger(logger_name)
+    if logging.getLogger(logger_name).hasHandlers() is False:
+        logger.setLevel(logging.DEBUG)
+        handler = logging.FileHandler(log_filepath)
+        logger.addHandler(handler)
+
+    return logger
 
 def setup_logger(log_filepath):
     path = Path(log_filepath).parent
@@ -19,7 +32,14 @@ def setup_logger(log_filepath):
 
     return logger
 
-def write_log_message(message, calling_file, logger):
+def log_model_metadata_message(method_name, met_filename, key, value, logger):
+    now = datetime.datetime.now().strftime('%m/%d/%Y %I:%M %p')
+    if met_filename is None:
+        logger.info(f'[{now}]: {method_name}: {key}: {value}')
+    else:
+        logger.info(f'[{now}]: {method_name}: {met_filename}: {key}: {value}')
+
+def log_general_file_message(message, calling_file, logger):
     now = datetime.datetime.now().strftime('%m/%d/%Y %I:%M %p')
     file_name = Path(calling_file).name
     logger.info(f'[{now}]: {file_name}: {message}')

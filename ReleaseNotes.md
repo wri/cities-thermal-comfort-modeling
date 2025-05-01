@@ -1,5 +1,9 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/05/01
+1. Now outputs parameter settings that were passed to UMEP plugins into the .admin/model_metadata folder in the outcome location.
+   1. One metadata file is written per tile.
+
 ## 2025/04/28
 1. Replaced ground_build_dsm with data from OvertureHeightDSM CIF layer
 2. Adjusted symbology in qgis viewer.

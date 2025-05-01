@@ -51,13 +51,13 @@ def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_
     retry_count = 0
     with (tempfile.TemporaryDirectory() as tmpdirname):
         # Get the UMEP processing parameters and prepare for the method
-        input_params, umep_method_title, keepers = _prepare_method_execution(step_method, tiled_city_data, tmpdirname,
+        method_params, umep_method_title, keepers = _prepare_method_execution(step_method, tiled_city_data, tmpdirname,
                                                                              metadata_logger, met_filename, utc_offset)
 
         while retry_count < MAX_RETRY_COUNT and return_code != 0:
             try:
                 # Run the UMEP plugin!!
-                processing.run(umep_method_title, input_params)
+                processing.run(umep_method_title, method_params)
 
                 # Prepare target folder and transfer over the temporary results
                 try:
@@ -99,9 +99,10 @@ def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_
 
     return return_stdout
 
-def _write_metadata(method, met_filename, input_params, metadata_logger):
+def _write_metadata(method, met_filename, input_params, exclusion_keys, metadata_logger):
     for key, value in input_params.items():
-        log_model_metadata_message(method, met_filename, key, value, metadata_logger)
+        if key not in exclusion_keys:
+            log_model_metadata_message(method, met_filename, key, value, metadata_logger)
 
 def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logger, met_filename=None, utc_offset=None):
     keepers = {}
@@ -111,7 +112,7 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logg
 
         temp_target_wallheight_path = os.path.join(tmpdirname, tiled_city_data.wall_height_filename)
         temp_target_wallaspect_path = os.path.join(tmpdirname, tiled_city_data.wall_aspect_filename)
-        input_params = {
+        method_params = {
             'INPUT': tiled_city_data.target_dsm_path,
             'INPUT_LIMIT': tiled_city_data.wall_lower_limit_height,
             'OUTPUT_HEIGHT': temp_target_wallheight_path,
@@ -121,7 +122,9 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logg
         keepers[temp_target_wallheight_path] = tiled_city_data.target_wallheight_path
         keepers[temp_target_wallaspect_path] = tiled_city_data.target_wallaspect_path
 
-        _write_metadata(method, None, input_params, metadata_logger)
+        # exclude output paths and write remainder to log file
+        exclusion_keys = ['OUTPUT_HEIGHT', 'OUTPUT_ASPECT']
+        _write_metadata(method, None, method_params, exclusion_keys, metadata_logger)
 
     elif method == 'skyview_factor':
         create_folder(tiled_city_data.target_intermediate_tile_data_path)
@@ -129,7 +132,7 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logg
         temp_svfs_file_no_extension = os.path.join(tmpdirname, Path(tiled_city_data.target_svfszip_path).stem)
         skview_factor_plugin_output_default_filename = FILENAME_SVFS_ZIP
         temp_svfs_file_with_extension = os.path.join(tmpdirname, skview_factor_plugin_output_default_filename)
-        input_params = {
+        method_params = {
             'INPUT_DSM': tiled_city_data.target_dsm_path,
             'INPUT_CDSM': tiled_city_data.target_tree_canopy_path,
             'TRANS_VEG': 3,
@@ -142,13 +145,15 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logg
         umep_method_title = 'umep:Urban Geometry: Sky View Factor'
         keepers[temp_svfs_file_with_extension] = tiled_city_data.target_svfszip_path
 
-        _write_metadata(method, None, input_params, metadata_logger)
+        # exclude output paths and write remainder to log file
+        exclusion_keys = ['OUTPUT_DIR', 'OUTPUT_FILE']
+        _write_metadata(method, None, method_params, exclusion_keys, metadata_logger)
     else:
         target_met_file_path = os.path.join(tiled_city_data.target_met_files_path, met_filename)
         temp_met_folder = os.path.join(tmpdirname, Path(met_filename).stem, tiled_city_data.folder_name_tile_data)
         create_folder(temp_met_folder)
         target_met_folder = os.path.join(tiled_city_data.target_tcm_results_path, Path(met_filename).stem, tiled_city_data.folder_name_tile_data)
-        input_params = {
+        method_params = {
             "INPUT_DSM": tiled_city_data.target_dsm_path,
             "INPUT_SVF": tiled_city_data.target_svfszip_path,
             "INPUT_HEIGHT": tiled_city_data.target_wallheight_path,
@@ -198,9 +203,11 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logg
 
         keepers[temp_met_folder] = target_met_folder
 
-        _write_metadata(method, met_filename, input_params, metadata_logger)
+        # exclude output paths and write remainder to log file
+        exclusion_keys = ['OUTPUT_DIR']
+        _write_metadata(method, met_filename, method_params, exclusion_keys, metadata_logger)
 
-    return input_params, umep_method_title, keepers
+    return method_params, umep_method_title, keepers
 
 
 def _assign_method_title(method):

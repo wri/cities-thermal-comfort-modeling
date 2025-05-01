@@ -1,5 +1,7 @@
 @echo off
 
+call conda deactivate
+
 call conda activate base
 
 call conda remove -n cities-thermal --all --yes

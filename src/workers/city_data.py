@@ -87,6 +87,9 @@ class CityData:
             obj.target_tcm_results_path = os.path.join(obj.target_city_path, FOLDER_NAME_UMEP_TCM_RESULTS)
 
             if obj.folder_name_tile_data:
+                metadata_file_name = f'{obj.folder_name_tile_data}_metadata.log'
+                obj.target_umep_metadata_log_path = os.path.join(obj.target_log_path, 'model_metadata', metadata_file_name)
+
                 obj.target_raster_files_path = os.path.join(obj.target_city_primary_data_path,
                                                             FOLDER_NAME_PRIMARY_RASTER_FILES)
                 obj.target_primary_tile_data_path = os.path.join(obj.target_raster_files_path, obj.folder_name_tile_data)
@@ -104,6 +107,7 @@ class CityData:
 
         return obj
 
+# Logic for function: https://gfw.atlassian.net/browse/CIF-317
 def _get_latitude_based_leaf_start_end(min_lat, max_lat, northern_leaf_start, northern_leaf_end,
                                        southern_leaf_start, southern_leaf_end):
     tropical_latitude = 23.5

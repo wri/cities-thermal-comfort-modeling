@@ -13,7 +13,7 @@ from src.data_validation.manager import print_invalids
 from src.data_validation.meteorological_data_validator import evaluate_meteorological_data
 from src.worker_manager.ancillary_files import write_tile_grid, write_qgis_files
 from src.worker_manager.graph_builder import get_aoi_fishnet, get_aoi_from_config
-from src.workers.logger_tools import setup_logger, write_log_message
+from src.workers.logger_tools import setup_logger, log_general_file_message
 from src.worker_manager.reporter import parse_row_results, report_results
 from src.worker_manager.tools import get_existing_tile_metrics
 from src.workers.worker_meteorological_processor import get_met_data
@@ -35,7 +35,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     ctcm_intermediate_features = non_tiled_city_data.ctcm_intermediate_list
 
     logger = setup_logger(non_tiled_city_data.target_manager_log_path)
-    write_log_message('Starting jobs', __file__, logger)
+    log_general_file_message('Starting jobs', __file__, logger)
 
     aoi_boundary_polygon, tile_side_meters, tile_buffer_meters, utc_offset, config_crs = get_aoi_from_config(non_tiled_city_data)
 
@@ -46,7 +46,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
 
     # meteorological data
     if non_tiled_city_data.has_era_met_download:
-        write_log_message('Retrieving ERA meteorological data', __file__, logger)
+        log_general_file_message('Retrieving ERA meteorological data', __file__, logger)
         sampling_local_hours = non_tiled_city_data.sampling_local_hours
 
         target_met_files_path = non_tiled_city_data.target_met_files_path
@@ -89,7 +89,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
                                                     ctcm_intermediate_features, tile_boundary, utm_crs, tile_resolution,
                                                     utc_offset)
 
-            write_log_message(f'Staging: {proc_array}', __file__, logger)
+            log_general_file_message(f'Staging: {proc_array}', __file__, logger)
 
             delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
             futures.append(delay_tile_array)
@@ -115,12 +115,12 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
                                                     ctcm_intermediate_features, tile_boundary, utm_crs, None,
                                                     utc_offset)
 
-            write_log_message(f'Staging: {proc_array}', __file__, logger)
+            log_general_file_message(f'Staging: {proc_array}', __file__, logger)
 
             delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
             futures.append(delay_tile_array)
 
-    write_log_message('Starting model processing', __file__, logger)
+    log_general_file_message('Starting model processing', __file__, logger)
     number_number_of_tiles = number_of_tiles
     delays_all_passed, results_df = _process_rows(futures, number_number_of_tiles, logger)
 
@@ -136,13 +136,13 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     return_code = 0 if all(combined_delays_passed) or delays_all_passed else 1
 
     if return_code == 0 and delays_all_passed:
-        write_log_message('Building QGIS viewer objects', __file__, logger)
+        log_general_file_message('Building QGIS viewer objects', __file__, logger)
         write_qgis_files(non_tiled_city_data, utm_crs)
         return_str = "Processing encountered no errors."
     else:
         return_str = 'Processing encountered errors. See log file.'
 
-    write_log_message('Completing manager execution', __file__, logger)
+    log_general_file_message('Completing manager execution', __file__, logger)
 
     return return_code, return_str
 
@@ -201,7 +201,7 @@ def _process_rows(futures, number_of_units, logger):
                     ) as client:
 
             msg = f'See processing dashboard at {client.dashboard_link}'
-            write_log_message(msg, __file__, logger)
+            log_general_file_message(msg, __file__, logger)
 
             # TODO implement progress bar
             try:
@@ -215,11 +215,11 @@ def _process_rows(futures, number_of_units, logger):
             task_str = ','.join(map(str, failed_task_ids))
             count = len(failed_task_ids)
             msg = f'FAILURE: There were {count} processing failures for tasks indices: ({task_str})'
-            write_log_message(msg, __file__, logger)
+            log_general_file_message(msg, __file__, logger)
             print(msg)
 
             for failed_run in failed_task_details:
-                write_log_message(failed_run, __file__, logger)
+                log_general_file_message(failed_run, __file__, logger)
 
         return all_passed, results_df
     else:

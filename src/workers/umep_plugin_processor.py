@@ -15,7 +15,8 @@ from qgis.core import QgsApplication
 from src.constants import FILENAME_SVFS_ZIP
 from src.workers.worker_tools import remove_file, remove_folder, compute_time_diff_mins, create_folder, get_configurations
 from src.workers.city_data import CityData
-from src.workers.logger_tools import setup_logger, log_method_start, log_method_failure, log_method_completion
+from src.workers.logger_tools import setup_logger, log_method_start, log_method_failure, log_method_completion, \
+    log_model_metadata_message, setup_metadata_logger
 
 warnings.filterwarnings("ignore")
 
@@ -28,10 +29,11 @@ def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_
     start_time = datetime.now()
 
     tiled_city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
-    logger = setup_logger(tiled_city_data.target_model_log_path)
+    processing_logger = setup_logger(tiled_city_data.target_model_log_path)
+    metadata_logger = setup_metadata_logger(tiled_city_data.target_umep_metadata_log_path)
     method_title = _assign_method_title(step_method)
     method_title_with_tile = f'{method_title} for {folder_name_tile_data}'
-    log_method_start(method_title_with_tile, None, tiled_city_data.target_base_path, logger)
+    log_method_start(method_title_with_tile, None, tiled_city_data.target_base_path, processing_logger)
 
     # Initiate QGIS and UMEP processing
     try:
@@ -41,7 +43,7 @@ def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_
         Processing.initialize()
     except Exception as e_msg:
         msg = f'Processing could not initialize UMEP processing {e_msg}'
-        log_method_failure(datetime.now(), 'UMEP', tiled_city_data.source_base_path, msg, logger)
+        log_method_failure(datetime.now(), 'UMEP', tiled_city_data.source_base_path, msg, processing_logger)
 
 
     e_msg = ''
@@ -49,7 +51,8 @@ def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_
     retry_count = 0
     with (tempfile.TemporaryDirectory() as tmpdirname):
         # Get the UMEP processing parameters and prepare for the method
-        input_params, umep_method_title, keepers = _prepare_method_execution(step_method, tiled_city_data, tmpdirname, met_filename, utc_offset)
+        input_params, umep_method_title, keepers = _prepare_method_execution(step_method, tiled_city_data, tmpdirname,
+                                                                             metadata_logger, met_filename, utc_offset)
 
         while retry_count < MAX_RETRY_COUNT and return_code != 0:
             try:
@@ -69,23 +72,23 @@ def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_
                 except Exception as e_msg:
                     msg = (f'{method_title} processing succeeded but could not create target folder or move files: '
                            f'{tiled_city_data.target_intermediate_tile_data_path} due to {e_msg}')
-                    log_method_failure(datetime.now(), method_title, tiled_city_data.source_base_path, msg, logger)
+                    log_method_failure(datetime.now(), method_title, tiled_city_data.source_base_path, msg, processing_logger)
                     return 1
 
                 return_code = 0
             except Exception as e_msg:
                 msg = f'task:{method_title} failure. Retrying. ({e_msg})'
-                log_method_failure(datetime.now(), method_title, tiled_city_data.source_base_path, msg, logger)
+                log_method_failure(datetime.now(), method_title, tiled_city_data.source_base_path, msg, processing_logger)
                 if retry_count < MAX_RETRY_COUNT:
                     time.sleep(RETRY_PAUSE_TIME_SEC)
                 return_code = 3
             retry_count += 1
 
     if return_code == 0:
-        log_method_completion(start_time, method_title,  None, tiled_city_data.target_base_path, logger)
+        log_method_completion(start_time, method_title,  None, tiled_city_data.target_base_path, processing_logger)
     else:
         msg = f'{method_title} processing cancelled after {MAX_RETRY_COUNT} attempts.'
-        log_method_failure(datetime.now(), method_title, tiled_city_data.source_base_path, msg, logger)
+        log_method_failure(datetime.now(), method_title, tiled_city_data.source_base_path, msg, processing_logger)
 
     run_duration_min = compute_time_diff_mins(start_time)
 
@@ -96,8 +99,11 @@ def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_
 
     return return_stdout
 
+def _write_metadata(method, met_filename, input_params, metadata_logger):
+    for key, value in input_params.items():
+        log_model_metadata_message(method, met_filename, key, value, metadata_logger)
 
-def _prepare_method_execution(method, tiled_city_data, tmpdirname, met_filename=None, utc_offset=None):
+def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logger, met_filename=None, utc_offset=None):
     keepers = {}
 
     if method == 'wall_height_aspect':
@@ -114,6 +120,8 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, met_filename=
         umep_method_title = "umep:Urban Geometry: Wall Height and Aspect"
         keepers[temp_target_wallheight_path] = tiled_city_data.target_wallheight_path
         keepers[temp_target_wallaspect_path] = tiled_city_data.target_wallaspect_path
+
+        _write_metadata(method, None, input_params, metadata_logger)
 
     elif method == 'skyview_factor':
         create_folder(tiled_city_data.target_intermediate_tile_data_path)
@@ -133,6 +141,8 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, met_filename=
         }
         umep_method_title = 'umep:Urban Geometry: Sky View Factor'
         keepers[temp_svfs_file_with_extension] = tiled_city_data.target_svfszip_path
+
+        _write_metadata(method, None, input_params, metadata_logger)
     else:
         target_met_file_path = os.path.join(tiled_city_data.target_met_files_path, met_filename)
         temp_met_folder = os.path.join(tmpdirname, Path(met_filename).stem, tiled_city_data.folder_name_tile_data)
@@ -187,6 +197,8 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, met_filename=
         umep_method_title = 'umep:Outdoor Thermal Comfort: SOLWEIG'
 
         keepers[temp_met_folder] = target_met_folder
+
+        _write_metadata(method, met_filename, input_params, metadata_logger)
 
     return input_params, umep_method_title, keepers
 

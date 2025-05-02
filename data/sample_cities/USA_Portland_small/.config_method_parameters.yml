@@ -44,10 +44,10 @@
     trunk_zone_height: 25
   solweig:
     seasonal_leaf_coverage:
-      north_temperate_leaf_start: 97
-      north_temperate_leaf_end: 300
-      south_temperate_leaf_start: 283
-      south_temperate_leaf_end: 96
+      north_temperate_leaf_start: 96
+      north_temperate_leaf_end: 301
+      south_temperate_leaf_start: 282
+      south_temperate_leaf_end: 97
     conifer_trees: False
     albedo_walls: 0.2
     albedo_ground: 0.15

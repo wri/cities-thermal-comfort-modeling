@@ -107,14 +107,14 @@ class CityData:
 
         return obj
 
-# Logic for function: https://gfw.atlassian.net/browse/CIF-317
+# Logic for function: https://gfw.atlassian.net/browse/CIF-317 and https://gfw.atlassian.net/browse/CDB-300
 def _get_latitude_based_leaf_start_end(min_lat, max_lat, northern_leaf_start, northern_leaf_end,
                                        southern_leaf_start, southern_leaf_end):
     tropical_latitude = 23.5
     mid_lat = (min_lat + max_lat) / 2
     if abs(mid_lat) <= tropical_latitude:  # tropical zone
         leaf_start = 0
-        leaf_end = 365
+        leaf_end = 367
     elif mid_lat > tropical_latitude:
         leaf_start = northern_leaf_start
         leaf_end = northern_leaf_end

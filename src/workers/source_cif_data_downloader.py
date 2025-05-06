@@ -94,7 +94,9 @@ def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile
 
 def _get_lulc(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
-        from src.workers.open_urban import OpenUrban, reclass_map
+        # from src.workers.open_urban import OpenUrban, reclass_map
+        from city_metrix.layers.open_urban import reclass_map
+        from city_metrix.layers import OpenUrban
 
         # Load data
         bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)

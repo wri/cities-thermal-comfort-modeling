@@ -6,7 +6,7 @@
   author: author@wri.org
 # Processing Area of Interest used for tile construction and ERA5-data download. If any custom files
 # are specified above, then the system will not construct a new tile grid and will instead use the existing one.
-# If you don't want to subdivide the AOI, specify None for tile_side_meters and tile_buffer_meters.
+# Specify None for tile_side_meters to not subdivide the AOI. Recommended value for tile_buffer_meters is 600.
 - ProcessingAOI:
   utc_offset: -8
   min_lon: -122.7037

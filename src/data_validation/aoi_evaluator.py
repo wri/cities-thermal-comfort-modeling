@@ -83,27 +83,20 @@ def evaluate_aoi_configs_for_tiling(non_tiled_city_data):
                 invalids.append(msg)
 
         if tile_side_meters is not None and tile_side_meters < 150:
-            msg = (f"Requested tile_side_meters must be 100 meters or more in {FILENAME_METHOD_YML_CONFIG}. "
+            msg = (f"Requested tile_side_meters must be 150 meters or more in {FILENAME_METHOD_YML_CONFIG}. "
                    f"Specify None if you don't want to subdivide the aoi.")
             invalids.append((msg, True))
 
-        if tile_side_meters is not None and int(tile_side_meters) <= 10:
-            msg = (f"tile_side_meters must be greater than 10 in {FILENAME_METHOD_YML_CONFIG}. "
-                   f"Specify None if you don't want to subdivide the aoi.")
+        if tile_buffer_meters is None:
+            msg = f"Requested tile_buffer_meters must be specified as a number >= 100 m in {FILENAME_METHOD_YML_CONFIG}. "
             invalids.append((msg, True))
 
-        if tile_buffer_meters is not None and int(tile_buffer_meters) <= 10:
-            msg = (f"tile_buffer_meters must be greater than 10 in {FILENAME_METHOD_YML_CONFIG}. "
-                   f"Specify None if you don't want to subdivide the aoi.")
+        if tile_buffer_meters is not None and int(tile_buffer_meters) < 100:
+            msg = f"Requested tile_buffer_meters must be 100 m or more in {FILENAME_METHOD_YML_CONFIG} with recommended value of 600."
             invalids.append((msg, True))
 
-        if tile_buffer_meters is not None and int(tile_buffer_meters) > 500:
-            msg = (f"tile_buffer_meters must be less than 500 in {FILENAME_METHOD_YML_CONFIG}. S"
-                   f"pecify None if you don't want to subdivide the aoi.")
-            invalids.append((msg, True))
-
-        if tile_side_meters is None and tile_buffer_meters is not None:
-            msg = f"tile_buffer_meters must be None if tile_side_meters is None in {FILENAME_METHOD_YML_CONFIG}."
+        if tile_buffer_meters is not None and int(tile_buffer_meters) > 600:
+            msg = f"Requested tile_buffer_meters must be less than or equal to 600 m in {FILENAME_METHOD_YML_CONFIG}."
             invalids.append((msg, True))
 
     return invalids

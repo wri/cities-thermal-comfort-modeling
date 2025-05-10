@@ -1,10 +1,10 @@
+import geopandas as gpd
 from city_metrix.constants import ProjectionType
 from city_metrix.metrix_model import GeoExtent, create_fishnet_grid
 from city_metrix.metrix_tools import get_utm_zone_from_latlon_point, reproject_units
 from shapely.geometry.point import Point
 from src.constants import WGS_CRS
 from src.worker_manager.tools import construct_polygon_from_bounds, coordinates_to_bbox
-
 
 def get_aoi_from_config(non_tiled_city_data):
     # AOI metrics
@@ -39,17 +39,20 @@ def get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters, in_crs):
         maxy = in_maxy
         utm_crs = in_crs
 
-    if tile_buffer_meters is None:
-        tile_buffer_meters = 0
-        unbuffered_tile_gpd = None
+    if tile_side_meters is None:
+        bbox_poly = construct_polygon_from_bounds(minx, miny, maxx, maxy)
+        unbuffered_tile_gpd = gpd.GeoDataFrame(index=[0], crs=utm_crs, geometry=[bbox_poly])
     else:
         bbox = GeoExtent((minx, miny, maxx, maxy), utm_crs)
         unbuffered_tile_gpd = create_fishnet_grid(bbox, tile_side_meters, 0, length_units="meters",
                                                   output_as=ProjectionType.UTM)
 
     if tile_side_meters is None:
-        import geopandas as gpd
-        bbox_poly = construct_polygon_from_bounds(minx, miny, maxx, maxy)
+        buffered_minx = minx - tile_buffer_meters
+        buffered_miny = miny - tile_buffer_meters
+        buffered_maxx = maxx + tile_buffer_meters
+        buffered_maxy = maxy + tile_buffer_meters
+        bbox_poly = construct_polygon_from_bounds(buffered_minx, buffered_miny, buffered_maxx, buffered_maxy)
         tile_gpd = gpd.GeoDataFrame(index=[0], crs=utm_crs, geometry=[bbox_poly])
     else:
         bbox = GeoExtent((minx, miny, maxx, maxy), utm_crs)

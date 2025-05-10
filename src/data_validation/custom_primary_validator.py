@@ -33,12 +33,12 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
 
 
     if tile_side_meters:
-        msg = f"tile_side_meters cannot be specified for a dataset with custom primary raster files."
-        invalids.append((msg, True))
+        msg = f"tile_side_meters are ignored for dataset with custom primary raster files."
+        invalids.append((msg, False))
 
     if tile_buffer_meters:
-        msg = f"tile_buffer_meters cannot be specified for a dataset with custom primary raster files."
-        invalids.append((msg, True))
+        msg = f"tile_buffer_meters are ignored for a dataset with custom primary raster files."
+        invalids.append((msg, False))
 
     # Evaluate resolution for mixed CIF datasource
     if cif_features and custom_features:

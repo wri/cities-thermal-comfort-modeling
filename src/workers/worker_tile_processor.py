@@ -107,7 +107,7 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
 
         # Remove buffered area from mrt results
         buffer_meters = tiled_city_data.tile_buffer_meters
-        if buffer_meters is not None and len(custom_primary_features) == 0:
+        if len(custom_primary_features) == 0:
             _trim_mrt_buffer(target_tcm_results_path, tile_folder_name, met_filenames, tile_boundary, buffer_meters)
 
     # Construct json of combined return values
@@ -161,7 +161,6 @@ def _trim_mrt_buffer(target_tcm_results_path, tile_folder_name, met_filenames, t
                     dst.write(out_image)
             else:
                 continue
-
 
 def _transfer_custom_files(tiled_city_data, custom_feature_list):
     source_paths = []

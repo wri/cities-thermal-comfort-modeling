@@ -1,5 +1,10 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/05/09
+1. Now allows buffering of untiled AOI
+2. For fully CIF setup, minimum buffer size is 100 with suggested 600 m.
+3. For custom setup, buffer size and side length are ignored but return warning.
+
 ## 2025/05/01
 1. Now outputs parameter settings that were passed to UMEP plugins into the .admin/model_metadata folder in the outcome location.
    1. One metadata file is written per tile.

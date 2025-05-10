@@ -18,15 +18,14 @@ def find_and_replace(directory, old_string, new_string):
 # Example usage
 directory = r'C:\Users\kenn.cartier\Documents\github\cities-thermal-comfort-modeling\data\sample_cities'
 
-old_string = 'north_temperate_leaf_start: 97'; new_string = 'north_temperate_leaf_start: 96'
+old_string = "If you don't want to subdivide the AOI, specify None for tile_side_meters and tile_buffer_meters."
+new_string = "Specify None for tile_side_meters to not subdivide the AOI. Recommended value for tile_buffer_meters is 600."
 find_and_replace(directory, old_string, new_string)
 
-old_string = 'north_temperate_leaf_end: 300'; new_string = 'north_temperate_leaf_end: 301'
+old_string = 'tile_buffer_meters: None'; new_string = 'tile_buffer_meters: 600'
 find_and_replace(directory, old_string, new_string)
 
-old_string = 'south_temperate_leaf_start: 283'; new_string = 'south_temperate_leaf_start: 282'
-find_and_replace(directory, old_string, new_string)
 
-old_string = 'south_temperate_leaf_end: 96'; new_string = 'south_temperate_leaf_end: 97'
-find_and_replace(directory, old_string, new_string)
+
+
 

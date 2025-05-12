@@ -32,6 +32,7 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
          1. tile-side-length in meters or None depending on whether you want the area sub-tiled
          1. tile-buffer length in meters or None depending on whether you want the constructed tiles to be buffered
            * Note: the buffered area will be automatically clipped from the resultant MRT files, but not from primary or intermediate files.
+           * Note: buffering is required for fully-CIF projects, but not for partial or fully customer project.s
       1. the name(s) for meteorological file(s) to be processed by the solweig method.
          * Enter "<download_era5>" if you instead or also want the system to automatically download ERA5 data into a file named "met_era5_hottest_days.txt"
          *  **TIP**: On the next run, you can enter the file name met_era5_hottest_days.txt to avoid the download from ERA5 since the file is already on the system

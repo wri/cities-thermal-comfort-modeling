@@ -1,5 +1,8 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/05/12
+1. Replaced NasaDEM with FabDEM for both DEM and building-ground DSM layers
+
 ## 2025/05/09
 1. Now allows buffering of untiled AOI
 2. For fully CIF setup, minimum buffer size is 100 with suggested 600 m.

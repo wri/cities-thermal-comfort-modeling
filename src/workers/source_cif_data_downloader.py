@@ -177,10 +177,10 @@ def _get_tree_canopy_height(tiled_city_data, tile_data_path, aoi_gdf, output_res
 
 def _get_dem(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
-        from city_metrix.layers import NasaDEM
+        from city_metrix.layers import FabDEM
 
         bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
-        nasa_dem = NasaDEM().get_data(bbox, spatial_resolution=output_resolution)
+        nasa_dem = FabDEM().get_data(bbox, spatial_resolution=output_resolution)
 
         if nasa_dem is None:
             return False

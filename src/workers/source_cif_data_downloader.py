@@ -182,19 +182,19 @@ def _get_dem(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger
         from city_metrix.layers import FabDEM
 
         bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
-        nasa_dem = FabDEM().get_data(bbox, spatial_resolution=output_resolution)
+        dem = FabDEM().get_data(bbox, spatial_resolution=output_resolution)
 
-        if nasa_dem is None:
+        if dem is None:
             return False
 
         try:
             # first attempt to save the file in the preferred NS direction
-            was_reversed, standardized_nasa_dem = ctcm_standardize_y_dimension_direction(nasa_dem)
+            was_reversed, standardized_nasa_dem = ctcm_standardize_y_dimension_direction(dem)
             save_tiff_file(standardized_nasa_dem, tile_data_path, tiled_city_data.dem_tif_filename)
             return True
         except:
             # otherwise save without flipping direction
-            save_tiff_file(nasa_dem, tile_data_path, tiled_city_data.dem_tif_filename)
+            save_tiff_file(dem, tile_data_path, tiled_city_data.dem_tif_filename)
             return True
 
     except Exception as e_msg:

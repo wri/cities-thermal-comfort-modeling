@@ -114,7 +114,7 @@ def _get_latitude_based_leaf_start_end(min_lat, max_lat, northern_leaf_start, no
     mid_lat = (min_lat + max_lat) / 2
     if abs(mid_lat) <= tropical_latitude:  # tropical zone
         leaf_start = 0
-        leaf_end = 367
+        leaf_end = 366
     elif mid_lat > tropical_latitude:
         leaf_start = northern_leaf_start
         leaf_end = northern_leaf_end

@@ -40,6 +40,7 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
                 est_runtime_mins = math.ceil(6.26228065090E-4*x -2.28907E3)
             _print_runtime_estimate(x, est_runtime_mins)
 
+    return_code = 1
     if processing_option == 'run_pipeline':
         # Remove existing target scenario folder
         target_scenario_path = non_tiled_city_data.target_city_path
@@ -55,7 +56,8 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
             print(return_str)
         else:
             _highlighted_yellow_print(return_str)
-        return return_code
+
+    return return_code
 
 
 def _get_existing_tiles(non_tiled_city_data):

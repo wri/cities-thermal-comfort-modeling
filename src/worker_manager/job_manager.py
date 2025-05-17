@@ -196,7 +196,7 @@ def _process_rows(futures, number_of_units, logger):
         with Client(n_workers=num_workers,
                     threads_per_worker=1,
                     processes=False,
-                    memory_limit='2GB',
+                    memory_limit='auto',
                     asynchronous=False
                     ) as client:
 

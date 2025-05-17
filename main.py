@@ -86,7 +86,8 @@ def _print_runtime_estimate(cell_count, est_runtime_mins):
     time_change = datetime.timedelta(minutes=est_runtime_mins)
     est_end_time = now + time_change
     print(f'\nEstimated runtime for full solweig without intermediate files is {est_runtime_hours} hours for {cell_count:,} raster cells.')
-    print(f'Estimated completion time for processing of tile_001: {est_end_time.strftime('%m/%d/%Y %I:%M %p')}\n')
+    end_time_str = est_end_time.strftime('%m/%d/%Y %I:%M %p')
+    print(f'Estimated completion time for processing of tile_001: {end_time_str}\n')
 
 
 def _highlighted_yellow_print(msg):

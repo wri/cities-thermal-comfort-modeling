@@ -4,23 +4,25 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.12.7
-  - gdal=3.10.3
-  - numpy=1.26.4
-  - matplotlib=3.10.1
-  - qgis=3.40.6
-  - matplotlib=3.10.1
-  - scipy=1.15.2
+  - python=3.10.16
+  - cdsapi=0.7.5
   - conda-build=25.4.2
-  - dask[complete]=2025.3.0
+  - dask[complete]=2025.2.0
+  - gdal=3.10.3
+  - jaydebeapi=1.2.3
+  - matplotlib=3.10.3
+  - numba=0.61.2
+  - numpy=1.26.4
+  - pandas=2.2.3
+  - pip=25.0.1
+  - pytest_check=2.5.1
+  - pytest=8.3.5
+  - qgis=3.40.6
   - rasterio=1.4.3
   - rioxarray=0.19.0
-  - cdsapi=0.7.5
-  - pytest=8.3.5
-  - pytest_check=2.5.1
-  - utm=0.7.0
+  - scipy=1.15.2
   - shapely=2.1.0
-  - pip=25.0.1
+  - utm=0.7.0
   - pip:
-    - git+https://github.com/wri/cities-cif@main
+    - git+https://github.com/wri/cities-cif@CDB-214-Explore-running-ctcm-on-linux
   #   - git+https://github.com/wri/cities-cif@v0.1.2

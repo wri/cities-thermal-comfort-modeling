@@ -186,6 +186,7 @@ def test_mixed_custom_city():
         if CLEANUP_RESULTS:
             remove_folder(non_tiled_city_data.target_city_parent_path)
 
+
 def test_custom_city():
     source_city_folder_name = 'ZAF_Capetown_small_tile'
     non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)

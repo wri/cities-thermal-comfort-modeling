@@ -25,7 +25,8 @@ class CityData:
         obj.scenario_short_title, obj.scenario_version, obj.scenario_description, obj.scenario_author = (
             parse_scenario_config(yml_values))
 
-        obj.utc_offset, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat, obj.tile_side_meters, obj.tile_buffer_meters = \
+        (obj.utc_offset, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat, obj.tile_side_meters,
+         obj.tile_buffer_meters, obj.remove_mrt_buffer_for_final_output) = \
             parse_processing_areas_config(yml_values)
 
         obj.met_filenames, obj.has_era_met_download = parse_met_files_config(yml_values)

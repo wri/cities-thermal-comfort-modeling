@@ -30,12 +30,16 @@ def parse_processing_areas_config(yml_values):
         max_lat = unpack_quoted_value(processing_area['max_lat'])
         tile_side_meters = unpack_quoted_value(processing_area['tile_side_meters'])
         tile_buffer_meters = unpack_quoted_value(processing_area['tile_buffer_meters'])
+        remove_mrt_buffer_for_final_output = unpack_quoted_value(processing_area['remove_mrt_buffer_for_final_output'])
+
+        if not isinstance(remove_mrt_buffer_for_final_output, bool):
+            raise Exception("Wrong data type for remove_mrt_buffer_for_final_output parameter.")
 
     except Exception as e_msg:
         raise Exception(
             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
 
-    return utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters
+    return utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters, remove_mrt_buffer_for_final_output
 
 
 def parse_met_files_config(yml_values):

@@ -7,6 +7,7 @@
 # Processing Area of Interest used for tile construction and ERA5-data download. If any custom files
 # are specified above, then the system will not construct a new tile grid and will instead use the existing one.
 # Specify None for tile_side_meters to not subdivide the AOI. Recommended value for tile_buffer_meters is 600.
+# Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
   utc_offset: 2
   min_lon: 18.41293
@@ -15,6 +16,7 @@
   max_lat: -33.91999
   tile_side_meters: None
   tile_buffer_meters: 100
+  remove_mrt_buffer_for_final_output: True
 # Names of meteorological files used by SOLWEIG method in "UMEP for Processing" plugin.
 # Specify custom files or "<download_era5>" method to automatically download ERA5 data into a file named met_era5_hottest_days.txt
 - MetFiles:

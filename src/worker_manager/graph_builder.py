@@ -30,8 +30,16 @@ def get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters, in_crs):
         midx = (in_minx + in_maxx) / 2
         midy = (in_miny + in_maxy) / 2
         utm_crs = get_utm_zone_from_latlon_point(Point(midx, midy))
-        reproj_bbox = reproject_units(in_miny, in_minx, in_maxy, in_maxx, WGS_CRS, utm_crs)
-        miny, minx, maxy, maxx = reproj_bbox
+
+        from shapely.geometry import box, Polygon
+        from pyproj import Transformer
+
+        boundary_polygon = box(*aoi_boundary.bounds)
+        transformer = Transformer.from_crs(WGS_CRS, utm_crs, always_xy=True)
+        utm_coords = [transformer.transform(x, y) for x, y in boundary_polygon.exterior.coords]
+        utm_polygon = Polygon(utm_coords)
+
+        minx, miny, maxx, maxy = utm_polygon.bounds
     else:
         minx = in_minx
         miny = in_miny

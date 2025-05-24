@@ -2,7 +2,8 @@
 
 ## 2025/05/24
 1. CDB-322. Fixed building height computation in CIF that lead to C-TCM failure to produce DSM layer. 
-2. CDB-321. Expanded extents of C-TCM CIF layers to fit the outermost dimensions of the AOI converted from geo to UTM coordinates.
+2. CDB-321. Expanded extents of C-TCM CIF layers to outermost dimensions of the AOI converted from geo to UTM coordinates.
+3. CDB-320. Added option to config yml to control post-processing clipping of MRT results.
 
 ## 2025/05/12
 1. Replaced NasaDEM with FabDEM for both DEM and building-ground DSM layers

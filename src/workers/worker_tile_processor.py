@@ -170,7 +170,9 @@ def _transfer_custom_files(tiled_city_data, custom_feature_list):
         elif feature == 'dsm':
             source_paths.append((tiled_city_data.source_dsm_path, tiled_city_data.target_dsm_path))
         elif feature == 'lulc':
-            source_paths.append((tiled_city_data.source_land_cover_path, tiled_city_data.target_land_cover_path))
+            source_paths.append((tiled_city_data.source_lulc_path, tiled_city_data.target_lulc_path))
+        elif feature == 'open_urban':
+            source_paths.append((tiled_city_data.source_open_urban_path, tiled_city_data.target_open_urban_path))
         elif feature == 'tree_canopy':
             source_paths.append((tiled_city_data.source_tree_canopy_path, tiled_city_data.target_tree_canopy_path))
         elif feature == 'wallaspect':
@@ -191,7 +193,8 @@ def ensure_y_dimension_direction(city_data):
 
     _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_dem_path)
     _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_dsm_path)
-    _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_land_cover_path)
+    _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_lulc_path)
+    _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_open_urban_path)
     _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_tree_canopy_path)
 
 

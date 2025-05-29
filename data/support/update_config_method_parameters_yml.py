@@ -30,14 +30,21 @@ def find_and_replace(directory, old_string, new_string, use_start_string_match):
 # Example usage
 directory = r'C:\Users\kenn.cartier\Documents\github\cities-thermal-comfort-modeling\data\sample_cities'
 
-old_string = "Recommended value for tile_buffer_meters is 600."
-new_string = "Recommended value for tile_buffer_meters is 600.\n# Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True."
+old_string = "cif_tree_canopy.tif, cif_lulc.tif"
+new_string = "cif_lulc.tif, cif_open_urban.tif, cif_tree_canopy.tif"
 find_and_replace(directory, old_string, new_string, False)
 
-old_string = '  tile_buffer_meters:'; new_string = '  remove_mrt_buffer_for_final_output: True'
-find_and_replace(directory, old_string, new_string, True)
+old_string = 'lulc_tif_filename: lulc.tif'
+new_string = 'lulc_tif_filename: lulc.tif\n  open_urban_tif_filename: open_urban.tif'
+find_and_replace(directory, old_string, new_string, False)
 
+old_string = 'lulc_tif_filename: cif_lulc.tif'
+new_string = 'lulc_tif_filename: cif_lulc.tif\n  open_urban_tif_filename: cif_open_urban.tif'
+find_and_replace(directory, old_string, new_string, False)
 
+old_string = 'lulc_tif_filename: None'
+new_string = 'lulc_tif_filename: None\n  open_urban_tif_filename: None'
+find_and_replace(directory, old_string, new_string, False)
 
 
 

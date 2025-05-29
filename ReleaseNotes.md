@@ -1,5 +1,10 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/05/29
+1. Added generation and handling of open_urban primary file.
+1. Changed error message to a warning for when the actual AOI differs by a large distance from stated AOI in the config yml file.
+1. Updated test datasets for the new layer and to ensure all test files have matching extents.
+
 ## 2025/05/24
 1. CDB-322. Fixed building height computation in CIF that lead to C-TCM failure to produce DSM layer. 
 2. CDB-321. Expanded extents of C-TCM CIF layers to outermost dimensions of the AOI converted from geo to UTM coordinates.

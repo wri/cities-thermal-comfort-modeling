@@ -44,6 +44,11 @@ VALID_PRIMARY_TYPES = [
         "yml_tag": "lulc_tif_filename",
         "cif_template_name": 'cif_lulc.tif'
     },
+    {
+        "short_name": "open_urban",
+        "yml_tag": "open_urban_tif_filename",
+        "cif_template_name": 'cif_open_urban.tif'
+    },
 
 ]
 

@@ -29,7 +29,7 @@ def test_tropical_full_cif_city():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        expected_count = 15
+        expected_count = 16
         equal(vrt_count, expected_count,
               msg=f"Expected VRT count of {expected_count} files, but actual count is {vrt_count}")
     finally:
@@ -50,7 +50,7 @@ def test_tiled_cif_city():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        expected_count = 15
+        expected_count = 16
         equal(vrt_count, expected_count,
               msg=f"Expected VRT count of {expected_count} files, but actual count is {vrt_count}")
     finally:
@@ -72,7 +72,7 @@ def test_tiled_buffered_cif_city():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        expected_count = 15
+        expected_count = 16
         equal(vrt_count, expected_count,
               msg=f"Expected VRT count of {expected_count} files, but actual count is {vrt_count}")
     finally:
@@ -94,7 +94,7 @@ def test_tiled_custom_city():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        expected_count = 20
+        expected_count = 21
         equal(vrt_count, expected_count,
               msg=f"Expected VRT count of {expected_count} files, but actual count is {vrt_count}")
     finally:
@@ -116,7 +116,7 @@ def test_portland_full_custom_small():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         assert return_code == 0
-        assert vrt_count == 14
+        assert vrt_count == 15
     finally:
         if CLEANUP_RESULTS:
             remove_folder(non_tiled_city_data.target_city_parent_path)
@@ -136,7 +136,7 @@ def test_download_only_cif_city():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        expected_count = 6
+        expected_count = 7
         equal(vrt_count, expected_count,
               msg=f"Expected VRT count of {expected_count} files, but actual count is {vrt_count}")
     finally:
@@ -157,7 +157,7 @@ def test_untiled_full_cif():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        expected_count = 15
+        expected_count = 16
         equal(vrt_count, expected_count,
               msg=f"Expected VRT count of {expected_count} files, but actual count is {vrt_count}")
     finally:
@@ -179,7 +179,7 @@ def test_mixed_custom_city():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        expected_count = 14
+        expected_count = 15
         equal(vrt_count, expected_count,
               msg=f"Expected VRT count of {expected_count} files, but actual count is {vrt_count}")
     finally:
@@ -200,7 +200,7 @@ def test_custom_city():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        expected_count = 20
+        expected_count = 21
         equal(vrt_count, expected_count,
               msg=f"Expected VRT count of {expected_count} files, but actual count is {vrt_count}")
     finally:
@@ -222,7 +222,7 @@ def test_custom_city_with_full_intermediates():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        expected_count = 20
+        expected_count = 21
         equal(vrt_count, expected_count,
               msg=f"Expected VRT count of {expected_count} files, but actual count is {vrt_count}")
     finally:
@@ -244,7 +244,7 @@ def test_custom_city_with_mixed_intermediates():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        expected_count = 20
+        expected_count = 21
         equal(vrt_count, expected_count,
               msg=f"Expected VRT count of {expected_count} files, but actual count is {vrt_count}")
     finally:

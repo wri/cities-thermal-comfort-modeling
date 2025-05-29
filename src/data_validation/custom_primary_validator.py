@@ -87,7 +87,8 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
 
         prior_dem = tiled_city_data.source_dem_path
         prior_dsm = tiled_city_data.source_dsm_path
-        prior_lulc = tiled_city_data.source_land_cover_path
+        prior_lulc = tiled_city_data.source_lulc_path
+        prior_open_urban = tiled_city_data.source_open_urban_path
         prior_tree_canopy = tiled_city_data.source_tree_canopy_path
 
         if cif_features is not None and 'dem' not in cif_features and verify_path(prior_dem) is False:
@@ -102,6 +103,10 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
             msg = f'Specified custom  source file: {prior_lulc} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
             invalids.append((msg, True))
 
+        if cif_features is not None and 'open_urban' not in cif_features and verify_path(prior_open_urban) is False:
+            msg = f'Specified custom  source file: {prior_open_urban} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
+            invalids.append((msg, True))
+
         if cif_features is not None and 'tree_canopy' not in cif_features and verify_path(prior_tree_canopy) is False:
             msg = f'Specified custom  source file: {prior_tree_canopy} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
             invalids.append((msg, True))
@@ -113,10 +118,10 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
                 invalids.append((msg, True))
 
         if task_method in ['umep_solweig']:
-            prior_land_cover = tiled_city_data.source_land_cover_path
+            prior_lulc = tiled_city_data.source_lulc_path
             prior_dem = tiled_city_data.source_dem_path
-            if cif_features is not None and 'lulc' not in cif_features and verify_path(prior_land_cover) is False:
-                msg = (f'Required source file: {prior_land_cover} not found for method: {task_method} as '
+            if cif_features is not None and 'lulc' not in cif_features and verify_path(prior_lulc) is False:
+                msg = (f'Required source file: {prior_lulc} not found for method: {task_method} as '
                        f'specified in {FILENAME_METHOD_YML_CONFIG} file.')
                 invalids.append((msg, True))
             if cif_features is not None and 'dem' not in cif_features and verify_path(prior_dem) is False:
@@ -242,5 +247,7 @@ def _get_list_of_existing_tifs_to_be_processed(city_data, cif_feature_list):
         filter_list.append(city_data.tree_canopy_tif_filename)
     if 'lulc' not in cif_feature_list:
         filter_list.append(city_data.lulc_tif_filename)
+    if 'open_urban' not in cif_feature_list:
+        filter_list.append(city_data.open_urban_tif_filename)
 
     return filter_list

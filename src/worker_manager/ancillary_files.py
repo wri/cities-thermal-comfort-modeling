@@ -23,6 +23,7 @@ def write_qgis_files(city_data, crs_str):
     dsm_file_name = city_data.dsm_tif_filename
     tree_canopy_file_name = city_data.tree_canopy_tif_filename
     lulc_file_name = city_data.lulc_tif_filename
+    open_urban_file_name = city_data.open_urban_tif_filename
 
     target_raster_files = []
     target_bucket = Path(target_folder).stem
@@ -34,6 +35,8 @@ def write_qgis_files(city_data, crs_str):
     target_raster_files += tree_canopy
     lulc = _build_file_dict(target_bucket, 'base','lulc', 0, [lulc_file_name])
     target_raster_files += lulc
+    open_urban = _build_file_dict(target_bucket, 'base','open_urban', 0, [open_urban_file_name])
+    target_raster_files += open_urban
     _write_raster_vrt_file_for_folder(target_folder, target_raster_files, target_qgis_data_folder)
 
     # Build VRTs for preprocessed results
@@ -261,6 +264,7 @@ def _update_custom_yml_parameters(non_tiled_city_data, updated_aoi):
     custom_primary_filenames['dem_tif_filename'] = non_tiled_city_data.dem_tif_filename
     custom_primary_filenames['dsm_tif_filename'] = non_tiled_city_data.dsm_tif_filename
     custom_primary_filenames['lulc_tif_filename'] = non_tiled_city_data.lulc_tif_filename
+    custom_primary_filenames['open_urban_tif_filename'] = non_tiled_city_data.open_urban_tif_filename
     custom_primary_filenames['tree_canopy_tif_filename'] = non_tiled_city_data.tree_canopy_tif_filename
 
     custom_intermediate_filenames = list_doc[4]

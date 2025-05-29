@@ -71,7 +71,7 @@ def test_get_cif_terrain_data():
 
 def remove_output_files(feature_list):
     if 'lulc' in feature_list:
-        remove_file(city_data.target_land_cover_path)
+        remove_file(city_data.target_lulc_path)
     if 'tree_canopy' in feature_list:
         remove_file(city_data.target_tree_canopy_path)
     if 'dem' in feature_list:

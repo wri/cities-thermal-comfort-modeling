@@ -25,11 +25,12 @@
 # Mapping to name of custom TIFF source file or specify None where custom file is not available for processing.
 # If None is specified, then the system will auto-generate a TIFF file from CIF.
 # Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif
-# Auto-generated filenames from CIF: cif_dem.tif, cif_dsm_ground_build.tif, cif_tree_canopy.tif, cif_lulc.tif
+# Auto-generated filenames from CIF: cif_dem.tif, cif_dsm_ground_build.tif, cif_lulc.tif, cif_open_urban.tif, cif_tree_canopy.tif
 - CustomTiffFilenames:
   dem_tif_filename: None
   dsm_tif_filename: dsm_ground_build.tif
   lulc_tif_filename: lulc.tif
+  open_urban_tif_filename: open_urban.tif
   tree_canopy_tif_filename: tree_canopy.tif
 - PreparedIntermediateFilenames:
   skyview_factor_filename: None

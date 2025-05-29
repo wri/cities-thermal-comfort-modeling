@@ -56,20 +56,27 @@ def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-lulc download for tile {tile_id}', None, '', logger)
         elif feature_sequence_id == 2:
+            if 'open_urban' in feature_list:
+                time.sleep(wait_time_sec)
+                log_method_start(f'CIF-open_urban download for {tile_id}', None, '', logger)
+                this_success = _get_open_urban(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
+                result_flags.append(this_success)
+                log_method_completion(start_time, f'CIF-open_urban download for tile {tile_id}', None, '', logger)
+        elif feature_sequence_id == 3:
             if 'tree_canopy' in feature_list:
                 time.sleep(wait_time_sec)
                 log_method_start(f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
                 this_success = _get_tree_canopy_height(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time,f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
-        elif feature_sequence_id == 3:
+        elif feature_sequence_id == 4:
             if 'dem' in feature_list:
                 time.sleep(wait_time_sec)
                 log_method_start(f'CIF-DEM download for {tile_id}', None, '', logger)
                 this_success = _get_dem(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-DEM download for {tile_id}', None, '', logger)
-        elif feature_sequence_id == 4:
+        elif feature_sequence_id == 5:
             if 'dsm' in feature_list:
                 time.sleep(wait_time_sec)
                 log_method_start(f'CIF-DSM download for {tile_id}', None, '', logger)
@@ -94,7 +101,6 @@ def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile
 
 def _get_lulc(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
-        # from src.workers.open_urban import OpenUrban, reclass_map
         from city_metrix.layers.open_urban import reclass_map
         from city_metrix.layers import OpenUrban
 
@@ -141,6 +147,32 @@ def _get_lulc(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logge
     except Exception as e_msg:
         msg = f'Lulc processing cancelled due to failure {e_msg}.'
         log_method_failure(datetime.now(), 'lulc', tiled_city_data.source_base_path, msg, logger)
+        return False
+
+
+def _get_open_urban(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
+    try:
+        from city_metrix.layers import OpenUrban
+
+        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
+        open_urban = OpenUrban().get_data(bbox)
+
+        if open_urban is None:
+            return False
+
+        try:
+            # first attempt to save the file in the preferred NS direction
+            was_reversed, standardized_open_urban = ctcm_standardize_y_dimension_direction(open_urban)
+            save_tiff_file(standardized_open_urban, tile_data_path, tiled_city_data.open_urban_tif_filename)
+            return True
+        except:
+            # otherwise save without flipping direction
+            save_tiff_file(open_urban, tile_data_path, tiled_city_data.open_urban_tif_filename)
+            return True
+
+    except Exception as e_msg:
+        msg = f'OpenUrban processing cancelled due to failure {e_msg}.'
+        log_method_failure(datetime.now(), 'OpenUrban', tiled_city_data.source_base_path, msg, logger)
         return False
 
 

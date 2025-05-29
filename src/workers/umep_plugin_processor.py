@@ -165,7 +165,7 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logg
             "CONIFER_TREES": tiled_city_data.conifer_trees,
             "INPUT_TDSM": None,
             "INPUT_THEIGHT": 25,
-            "INPUT_LC": tiled_city_data.target_land_cover_path,
+            "INPUT_LC": tiled_city_data.target_lulc_path,
             "USE_LC_BUILD": False,
             "INPUT_DEM": tiled_city_data.target_dem_path,
             "SAVE_BUILD": False,

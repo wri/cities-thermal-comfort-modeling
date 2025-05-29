@@ -32,12 +32,11 @@ class CityData:
         obj.met_filenames, obj.has_era_met_download = parse_met_files_config(yml_values)
 
         (obj.dem_tif_filename, obj.dsm_tif_filename, obj.tree_canopy_tif_filename, obj.lulc_tif_filename,
-         obj.custom_primary_feature_list, obj.custom_primary_filenames, obj.cif_primary_feature_list) = (
-            parse_primary_filenames_config(yml_values))
+         obj.open_urban_tif_filename, obj.custom_primary_feature_list, obj.custom_primary_filenames,
+         obj.cif_primary_feature_list) = parse_primary_filenames_config(yml_values)
 
         (obj.wall_aspect_filename, obj.wall_height_filename, obj.skyview_factor_filename,
-         obj.custom_intermediate_list, obj.ctcm_intermediate_list) =\
-            parse_intermediate_filenames_config(yml_values)
+         obj.custom_intermediate_list, obj.ctcm_intermediate_list) = parse_intermediate_filenames_config(yml_values)
 
         (obj.new_task_method, northern_leaf_start, northern_leaf_end, southern_leaf_start, southern_leaf_end,
          obj.wall_lower_limit_height, obj.light_transmissivity, obj.trunk_zone_height,
@@ -55,7 +54,8 @@ class CityData:
             obj.source_dem_path = os.path.join(obj.source_primary_raster_tile_data_path, obj.dem_tif_filename)
             obj.source_dsm_path = os.path.join(obj.source_primary_raster_tile_data_path, obj.dsm_tif_filename)
             obj.source_tree_canopy_path = os.path.join(obj.source_primary_raster_tile_data_path, obj.tree_canopy_tif_filename)
-            obj.source_land_cover_path = os.path.join(obj.source_primary_raster_tile_data_path, obj.lulc_tif_filename)
+            obj.source_lulc_path = os.path.join(obj.source_primary_raster_tile_data_path, obj.lulc_tif_filename)
+            obj.source_open_urban_path = os.path.join(obj.source_primary_raster_tile_data_path, obj.open_urban_tif_filename)
 
             source_intermediate_tile_data_path = os.path.join(obj.source_intermediate_data_path, obj.folder_name_tile_data)
             obj.source_wallheight_path = os.path.join(source_intermediate_tile_data_path, obj.wall_height_filename)
@@ -99,7 +99,8 @@ class CityData:
                 obj.target_dsm_path = os.path.join(obj.target_primary_tile_data_path, obj.dsm_tif_filename)
                 obj.target_tree_canopy_path = os.path.join(obj.target_primary_tile_data_path,
                                                            obj.tree_canopy_tif_filename)
-                obj.target_land_cover_path = os.path.join(obj.target_primary_tile_data_path, obj.lulc_tif_filename)
+                obj.target_lulc_path = os.path.join(obj.target_primary_tile_data_path, obj.lulc_tif_filename)
+                obj.target_open_urban_path = os.path.join(obj.target_primary_tile_data_path, obj.open_urban_tif_filename)
 
                 obj.target_intermediate_tile_data_path = os.path.join(obj.target_intermediate_data_path, obj.folder_name_tile_data)
                 obj.target_wallheight_path = os.path.join(obj.target_intermediate_tile_data_path, obj.wall_height_filename)

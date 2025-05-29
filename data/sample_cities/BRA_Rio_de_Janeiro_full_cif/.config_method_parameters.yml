@@ -24,11 +24,12 @@
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
 # All four file mappings must be specified here. Specify None for filename where custom file is not available for processing.
 # Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif
-# Auto-generated filenames from CIF: cif_dem.tif, cif_dsm_ground_build.tif, cif_tree_canopy.tif, cif_lulc.tif
+# Auto-generated filenames from CIF: cif_dem.tif, cif_dsm_ground_build.tif, cif_lulc.tif, cif_open_urban.tif, cif_tree_canopy.tif
 - CustomTiffFilenames:
   dem_tif_filename: None
   dsm_tif_filename: None
   lulc_tif_filename: None
+  open_urban_tif_filename: None
   tree_canopy_tif_filename: None
 - PreparedIntermediateFilenames:
   skyview_factor_filename: None

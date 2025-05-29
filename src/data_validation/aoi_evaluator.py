@@ -157,7 +157,7 @@ def evaluate_aoi_discrepancy(non_tiled_city_data, existing_tiles_metrics, proces
                 updated_aoi = shapely.box(tile_grid_min_lon, tile_grid_min_lat, tile_grid_max_lon, tile_grid_max_lat)
             else:
                 # Stop processing and notify user
-                msg = (f'Waring: Tile-grid extent substantially differs from AOI specification in yml file by maximum '
+                msg = (f'Warning: Tile-grid extent substantially differs from AOI specification in yml file by maximum '
                        f'corner offset of at least {max_offset} meters. Investigate the discrepancy and consider '
                        f'updating the yml with: {aoi_notice}'
                        )

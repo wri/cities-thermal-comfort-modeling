@@ -15,7 +15,7 @@
   max_lon: 18.41401
   max_lat: -33.91999
   tile_side_meters: None
-  tile_buffer_meters: None
+  tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: True
 # Names of meteorological files used by SOLWEIG method in "UMEP for Processing" plugin.
 # Specify custom files or "<download_era5>" method to automatically download ERA5 data into a file named met_era5_hottest_days.txt

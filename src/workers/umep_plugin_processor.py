@@ -135,9 +135,9 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logg
         method_params = {
             'INPUT_DSM': tiled_city_data.target_dsm_path,
             'INPUT_CDSM': tiled_city_data.target_tree_canopy_path,
-            'TRANS_VEG': 3,
+            'TRANS_VEG': tiled_city_data.light_transmissivity,
             'INPUT_TDSM': None,
-            'INPUT_THEIGHT': 25,
+            'INPUT_THEIGHT': tiled_city_data.trunk_zone_height,
             'ANISO': True,
             'OUTPUT_DIR': tmpdirname,
             'OUTPUT_FILE': temp_svfs_file_no_extension

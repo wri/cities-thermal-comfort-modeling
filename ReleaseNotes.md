@@ -1,5 +1,8 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/06/05
+1. CDB-337. Fixed bug of not passing the configured values for transmissivity_of_light_through_vegetation and trunk_tree_height to skyview-factor UMEP plugin.
+
 ## 2025/05/29
 1. Added generation and handling of open_urban primary file.
 1. Changed error message to a warning for when the actual AOI differs by a large distance from stated AOI in the config yml file.

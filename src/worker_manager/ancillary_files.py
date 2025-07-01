@@ -286,8 +286,8 @@ def write_tile_grid(tile_grid, source_crs, target_qgis_data_path, filename):
             modified_tile_grid.loc[len(modified_tile_grid)] = [key, poly]
     elif isinstance(tile_grid, gpd.GeoDataFrame):
         # TODO figure out how to retain the index
-        if 'fishnet_geometry' in tile_grid.columns:
-            modified_tile_grid = tile_grid.drop(columns='fishnet_geometry', axis=1)
+        if 'immutable_fishnet_geometry' in tile_grid.columns:
+            modified_tile_grid = tile_grid.drop(columns='immutable_fishnet_geometry', axis=1)
         else:
             modified_tile_grid = tile_grid
     elif isinstance(tile_grid, pd.DataFrame):

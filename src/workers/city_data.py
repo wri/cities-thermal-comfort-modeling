@@ -30,7 +30,6 @@ class CityData:
             parse_processing_areas_config(yml_values)
 
         obj.met_filenames, obj.has_era_met_download = parse_met_files_config(yml_values)
-
         (obj.dem_tif_filename, obj.dsm_tif_filename, obj.tree_canopy_tif_filename, obj.lulc_tif_filename,
          obj.open_urban_tif_filename, obj.custom_primary_feature_list, obj.custom_primary_filenames,
          obj.cif_primary_feature_list) = parse_primary_filenames_config(yml_values)
@@ -47,6 +46,9 @@ class CityData:
         obj.leaf_start, obj.leaf_end =_get_latitude_based_leaf_start_end(obj.min_lat, obj.max_lat,
                                                                  northern_leaf_start, northern_leaf_end,
                                                                  southern_leaf_start, southern_leaf_end)
+
+        # Adjust utc_offset for time zones that do not have whole number offsets
+        obj.utc_offset = _time_shift_utc_offset(obj.utc_offset)
 
         if obj.folder_name_tile_data:
             obj.source_raster_files_path = os.path.join(obj.source_city_primary_data_path, FOLDER_NAME_PRIMARY_RASTER_FILES)
@@ -125,3 +127,15 @@ def _get_latitude_based_leaf_start_end(min_lat, max_lat, northern_leaf_start, no
         leaf_end = southern_leaf_end
 
     return leaf_start, leaf_end
+
+def _time_shift_utc_offset(utc_offset):
+    # Adjust utc_offsets that are not on a whole hour. This adjustment uses the same time shifting used
+    # in CIF era_5_hottest_day layer class
+    if utc_offset - int(utc_offset) != 0:
+        hour_fraction = utc_offset - int(utc_offset)
+        if hour_fraction <= 0.5:
+            utc_offset = int(utc_offset)
+        else:
+            utc_offset = int(utc_offset) + 1
+
+    return utc_offset

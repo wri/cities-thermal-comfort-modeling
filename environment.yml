@@ -20,6 +20,7 @@ dependencies:
   - pytest_check=2.5.1
   - utm=0.7.0
   - shapely=2.1.0
+  - pydantic
   - pip=25.0.1
   - pip:
     - git+https://github.com/wri/cities-cif@main

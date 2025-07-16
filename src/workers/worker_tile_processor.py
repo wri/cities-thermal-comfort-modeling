@@ -175,6 +175,8 @@ def _transfer_custom_files(tiled_city_data, custom_feature_list):
             source_paths.append((tiled_city_data.source_open_urban_path, tiled_city_data.target_open_urban_path))
         elif feature == 'tree_canopy':
             source_paths.append((tiled_city_data.source_tree_canopy_path, tiled_city_data.target_tree_canopy_path))
+        elif feature == 'albedo':
+            source_paths.append((tiled_city_data.source_albedo_path, tiled_city_data.target_albedo_path))
         elif feature == 'wallaspect':
             source_paths.append((tiled_city_data.source_wallaspect_path, tiled_city_data.target_wallaspect_path))
         elif feature == 'wallheight':
@@ -196,6 +198,7 @@ def ensure_y_dimension_direction(city_data):
     _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_lulc_path)
     _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_open_urban_path)
     _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_tree_canopy_path)
+    _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_albedo_path)
 
 
 def _enforce_tiff_upper_left_origin(tile_data_path, file_path):

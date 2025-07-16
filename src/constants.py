@@ -35,11 +35,6 @@ VALID_PRIMARY_TYPES = [
         "cif_template_name": 'cif_dsm_ground_build.tif'
     },
     {
-        "short_name": "tree_canopy",
-        "yml_tag": "tree_canopy_tif_filename",
-        "cif_template_name": 'cif_tree_canopy.tif'
-    },
-    {
         "short_name": "lulc",
         "yml_tag": "lulc_tif_filename",
         "cif_template_name": 'cif_lulc.tif'
@@ -48,6 +43,16 @@ VALID_PRIMARY_TYPES = [
         "short_name": "open_urban",
         "yml_tag": "open_urban_tif_filename",
         "cif_template_name": 'cif_open_urban.tif'
+    },
+    {
+        "short_name": "tree_canopy",
+        "yml_tag": "tree_canopy_tif_filename",
+        "cif_template_name": 'cif_tree_canopy.tif'
+    },
+    {
+        "short_name": "albedo",
+        "yml_tag": "albedo_tif_filename",
+        "cif_template_name": 'cif_albedo.tif'
     },
 
 ]

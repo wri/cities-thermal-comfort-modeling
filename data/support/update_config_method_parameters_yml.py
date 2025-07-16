@@ -30,21 +30,20 @@ def find_and_replace(directory, old_string, new_string, use_start_string_match):
 # Example usage
 directory = r'C:\Users\kenn.cartier\Documents\github\cities-thermal-comfort-modeling\data\sample_cities'
 
-old_string = "cif_tree_canopy.tif, cif_lulc.tif"
-new_string = "cif_lulc.tif, cif_open_urban.tif, cif_tree_canopy.tif"
+old_string = "# Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif"
+new_string = "# Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif, open_urban.tif, albedo.cif"
 find_and_replace(directory, old_string, new_string, False)
 
-old_string = 'lulc_tif_filename: lulc.tif'
-new_string = 'lulc_tif_filename: lulc.tif\n  open_urban_tif_filename: open_urban.tif'
+old_string = "# Auto-generated filenames from CIF: cif_dem.tif, cif_dsm_ground_build.tif, cif_lulc.tif, cif_open_urban.tif, cif_tree_canopy.tif"
+new_string = "# Auto-generated CIF filenames: cif_dem.tif, cif_dsm_ground_build.tif, cif_lulc.tif, cif_open_urban.tif, cif_tree_canopy.tif, cif_albedo.tif"
 find_and_replace(directory, old_string, new_string, False)
 
-old_string = 'lulc_tif_filename: cif_lulc.tif'
-new_string = 'lulc_tif_filename: cif_lulc.tif\n  open_urban_tif_filename: cif_open_urban.tif'
+old_string = "- PreparedIntermediateFilenames:"
+new_string = "albedo_tif_filename: None\n- PreparedIntermediateFilenames:"
 find_and_replace(directory, old_string, new_string, False)
 
-old_string = 'lulc_tif_filename: None'
-new_string = 'lulc_tif_filename: None\n  open_urban_tif_filename: None'
-find_and_replace(directory, old_string, new_string, False)
-
-
+# open_urban_tif_filename: None
+# old_string = ""
+# new_string = ""
+# find_and_replace(directory, old_string, new_string, False)
 

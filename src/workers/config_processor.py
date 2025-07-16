@@ -76,12 +76,6 @@ def parse_primary_filenames_config(yml_values):
         custom_features.extend(this_custom_feature_list)
         custom_primary_filenames.extend(this_custom_primary_filenames)
 
-        tree_canopy_tif_filename, this_cif_feature_list, this_custom_feature_list, this_custom_primary_filenames =\
-            _assign_primary_type_variables('tree_canopy', yml_values)
-        cif_features.extend(this_cif_feature_list)
-        custom_features.extend(this_custom_feature_list)
-        custom_primary_filenames.extend(this_custom_primary_filenames)
-
         lulc_tif_filename, this_cif_feature_list, this_custom_feature_list, this_custom_primary_filenames =\
             _assign_primary_type_variables('lulc', yml_values)
         cif_features.extend(this_cif_feature_list)
@@ -94,12 +88,24 @@ def parse_primary_filenames_config(yml_values):
         custom_features.extend(this_custom_feature_list)
         custom_primary_filenames.extend(this_custom_primary_filenames)
 
+        tree_canopy_tif_filename, this_cif_feature_list, this_custom_feature_list, this_custom_primary_filenames =\
+            _assign_primary_type_variables('tree_canopy', yml_values)
+        cif_features.extend(this_cif_feature_list)
+        custom_features.extend(this_custom_feature_list)
+        custom_primary_filenames.extend(this_custom_primary_filenames)
+
+        albedo_tif_filename, this_cif_feature_list, this_custom_feature_list, this_custom_primary_filenames =\
+            _assign_primary_type_variables('albedo', yml_values)
+        cif_features.extend(this_cif_feature_list)
+        custom_features.extend(this_custom_feature_list)
+        custom_primary_filenames.extend(this_custom_primary_filenames)
+
     except Exception as e_msg:
         raise Exception(
             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
 
-    return (dem_tif_filename, dsm_tif_filename, tree_canopy_tif_filename, lulc_tif_filename, open_urban_tif_filename,
-            custom_features, custom_primary_filenames, cif_features)
+    return (dem_tif_filename, dsm_tif_filename, lulc_tif_filename, open_urban_tif_filename, tree_canopy_tif_filename,
+            albedo_tif_filename, custom_features, custom_primary_filenames, cif_features)
 
 
 def _assign_primary_type_variables(primary_type_short_name, yml_values):

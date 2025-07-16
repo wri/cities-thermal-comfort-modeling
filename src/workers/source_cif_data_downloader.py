@@ -49,40 +49,48 @@ def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile
         # wait random length of time to help reduce contention between threads and GEE throttling
         wait_time_sec = random.uniform(MINIMUM_QUERY_WAIT_SEC, MAXIMUM_QUERY_WAIT_SEC)
         if feature_sequence_id == 1:
-            if 'lulc' in feature_list:
-                time.sleep(wait_time_sec)
-                log_method_start(f'CIF-lulc download for {tile_id}', None, '', logger)
-                this_success = _get_lulc(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
-                result_flags.append(this_success)
-                log_method_completion(start_time, f'CIF-lulc download for tile {tile_id}', None, '', logger)
-        elif feature_sequence_id == 2:
-            if 'open_urban' in feature_list:
-                time.sleep(wait_time_sec)
-                log_method_start(f'CIF-open_urban download for {tile_id}', None, '', logger)
-                this_success = _get_open_urban(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
-                result_flags.append(this_success)
-                log_method_completion(start_time, f'CIF-open_urban download for tile {tile_id}', None, '', logger)
-        elif feature_sequence_id == 3:
-            if 'tree_canopy' in feature_list:
-                time.sleep(wait_time_sec)
-                log_method_start(f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
-                this_success = _get_tree_canopy_height(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
-                result_flags.append(this_success)
-                log_method_completion(start_time,f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
-        elif feature_sequence_id == 4:
             if 'dem' in feature_list:
                 time.sleep(wait_time_sec)
                 log_method_start(f'CIF-DEM download for {tile_id}', None, '', logger)
                 this_success = _get_dem(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-DEM download for {tile_id}', None, '', logger)
-        elif feature_sequence_id == 5:
+        elif feature_sequence_id == 2:
             if 'dsm' in feature_list:
                 time.sleep(wait_time_sec)
                 log_method_start(f'CIF-DSM download for {tile_id}', None, '', logger)
                 this_success = _get_building_height_dsm(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-DSM download for {tile_id}', None, '', logger)
+        elif feature_sequence_id == 3:
+            if 'lulc' in feature_list:
+                time.sleep(wait_time_sec)
+                log_method_start(f'CIF-lulc download for {tile_id}', None, '', logger)
+                this_success = _get_lulc(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
+                result_flags.append(this_success)
+                log_method_completion(start_time, f'CIF-lulc download for tile {tile_id}', None, '', logger)
+        elif feature_sequence_id == 4:
+            if 'open_urban' in feature_list:
+                time.sleep(wait_time_sec)
+                log_method_start(f'CIF-open_urban download for {tile_id}', None, '', logger)
+                this_success = _get_open_urban(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
+                result_flags.append(this_success)
+                log_method_completion(start_time, f'CIF-open_urban download for tile {tile_id}', None, '', logger)
+        elif feature_sequence_id == 5:
+            if 'tree_canopy' in feature_list:
+                time.sleep(wait_time_sec)
+                log_method_start(f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
+                this_success = _get_tree_canopy_height(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
+                result_flags.append(this_success)
+                log_method_completion(start_time,f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
+        elif feature_sequence_id == 6:
+            if 'albedo' in feature_list:
+                time.sleep(wait_time_sec)
+                log_method_start(f'CIF-albedo download for {tile_id}', None, '', logger)
+                this_success = _get_albedo(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
+                result_flags.append(this_success)
+                log_method_completion(start_time,f'CIF-albedo download for {tile_id}', None, '', logger)
+
 
     return_code = 0 if all(result_flags) else 1
     run_duration_min = compute_time_diff_mins(start_time)
@@ -208,6 +216,30 @@ def _get_tree_canopy_height(tiled_city_data, tile_data_path, aoi_gdf, output_res
         log_method_failure(datetime.now(), 'tree_canopy_height', tiled_city_data.source_base_path, msg, logger)
         return False
 
+def _get_albedo(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
+    try:
+        from city_metrix.layers import Albedo
+
+        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
+        albedo = Albedo().get_data(bbox=bbox, spatial_resolution=output_resolution)
+
+        if albedo is None:
+            return False
+
+        try:
+            # first attempt to save the file in the preferred NS direction
+            was_reversed, standardized_albedo = ctcm_standardize_y_dimension_direction(albedo)
+            save_tiff_file(standardized_albedo, tile_data_path, tiled_city_data.albedo_tif_filename)
+            return True
+        except:
+            # otherwise save without flipping direction
+            save_tiff_file(albedo, tile_data_path, tiled_city_data.albedo_tif_filename)
+            return True
+
+    except Exception as e_msg:
+        msg = f'Albedo processing cancelled due to failure {e_msg}.'
+        log_method_failure(datetime.now(), 'Albedo', tiled_city_data.source_base_path, msg, logger)
+        return False
 
 def _get_dem(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:

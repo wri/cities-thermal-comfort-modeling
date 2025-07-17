@@ -31,7 +31,6 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
     custom_features = non_tiled_city_data.custom_primary_feature_list
     task_method = non_tiled_city_data.new_task_method
 
-
     if tile_side_meters:
         msg = f"tile_side_meters are ignored for dataset with custom primary raster files."
         invalids.append((msg, False))

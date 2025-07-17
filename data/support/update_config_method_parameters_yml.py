@@ -31,7 +31,7 @@ def find_and_replace(directory, old_string, new_string, use_start_string_match):
 directory = r'C:\Users\kenn.cartier\Documents\github\cities-thermal-comfort-modeling\data\sample_cities'
 
 old_string = "# Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif"
-new_string = "# Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif, open_urban.tif, albedo.cif"
+new_string = "# Recommended filenames: dem.tif, dsm_ground_build.tif, lulc.tif, open_urban.tif, tree_canopy.tif, albedo.cif"
 find_and_replace(directory, old_string, new_string, False)
 
 old_string = "# Auto-generated filenames from CIF: cif_dem.tif, cif_dsm_ground_build.tif, cif_lulc.tif, cif_open_urban.tif, cif_tree_canopy.tif"
@@ -39,7 +39,7 @@ new_string = "# Auto-generated CIF filenames: cif_dem.tif, cif_dsm_ground_build.
 find_and_replace(directory, old_string, new_string, False)
 
 old_string = "- PreparedIntermediateFilenames:"
-new_string = "albedo_tif_filename: None\n- PreparedIntermediateFilenames:"
+new_string = "  albedo_tif_filename: None\n- PreparedIntermediateFilenames:"
 find_and_replace(directory, old_string, new_string, False)
 
 # open_urban_tif_filename: None

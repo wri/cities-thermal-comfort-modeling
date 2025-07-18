@@ -24,7 +24,7 @@
   - filename: met_22jan2022.txt
 # Mapping to name of custom TIFF source file or specify None where custom file is not available for processing.
 # If None is specified, then the system will auto-generate a TIFF file from CIF.
-# Recommended filenames: dem.tif, dsm_ground_build.tif, lulc.tif, open_urban.tif, tree_canopy.tif, albedo.cif
+# Recommended filenames: dem.tif, dsm_ground_build.tif, lulc.tif, open_urban.tif, tree_canopy.tif, albedo.tif
 # Auto-generated CIF filenames: cif_dem.tif, cif_dsm_ground_build.tif, cif_lulc.tif, cif_open_urban.tif, cif_tree_canopy.tif, cif_albedo.tif
 - CustomTiffFilenames:
   dem_tif_filename: None

@@ -21,9 +21,10 @@ def write_qgis_files(city_data, crs_str):
     target_folder = city_data.target_city_primary_data_path
     dem_file_name = city_data.dem_tif_filename
     dsm_file_name = city_data.dsm_tif_filename
-    tree_canopy_file_name = city_data.tree_canopy_tif_filename
     lulc_file_name = city_data.lulc_tif_filename
     open_urban_file_name = city_data.open_urban_tif_filename
+    tree_canopy_file_name = city_data.tree_canopy_tif_filename
+    albedo_file_name = city_data.albedo_tif_filename
 
     target_raster_files = []
     target_bucket = Path(target_folder).stem
@@ -31,12 +32,14 @@ def write_qgis_files(city_data, crs_str):
     target_raster_files += dem
     dsm = _build_file_dict(target_bucket, 'base','dsm', 0, [dsm_file_name])
     target_raster_files += dsm
-    tree_canopy = _build_file_dict(target_bucket, 'base','tree_canopy', 0, [tree_canopy_file_name])
-    target_raster_files += tree_canopy
     lulc = _build_file_dict(target_bucket, 'base','lulc', 0, [lulc_file_name])
     target_raster_files += lulc
     open_urban = _build_file_dict(target_bucket, 'base','open_urban', 0, [open_urban_file_name])
     target_raster_files += open_urban
+    tree_canopy = _build_file_dict(target_bucket, 'base','tree_canopy', 0, [tree_canopy_file_name])
+    target_raster_files += tree_canopy
+    albedo = _build_file_dict(target_bucket, 'base','albedo', 0, [albedo_file_name])
+    target_raster_files += albedo
     _write_raster_vrt_file_for_folder(target_folder, target_raster_files, target_qgis_data_folder)
 
     # Build VRTs for preprocessed results
@@ -266,6 +269,7 @@ def _update_custom_yml_parameters(non_tiled_city_data, updated_aoi):
     custom_primary_filenames['lulc_tif_filename'] = non_tiled_city_data.lulc_tif_filename
     custom_primary_filenames['open_urban_tif_filename'] = non_tiled_city_data.open_urban_tif_filename
     custom_primary_filenames['tree_canopy_tif_filename'] = non_tiled_city_data.tree_canopy_tif_filename
+    custom_primary_filenames['albedo_tif_filename'] = non_tiled_city_data.albedo_tif_filename
 
     custom_intermediate_filenames = list_doc[4]
     custom_intermediate_filenames['skyview_factor_filename'] = non_tiled_city_data.skyview_factor_filename

@@ -21,7 +21,7 @@ def test_vrt_writer():
 
         vrt_count = file_count_in_vrt_directory(hacked_city_data)
 
-        expected_count = 5
+        expected_count = 6
         equal(vrt_count, expected_count, msg=f"Expected VRT count of {expected_count} files, but actual count is {vrt_count}")
     finally:
         remove_folder(hacked_city_data.target_city_parent_path)
@@ -42,7 +42,7 @@ def test_vrt_writer_amsterdam():
 
         vrt_count = file_count_in_vrt_directory(hacked_city_data)
 
-        expected_count = 5
+        expected_count = 6
         equal(vrt_count, expected_count, msg=f"Expected VRT count of {expected_count} files, but actual count is {vrt_count}")
     finally:
         remove_folder(hacked_city_data.target_city_parent_path)

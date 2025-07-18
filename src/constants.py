@@ -21,7 +21,7 @@ FILENAME_SVFS_ZIP = 'svfs.zip'
 FILENAME_ERA5 = 'met_era5_hottest_days.txt'
 
 METHOD_TRIGGER_ERA5_DOWNLOAD = '<download_era5>'
-PROCESSING_METHODS = ['download_only', 'umep_solweig']
+PROCESSING_METHODS = ['download_only', 'umep_solweig', 'upenn_model']
 
 VALID_PRIMARY_TYPES = [
     {

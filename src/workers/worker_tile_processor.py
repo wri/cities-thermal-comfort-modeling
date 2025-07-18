@@ -5,10 +5,12 @@ import rioxarray
 
 from pathlib import Path
 
-from src.constants import FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSING_METHODS
+from src.constants import FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD
 from src.workers.city_data import CityData
+from src.workers.model_upenn.upenn_module_processor import run_upenn_module
 from src.workers.worker_tools import create_folder, unpack_quoted_value, save_tiff_file, remove_file, \
     ctcm_standardize_y_dimension_direction
+
 
 PROCESSING_PAUSE_TIME_SEC = 10
 
@@ -31,7 +33,7 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
         return cif_stdout
 
     def _execute_umep_solweig_only_plugin(step_index, folder_city, folder_tile, source_path, target_path, met_names, offset_utc):
-        from umep_plugin_processor import run_plugin
+        from src.workers.model_umep.umep_plugin_processor import run_umep_plugin
 
         out_list = []
         for met_file in met_names:
@@ -40,30 +42,53 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
             else:
                 met_filename = met_file.get('filename')
 
-            solweig_stdout = run_plugin(step_index, 'umep_solweig_only', folder_city,
-                                     folder_tile, source_path, target_path, met_filename, offset_utc)
+            solweig_stdout = run_umep_plugin(step_index, 'umep_solweig_only', folder_city,
+                                             folder_tile, source_path, target_path, met_filename, offset_utc)
             out_list.append(solweig_stdout)
         return out_list
 
     def _execute_umep_solweig_plugin_steps(folder_city, folder_tile, source_path, target_path, met_names,
                                            ctcm_intermediate_features, offset_utc):
-        from umep_plugin_processor import run_plugin
+        from src.workers.model_umep.umep_plugin_processor import run_umep_plugin
         out_list = []
         ctcm_intermediates = ctcm_intermediate_features.split(',') if ctcm_intermediate_features is not None else None
         if ctcm_intermediates and ('wallasect' in ctcm_intermediates or 'wallheight' in ctcm_intermediates):
-            this_stdout1 = run_plugin(1, 'wall_height_aspect', folder_city, folder_tile,
-                       source_path, target_path, None, None)
+            this_stdout1 = run_umep_plugin(1, 'wall_height_aspect', folder_city, folder_tile,
+                                           source_path, target_path, None, None)
             out_list.append(this_stdout1)
 
         if ctcm_intermediates and 'skyview_factor' in ctcm_intermediates:
-            this_stdout2 = run_plugin(2, 'skyview_factor', folder_city, folder_tile,
-                       source_path, target_path, None, None)
+            this_stdout2 = run_umep_plugin(2, 'skyview_factor', folder_city, folder_tile,
+                                           source_path, target_path, None, None)
             out_list.append(this_stdout2)
 
         time.sleep(PROCESSING_PAUSE_TIME_SEC)
         this_stdout3 = _execute_umep_solweig_only_plugin(3, folder_city,
                                                     folder_tile, source_path, target_path, met_names, offset_utc)
         out_list.extend(this_stdout3)
+
+        return out_list
+
+    def _execute_upenn_model_steps(folder_city, folder_tile, source_path, target_path, met_names,
+                                           ctcm_intermediate_features, offset_utc):
+        from src.workers.model_umep.umep_plugin_processor import run_umep_plugin
+        out_list = []
+        ctcm_intermediates = ctcm_intermediate_features.split(',') if ctcm_intermediate_features is not None else None
+        if ctcm_intermediates and ('wallasect' in ctcm_intermediates or 'wallheight' in ctcm_intermediates):
+            this_stdout1 = run_upenn_module(1, 'wall_height_aspect', folder_city, folder_tile,
+                                            source_path, target_path, None, None)
+
+            out_list.append(this_stdout1)
+
+        if ctcm_intermediates and 'skyview_factor' in ctcm_intermediates:
+            this_stdout2 = run_upenn_module(2, 'skyview_factor', folder_city, folder_tile,
+                                            source_path, target_path, None, None)
+            out_list.append(this_stdout2)
+
+        # time.sleep(PROCESSING_PAUSE_TIME_SEC)
+        # this_stdout3 = _execute_umep_solweig_only_plugin(3, folder_city,
+        #                                             folder_tile, source_path, target_path, met_names, offset_utc)
+        # out_list.extend(this_stdout3)
 
         return out_list
 
@@ -93,14 +118,15 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
                                                              source_base_path, target_base_path, met_filenames,
                                                              ctcm_intermediate_features, utc_offset)
             return_stdouts.extend(return_vals)
-        elif task_method == 'umep_solweig_only':
-            return_vals = _execute_umep_solweig_only_plugin(1, city_folder_name,
-                                         tile_folder_name, source_base_path, target_base_path, met_filenames, utc_offset)
+        elif task_method == 'upenn_model':
+            return_vals = _execute_upenn_model_steps(city_folder_name, tile_folder_name,
+                                                             source_base_path, target_base_path, met_filenames,
+                                                             ctcm_intermediate_features, utc_offset)
             return_stdouts.extend(return_vals)
-        elif task_method in PROCESSING_METHODS:
-            from umep_plugin_processor import run_plugin
-            return_val = run_plugin(1, task_method, city_folder_name, tile_folder_name,
-                       source_base_path, target_base_path, None, None)
+        elif task_method in 'PROCESSING_METHODS':
+            from src.workers.model_umep.umep_plugin_processor import run_umep_plugin
+            return_val = run_umep_plugin(1, task_method, city_folder_name, tile_folder_name,
+                                         source_base_path, target_base_path, None, None)
             return_stdouts.append(return_val)
         else:
             return ''

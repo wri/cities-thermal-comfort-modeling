@@ -133,10 +133,13 @@ def _find_dict_in_list(dict_list, key, value):
     return None
 
 
-def parse_intermediate_filenames_config(yml_values):
+def parse_intermediate_filenames_config(yml_values, method):
     template_name_wall_aspect_filename = 'ctcm_wallaspect.tif'
     template_name_wall_height_filename = 'ctcm_wallheight.tif'
-    template_name_skyview_factor_zip_filename = 'ctcm_svfs.zip'
+    if method == 'upenn_model':
+        template_name_skyview_factor_zip_filename = 'ctcm_svfs'
+    else:
+        template_name_skyview_factor_zip_filename = 'ctcm_svfs.zip'
     try:
         filenames = yml_values[4]
 

@@ -24,8 +24,8 @@ MAX_RETRY_COUNT = 3
 RETRY_PAUSE_TIME_SEC = 10
 
 
-def run_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path,
-               target_base_path, met_filename, utc_offset):
+def run_umep_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path,
+                    target_base_path, met_filename, utc_offset):
     start_time = datetime.now()
 
     tiled_city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)

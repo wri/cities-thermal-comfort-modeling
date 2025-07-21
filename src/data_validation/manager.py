@@ -28,8 +28,9 @@ def validate_config(non_tiled_city_data, existing_tiles_metrics, processing_opti
         aoi_invalids, updated_aoi = evaluate_aoi(non_tiled_city_data, existing_tiles_metrics, processing_option)
         combined_invalids.extend(aoi_invalids)
 
-        met_invalids = evaluate_meteorological_data(non_tiled_city_data, in_target_folder=False)
-        combined_invalids.extend(met_invalids)
+        if non_tiled_city_data.new_task_method != 'upenn_model':
+            met_invalids = evaluate_meteorological_data(non_tiled_city_data, in_target_folder=False)
+            combined_invalids.extend(met_invalids)
 
         custom_intermediate_invalids = evaluate_custom_intermediate_config(non_tiled_city_data)
         combined_invalids.extend(custom_intermediate_invalids)

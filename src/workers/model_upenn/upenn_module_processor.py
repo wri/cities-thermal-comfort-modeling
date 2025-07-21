@@ -11,6 +11,7 @@ from datetime import datetime
 
 from src.constants import FILENAME_SVFS_ZIP
 from src.workers.model_upenn.svfsCalculator_veg import run_skyview_calculations
+from src.workers.model_upenn.weather_meanRadiantT import run_mrt_calculations
 from src.workers.worker_tools import remove_file, remove_folder, compute_time_diff_mins, create_folder, get_configurations
 from src.workers.city_data import CityData
 from src.workers.logger_tools import setup_logger, log_method_start, log_method_failure, log_method_completion, \
@@ -19,8 +20,8 @@ from src.workers.model_upenn.aspect_height import run_wall_calculations
 
 warnings.filterwarnings("ignore")
 
-MAX_RETRY_COUNT = 3
-RETRY_PAUSE_TIME_SEC = 10
+MAX_RETRY_COUNT = 10
+RETRY_PAUSE_TIME_SEC = 1
 
 
 def run_upenn_module(step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path,
@@ -41,26 +42,15 @@ def run_upenn_module(step_index, step_method, folder_name_city_data, folder_name
         # Get the UMEP processing parameters and prepare for the method
         method_params, keepers = _prepare_method_execution(step_method, tiled_city_data, tmpdirname,
                                                                              metadata_logger, met_filename, utc_offset)
-
         while retry_count < MAX_RETRY_COUNT and return_code != 0:
             try:
                 if step_method == 'wall_height_aspect':
-                    dsm_source_file = method_params['INPUT']
-                    input_wall_limit = method_params['INPUT_LIMIT']
-                    output_height_file = method_params['OUTPUT_HEIGHT']
-                    output_aspect_file = method_params['OUTPUT_ASPECT']
-                    run_wall_calculations(dsm_source_file, input_wall_limit, output_height_file, output_aspect_file)
+                    run_wall_calculations(method_params)
                 elif step_method == 'skyview_factor':
-                    dsm_source_file = method_params['INPUT_DSM']
-                    cdsm_source_file = method_params['INPUT_CDSM']
-                    TRANS_VEG = method_params['TRANS_VEG']
-                    aa = method_params['INPUT_TDSM']
-                    INPUT_THEIGHT = method_params['INPUT_THEIGHT']
-                    aa = method_params['ANISO']
-                    svffolder = method_params['OUTPUT_DIR']
-                    OUTPUT_FILE = method_params['OUTPUT_FILE']
-
-                    run_skyview_calculations(dsm_source_file, cdsm_source_file, OUTPUT_FILE, TRANS_VEG, INPUT_THEIGHT)
+                    run_skyview_calculations(method_params)
+                else:
+                    epsgcode = 32618
+                    run_mrt_calculations(method_params, epsgcode)
 
                 # Prepare target folder and transfer over the temporary results
                 try:
@@ -148,6 +138,64 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logg
         # exclude output paths and write remainder to log file
         exclusion_keys = ['OUTPUT_DIR', 'OUTPUT_FILE']
         _write_metadata(method, None, method_params, exclusion_keys, metadata_logger)
+
+    else:
+        target_met_file_path = os.path.join(tiled_city_data.target_met_files_path, met_filename)
+        temp_met_folder = os.path.join(tmpdirname, Path(met_filename).stem, tiled_city_data.folder_name_tile_data)
+        create_folder(temp_met_folder)
+        target_met_folder = os.path.join(tiled_city_data.target_tcm_results_path, Path(met_filename).stem, tiled_city_data.folder_name_tile_data)
+        method_params = {
+            "INPUT_DSM": tiled_city_data.target_dsm_path,
+            "INPUT_SVF": tiled_city_data.target_svfszip_path,
+            "INPUT_HEIGHT": tiled_city_data.target_wallheight_path,
+            "INPUT_ASPECT": tiled_city_data.target_wallaspect_path,
+            "INPUT_CDSM": tiled_city_data.target_tree_canopy_path,
+            "INPUT_ALBEDO": tiled_city_data.target_albedo_path,
+            "TRANS_VEG": tiled_city_data.light_transmissivity,
+            "LEAF_START": tiled_city_data.leaf_start,
+            "LEAF_END": tiled_city_data.leaf_end,
+            "CONIFER_TREES": tiled_city_data.conifer_trees,
+            "INPUT_TDSM": None,
+            "INPUT_THEIGHT": tiled_city_data.trunk_zone_height,
+            "INPUT_LC": tiled_city_data.target_lulc_path,
+            "USE_LC_BUILD": False,
+            "INPUT_DEM": tiled_city_data.target_dem_path,
+            "SAVE_BUILD": False,
+            "INPUT_ANISO": "",
+            "ALBEDO_WALLS": tiled_city_data.albedo_walls,
+            "ALBEDO_GROUND": tiled_city_data.albedo_ground,
+            "EMIS_WALLS": tiled_city_data.emis_walls,
+            "EMIS_GROUND": tiled_city_data.emis_ground,
+            "ABS_S": 0.7,
+            "ABS_L": 0.95,
+            "POSTURE": 0,
+            "CYL": True,
+            "INPUTMET": target_met_file_path,
+            "ONLYGLOBAL": True,
+            "UTC": utc_offset,
+            "POI_FILE": None,
+            "POI_FIELD": '',
+            "AGE": 35,
+            "ACTIVITY": 80,
+            "CLO": 0.9,
+            "WEIGHT": 75,
+            "HEIGHT": 180,
+            "SEX": 0,
+            "SENSOR_HEIGHT": 10,
+            "OUTPUT_TMRT": tiled_city_data.output_tmrt,
+            "OUTPUT_KDOWN": False,
+            "OUTPUT_KUP": False,
+            "OUTPUT_LDOWN": False,
+            "OUTPUT_LUP": False,
+            "OUTPUT_SH": tiled_city_data.output_sh,
+            "OUTPUT_TREEPLANTER": False,
+            "OUTPUT_DIR": temp_met_folder
+        }
+        keepers[temp_met_folder] = target_met_folder
+
+        # exclude output paths and write remainder to log file
+        exclusion_keys = ['OUTPUT_DIR']
+        _write_metadata(method, met_filename, method_params, exclusion_keys, metadata_logger)
 
     return method_params, keepers
 

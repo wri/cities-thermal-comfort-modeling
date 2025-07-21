@@ -30,6 +30,7 @@ class CityData:
             parse_processing_areas_config(yml_values)
 
         obj.met_filenames, obj.has_era_met_download = parse_met_files_config(yml_values)
+
         (obj.dem_tif_filename, obj.dsm_tif_filename, obj.lulc_tif_filename, obj.open_urban_tif_filename, obj.tree_canopy_tif_filename,
          obj.albedo_tif_filename, obj.custom_primary_feature_list, obj.custom_primary_filenames,
          obj.cif_primary_feature_list) = parse_primary_filenames_config(yml_values)

@@ -248,28 +248,15 @@ def shadowingfunction_20(a, vegdem, vegdem2, azimuth, altitude, scale, amaxvalue
     return shadowresult
 
 
-def run_skyview_calculations(dsmfile, chmfile, svffolder, TRANS_VEG, INPUT_THEIGHT):
-    
-    # outsvf = os.path.join(root, 'svfs', city)
-    # if not os.path.exists(outsvf): os.makedirs(outsvf)
-    #
-    # if not dsmfile.endswith('.tif'): continue
-
-    # filename = '26691E239254N.tif'
-    # base = os.path.splitext(dsmfile)[0]
-    # print("you are running to:", base)
-    #
-    # # make a folder for the svf results, 15 svfs
-    # svffolder = os.path.join(outsvf, base)
-    # if os.path.exists(svffolder):
-    #     shutil.rmtree(svffolder)
-    # os.mkdir(svffolder)
-
-    # read the prepared dem, dsm, chm, lutile
-    # demfile = os.path.join(root, 'dem/' + filename)
-    # dsmfile = os.path.join(root, 'grounddsm_tiles/', city, dsmfile)
-    # chmfile = os.path.join(root, 'treeheight_tiles/', city, dsmfile)
-    # lufile = os.path.join(root, 'lutiles/' + filename)
+def run_skyview_calculations(method_params):
+    dsmfile = method_params['INPUT_DSM']
+    chmfile = method_params['INPUT_CDSM']
+    TRANS_VEG = method_params['TRANS_VEG']
+    INPUT_TDSM = method_params['INPUT_TDSM']
+    INPUT_THEIGHT = method_params['INPUT_THEIGHT']
+    ANISO = method_params['ANISO']
+    OUTPUT_DIR = method_params['OUTPUT_DIR']
+    svffolder = method_params['OUTPUT_FILE']
 
     ## read the land use file, and judge if we need to process the tile
     # gdal_lu = gdal.Open(lufile)

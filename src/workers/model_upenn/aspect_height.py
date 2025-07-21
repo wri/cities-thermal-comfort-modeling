@@ -183,7 +183,11 @@ def aspect(dsm, walls, scale):
     return wallresult
 
 
-def run_wall_calculations(dsmfile, walllimit, wallheightFile, aspectFile):
+def run_wall_calculations(method_params):
+    dsmfile = method_params['INPUT']
+    walllimit = method_params['INPUT_LIMIT']
+    wallheightFile = method_params['OUTPUT_HEIGHT']
+    aspectFile = method_params['OUTPUT_ASPECT']
 
     # read primary source data
     gdal_dsm = gdal.Open(dsmfile)

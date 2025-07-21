@@ -32,7 +32,7 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
             get_cif_data(source_path, target_path, folder_city, folder_tile, cif_features, boundary, crs, resolution)
         return cif_stdout
 
-    def _execute_umep_solweig_only_plugin(step_index, folder_city, folder_tile, source_path, target_path, met_names, offset_utc):
+    def _execute_mrt_method(step_index, task_method, folder_city, folder_tile, source_path, target_path, met_names, offset_utc):
         from src.workers.model_umep.umep_plugin_processor import run_umep_plugin
 
         out_list = []
@@ -42,9 +42,14 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
             else:
                 met_filename = met_file.get('filename')
 
-            solweig_stdout = run_umep_plugin(step_index, 'umep_solweig_only', folder_city,
-                                             folder_tile, source_path, target_path, met_filename, offset_utc)
-            out_list.append(solweig_stdout)
+            if task_method == 'umep_solweig':
+                stdout = run_umep_plugin(step_index, task_method, folder_city, folder_tile, source_path, target_path,
+                                         met_filename, offset_utc)
+            else:
+                stdout = run_upenn_module(step_index, task_method, folder_city, folder_tile, source_path, target_path,
+                                         met_filename, offset_utc)
+
+            out_list.append(stdout)
         return out_list
 
     def _execute_umep_solweig_plugin_steps(folder_city, folder_tile, source_path, target_path, met_names,
@@ -63,7 +68,7 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
             out_list.append(this_stdout2)
 
         time.sleep(PROCESSING_PAUSE_TIME_SEC)
-        this_stdout3 = _execute_umep_solweig_only_plugin(3, folder_city,
+        this_stdout3 = _execute_mrt_method(3, 'umep_solweig', folder_city,
                                                     folder_tile, source_path, target_path, met_names, offset_utc)
         out_list.extend(this_stdout3)
 
@@ -85,10 +90,10 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
                                             source_path, target_path, None, None)
             out_list.append(this_stdout2)
 
-        # time.sleep(PROCESSING_PAUSE_TIME_SEC)
-        # this_stdout3 = _execute_umep_solweig_only_plugin(3, folder_city,
-        #                                             folder_tile, source_path, target_path, met_names, offset_utc)
-        # out_list.extend(this_stdout3)
+        time.sleep(PROCESSING_PAUSE_TIME_SEC)
+        this_stdout3 = _execute_mrt_method(3, 'mrt', folder_city,
+                                                    folder_tile, source_path, target_path, met_names, offset_utc)
+        out_list.extend(this_stdout3)
 
         return out_list
 
@@ -192,28 +197,32 @@ def _transfer_custom_files(tiled_city_data, custom_feature_list):
     source_paths = []
     for feature in custom_feature_list:
         if feature == 'dem':
-            source_paths.append((tiled_city_data.source_dem_path, tiled_city_data.target_dem_path))
+            source_paths.append((tiled_city_data.source_dem_path, tiled_city_data.target_dem_path, 'file'))
         elif feature == 'dsm':
-            source_paths.append((tiled_city_data.source_dsm_path, tiled_city_data.target_dsm_path))
+            source_paths.append((tiled_city_data.source_dsm_path, tiled_city_data.target_dsm_path, 'file'))
         elif feature == 'lulc':
-            source_paths.append((tiled_city_data.source_lulc_path, tiled_city_data.target_lulc_path))
+            source_paths.append((tiled_city_data.source_lulc_path, tiled_city_data.target_lulc_path, 'file'))
         elif feature == 'open_urban':
-            source_paths.append((tiled_city_data.source_open_urban_path, tiled_city_data.target_open_urban_path))
+            source_paths.append((tiled_city_data.source_open_urban_path, tiled_city_data.target_open_urban_path, 'file'))
         elif feature == 'tree_canopy':
-            source_paths.append((tiled_city_data.source_tree_canopy_path, tiled_city_data.target_tree_canopy_path))
+            source_paths.append((tiled_city_data.source_tree_canopy_path, tiled_city_data.target_tree_canopy_path, 'file'))
         elif feature == 'albedo':
-            source_paths.append((tiled_city_data.source_albedo_path, tiled_city_data.target_albedo_path))
+            source_paths.append((tiled_city_data.source_albedo_path, tiled_city_data.target_albedo_path, 'file'))
         elif feature == 'wallaspect':
-            source_paths.append((tiled_city_data.source_wallaspect_path, tiled_city_data.target_wallaspect_path))
+            source_paths.append((tiled_city_data.source_wallaspect_path, tiled_city_data.target_wallaspect_path, 'file'))
         elif feature == 'wallheight':
-            source_paths.append((tiled_city_data.source_wallheight_path, tiled_city_data.target_wallheight_path))
+            source_paths.append((tiled_city_data.source_wallheight_path, tiled_city_data.target_wallheight_path, 'file'))
         elif feature == 'skyview_factor':
-            source_paths.append((tiled_city_data.source_svfszip_path, tiled_city_data.target_svfszip_path))
+            obj_type = 'folder' if tiled_city_data.new_task_method == 'upenn_model' else 'file'
+            source_paths.append((tiled_city_data.source_svfszip_path, tiled_city_data.target_svfszip_path, obj_type))
 
     for file_paths in source_paths:
         to_tile_dir = Path(file_paths[1]).parent
         create_folder(to_tile_dir)
-        shutil.copyfile(file_paths[0], file_paths[1])
+        if file_paths[2] == 'file':
+            shutil.copyfile(file_paths[0], file_paths[1])
+        else:
+            shutil.copytree(file_paths[0], file_paths[1])
 
 
 def ensure_y_dimension_direction(city_data):

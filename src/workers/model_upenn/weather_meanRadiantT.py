@@ -118,7 +118,7 @@ def run_mrt_calculations(method_params, epsgcode):
     ABS_L = method_params['ABS_L']
     POSTURE = method_params['POSTURE']
     CYL = method_params['CYL']
-    INPUTMET = method_params['INPUTMET']
+    csvfile = method_params['INPUTMET']
     ONLYGLOBAL = method_params['ONLYGLOBAL']
     UTC = float(method_params['UTC'])
     POI_FILE = method_params['POI_FILE']
@@ -138,6 +138,9 @@ def run_mrt_calculations(method_params, epsgcode):
     OUTPUT_SH = method_params['OUTPUT_SH']
     OUTPUT_TREEPLANTER = method_params['OUTPUT_TREEPLANTER']
     mrtfolder = method_params['OUTPUT_DIR']
+
+    # the air temperature tile
+    airTfile = os.path.join(os.path.dirname(csvfile), 'air_temperature', 'clipped_airT.tif').replace('scratch_target', 'sample_cities')
 
     # THE FOLLOWING IS THE ENCODING OF LAND USE/COVER
     # lc_class:
@@ -169,9 +172,6 @@ def run_mrt_calculations(method_params, epsgcode):
     # root = '../../data/Philadelphia'
     # weatherRoot = r"C:\Users\kenn.cartier\Documents\github\cities-thermal-comfort-modeling\data\sample_cities\USA_Philladelphia_upenn\primary_data\met_files\weather"
     # mrtRoot = os.path.join(root, 'mrt', city)
-
-    # the air temperature tile
-    airTfile = r"C:\Users\kenn.cartier\Documents\github\cities-thermal-comfort-modeling\data\sample_cities\USA_Philladelphia_upenn_cif_full\primary_data\met_files\air_temperature\clipped_airT.tif"
 
     lon, lat, scale, rows, cols, alt, dsm, svf, svfN, svfS, svfE, \
         svfW, svfveg, svfNveg, svfSveg, svfEveg, svfWveg, svfaveg, svfNaveg, \
@@ -249,8 +249,6 @@ def run_mrt_calculations(method_params, epsgcode):
     buildings[dsm >= 2.] = 0.
 
     ## loop all the weather csv data to get the information meteorological data
-    # csvfile = os.path.join(weatherRoot, city+'.csv')
-    csvfile = r"C:\Users\kenn.cartier\Documents\github\cities-thermal-comfort-modeling\data\scratch_target\USA_Philladelphia_upenn_cif_full\USA_Philladelphia_upenn_cif_full_first_scenario_v1\primary_data\met_files\philadelphia.csv"
     day_summer_df = preprocessMeteorolgoicalData(csvfile, month='7', day='1', hour='12')
 
     # calculate the average of mean radiant temperature in summer

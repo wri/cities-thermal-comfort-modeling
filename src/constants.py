@@ -13,7 +13,7 @@ FOLDER_NAME_PRIMARY_DATA = 'primary_data'
 FOLDER_NAME_PRIMARY_RASTER_FILES = 'raster_files'
 FOLDER_NAME_PRIMARY_MET_FILES = 'met_files'
 FOLDER_NAME_INTERMEDIATE_DATA = 'processed_data'
-FOLDER_NAME_UMEP_TCM_RESULTS = 'tcm_results_umep'
+FOLDER_NAME_UMEP_TCM_RESULTS = 'tcm_results'
 
 FILENAME_WALL_HEIGHT = 'wallheight.tif'
 FILENAME_WALL_ASPECT = 'wallaspect.tif'

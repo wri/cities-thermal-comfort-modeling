@@ -249,7 +249,9 @@ def run_mrt_calculations(method_params, epsgcode):
     buildings[dsm >= 2.] = 0.
 
     ## loop all the weather csv data to get the information meteorological data
-    day_summer_df = preprocessMeteorolgoicalData(csvfile, month='7', day='1', hour='12')
+    from datetime import datetime
+    sample_datetime = datetime(2022, 7, 1, 12)
+    day_summer_df = preprocessMeteorolgoicalData(csvfile, month=str(sample_datetime.month), day=str(sample_datetime.day), hour=str(sample_datetime.hour))
 
     # calculate the average of mean radiant temperature in summer
     tmrt_mean = np.zeros((rows, cols))
@@ -335,8 +337,7 @@ def run_mrt_calculations(method_params, epsgcode):
         tmrtplot = tmrtplot / Ta.__len__()
         print(tmrtplot.shape)
 
-        # mrtFile = "hour%s-MRT.tif"%(hour)
-        mrtFile = f"Tmrt_date{hour}.tif"
+        mrtFile = f"Tmrt_{sample_datetime.year}_{sample_datetime.timetuple().tm_yday}_{hour}00D.tif"
         print('The output file name is:', mrtFile)
         solweiglib.saverasternd(gdal_dsm, os.path.join(mrtfolder, mrtFile), tmrtplot)
 

@@ -49,7 +49,10 @@ def run_upenn_module(step_index, step_method, folder_name_city_data, folder_name
                 elif step_method == 'skyview_factor':
                     run_skyview_calculations(method_params)
                 else:
-                    run_mrt_calculations(method_params)
+                    from datetime import date
+                    sampling_date = date(2022, 7, 1)
+                    sampling_hours = tiled_city_data.sampling_local_hours
+                    run_mrt_calculations(method_params, sampling_date, sampling_hours)
 
                 # Prepare target folder and transfer over the temporary results
                 try:

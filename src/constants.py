@@ -19,6 +19,7 @@ FILENAME_WALL_HEIGHT = 'wallheight.tif'
 FILENAME_WALL_ASPECT = 'wallaspect.tif'
 FILENAME_SVFS_ZIP = 'svfs.zip'
 FILENAME_ERA5 = 'met_era5_hottest_days.txt'
+FILENAME_NREL= 'met_nrel_hottest_days.csv'
 
 METHOD_TRIGGER_ERA5_DOWNLOAD = '<download_era5>'
 PROCESSING_METHODS = ['download_only', 'umep_solweig', 'upenn_model']

@@ -18,6 +18,7 @@ import os, os.path
 from osgeo import gdal
 from osgeo.gdalconst import *
 import pandas as pd
+from datetime import date, time
 
 from src.workers.model_upenn.libraries import solweiglib
 
@@ -93,7 +94,7 @@ def _get_epsg_code(raster_path):
         epsg_code = int(spatial_ref.GetAttrValue("AUTHORITY", 1))
     return epsg_code
 
-def run_mrt_calculations(method_params):
+def run_mrt_calculations(method_params, sampling_date: date, sampling_hours: str):
     '''
     Parameters:
     landcover: switch to use land cover or not, landcover=1, use; landocover=0, not use.
@@ -252,97 +253,98 @@ def run_mrt_calculations(method_params):
     buildings[dsm >= 2.] = 0.
 
     ## loop all the weather csv data to get the information meteorological data
-    from datetime import datetime
-    sample_datetime = datetime(2022, 7, 1, 12)
-    day_summer_df = preprocessMeteorolgoicalData(csvfile, month=str(sample_datetime.month), day=str(sample_datetime.day), hour=str(sample_datetime.hour))
+    for hour in sampling_hours.split(","):
+        month = str(sampling_date.month)
+        day = str(sampling_date.day)
+        day_summer_df = preprocessMeteorolgoicalData(csvfile, month=month, day=day, hour=hour)
 
-    # calculate the average of mean radiant temperature in summer
-    tmrt_mean = np.zeros((rows, cols))
-    # number of hours in summer from June to August
-    # TODO Should this be a parameter???
-    num_hour = 0
-
-    # loop hourly weather data
-    for idx, row in day_summer_df.iterrows():
-        # date information and metdata
-        [metdata, year, month, day, hour, minu, doy] = solweiglib.metdataParse(row)
-
-        ## other parameters
-        absK, absL, pos, cyl, Fside, Fup, height, Fcyl, elvis, \
-            timeadd, timeaddE, timeaddS, timeaddW, timeaddN, \
-                firstdaytime = solweiglib.otherParameters()
-
-        # Based on the previous functions to load the meteological data using the lon, lat as the input
-        location = {'longitude': lon, 'latitude': lat, 'altitude': alt}
-        YYYY, altitude, azimuth, zen, jday, leafon, dectime, altmax = \
-            solweiglib.Solweig_2015a_metdata_noload(metdata, location, UTC)
-
-        ## use vegetation, the transmissivity of light through vegetation, default is 0.03 in Solweig
-        psi, DOY, hours, minus, Ta, RH, radG, radD, radI, P, Ws, height, \
-            first, second, timestepdec = solweiglib.prepareVegMeteo(leafon, metdata, height, dectime)
-
-        # night and day time
+        # calculate the average of mean radiant temperature in summer
+        tmrt_mean = np.zeros((rows, cols))
+        # number of hours in summer from June to August
         # TODO Should this be a parameter???
-        CI = 0  # #  If metfile starts at night, CI = 1.
+        num_hour = 0
 
-        ## after preparation of parameters, start to compute the mean radiant temperature
-        tmrtplot = np.zeros((rows, cols))
-        TgOut1 = np.zeros((rows, cols))
+        # loop hourly weather data
+        for idx, row in day_summer_df.iterrows():
+            # date information and metdata
+            [metdata, year, month, day, hour, minu, doy] = solweiglib.metdataParse(row)
 
-        for i in np.arange(0, Ta.__len__()):
-            # Nocturnal cloudfraction from Offerle et al. 2003
-            if (dectime[i] - np.floor(dectime[i])) == 0:
-                daylines = np.where(np.floor(dectime) == dectime[i])
-                if daylines.__len__() > 1:
-                    alt = altitude[0][daylines]
-                    alt2 = np.where(alt > 1)
-                    rise = alt2[0][0]
-                    [_, CI, _, _, _] = solweiglib.clearnessindex_2013b(zen[0, i + rise + 1], jday[0, i + rise + 1],
-                                                            Ta[i + rise + 1],
-                                                            RH[i + rise + 1] / 100., radG[i + rise + 1], location,
-                                                            P[i + rise + 1])  # i+rise+1 to match matlab code. correct?
-                    if (CI > 1.) or (CI == np.inf):
+            ## other parameters
+            absK, absL, pos, cyl, Fside, Fup, height, Fcyl, elvis, \
+                timeadd, timeaddE, timeaddS, timeaddW, timeaddN, \
+                    firstdaytime = solweiglib.otherParameters()
+
+            # Based on the previous functions to load the meteological data using the lon, lat as the input
+            location = {'longitude': lon, 'latitude': lat, 'altitude': alt}
+            YYYY, altitude, azimuth, zen, jday, leafon, dectime, altmax = \
+                solweiglib.Solweig_2015a_metdata_noload(metdata, location, UTC)
+
+            ## use vegetation, the transmissivity of light through vegetation, default is 0.03 in Solweig
+            psi, DOY, hours, minus, Ta, RH, radG, radD, radI, P, Ws, height, \
+                first, second, timestepdec = solweiglib.prepareVegMeteo(leafon, metdata, height, dectime)
+
+            # night and day time
+            # TODO Should this be a parameter???
+            CI = 0  # #  If metfile starts at night, CI = 1.
+
+            ## after preparation of parameters, start to compute the mean radiant temperature
+            tmrtplot = np.zeros((rows, cols))
+            TgOut1 = np.zeros((rows, cols))
+
+            for i in np.arange(0, Ta.__len__()):
+                # Nocturnal cloudfraction from Offerle et al. 2003
+                if (dectime[i] - np.floor(dectime[i])) == 0:
+                    daylines = np.where(np.floor(dectime) == dectime[i])
+                    if daylines.__len__() > 1:
+                        alt = altitude[0][daylines]
+                        alt2 = np.where(alt > 1)
+                        rise = alt2[0][0]
+                        [_, CI, _, _, _] = solweiglib.clearnessindex_2013b(zen[0, i + rise + 1], jday[0, i + rise + 1],
+                                                                Ta[i + rise + 1],
+                                                                RH[i + rise + 1] / 100., radG[i + rise + 1], location,
+                                                                P[i + rise + 1])  # i+rise+1 to match matlab code. correct?
+                        if (CI > 1.) or (CI == np.inf):
+                            CI = 1.
+                    else:
                         CI = 1.
+
+                if os.path.exists(airTfile):
+                    airT_ds = gdal.Open(airTfile)
+                    print("the air temperature file is:", airTfile)
+                    airT_value = airT_ds.ReadAsArray().astype(float)
+                    print("The largest value is:", airT_value.max())
                 else:
-                    CI = 1.
+                    airT_value = Ta[i]
 
-            if os.path.exists(airTfile):
-                airT_ds = gdal.Open(airTfile)
-                print("the air temperature file is:", airTfile)
-                airT_value = airT_ds.ReadAsArray().astype(float)
-                print("The largest value is:", airT_value.max())
-            else:
-                airT_value = Ta[i]
+                Tmrt, Kdown, Kup, Ldown, Lup, Tg, ea, esky, I0, CI, shadow, firstdaytime, timestepdec, timeadd, \
+                Tgmap1, timeaddE, Tgmap1E, timeaddS, Tgmap1S, timeaddW, Tgmap1W, timeaddN, Tgmap1N, \
+                Keast, Ksouth, Kwest, Knorth, Least, Lsouth, Lwest, Lnorth, KsideI, TgOut1, TgOut, radIout, radDout \
+                    = solweiglib.Solweig_2019a_calc(i, dsm, scale, rows, cols, svf, svfN, svfW, svfE, svfS, svfveg,
+                        svfNveg, svfEveg, svfSveg, svfWveg, svfaveg, svfEaveg, svfSaveg, svfWaveg, svfNaveg,
+                        vegdsm, vegdsm2, albedo_b, absK, absL, ewall, Fside, Fup, Fcyl, altitude[0][i],
+                        azimuth[0][i], zen[0][i], jday[0][i], usevegdem, onlyglobal, buildings, location,
+                        psi[0][i], landcover, lcgrid, dectime[i], altmax[0][i], wallaspect,
+                        wallheight, cyl, elvis, airT_value, RH[i], radG[i], radD[i], radI[i], P[i], amaxvalue,
+                        bush, Twater, TgK, Tstart, alb_grid, emis_grid, TgK_wall, Tstart_wall, TmaxLST,
+                        TmaxLST_wall, first, second, svfalfa, svfbuveg, firstdaytime, timeadd, timeaddE, timeaddS,
+                        timeaddW, timeaddN, timestepdec, Tgmap1, Tgmap1E, Tgmap1S, Tgmap1W, Tgmap1N, CI, TgOut1, diffsh, ani)
 
-            Tmrt, Kdown, Kup, Ldown, Lup, Tg, ea, esky, I0, CI, shadow, firstdaytime, timestepdec, timeadd, \
-            Tgmap1, timeaddE, Tgmap1E, timeaddS, Tgmap1S, timeaddW, Tgmap1W, timeaddN, Tgmap1N, \
-            Keast, Ksouth, Kwest, Knorth, Least, Lsouth, Lwest, Lnorth, KsideI, TgOut1, TgOut, radIout, radDout \
-                = solweiglib.Solweig_2019a_calc(i, dsm, scale, rows, cols, svf, svfN, svfW, svfE, svfS, svfveg,
-                    svfNveg, svfEveg, svfSveg, svfWveg, svfaveg, svfEaveg, svfSaveg, svfWaveg, svfNaveg,
-                    vegdsm, vegdsm2, albedo_b, absK, absL, ewall, Fside, Fup, Fcyl, altitude[0][i],
-                    azimuth[0][i], zen[0][i], jday[0][i], usevegdem, onlyglobal, buildings, location,
-                    psi[0][i], landcover, lcgrid, dectime[i], altmax[0][i], wallaspect,
-                    wallheight, cyl, elvis, airT_value, RH[i], radG[i], radD[i], radI[i], P[i], amaxvalue,
-                    bush, Twater, TgK, Tstart, alb_grid, emis_grid, TgK_wall, Tstart_wall, TmaxLST,
-                    TmaxLST_wall, first, second, svfalfa, svfbuveg, firstdaytime, timeadd, timeaddE, timeaddS,
-                    timeaddW, timeaddN, timestepdec, Tgmap1, Tgmap1E, Tgmap1S, Tgmap1W, Tgmap1N, CI, TgOut1, diffsh, ani)
+                tmrtplot = tmrtplot + Tmrt
+                tmrt_mean = tmrt_mean + Tmrt
+                num_hour = num_hour + 1
 
-            tmrtplot = tmrtplot + Tmrt
-            tmrt_mean = tmrt_mean + Tmrt
-            num_hour = num_hour + 1
+                if altitude[0][i] > 0:
+                    w = 'D'
+                else:
+                    w = 'N'
 
-            if altitude[0][i] > 0:
-                w = 'D'
-            else:
-                w = 'N'
+            print('The number of elements in Ta is:', Ta.__len__())
+            tmrtplot = tmrtplot / Ta.__len__()
+            print(tmrtplot.shape)
 
-        print('The number of elements in Ta is:', Ta.__len__())
-        tmrtplot = tmrtplot / Ta.__len__()
-        print(tmrtplot.shape)
-
-        mrtFile = f"Tmrt_{sample_datetime.year}_{sample_datetime.timetuple().tm_yday}_{hour}00D.tif"
-        print('The output file name is:', mrtFile)
-        solweiglib.saverasternd(gdal_dsm, os.path.join(mrtfolder, mrtFile), tmrtplot)
+            mrtFile = f"Tmrt_{sampling_date.year}_{sampling_date.timetuple().tm_yday}_{hour}00D.tif"
+            print('The output file name is:', mrtFile)
+            solweiglib.saverasternd(gdal_dsm, os.path.join(mrtfolder, mrtFile), tmrtplot)
 
 
 

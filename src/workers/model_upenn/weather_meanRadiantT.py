@@ -81,8 +81,19 @@ def prepareAlbedo():
 
     return lc_class
 
+def _get_epsg_code(raster_path):
+    from osgeo import osr
+    with gdal.Open(raster_path) as dataset:
+        # Get the spatial reference from the dataset
+        projection = dataset.GetProjection()
+        spatial_ref = osr.SpatialReference()
+        spatial_ref.ImportFromWkt(projection)
 
-def run_mrt_calculations(method_params, epsgcode):
+        # Extract the EPSG code
+        epsg_code = int(spatial_ref.GetAttrValue("AUTHORITY", 1))
+    return epsg_code
+
+def run_mrt_calculations(method_params):
     '''
     Parameters:
     landcover: switch to use land cover or not, landcover=1, use; landocover=0, not use.
@@ -110,10 +121,10 @@ def run_mrt_calculations(method_params, epsgcode):
     INPUT_DEM = method_params['INPUT_DEM']
     SAVE_BUILD = method_params['SAVE_BUILD']
     INPUT_ANISO = method_params['INPUT_ANISO']
-    ALBEDO_WALLS = method_params['ALBEDO_WALLS']
-    ALBEDO_GROUND = method_params['ALBEDO_GROUND']
-    EMIS_WALLS = method_params['EMIS_WALLS']
-    EMIS_GROUND = method_params['EMIS_GROUND']
+    albedo_b = method_params['ALBEDO_WALLS']
+    albedo_g = method_params['ALBEDO_GROUND']
+    ewall = method_params['EMIS_WALLS']
+    eground = method_params['EMIS_GROUND']
     ABS_S = method_params['ABS_S']
     ABS_L = method_params['ABS_L']
     POSTURE = method_params['POSTURE']
@@ -139,6 +150,8 @@ def run_mrt_calculations(method_params, epsgcode):
     OUTPUT_TREEPLANTER = method_params['OUTPUT_TREEPLANTER']
     mrtfolder = method_params['OUTPUT_DIR']
 
+    epsgcode = _get_epsg_code(dsmfile)
+
     # the air temperature tile
     airTfile = os.path.join(os.path.dirname(csvfile), 'air_temperature', 'clipped_airT.tif').replace('scratch_target', 'sample_cities')
 
@@ -156,22 +169,12 @@ def run_mrt_calculations(method_params, epsgcode):
     # the albedo of trees, since they would block the solar radiation from reaching the ground. In 
     # this case, the tree canopy should be reclassified as the grass, beneath the tree
 
-    # TODO Should below be parameters???
     lc_class = prepareAlbedo()
-    albedo_b = 0.2 # albedo wall
-    albedo_g = 0.15 # albedo ground
-    ewall = 0.90 # emissivity wall
-    eground = 0.95 # emissivity ground
 
     ## the model parameters setting
     Twater = 15.0 # water temperature, this doesn't impact the mean radiant temperature
     ani = 0
     diffsh = None
-
-    # loop the hourly weather information
-    # root = '../../data/Philadelphia'
-    # weatherRoot = r"C:\Users\kenn.cartier\Documents\github\cities-thermal-comfort-modeling\data\sample_cities\USA_Philladelphia_upenn\primary_data\met_files\weather"
-    # mrtRoot = os.path.join(root, 'mrt', city)
 
     lon, lat, scale, rows, cols, alt, dsm, svf, svfN, svfS, svfE, \
         svfW, svfveg, svfNveg, svfSveg, svfEveg, svfWveg, svfaveg, svfNaveg, \

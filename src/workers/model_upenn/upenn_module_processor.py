@@ -49,8 +49,7 @@ def run_upenn_module(step_index, step_method, folder_name_city_data, folder_name
                 elif step_method == 'skyview_factor':
                     run_skyview_calculations(method_params)
                 else:
-                    epsgcode = 32618
-                    run_mrt_calculations(method_params, epsgcode)
+                    run_mrt_calculations(method_params)
 
                 # Prepare target folder and transfer over the temporary results
                 try:

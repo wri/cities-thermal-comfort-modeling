@@ -184,10 +184,17 @@ def aspect(dsm, walls, scale):
 
 
 def run_wall_calculations(method_params):
-    dsmfile = method_params['INPUT']
-    walllimit = method_params['INPUT_LIMIT']
-    wallheightFile = method_params['OUTPUT_HEIGHT']
-    aspectFile = method_params['OUTPUT_ASPECT']
+    # Expand parameters into local variables
+    INPUT = method_params['INPUT']
+    INPUT_LIMIT = method_params['INPUT_LIMIT']
+    OUTPUT_HEIGHT = method_params['OUTPUT_HEIGHT']
+    OUTPUT_ASPECT = method_params['OUTPUT_ASPECT']
+
+    # Map UMEP parameters to UPenn variables
+    dsmfile = INPUT
+    walllimit = INPUT_LIMIT
+    wallheightFile = OUTPUT_HEIGHT
+    aspectFile = OUTPUT_ASPECT
 
     # read primary source data
     gdal_dsm = gdal.Open(dsmfile)

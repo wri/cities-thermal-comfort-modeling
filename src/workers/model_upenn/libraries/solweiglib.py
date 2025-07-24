@@ -1137,8 +1137,9 @@ def Solweig_2019a_calc(i, dsm, scale, rows, cols, svf, svfN, svfW, svfE, svfS, s
         if ani == 1:
             patchchoice = 1
             zenDeg = zen*(180/np.pi)
+            # TODO (WRI) Where is the Parez_V3 function? Do we every need to specify ani ==1?
             # lv = Perez_v3(zenDeg, azimuth, radD, radI, jday, patchchoice)   # Relative luminance
-            lv = 0 # TODO KennC zerod out for testing since function is not available
+            lv = 0 # TODO (WRI) This values is zerod out for testing since function is not available
             
             deg2rad = np.pi/180
 
@@ -3449,7 +3450,7 @@ def universal_thermal_climate_index(ta, tr, vel, rh):
 
     return utci_approx
 
-def Solweig_2015a_metdata_noload(inputdata, location, UTC):
+def Solweig_2015a_metdata_noload(inputdata, location, UTC, leafon1, leafoff1):
     """
     This function is used to process the input meteorological file.
     It also calculates Sun position based on the time specified in the met-file
@@ -3473,8 +3474,9 @@ def Solweig_2015a_metdata_noload(inputdata, location, UTC):
     time['sec'] = 0
     time['UTC'] = UTC
     sunmaximum = 0.
-    leafon1 = 97  #TODO this should change
-    leafoff1 = 300  #TODO this should change
+    # (WRI) - Redefined these constants as function parameters
+    # leafon1 = 97  #TODO this should change
+    # leafoff1 = 300  #TODO this should change
     
     # initialize matrices
     altitude = np.empty(shape=(1, data_len))

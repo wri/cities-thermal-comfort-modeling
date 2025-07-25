@@ -1,4 +1,8 @@
 ## This code is used to calculate the height and aspect and saved as new file
+from osgeo import gdal
+from osgeo.gdalconst import *
+import os, os.path
+import numpy as np
 
 def findwalls(a, walllimit):
     # This function identifies walls based on a DSM and a wall-height limit
@@ -69,7 +73,7 @@ def cart2pol(x, y, units='deg'):
     
 
 ## calculate the aspect
-def aspect(dsm):
+def aspect(dsm, walls, scale):
     # from builtins import range
     # import traceback
     # import numpy as np
@@ -179,50 +183,30 @@ def aspect(dsm):
     return wallresult
 
 
-if __name__ == '__main__':
+def run_wall_calculations(method_params):
+    # Expand parameters into local variables
+    INPUT = method_params['INPUT']
+    INPUT_LIMIT = method_params['INPUT_LIMIT']
+    OUTPUT_HEIGHT = method_params['OUTPUT_HEIGHT']
+    OUTPUT_ASPECT = method_params['OUTPUT_ASPECT']
 
-    from osgeo import gdal
-    from osgeo.gdalconst import *
-    import os, os.path
-    import numpy as np
-    
-    
-    root = r'/mnt/g/researchProj/ai-bioclimate-design/data/'
-    city = "philadelphia"
-    city = 'dc'
-    city = 'chicago'
+    # Map UMEP parameters to UPenn variables
+    dsmfile = INPUT
+    walllimit = INPUT_LIMIT
+    wallheightFile = OUTPUT_HEIGHT
+    aspectFile = OUTPUT_ASPECT
 
-    outroot = os.path.join(root, 'aspect_height', city)
-    if not os.path.exists(outroot): os.makedirs(outroot)
+    # read primary source data
+    gdal_dsm = gdal.Open(dsmfile)
+    dsm = gdal_dsm.ReadAsArray().astype(float)  # dsm
+    geotransform = gdal_dsm.GetGeoTransform()
+    scale = 1 / geotransform[1]
 
-    ground_dsm_root = os.path.join(root, 'grounddsm_tiles', city)
-    # using the ground_building dsm
-    for file in os.listdir(ground_dsm_root):
-        if not file.endswith('tif'): continue
-        dsmfile = os.path.join(ground_dsm_root, file) #26453E210214N, clipedDSM
-        
-        gdal_dsm = gdal.Open(dsmfile)
-        dsm = gdal_dsm.ReadAsArray().astype(float)#dsm
-        geotransform = gdal_dsm.GetGeoTransform()
-        scale = 1 / geotransform[1]
-        
-        
-        print(os.path.basename(dsmfile))
-        base = os.path.splitext(os.path.basename(dsmfile))[0]
-        wallheightFile = os.path.join(outroot, base+'_wallheight.tif')
-        aspectFile = os.path.join(outroot, base+'_aspect.tif')
-        
-        if os.path.exists(aspectFile): continue
-        
-        # calculate the wall height and save to file
-        walllimit = 3 # wall limit 3 meter  
-        walls = findwalls(dsm, walllimit)
-        saverasternd(gdal_dsm, wallheightFile, walls)
-        
+    # calculate the wall height and save to file
+    walls = findwalls(dsm, walllimit)
+    saverasternd(gdal_dsm, wallheightFile, walls)
 
-        # calculate the aspect and save to a file
-        wallresult = aspect(dsm)
-        dirwalls = wallresult["dirwalls"]
-        saverasternd(gdal_dsm, aspectFile, dirwalls)
-
-
+    # calculate the aspect and save to a file
+    wallresult = aspect(dsm, walls, scale)
+    dirwalls = wallresult["dirwalls"]
+    saverasternd(gdal_dsm, aspectFile, dirwalls)

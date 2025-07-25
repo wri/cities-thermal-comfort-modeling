@@ -3,6 +3,7 @@
 ## as the input and the dynamic WEATHER data, the weather data
 ## is collected from, NREL, https://maps.nrel.gov/nsrdb-viewer/
 ## begin May 23,2020 @ Xiaojiang Li, Temple University
+import shutil
 
 # this the cpu version, with out the calculation of the UTCI
 # last by Xiaojiang Li, Oct 15, 2024
@@ -17,7 +18,10 @@ import os, os.path
 from osgeo import gdal
 from osgeo.gdalconst import *
 import pandas as pd
-from libraries import solweiglib
+from datetime import date, time
+
+from src.workers.model_upenn.libraries import solweiglib
+
 
 
 def preprocessMeteorolgoicalData(csvfile, month='8', day='1', hour='12'):
@@ -78,30 +82,105 @@ def prepareAlbedo():
 
     return lc_class
 
+def _get_epsg_code(raster_path):
+    from osgeo import osr
+    with gdal.Open(raster_path) as dataset:
+        # Get the spatial reference from the dataset
+        projection = dataset.GetProjection()
+        spatial_ref = osr.SpatialReference()
+        spatial_ref.ImportFromWkt(projection)
 
-if __name__ == '__main__':
-    root = r'/mnt/g/researchProj/ai-bioclimate-design/data'
-    root = r'../data-sample/'
+        # Extract the EPSG code
+        epsg_code = int(spatial_ref.GetAttrValue("AUTHORITY", 1))
+    return epsg_code
+
+def run_mrt_calculations(method_params, sampling_date: date, sampling_hours: str):
+    # Expand parameters into local variables
+    INPUT_DSM = method_params['INPUT_DSM']
+    INPUT_SVF = method_params['INPUT_SVF']
+    INPUT_HEIGHT = method_params['INPUT_HEIGHT']
+    INPUT_ASPECT = method_params['INPUT_ASPECT']
+    INPUT_CDSM = method_params['INPUT_CDSM']
+    INPUT_ALBEDO = method_params['INPUT_ALBEDO']
+    TRANS_VEG = method_params['TRANS_VEG'] # CTCM/UPenn currently does not use this parameter
+    LEAF_START = method_params['LEAF_START']
+    LEAF_END = method_params['LEAF_END']
+    CONIFER_TREES = method_params['CONIFER_TREES'] # CTCM/UPenn currently does not use this parameter
+    INPUT_TDSM = method_params['INPUT_TDSM'] # CTCM/UPenn currently does not use this parameter
+    INPUT_THEIGHT = method_params['INPUT_THEIGHT'] # CTCM/UPenn currently does not use this parameter
+    INPUT_LC = method_params['INPUT_LC']
+    USE_LC_BUILD = method_params['USE_LC_BUILD'] # CTCM/UPenn currently does not use this parameter
+    INPUT_DEM = method_params['INPUT_DEM'] # CTCM/UPenn currently does not use this parameter
+    SAVE_BUILD = method_params['SAVE_BUILD'] # CTCM/UPenn currently does not use this parameter
+    INPUT_ANISO = method_params['INPUT_ANISO'] # CTCM/UPenn currently does not use this parameter
+    ALBEDO_WALLS = method_params['ALBEDO_WALLS']
+    ALBEDO_GROUND = method_params['ALBEDO_GROUND']
+    EMIS_WALLS = method_params['EMIS_WALLS']
+    EMIS_GROUND = method_params['EMIS_GROUND']
+    ABS_S = method_params['ABS_S'] # CTCM/UPenn currently does not use this parameter
+    ABS_L = method_params['ABS_L'] # CTCM/UPenn currently does not use this parameter
+    POSTURE = method_params['POSTURE'] # CTCM/UPenn currently does not use this parameter
+    CYL = method_params['CYL'] # CTCM/UPenn currently does not use this parameter
+    INPUTMET = method_params['INPUTMET']
+    ONLYGLOBAL = method_params['ONLYGLOBAL']
+    UTC = float(method_params['UTC'])
+    POI_FILE = method_params['POI_FILE'] # CTCM/UPenn currently does not use this parameter
+    POI_FIELD = method_params['POI_FIELD'] # CTCM/UPenn currently does not use this parameter
+    AGE = method_params['AGE'] # CTCM/UPenn currently does not use this parameter
+    ACTIVITY = method_params['ACTIVITY'] # CTCM/UPenn currently does not use this parameter
+    CLO = method_params['CLO'] # CTCM/UPenn currently does not use this parameter
+    WEIGHT = method_params['WEIGHT'] # CTCM/UPenn currently does not use this parameter
+    HEIGHT = method_params['HEIGHT'] # CTCM/UPenn currently does not use this parameter
+    SEX = method_params['SEX'] # CTCM/UPenn currently does not use this parameter
+    SENSOR_HEIGHT = method_params['SENSOR_HEIGHT'] # CTCM/UPenn currently does not use this parameter
+    OUTPUT_TMRT = method_params['OUTPUT_TMRT'] # CTCM/UPenn currently does not use this parameter
+    OUTPUT_KDOWN = method_params['OUTPUT_KDOWN'] # CTCM/UPenn currently does not use this parameter
+    OUTPUT_KUP = method_params['OUTPUT_KUP'] # CTCM/UPenn currently does not use this parameter
+    OUTPUT_LDOWN = method_params['OUTPUT_LDOWN'] # CTCM/UPenn currently does not use this parameter
+    OUTPUT_LUP = method_params['OUTPUT_LUP'] # CTCM/UPenn currently does not use this parameter
+    OUTPUT_SH = method_params['OUTPUT_SH'] # CTCM/UPenn currently does not use this parameter
+    OUTPUT_TREEPLANTER = method_params['OUTPUT_TREEPLANTER'] # CTCM/UPenn currently does not use this parameter
+    OUTPUT_DIR = method_params['OUTPUT_DIR']
+
+    # Map UMEP parameters to UPenn variables
+    dsmfile = INPUT_DSM
+    svffolder = INPUT_SVF
+    wallfile = INPUT_HEIGHT
+    aspectfile = INPUT_ASPECT
+    chmfile = INPUT_CDSM
+    albedo_file = INPUT_ALBEDO
+    leafon1 = LEAF_START
+    leafoff1 = LEAF_END
+    lufile = INPUT_LC
+    albedo_b = ALBEDO_WALLS
+    albedo_g = ALBEDO_GROUND
+    ewall = EMIS_WALLS
+    eground = EMIS_GROUND
+    csvfile = INPUTMET
+    onlyglobal = 1 if ONLYGLOBAL else 0
+    UTC = float(UTC)
+    mrtfolder = OUTPUT_DIR
+
+    epsgcode = _get_epsg_code(dsmfile)
 
 
-    city = 'philadelphia'
-    epsgcode = 2272
-    UTC = -4 # UTC offset hour is -5 for Phily， with consideration of daytime saving in summer change to -4
-    
-    
-    # city = 'dc'
-    # epsgcode = 3582
-    # UTC = -4
+    ## Other UPenn model parameters settings
+    # TODO (WRI) Can any of these parameters be mapped into UMEP paramters?
+    # TODO (WRI) Are there other UPenn parameters that should be instantiated here?
+    landcover = 1 # switch to use land cover or not, landcover=1, use; landocover=0, not use.
+    usevegdem = 1 # switch for use of vegetation dsm
+    Twater = 15.0 # water temperature, this doesn't impact the mean radiant temperature
+    ani = 0
+    diffsh = None
 
-    
-    # city = 'chicago'
-    # epsgcode = 3435
-    # UTC = -5
+    # the air temperature tile
+    use_airt_file = False # TODO (WRI) CTCM is currently not using air temperature tiles
+    if use_airt_file:
+        airTfile = os.path.join(os.path.dirname(csvfile), 'air_temperature', 'clipped_airT.tif').replace('scratch_target', 'sample_cities')
+    else:
+        airTfile = ''
 
 
-    ##### Here is the switch to use land cover or not, landcover=1, use; landocover=0, not use.
-    # landcover = 0
-    landcover = 1
     # THE FOLLOWING IS THE ENCODING OF LAND USE/COVER
     # lc_class:
     #     lin = ['Name              Code Alb  Emis Ts_deg Tstart TmaxLST \n',
@@ -115,143 +194,100 @@ if __name__ == '__main__':
     # The albedo of the tree canopy is not considered. This is because there is no need to consider
     # the albedo of trees, since they would block the solar radiation from reaching the ground. In 
     # this case, the tree canopy should be reclassified as the grass, beneath the tree
-    
 
     lc_class = prepareAlbedo()
-    albedo_b = 0.2 # albedo wall
-    albedo_g = 0.15 # albedo ground
-    ewall = 0.90 # emissivity wall
-    eground = 0.95 # emissivity ground
 
-    ## the model parameters setting
-    Twater = 15.0 # water temperature, this doesn't impact the mean radiant temperature
-    ani = 0
-    diffsh = None
+    lon, lat, scale, rows, cols, alt, dsm, svf, svfN, svfS, svfE, \
+        svfW, svfveg, svfNveg, svfSveg, svfEveg, svfWveg, svfaveg, svfNaveg, \
+        svfSaveg, svfEaveg, svfWaveg, svfalfa, wallheight, wallaspect,\
+        amaxvalue, vegdsm, vegdsm2, bush, svfbuveg, gdal_dsm = (
+        solweiglib.prepareData(mrtfolder, svffolder, dsmfile, chmfile, wallfile, aspectfile, epsgcode))
 
-    ## handle the radiation, 0 with both the direct and diffuse available
-    # onlyglobal = 0
-    onlyglobal = 1 #only the global radiation is available, use the reidn's method
+    # read the previously created svfs
+    svfs = ['svf', 'svfN', 'svfS', 'svfE', 'svfW', 'svfveg', \
+            'svfEveg', 'svfSveg', 'svfWveg', 'svfNveg', 'svfaveg', \
+            'svfEaveg', 'svfSaveg', 'svfWaveg', 'svfNaveg']
 
-    # loop the hourly weather information
-    # root = '../../data/Philadelphia'
-    weatherRoot = os.path.join(root, 'weather', city)
-    mrtRoot = os.path.join(root, 'mrt', city)
-    if not os.path.exists(mrtRoot): os.makedirs(mrtRoot)
+    svf_imgs_dict = {}
 
-    # loop all the ground building dsm files
-    for filename in os.listdir(os.path.join(root, 'grounddsm_tiles', city)):
-        if not filename.endswith('.tif'): continue
-        base = os.path.splitext(filename)[0]
-        print("You are processing:================", base)
+    try:
+        for svf in svfs:
+            svffile = os.path.join(svffolder, svf + '.tif')
+            dataSet = gdal.Open(svffile)
+            svf_img = dataSet.ReadAsArray().astype(float)
 
-        dsmfile = os.path.join(root, 'grounddsm_tiles', city, filename)
-        svffolder = os.path.join(root, 'svfs', city, base)
-        mrtfolder = os.path.join(mrtRoot, base)
-        
-        if not os.path.exists(svffolder): 
-            print(svffolder, 'Not exists')
-            continue
-        
-        # if the folder already exist, then skip or create folder and start the computing
-        if os.path.exists(mrtfolder): 
-            continue
-        else:
-            os.mkdir(mrtfolder)
+            svf_imgs_dict[svf] = svf_img
+    except:
+        print('The svf folder %s is not existed'%(svffolder))
 
-        chmfile = os.path.join(root, 'treeheight_tiles', city, base + '.tif')
-        wallfile = os.path.join(root, 'aspect_height', city, base + '_wallheight.tif')
-        aspectfile = os.path.join(root, 'aspect_height', city, base + '_aspect.tif')
+    svf = svf_imgs_dict['svf']
+    svfN = svf_imgs_dict['svfN']
+    svfS = svf_imgs_dict['svfS']
+    svfE = svf_imgs_dict['svfE']
+    svfW = svf_imgs_dict['svfW']
 
-        # the air temperature tile
-        airTfile = os.path.join(root, 'airT_tiles', city, base+'.tif')
+    svfveg = svf_imgs_dict['svfveg']
+    svfNveg = svf_imgs_dict['svfNveg']
+    svfSveg = svf_imgs_dict['svfSveg']
+    svfEveg = svf_imgs_dict['svfEveg']
+    svfWveg = svf_imgs_dict['svfWveg']
 
-        lon, lat, scale, rows, cols, alt, dsm, svf, svfN, svfS, svfE, \
-            svfW, svfveg, svfNveg, svfSveg, svfEveg, svfWveg, svfaveg, svfNaveg, \
-            svfSaveg, svfEaveg, svfWaveg, svfalfa, wallheight, wallaspect,\
-            amaxvalue, vegdsm, vegdsm2, bush, svfbuveg, gdal_dsm = solweiglib.prepareData(mrtfolder, svffolder, dsmfile, chmfile, wallfile, aspectfile, epsgcode)
-        
-        # read the previously created svfs
-        svfs = ['svf', 'svfN', 'svfS', 'svfE', 'svfW', 'svfveg', \
-                'svfEveg', 'svfSveg', 'svfWveg', 'svfNveg', 'svfaveg', \
-                'svfEaveg', 'svfSaveg', 'svfWaveg', 'svfNaveg']
-        
-        svf_imgs_dict = {}
-        
-        try:
-            for svf in svfs:
-                svffile = os.path.join(svffolder, svf + '.tif')
-                dataSet = gdal.Open(svffile)
-                svf_img = dataSet.ReadAsArray().astype(float)
+    svfaveg = svf_imgs_dict['svfaveg']
+    svfNaveg = svf_imgs_dict['svfNaveg']
+    svfSaveg = svf_imgs_dict['svfSaveg']
+    svfEaveg = svf_imgs_dict['svfEaveg']
+    svfWaveg = svf_imgs_dict['svfWaveg']
 
-                svf_imgs_dict[svf] = svf_img
-        except:
-            print('The svf folder %s is not existed'%(svffolder))
-            continue
-            
-        svf = svf_imgs_dict['svf']
-        svfN = svf_imgs_dict['svfN']
-        svfS = svf_imgs_dict['svfS']
-        svfE = svf_imgs_dict['svfE']
-        svfW = svf_imgs_dict['svfW']
-        
-        svfveg = svf_imgs_dict['svfveg']
-        svfNveg = svf_imgs_dict['svfNveg']
-        svfSveg = svf_imgs_dict['svfSveg']
-        svfEveg = svf_imgs_dict['svfEveg']
-        svfWveg = svf_imgs_dict['svfWveg']
+    tmp = svf + svfveg - 1.
+    tmp[tmp < 0.] = 0.
 
-        svfaveg = svf_imgs_dict['svfaveg']
-        svfNaveg = svf_imgs_dict['svfNaveg']
-        svfSaveg = svf_imgs_dict['svfSaveg']
-        svfEaveg = svf_imgs_dict['svfEaveg']
-        svfWaveg = svf_imgs_dict['svfWaveg']
-
-        tmp = svf + svfveg - 1.
-        tmp[tmp < 0.] = 0.
-
-        # %matlab crazyness around 0
-        epsilon = 1e-10  # A small value to avoid log(0)
-        tmp = np.clip(tmp, 0, 1 - epsilon)
-        svfalfa = np.arcsin(np.exp((np.log((1. - tmp)) / 2.)))
-        
-        # vegetation dsm
-        usevegdem = 1
-
-        # %Initialization of maps
-        Knight = np.zeros((rows, cols))
-        Tgmap1 = np.zeros((rows, cols))
-        Tgmap1E = np.zeros((rows, cols))
-        Tgmap1S = np.zeros((rows, cols))
-        Tgmap1W = np.zeros((rows, cols))
-        Tgmap1N = np.zeros((rows, cols))
-
-        #### ------------land cover and albedo------------------
-        # [TgK, Tstart, lcgrid, alb_grid, emis_grid, TgK_wall, Tstart_wall, TmaxLST, TmaxLST_wall] = solweiglib.landcoverAlbedo(root, base, Knight, albedo_g, eground, lc_class, landcover)
-        [TgK, Tstart, lcgrid, alb_grid, emis_grid, TgK_wall, Tstart_wall, TmaxLST, TmaxLST_wall] = solweiglib.landcoverAlbedoNew(root, city, base, Knight, albedo_g, eground, lc_class, landcover)
+    # %matlab crazyness around 0
+    epsilon = 1e-10  # A small value to avoid log(0)
+    tmp = np.clip(tmp, 0, 1 - epsilon)
+    svfalfa = np.arcsin(np.exp((np.log((1. - tmp)) / 2.)))
 
 
-        # here the dsm is the building height, non-building has height of zero
-        # buildings = dsm - dem
-        # buildings[buildings < 2.] = 1.
-        # buildings[buildings >= 2.] = 0.
-        buildings = dsm
-        buildings[dsm < 2.] = 1.
-        buildings[dsm >= 2.] = 0.
+    # %Initialization of maps
+    Knight = np.zeros((rows, cols))
+    Tgmap1 = np.zeros((rows, cols))
+    Tgmap1E = np.zeros((rows, cols))
+    Tgmap1S = np.zeros((rows, cols))
+    Tgmap1W = np.zeros((rows, cols))
+    Tgmap1N = np.zeros((rows, cols))
 
-        ## loop all the weather csv data to get the information meteorological data
-        csvfile = os.path.join(weatherRoot, city+'.csv')
-        day_summer_df = preprocessMeteorolgoicalData(csvfile, month='7', day='1', hour='12')
+    #### ------------land cover and albedo------------------
+    # [TgK, Tstart, lcgrid, alb_grid, emis_grid, TgK_wall, Tstart_wall, TmaxLST, TmaxLST_wall] = solweiglib.landcoverAlbedo(root, base, Knight, albedo_g, eground, lc_class, landcover)
+    [TgK, Tstart, lcgrid, alb_grid, emis_grid, TgK_wall, Tstart_wall, TmaxLST, TmaxLST_wall] = (
+        solweiglib.landcoverAlbedoNew(lufile, albedo_file, Knight, albedo_g, eground, lc_class, landcover))
+
+
+    # TODO (WRI) What is purpose of the commented-out code? Should DEM be subtracted from DSM???
+    # here the dsm is the building height, non-building has height of zero
+    # buildings = dsm - dem
+    # buildings[buildings < 2.] = 1.
+    # buildings[buildings >= 2.] = 0.
+    buildings = dsm
+    # TODO (WRI) Is the value 2 defined in feet or meters? (Note: This value should be declared as a tolerance constant.)
+    buildings[dsm < 2.] = 1.
+    buildings[dsm >= 2.] = 0.
+
+    ## loop all the weather csv data to get the information meteorological data
+    for hour in sampling_hours.split(","):
+        month = str(sampling_date.month)
+        day = str(sampling_date.day)
+        day_summer_df = preprocessMeteorolgoicalData(csvfile, month=month, day=day, hour=hour)
 
         # calculate the average of mean radiant temperature in summer
         tmrt_mean = np.zeros((rows, cols))
         # number of hours in summer from June to August
+        # TODO (WRI) Should this be a parameter or vary in any way?
         num_hour = 0
 
         # loop hourly weather data
         for idx, row in day_summer_df.iterrows():
             # date information and metdata
             [metdata, year, month, day, hour, minu, doy] = solweiglib.metdataParse(row)
-            
+
             ## other parameters
             absK, absL, pos, cyl, Fside, Fup, height, Fcyl, elvis, \
                 timeadd, timeaddE, timeaddS, timeaddW, timeaddN, \
@@ -260,15 +296,16 @@ if __name__ == '__main__':
             # Based on the previous functions to load the meteological data using the lon, lat as the input
             location = {'longitude': lon, 'latitude': lat, 'altitude': alt}
             YYYY, altitude, azimuth, zen, jday, leafon, dectime, altmax = \
-                solweiglib.Solweig_2015a_metdata_noload(metdata, location, UTC)
-            
+                solweiglib.Solweig_2015a_metdata_noload(metdata, location, UTC, leafon1, leafoff1)
+
             ## use vegetation, the transmissivity of light through vegetation, default is 0.03 in Solweig
             psi, DOY, hours, minus, Ta, RH, radG, radD, radI, P, Ws, height, \
                 first, second, timestepdec = solweiglib.prepareVegMeteo(leafon, metdata, height, dectime)
-            
+
             # night and day time
+            # TODO (WRI) Should this be a parameter???
             CI = 0  # #  If metfile starts at night, CI = 1.
-            
+
             ## after preparation of parameters, start to compute the mean radiant temperature
             tmrtplot = np.zeros((rows, cols))
             TgOut1 = np.zeros((rows, cols))
@@ -289,7 +326,7 @@ if __name__ == '__main__':
                             CI = 1.
                     else:
                         CI = 1.
-                
+
                 if os.path.exists(airTfile):
                     airT_ds = gdal.Open(airTfile)
                     print("the air temperature file is:", airTfile)
@@ -297,7 +334,7 @@ if __name__ == '__main__':
                     print("The largest value is:", airT_value.max())
                 else:
                     airT_value = Ta[i]
-                
+
                 Tmrt, Kdown, Kup, Ldown, Lup, Tg, ea, esky, I0, CI, shadow, firstdaytime, timestepdec, timeadd, \
                 Tgmap1, timeaddE, Tgmap1E, timeaddS, Tgmap1S, timeaddW, Tgmap1W, timeaddN, Tgmap1N, \
                 Keast, Ksouth, Kwest, Knorth, Least, Lsouth, Lwest, Lnorth, KsideI, TgOut1, TgOut, radIout, radDout \
@@ -324,13 +361,14 @@ if __name__ == '__main__':
             tmrtplot = tmrtplot / Ta.__len__()
             print(tmrtplot.shape)
 
-            mrtFile = "%s-hour%s-MRT.tif"%(base, hour)
+            mrtFile = f"Tmrt_{sampling_date.year}_{sampling_date.timetuple().tm_yday}_{hour}00D.tif"
             print('The output file name is:', mrtFile)
             solweiglib.saverasternd(gdal_dsm, os.path.join(mrtfolder, mrtFile), tmrtplot)
 
 
-        # tmrt_mean = tmrt_mean / float(num_hour)
 
-        # mrtFile = "%s-MRT.tif"%(city)
-        # print('The output file name is:', mrtFile)
-        # solweiglib.saverasternd(gdal_dsm, os.path.join(mrtfolder, mrtFile), tmrt_mean)
+    # tmrt_mean = tmrt_mean / float(num_hour)
+
+    # mrtFile = "%s-MRT.tif"%(city)
+    # print('The output file name is:', mrtFile)
+    # solweiglib.saverasternd(gdal_dsm, os.path.join(mrtfolder, mrtFile), tmrt_mean)

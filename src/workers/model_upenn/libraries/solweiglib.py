@@ -874,8 +874,8 @@ def shadowingfunction_wallheight_13(a, azimuth, altitude, scale, walls, aspect):
 
     # conversion
     degrees = np.pi/180
-    azimuth = radians(azimuth)
-    altitude = radians(altitude)
+    azimuth = math.radians(azimuth)
+    altitude = math.radians(altitude)
 
     # measure the size of the image
 
@@ -1137,7 +1137,9 @@ def Solweig_2019a_calc(i, dsm, scale, rows, cols, svf, svfN, svfW, svfE, svfS, s
         if ani == 1:
             patchchoice = 1
             zenDeg = zen*(180/np.pi)
-            lv = Perez_v3(zenDeg, azimuth, radD, radI, jday, patchchoice)   # Relative luminance
+            # TODO (WRI) Where is the Parez_V3 function? Do we every need to specify ani ==1?
+            # lv = Perez_v3(zenDeg, azimuth, radD, radI, jday, patchchoice)   # Relative luminance
+            lv = 0 # TODO (WRI) This values is zerod out for testing since function is not available
             
             deg2rad = np.pi/180
 
@@ -3091,7 +3093,7 @@ def landcoverAlbedo(root, base, Knight, albedo_g, eground, lc_class, landcover):
     return TgK, Tstart, lc_grid, alb_grid, emis_grid, TgK_wall, Tstart_wall, TmaxLST, TmaxLST_wall
 
 
-def landcoverAlbedoNew(root, city, base, Knight, albedo_g, eground, lc_class, landcover):
+def landcoverAlbedoNew(lufile, albedo_file, Knight, albedo_g, eground, lc_class, landcover):
     '''
     This is the new version, use the simple land use classification
     landcover: 0: don't use the land cover data, 1: use the land cover data
@@ -3116,8 +3118,8 @@ def landcoverAlbedoNew(root, city, base, Knight, albedo_g, eground, lc_class, la
     
     # demforbuild = 1
     # filePath_lc = None
-    lufile = os.path.join(root, 'landcover_tiles', city, base + '.tif')
-    albedo_file = os.path.join(root, 'albedo_tiles', city, base + '.tif')
+    # lufile = os.path.join(root, 'landcover_tiles', city, base + '.tif')
+    # albedo_file = os.path.join(root, 'albedo_tiles', city, base + '.tif')
     
     if os.path.exists(lufile) and landcover != 0:
         dataSet = gdal.Open(lufile)
@@ -3448,7 +3450,7 @@ def universal_thermal_climate_index(ta, tr, vel, rh):
 
     return utci_approx
 
-def Solweig_2015a_metdata_noload(inputdata, location, UTC):
+def Solweig_2015a_metdata_noload(inputdata, location, UTC, leafon1, leafoff1):
     """
     This function is used to process the input meteorological file.
     It also calculates Sun position based on the time specified in the met-file
@@ -3472,8 +3474,9 @@ def Solweig_2015a_metdata_noload(inputdata, location, UTC):
     time['sec'] = 0
     time['UTC'] = UTC
     sunmaximum = 0.
-    leafon1 = 97  #TODO this should change
-    leafoff1 = 300  #TODO this should change
+    # (WRI) - Redefined these constants as function parameters
+    # leafon1 = 97  #TODO this should change
+    # leafoff1 = 300  #TODO this should change
     
     # initialize matrices
     altitude = np.empty(shape=(1, data_len))

@@ -3,34 +3,34 @@
   short_title: first scenario
   version: 1
   description: Scenario that demonstrates blah.
-  author: author@wri.org
+  author: kenn.cartier@wri.org
 # Processing Area of Interest used for tile construction and ERA5-data download. If any custom files
 # are specified above, then the system will not construct a new tile grid and will instead use the existing one.
 # Specify None for tile_side_meters to not subdivide the AOI. Recommended value for tile_buffer_meters is 600.
 # Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
-  utc_offset: <>
-  min_lon: <>
-  min_lat: <>
-  max_lon: <>
-  max_lat: <>
-  tile_side_meters: None
-  tile_buffer_meters: 600
-  remove_mrt_buffer_for_final_output: True
+  utc_offset: -4
+  min_lon: -75.19176
+  min_lat: 39.94078
+  max_lon: -75.17581
+  max_lat: 39.95010
+  tile_side_meters: 1000
+  tile_buffer_meters: 100
+  remove_mrt_buffer_for_final_output: true
 # Names of meteorological files used by SOLWEIG method in "UMEP for Processing" plugin.
 # Specify custom files or "<download_era5>" method to automatically download ERA5 data into a file named met_era5_hottest_days.txt
 - MetFiles:
-  - filename: <download_era5>
+  - filename: nrel_philadelphia.csv
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
 # All four file mappings must be specified here. Specify None for filename where custom file is not available for processing.
 # Recommended filenames: dem.tif, dsm_ground_build.tif, lulc.tif, open_urban.tif, tree_canopy.tif, albedo.tif
 # Auto-generated CIF filenames: cif_dem.tif, cif_dsm_ground_build.tif, cif_lulc.tif, cif_open_urban.tif, cif_tree_canopy.tif, cif_albedo.tif
 - CustomTiffFilenames:
   dem_tif_filename: None
-  dsm_tif_filename: dsm_ground_build.tif
-  lulc_tif_filename: lulc.tif
-  open_urban_tif_filename: open_urban.tif
-  tree_canopy_tif_filename: tree_canopy.tif
+  dsm_tif_filename: None
+  lulc_tif_filename: None
+  open_urban_tif_filename: None
+  tree_canopy_tif_filename: None
   albedo_tif_filename: None
   airt_tif_filename: 'Currently not used'
 - PreparedIntermediateFilenames:
@@ -38,7 +38,7 @@
   wall_aspect_filename: None
   wall_height_filename: None
 # Configurable attribute values for method processing
-# Valid methods are [download_only, umep_solweig]
+# Valid methods are [download_only, umep_solweig, upenn_model]
 # sampling_local_hours specifies hours for <download_era5> method.
 - MethodAttributes:
   method: upenn_model
@@ -53,11 +53,11 @@
       north_temperate_leaf_end: 301
       south_temperate_leaf_start: 282
       south_temperate_leaf_end: 97
-    conifer_trees: False
+    conifer_trees: false
     albedo_walls: 0.2
     albedo_ground: 0.15
     emis_walls: 0.9
     emis_ground: 0.95
-    output_tmrt: True
-    output_sh: True
+    output_tmrt: true
+    output_sh: true
     sampling_local_hours: 12,15,18

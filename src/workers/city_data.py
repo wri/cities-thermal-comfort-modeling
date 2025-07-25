@@ -30,17 +30,18 @@ class CityData:
             parse_processing_areas_config(yml_values)
 
         obj.met_filenames, obj.has_era_met_download = parse_met_files_config(yml_values)
+
         (obj.dem_tif_filename, obj.dsm_tif_filename, obj.lulc_tif_filename, obj.open_urban_tif_filename, obj.tree_canopy_tif_filename,
          obj.albedo_tif_filename, obj.custom_primary_feature_list, obj.custom_primary_filenames,
          obj.cif_primary_feature_list) = parse_primary_filenames_config(yml_values)
-
-        (obj.wall_aspect_filename, obj.wall_height_filename, obj.skyview_factor_filename,
-         obj.custom_intermediate_list, obj.ctcm_intermediate_list) = parse_intermediate_filenames_config(yml_values)
 
         (obj.new_task_method, northern_leaf_start, northern_leaf_end, southern_leaf_start, southern_leaf_end,
          obj.wall_lower_limit_height, obj.light_transmissivity, obj.trunk_zone_height,
          obj.conifer_trees, obj.albedo_walls, obj.albedo_ground, obj.emis_walls, obj.emis_ground, obj.output_tmrt,
          obj.output_sh, obj.sampling_local_hours) = (parse_method_attributes_config(yml_values))
+
+        (obj.wall_aspect_filename, obj.wall_height_filename, obj.skyview_factor_filename,
+         obj.custom_intermediate_list, obj.ctcm_intermediate_list) = parse_intermediate_filenames_config(yml_values, obj.new_task_method)
 
         # set leave start/end for latitude
         obj.leaf_start, obj.leaf_end =_get_latitude_based_leaf_start_end(obj.min_lat, obj.max_lat,

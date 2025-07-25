@@ -6,7 +6,6 @@ import warnings
 import pandas as pd
 import shapely
 import dask
-from shapely.lib import envelope
 
 from src.constants import SRC_DIR, FILENAME_ERA5
 from src.data_validation.manager import print_invalids
@@ -15,8 +14,7 @@ from src.worker_manager.ancillary_files import write_tile_grid, write_qgis_files
 from src.worker_manager.graph_builder import get_aoi_fishnet, get_aoi_from_config
 from src.workers.logger_tools import setup_logger, log_general_file_message
 from src.worker_manager.reporter import parse_row_results, report_results
-from src.worker_manager.tools import get_existing_tile_metrics
-from src.workers.worker_meteorological_processor import get_met_data
+from src.workers.model_umep.worker_meteorological_processor import get_met_data
 from src.workers.worker_tools import create_folder
 
 warnings.filterwarnings('ignore')
@@ -58,11 +56,12 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     # Transfer custom met files to target
     _transfer_custom_met_files(non_tiled_city_data)
 
-    invalids = evaluate_meteorological_data(non_tiled_city_data, in_target_folder=True)
-    if invalids:
-        print_invalids(invalids)
-        print("Stopping. Identified invalid values in meteorological files(s)")
-        exit(1)
+    if non_tiled_city_data.new_task_method != 'upenn_model':
+        invalids = evaluate_meteorological_data(non_tiled_city_data, in_target_folder=True)
+        if invalids:
+            print_invalids(invalids)
+            print("Stopping. Identified invalid values in meteorological files(s)")
+            exit(1)
 
 
     futures = []

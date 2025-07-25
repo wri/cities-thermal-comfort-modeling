@@ -252,11 +252,11 @@ def run_skyview_calculations(method_params):
     # Expand parameters into local variables
     INPUT_DSM = method_params['INPUT_DSM']
     INPUT_CDSM = method_params['INPUT_CDSM']
-    TRANS_VEG = method_params['TRANS_VEG']  # CTCM/UPenn currently does not use this parameter
-    INPUT_TDSM = method_params['INPUT_TDSM']  # CTCM/UPenn currently does not use this parameter
-    INPUT_THEIGHT = method_params['INPUT_THEIGHT'] # CTCM/UPenn currently does not use this parameter
-    ANISO = method_params['ANISO']  # CTCM/UPenn currently does not use this parameter
-    OUTPUT_DIR = method_params['OUTPUT_DIR']   # CTCM/UPenn currently does not use this parameter
+    # TRANS_VEG = method_params['TRANS_VEG']  # CTCM/UPenn does not use this parameter
+    # INPUT_TDSM = method_params['INPUT_TDSM']  # CTCM/UPenn does not use this parameter
+    # INPUT_THEIGHT = method_params['INPUT_THEIGHT'] # CTCM/UPenn does not use this parameter
+    # ANISO = method_params['ANISO']  # CTCM/UPenn does not use this parameter
+    # OUTPUT_DIR = method_params['OUTPUT_DIR']   # CTCM/UPenn does not use this parameter
     OUTPUT_FILE = method_params['OUTPUT_FILE']
 
     # Map UMEP parameters to UPenn variables

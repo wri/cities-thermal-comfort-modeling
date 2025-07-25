@@ -1135,11 +1135,12 @@ def Solweig_2019a_calc(i, dsm, scale, rows, cols, svf, svfN, svfW, svfE, svfS, s
         # Diffuse Radiation
         # Anisotropic Diffuse Radiation after Perez et al. 1993
         if ani == 1:
+            # Note: (WRI) This is a dead block of code since ani is hard-coded to 1.
             patchchoice = 1
             zenDeg = zen*(180/np.pi)
-            # TODO (WRI) Where is the Parez_V3 function? Do we every need to specify ani ==1?
+            # Note: (WRI) Perez_v3 is no longer a standard model and no longer used.
             # lv = Perez_v3(zenDeg, azimuth, radD, radI, jday, patchchoice)   # Relative luminance
-            lv = 0 # TODO (WRI) This values is zerod out for testing since function is not available
+            lv = 0 # Note: (WRI) This values is zerod out since Perez function is not available
             
             deg2rad = np.pi/180
 
@@ -2831,7 +2832,7 @@ def transform_prep(epsgcode):
 
     return transform
 
-def prepareData(mrtfolder, svffolder, dsmfile, chmfile, wallfile, aspectfile, epsgcode):
+def prepareData(mrtfolder, svffolder, dsmfile, chmfile, wallfile, aspectfile, trans, epsgcode):
     # if the folder already exist, then skip or create folder and start the computing
     # if os.path.exists(mrtfolder) and os.path.exists(utcifolder): 
     #     continue
@@ -2879,7 +2880,7 @@ def prepareData(mrtfolder, svffolder, dsmfile, chmfile, wallfile, aspectfile, ep
         lat = lonlat[1] #changed to gdal 2
     
     ## use the vegetation canopy height model
-    trans = 0.03
+    # trans = 0.03  # Note: WRI replaced this assignment with trans parameter
     dataSet = gdal.Open(chmfile)
     vegdsm = dataSet.ReadAsArray().astype(float)
 

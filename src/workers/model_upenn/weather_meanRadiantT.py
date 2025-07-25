@@ -102,44 +102,45 @@ def run_mrt_calculations(method_params, sampling_date: date, sampling_hours: str
     INPUT_ASPECT = method_params['INPUT_ASPECT']
     INPUT_CDSM = method_params['INPUT_CDSM']
     INPUT_ALBEDO = method_params['INPUT_ALBEDO']
-    TRANS_VEG = method_params['TRANS_VEG'] # CTCM/UPenn currently does not use this parameter
+    TRANS_VEG = method_params['TRANS_VEG']
     LEAF_START = method_params['LEAF_START']
     LEAF_END = method_params['LEAF_END']
-    CONIFER_TREES = method_params['CONIFER_TREES'] # CTCM/UPenn currently does not use this parameter
-    INPUT_TDSM = method_params['INPUT_TDSM'] # CTCM/UPenn currently does not use this parameter
-    INPUT_THEIGHT = method_params['INPUT_THEIGHT'] # CTCM/UPenn currently does not use this parameter
+    # CONIFER_TREES = method_params['CONIFER_TREES'] # CTCM/UPenn does not use this parameter
+    # INPUT_TDSM = method_params['INPUT_TDSM'] # CTCM/UPenn does not use this parameter
+    # INPUT_THEIGHT = method_params['INPUT_THEIGHT'] # CTCM/UPenn does not use this parameter
     INPUT_LC = method_params['INPUT_LC']
-    USE_LC_BUILD = method_params['USE_LC_BUILD'] # CTCM/UPenn currently does not use this parameter
-    INPUT_DEM = method_params['INPUT_DEM'] # CTCM/UPenn currently does not use this parameter
-    SAVE_BUILD = method_params['SAVE_BUILD'] # CTCM/UPenn currently does not use this parameter
-    INPUT_ANISO = method_params['INPUT_ANISO'] # CTCM/UPenn currently does not use this parameter
+    # USE_LC_BUILD = method_params['USE_LC_BUILD'] # CTCM/UPenn does not use this parameter
+    # INPUT_DEM = method_params['INPUT_DEM'] # CTCM/UPenn does not use this parameter
+    # SAVE_BUILD = method_params['SAVE_BUILD'] # CTCM/UPenn does not use this parameter
+    # INPUT_ANISO = method_params['INPUT_ANISO'] # CTCM/UPenn does not use this parameter
     ALBEDO_WALLS = method_params['ALBEDO_WALLS']
     ALBEDO_GROUND = method_params['ALBEDO_GROUND']
     EMIS_WALLS = method_params['EMIS_WALLS']
     EMIS_GROUND = method_params['EMIS_GROUND']
-    ABS_S = method_params['ABS_S'] # CTCM/UPenn currently does not use this parameter
-    ABS_L = method_params['ABS_L'] # CTCM/UPenn currently does not use this parameter
-    POSTURE = method_params['POSTURE'] # CTCM/UPenn currently does not use this parameter
-    CYL = method_params['CYL'] # CTCM/UPenn currently does not use this parameter
+    # ABS_S = method_params['ABS_S'] # CTCM/UPenn does not use this parameter
+    # ABS_L = method_params['ABS_L'] # CTCM/UPenn does not use this parameter
+    # POSTURE = method_params['POSTURE'] # CTCM/UPenn does not use this parameter
+    # CYL = method_params['CYL'] # CTCM/UPenn does not use this parameter
     INPUTMET = method_params['INPUTMET']
     ONLYGLOBAL = method_params['ONLYGLOBAL']
     UTC = float(method_params['UTC'])
-    POI_FILE = method_params['POI_FILE'] # CTCM/UPenn currently does not use this parameter
-    POI_FIELD = method_params['POI_FIELD'] # CTCM/UPenn currently does not use this parameter
-    AGE = method_params['AGE'] # CTCM/UPenn currently does not use this parameter
-    ACTIVITY = method_params['ACTIVITY'] # CTCM/UPenn currently does not use this parameter
-    CLO = method_params['CLO'] # CTCM/UPenn currently does not use this parameter
-    WEIGHT = method_params['WEIGHT'] # CTCM/UPenn currently does not use this parameter
-    HEIGHT = method_params['HEIGHT'] # CTCM/UPenn currently does not use this parameter
-    SEX = method_params['SEX'] # CTCM/UPenn currently does not use this parameter
-    SENSOR_HEIGHT = method_params['SENSOR_HEIGHT'] # CTCM/UPenn currently does not use this parameter
-    OUTPUT_TMRT = method_params['OUTPUT_TMRT'] # CTCM/UPenn currently does not use this parameter
-    OUTPUT_KDOWN = method_params['OUTPUT_KDOWN'] # CTCM/UPenn currently does not use this parameter
-    OUTPUT_KUP = method_params['OUTPUT_KUP'] # CTCM/UPenn currently does not use this parameter
-    OUTPUT_LDOWN = method_params['OUTPUT_LDOWN'] # CTCM/UPenn currently does not use this parameter
-    OUTPUT_LUP = method_params['OUTPUT_LUP'] # CTCM/UPenn currently does not use this parameter
-    OUTPUT_SH = method_params['OUTPUT_SH'] # CTCM/UPenn currently does not use this parameter
-    OUTPUT_TREEPLANTER = method_params['OUTPUT_TREEPLANTER'] # CTCM/UPenn currently does not use this parameter
+    # POI_FILE = method_params['POI_FILE'] # CTCM/UPenn does not use this parameter
+    # POI_FIELD = method_params['POI_FIELD'] # CTCM/UPenn does not use this parameter
+    # AGE = method_params['AGE'] # CTCM/UPenn does not use this parameter
+    # ACTIVITY = method_params['ACTIVITY'] # CTCM/UPenn does not use this parameter
+    # CLO = method_params['CLO'] # CTCM/UPenn does not use this parameter
+    # WEIGHT = method_params['WEIGHT'] # CTCM/UPenn does not use this parameter
+    # HEIGHT = method_params['HEIGHT'] # CTCM/UPenn does not use this parameter
+    # SEX = method_params['SEX'] # CTCM/UPenn does not use this parameter
+    # SENSOR_HEIGHT = method_params['SENSOR_HEIGHT'] # CTCM/UPenn does not use this parameter
+    # Note: Below controls for UMEP do not apply to UPenn
+    # OUTPUT_TMRT = method_params['OUTPUT_TMRT'] # CTCM/UPenn does not use this parameter
+    # OUTPUT_KDOWN = method_params['OUTPUT_KDOWN'] # CTCM/UPenn does not use this parameter
+    # OUTPUT_KUP = method_params['OUTPUT_KUP'] # CTCM/UPenn does not use this parameter
+    # OUTPUT_LDOWN = method_params['OUTPUT_LDOWN'] # CTCM/UPenn does not use this parameter
+    # OUTPUT_LUP = method_params['OUTPUT_LUP'] # CTCM/UPenn does not use this parameter
+    # OUTPUT_SH = method_params['OUTPUT_SH'] # CTCM/UPenn does not use this parameter
+    # OUTPUT_TREEPLANTER = method_params['OUTPUT_TREEPLANTER'] # CTCM/UPenn does not use this parameter
     OUTPUT_DIR = method_params['OUTPUT_DIR']
 
     # Map UMEP parameters to UPenn variables
@@ -149,6 +150,7 @@ def run_mrt_calculations(method_params, sampling_date: date, sampling_hours: str
     aspectfile = INPUT_ASPECT
     chmfile = INPUT_CDSM
     albedo_file = INPUT_ALBEDO
+    trans = TRANS_VEG / 100 # convert to fraction instead of percent
     leafon1 = LEAF_START
     leafoff1 = LEAF_END
     lufile = INPUT_LC
@@ -165,18 +167,18 @@ def run_mrt_calculations(method_params, sampling_date: date, sampling_hours: str
 
 
     ## Other UPenn model parameters settings
-    # TODO (WRI) Can any of these parameters be mapped into UMEP paramters?
     # TODO (WRI) Are there other UPenn parameters that should be instantiated here?
+    # TODO (WRI) WRI/CTCM always provides landcover and vegdem, so keeping hard-coded "true" values below
     landcover = 1 # switch to use land cover or not, landcover=1, use; landocover=0, not use.
     usevegdem = 1 # switch for use of vegetation dsm
     Twater = 15.0 # water temperature, this doesn't impact the mean radiant temperature
     ani = 0
     diffsh = None
+    use_airt_file = False # TODO (WRI) CTCM is currently not using air temperature tiles
 
     # the air temperature tile
-    use_airt_file = False # TODO (WRI) CTCM is currently not using air temperature tiles
     if use_airt_file:
-        airTfile = os.path.join(os.path.dirname(csvfile), 'air_temperature', 'clipped_airT.tif').replace('scratch_target', 'sample_cities')
+        airTfile = None
     else:
         airTfile = ''
 
@@ -201,7 +203,7 @@ def run_mrt_calculations(method_params, sampling_date: date, sampling_hours: str
         svfW, svfveg, svfNveg, svfSveg, svfEveg, svfWveg, svfaveg, svfNaveg, \
         svfSaveg, svfEaveg, svfWaveg, svfalfa, wallheight, wallaspect,\
         amaxvalue, vegdsm, vegdsm2, bush, svfbuveg, gdal_dsm = (
-        solweiglib.prepareData(mrtfolder, svffolder, dsmfile, chmfile, wallfile, aspectfile, epsgcode))
+        solweiglib.prepareData(mrtfolder, svffolder, dsmfile, chmfile, wallfile, aspectfile, trans, epsgcode))
 
     # read the previously created svfs
     svfs = ['svf', 'svfN', 'svfS', 'svfE', 'svfW', 'svfveg', \
@@ -261,13 +263,13 @@ def run_mrt_calculations(method_params, sampling_date: date, sampling_hours: str
         solweiglib.landcoverAlbedoNew(lufile, albedo_file, Knight, albedo_g, eground, lc_class, landcover))
 
 
-    # TODO (WRI) What is purpose of the commented-out code? Should DEM be subtracted from DSM???
+    # TODO (WRI) Determine if DEM should be subtracted from DSM.
+    # TODO (WRI) Is the value 2 defined in feet or meters? (Note: This value should be declared as a tolerance constant.)
     # here the dsm is the building height, non-building has height of zero
     # buildings = dsm - dem
     # buildings[buildings < 2.] = 1.
     # buildings[buildings >= 2.] = 0.
     buildings = dsm
-    # TODO (WRI) Is the value 2 defined in feet or meters? (Note: This value should be declared as a tolerance constant.)
     buildings[dsm < 2.] = 1.
     buildings[dsm >= 2.] = 0.
 
@@ -280,7 +282,6 @@ def run_mrt_calculations(method_params, sampling_date: date, sampling_hours: str
         # calculate the average of mean radiant temperature in summer
         tmrt_mean = np.zeros((rows, cols))
         # number of hours in summer from June to August
-        # TODO (WRI) Should this be a parameter or vary in any way?
         num_hour = 0
 
         # loop hourly weather data
@@ -303,7 +304,6 @@ def run_mrt_calculations(method_params, sampling_date: date, sampling_hours: str
                 first, second, timestepdec = solweiglib.prepareVegMeteo(leafon, metdata, height, dectime)
 
             # night and day time
-            # TODO (WRI) Should this be a parameter???
             CI = 0  # #  If metfile starts at night, CI = 1.
 
             ## after preparation of parameters, start to compute the mean radiant temperature

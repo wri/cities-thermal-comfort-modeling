@@ -32,7 +32,6 @@
   open_urban_tif_filename: None
   tree_canopy_tif_filename: None
   albedo_tif_filename: None
-  airt_tif_filename: 'Currently not used'
 - PreparedIntermediateFilenames:
   skyview_factor_filename: None
   wall_aspect_filename: None

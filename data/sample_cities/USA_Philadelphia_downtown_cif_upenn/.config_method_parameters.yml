@@ -10,11 +10,11 @@
 # Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
   utc_offset: -4
-  min_lon: -75.19176
-  min_lat: 39.94078
-  max_lon: -75.17581
-  max_lat: 39.95010
-  tile_side_meters: 1000
+  min_lon: -75.17402
+  min_lat: 39.94726
+  max_lon: -75.16865
+  max_lat: 39.95186
+  tile_side_meters: None
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: true
 # Names of meteorological files used by SOLWEIG method in "UMEP for Processing" plugin.

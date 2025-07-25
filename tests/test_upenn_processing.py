@@ -18,7 +18,7 @@ def test_USA_Philadelphia_downtown_cif_upenn():
     source_city_folder_name = r'USA_Philadelphia_downtown_cif_upenn'
     non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
-    # remove_folder(non_tiled_city_data.target_city_parent_path)
+    remove_folder(non_tiled_city_data.target_city_parent_path)
 
     try:
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
@@ -27,8 +27,8 @@ def test_USA_Philadelphia_downtown_cif_upenn():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         mrt_file_name = 'Tmrt_2022_182_1200D.tif'
-        expected_mrt_file = os.path.join(non_tiled_city_data.source_city_path, 'target_values', mrt_file_name)
-        target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_nrel_hottest_days', 'tile_001', mrt_file_name)
+        expected_mrt_file = os.path.join(non_tiled_city_data.source_city_path, 'expected_results', mrt_file_name)
+        target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'nrel_philadelphia', 'tile_001', mrt_file_name)
 
         mrt_files_are_equal, mrt_diff_count, rounded_mrt_diff_count = compare_raster_data(expected_mrt_file, target_met_file)
 
@@ -38,7 +38,7 @@ def test_USA_Philadelphia_downtown_cif_upenn():
         assert mrt_files_are_equal
 
         assert return_code == 0
-        assert vrt_count == 12
+        assert vrt_count == 13
 
     finally:
         if CLEANUP_RESULTS:
@@ -48,7 +48,7 @@ def test_USA_WashingtonDC_cif_upenn():
     source_city_folder_name = r'USA_WashingtonDC_cif_upenn'
     non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
-    # remove_folder(non_tiled_city_data.target_city_parent_path)
+    remove_folder(non_tiled_city_data.target_city_parent_path)
 
     try:
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
@@ -57,8 +57,8 @@ def test_USA_WashingtonDC_cif_upenn():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         mrt_file_name = 'Tmrt_2022_182_1200D.tif'
-        expected_mrt_file = os.path.join(non_tiled_city_data.source_city_path, 'target_values', mrt_file_name)
-        target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_nrel_hottest_days', 'tile_001', mrt_file_name)
+        expected_mrt_file = os.path.join(non_tiled_city_data.source_city_path, 'expected_results', mrt_file_name)
+        target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'nrel_washingtondc', 'tile_001', mrt_file_name)
 
         mrt_files_are_equal, mrt_diff_count, rounded_mrt_diff_count = compare_raster_data(expected_mrt_file, target_met_file)
 
@@ -68,7 +68,7 @@ def test_USA_WashingtonDC_cif_upenn():
         assert mrt_files_are_equal
 
         assert return_code == 0
-        assert vrt_count == 12
+        assert vrt_count == 13
 
     finally:
         if CLEANUP_RESULTS:

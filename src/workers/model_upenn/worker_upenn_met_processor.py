@@ -1,34 +1,35 @@
 import time
 
-import shapely.wkt
 import geopandas as gp
 import pandas as pd
 import os
 import numpy as np
 
 from datetime import datetime
-from city_metrix.metrics import Era5MetPreprocessing
+
+from city_metrix import Era5MetPreprocessingUPenn
 from city_metrix.metrix_model import GeoZone
 
-from src.constants import FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_MET_FILES, FILENAME_ERA5
-from src.workers.worker_tools import compute_time_diff_mins, remove_file, create_folder
+from src.constants import FILENAME_ERA5
+from src.workers.worker_tools import remove_file, create_folder
 
 MET_NULL_VALUE = -999
-TARGET_HEADING =  '%iy id it imin qn qh qe qs qf U RH Tair press rain kdown snow ldown fcld wuh xsmd lai kdiff kdir wdir'
+TARGET_HEADING =  'Year\tMonth\tDay\tHour\tMinute\tDHI\tDNI\tGHI\tClearsky DHI\tClearsky DNI\tClearsky GHI\t' \
+            'Wind Speed\tRelative Humidity\tTemperature\tPressure'
 
-def get_met_data(target_met_files_path, aoi_boundary_poly, utc_offset, sampling_local_hours):
+def get_upenn_met_data(target_met_files_path, aoi_boundary_poly, utc_offset, sampling_local_hours):
     start_time = datetime.now()
 
     # Create a GeoDataFrame with the polygon
     aoi_gdf = gp.GeoDataFrame(index=[0], crs="EPSG:4326", geometry=[aoi_boundary_poly])
 
     # Retrieve and write ERA5 data
-    return_code = _get_era5(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours)
+    return_code = _get_era5_upenn(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours)
 
     return return_code
 
 
-def _get_era5(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours):
+def _get_era5_upenn(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours):
     # Attempt to download data with up to 3 tries
     aoi_era_5 = None
     era5_failure_msg = ''
@@ -36,7 +37,7 @@ def _get_era5(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours):
     geo_zone = GeoZone(aoi_gdf)
     while count <= 5:
         try:
-            aoi_era_5 = Era5MetPreprocessing().get_metric(geo_zone)
+            aoi_era_5 = Era5MetPreprocessingUPenn().get_metric(geo_zone)
             break
         except Exception as e_msg:
             era5_failure_msg = e_msg

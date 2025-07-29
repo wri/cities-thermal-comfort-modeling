@@ -3,17 +3,17 @@
   short_title: first scenario
   version: 1
   description: Scenario that demonstrates blah.
-  author: kenn.cartier@wri.org
+  author: author@wri.org
 # Processing Area of Interest used for tile construction and ERA5-data download. If any custom files
 # are specified above, then the system will not construct a new tile grid and will instead use the existing one.
 # Specify None for tile_side_meters to not subdivide the AOI. Recommended value for tile_buffer_meters is 600.
 # Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
-  utc_offset: -4
-  min_lon: -75.17402
-  min_lat: 39.94726
-  max_lon: -75.16865
-  max_lat: 39.95186
+  utc_offset: 2
+  min_lon: 18.41294
+  min_lat: -33.92100
+  max_lon: 18.41401
+  max_lat: -33.91999
   tile_side_meters: None
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: true
@@ -37,7 +37,7 @@
   wall_aspect_filename: None
   wall_height_filename: None
 # Configurable attribute values for method processing
-# Valid methods are [download_only, umep_solweig, upenn_model]
+# Valid methods are [download_only, umep_solweig]
 # sampling_local_hours specifies hours for <download_era5> method.
 - MethodAttributes:
   method: upenn_model

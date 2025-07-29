@@ -10,12 +10,13 @@ from datetime import datetime
 from city_metrix import Era5MetPreprocessingUPenn
 from city_metrix.metrix_model import GeoZone
 
-from src.constants import FILENAME_ERA5
+from src.constants import FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN
 from src.workers.worker_tools import remove_file, create_folder
 
 MET_NULL_VALUE = -999
-TARGET_HEADING =  'Year\tMonth\tDay\tHour\tMinute\tDHI\tDNI\tGHI\tClearsky DHI\tClearsky DNI\tClearsky GHI\t' \
-            'Wind Speed\tRelative Humidity\tTemperature\tPressure'
+LEAD1_HEADING = ',Source,City,State,Country,Latitude,Longitude,Time Zone,Elevation,Local Time Zone,Clearsky DHI Units,Clearsky DNI Units,Clearsky GHI Units,Dew Point Units,DHI Units,DNI Units,GHI Units,Solar Zenith Angle Units,Temperature Units,Pressure Units,Relative Humidity Units,Precipitable Water Units,Wind Direction Units,Wind Speed Units,Cloud Type -15,Cloud Type 0,Cloud Type 1,Cloud Type 2,Cloud Type 3,Cloud Type 4,Cloud Type 5,Cloud Type 6,Cloud Type 7,Cloud Type 8,Cloud Type 9,Cloud Type 10,Cloud Type 11,Cloud Type 12,Fill Flag 0,Fill Flag 1,Fill Flag 2,Fill Flag 3,Fill Flag 4,Fill Flag 5,Surface Albedo Units,Version'
+LEAD2_HEADING = '0,CDS-ERA5,-,-,-,38.93,-77.02,-5,62,-5,w/m2,w/m2,w/m2,c,w/m2,w/m2,w/m2,Degree,c,mbar,%,cm,Degrees,m/s,,Clear,Probably Clear,Fog,Water,Super-Cooled Water,Mixed,Opaque Ice,Cirrus,Overlapping,Overshooting,Unknown,Dust,Smoke,,Missing Image,Low Irradiance,Exceeds Clearsky,Missing CLoud Properties,Rayleigh Violation,,v3.2.2'
+TARGET_HEADING = 'Index,Year,Month,Day,Hour,Minute,DHI,DNI,GHI,Clearsky DHI,Clearsky DNI,Clearsky GHI,Wind Speed,Relative Humidity,Temperature,Pressure'
 
 def get_upenn_met_data(target_met_files_path, aoi_boundary_poly, utc_offset, sampling_local_hours):
     start_time = datetime.now()
@@ -52,6 +53,7 @@ def _get_era5_upenn(aoi_gdf, target_met_files_path, utc_offset, sampling_local_h
 
     # adjust for utc
     int_utc_offset = int(utc_offset)
+    aoi_era_5['time'] = pd.to_datetime(aoi_era_5[['Year', 'Month', 'Day', 'Hour', 'Minute']])
     aoi_era_5['local_time'] = aoi_era_5['time'] + pd.Timedelta(hours=int_utc_offset)
 
     # filter to specific hours of day
@@ -63,12 +65,16 @@ def _get_era5_upenn(aoi_gdf, target_met_files_path, utc_offset, sampling_local_h
     
     # Reformat into target format
     reformatted_data = []
+    reformatted_data.append(LEAD1_HEADING)
+    reformatted_data.append(LEAD2_HEADING)
     reformatted_data.append(TARGET_HEADING)
+    row_id = 1
     for index, row in filtered_era_5.iterrows():
-        reformatted_data.append(_reformat_line(row))
+        reformatted_data.append(_reformat_line(row_id, row))
+        row_id +=1
 
     # Write results to text file
-    target_met_file = os.path.join(target_met_files_path, FILENAME_ERA5)
+    target_met_file = os.path.join(target_met_files_path, FILENAME_ERA5_UPENN)
     create_folder(target_met_files_path)
     remove_file(target_met_file)
     with open(target_met_file, 'w') as file:
@@ -77,65 +83,39 @@ def _get_era5_upenn(aoi_gdf, target_met_files_path, utc_offset, sampling_local_h
 
     return 0
 
-
-def _reformat_line(line):
+def _reformat_line(row_id, line):
     local_datetime = line['local_time']
-    lat = line['lat']
-    lon = line['lon']
-    temp = line['temp']
-    rh = line['rh']
-    global_rad = line['global_rad']
-    direct_rad = line['direct_rad']
-    diffuse_rad = line['diffuse_rad']
-    water_temp = line['water_temp']
-    wind = line['wind']
-    vpd = line['vpd']
+    year = local_datetime.year
+    month = local_datetime.month
+    day = local_datetime.day
+    hour = local_datetime.hour
+    minute = local_datetime.minute
 
-    # remapped titles
-    iy = local_datetime.year
-    id = _day_of_year(local_datetime)
-    it = local_datetime.hour
-    imin = local_datetime.minute
-    qn = MET_NULL_VALUE
-    qh = MET_NULL_VALUE
-    qe = MET_NULL_VALUE
-    qs = MET_NULL_VALUE
-    qf = MET_NULL_VALUE
-    U = _standardize_string(wind) # wind  (ERA5 10u, 10m_u_component_of_wind)
-    RH = _standardize_string(rh) # rh
-    Tair = _standardize_string(temp) # temp
-    press = MET_NULL_VALUE
-    rain = MET_NULL_VALUE
-    kdown = _standardize_string(global_rad) # sw rad
-    snow = MET_NULL_VALUE
-    ldown = _standardize_string(diffuse_rad) # lw rad
-    fcld = MET_NULL_VALUE
-    wuh = MET_NULL_VALUE
-    xsmd = MET_NULL_VALUE
-    lai = MET_NULL_VALUE
-    kdiff = MET_NULL_VALUE
-    kdir = _standardize_string(direct_rad) # sw rad
-    wdir = MET_NULL_VALUE
+    DHI = line['DHI']
+    DNI = line['DNI']
+    GHI = line['GHI']
+    Clearsky_DHI = line['Clearsky DHI']
+    Clearsky_DNI = line['Clearsky DHI']
+    Clearsky_GHI = line['Clearsky GHI']
+    Wind_Speed = line['Wind Speed']
+    Relative_Humidity = line['Relative Humidity']
+    Temperature = line['Temperature']
+    Pressure = line['Pressure']
 
-    new_line = ''
-    new_line += '%s %s %s %s' % (iy, id, it, imin)
-    new_line += ' %s %s %s %s %s' % (qn, qh, qe, qs, qf)
-    new_line += ' %s %s %s' % (U, RH, Tair)
-    new_line += ' %s %s' % (press, rain)
-    new_line += ' %s %s %s' % (kdown, snow, ldown)
-    new_line += ' %s %s %s %s %s' % (fcld, wuh, xsmd, lai, kdiff)
-    new_line += ' %s %s' % (kdir, wdir)
-
+    new_line = f'{row_id}'
+    new_line += f',{year},{month},{day},{hour},{minute}'
+    new_line += f',{DHI},{DNI},{GHI},{Clearsky_DHI},{Clearsky_DNI},{Clearsky_GHI}'
+    new_line += f',{Wind_Speed},{Relative_Humidity},{Temperature},{Pressure}'
     return new_line
 
-def _standardize_string(value):
-    if value == '' or value == 'nan' or np.isnan(value):
-        str_value = MET_NULL_VALUE
-    else:
-        str_value = f"{value:.2f}"
-    return str_value
-
-
-def _day_of_year(date_time):
-    return (date_time - datetime(date_time.year, 1, 1)).days + 1
+# def _standardize_string(value):
+#     if value == '' or value == 'nan' or np.isnan(value):
+#         str_value = MET_NULL_VALUE
+#     else:
+#         str_value = f"{value:.2f}"
+#     return str_value
+#
+#
+# def _day_of_year(date_time):
+#     return (date_time - datetime(date_time.year, 1, 1)).days + 1
 

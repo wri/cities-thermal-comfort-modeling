@@ -9,7 +9,7 @@ from datetime import datetime
 from city_metrix.metrics import Era5MetPreprocessingUmep
 from city_metrix.metrix_model import GeoZone
 
-from src.constants import FILENAME_ERA5
+from src.constants import FILENAME_ERA5_UMEP
 from src.workers.worker_tools import remove_file, create_folder
 
 MET_NULL_VALUE = -999
@@ -66,7 +66,7 @@ def _get_era5_umep(aoi_gdf, target_met_files_path, utc_offset, sampling_local_ho
         reformatted_data.append(_reformat_line(row))
 
     # Write results to text file
-    target_met_file = os.path.join(target_met_files_path, FILENAME_ERA5)
+    target_met_file = os.path.join(target_met_files_path, FILENAME_ERA5_UMEP)
     create_folder(target_met_files_path)
     remove_file(target_met_file)
     with open(target_met_file, 'w') as file:

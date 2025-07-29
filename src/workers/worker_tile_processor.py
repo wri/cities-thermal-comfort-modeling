@@ -5,7 +5,7 @@ import rioxarray
 
 from pathlib import Path
 
-from src.constants import FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD
+from src.constants import FILENAME_ERA5_UMEP, METHOD_TRIGGER_ERA5_DOWNLOAD
 from src.workers.city_data import CityData
 from src.workers.model_upenn.upenn_module_processor import run_upenn_module
 from src.workers.worker_tools import create_folder, unpack_quoted_value, save_tiff_file, remove_file, \
@@ -38,7 +38,7 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
         out_list = []
         for met_file in met_names:
             if met_file.get('filename') == METHOD_TRIGGER_ERA5_DOWNLOAD:
-                met_filename = FILENAME_ERA5
+                met_filename = FILENAME_ERA5_UMEP
             else:
                 met_filename = met_file.get('filename')
 

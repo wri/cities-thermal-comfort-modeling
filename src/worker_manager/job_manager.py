@@ -7,7 +7,7 @@ import pandas as pd
 import shapely
 import dask
 
-from src.constants import SRC_DIR, FILENAME_ERA5
+from src.constants import SRC_DIR, FILENAME_ERA5_UMEP
 from src.data_validation.manager import print_invalids
 from src.data_validation.meteorological_data_validator import evaluate_meteorological_data
 from src.worker_manager.ancillary_files import write_tile_grid, write_qgis_files
@@ -154,7 +154,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
 def _transfer_custom_met_files(non_tiled_city_data):
     create_folder(non_tiled_city_data.target_met_files_path)
     for met_file in non_tiled_city_data.met_filenames:
-        if not(non_tiled_city_data.has_era_met_download and met_file['filename'] == FILENAME_ERA5):
+        if not(non_tiled_city_data.has_era_met_download):
             source_path = os.path.join(non_tiled_city_data.source_met_files_path, met_file['filename'])
             target_path = os.path.join(non_tiled_city_data.target_met_files_path, met_file['filename'])
             shutil.copyfile(source_path, target_path)

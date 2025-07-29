@@ -3,7 +3,7 @@ import shutil
 import pandas as pd
 
 from pathlib import Path
-from src.constants import DATA_DIR, FILENAME_METHOD_YML_CONFIG, FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD
+from src.constants import DATA_DIR, FILENAME_METHOD_YML_CONFIG, FILENAME_ERA5_UMEP, METHOD_TRIGGER_ERA5_DOWNLOAD
 from src.worker_manager.reporter import _find_files_with_name
 from src.worker_manager.tools import delete_files_with_extension
 from src.workers.worker_dao import write_raster_vrt_gdal, write_raster_vrt_wri
@@ -65,7 +65,7 @@ def write_qgis_files(city_data, crs_str):
     set_id = 0
     for met_file in city_data.met_filenames:
         if met_file.get('filename') == METHOD_TRIGGER_ERA5_DOWNLOAD:
-            met_file_name = FILENAME_ERA5
+            met_file_name = FILENAME_ERA5_UMEP
         else:
             met_file_name = met_file.get('filename')
 
@@ -261,7 +261,7 @@ def _update_custom_yml_parameters(non_tiled_city_data, updated_aoi):
     if has_era_met_download:
         for item in met_filenames:
             if item["filename"] == METHOD_TRIGGER_ERA5_DOWNLOAD:
-                item["filename"] = FILENAME_ERA5
+                item["filename"] = FILENAME_ERA5_UMEP
 
     custom_primary_filenames = list_doc[3]
     custom_primary_filenames['dem_tif_filename'] = non_tiled_city_data.dem_tif_filename

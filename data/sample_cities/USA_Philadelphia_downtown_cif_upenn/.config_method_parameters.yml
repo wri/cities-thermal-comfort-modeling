@@ -18,7 +18,7 @@
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: true
 # Names of meteorological files used by SOLWEIG method in "UMEP for Processing" plugin.
-# Specify custom files or "<download_era5>" method to automatically download ERA5 data into a file named met_era5_hottest_days.txt
+# Specify custom files or "<download_era5>" method to automatically download ERA5 data into a file named met_era5_hottest_days.csv
 - MetFiles:
   - filename: nrel_philadelphia.csv
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.

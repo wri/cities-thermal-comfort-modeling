@@ -6,7 +6,7 @@ from city_metrix.constants import ProjectionType
 from city_metrix.metrix_tools import get_projection_type
 
 from src.constants import FILENAME_METHOD_YML_CONFIG, \
-    FOLDER_NAME_PRIMARY_RASTER_FILES, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSING_METHODS, FILENAME_ERA5
+    FOLDER_NAME_PRIMARY_RASTER_FILES, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSING_METHODS, FILENAME_ERA5_UMEP
 from src.data_validation.tools import verify_path
 from src.worker_manager.tools import  list_files_with_extension
 from src.workers.city_data import CityData
@@ -134,7 +134,7 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
                 invalids.append((msg, True))
             for met_file_row in tiled_city_data.met_filenames:
                 met_filename = met_file_row.get('filename')
-                if not(non_tiled_city_data.has_era_met_download and met_filename == FILENAME_ERA5):
+                if not(non_tiled_city_data.has_era_met_download and met_filename == FILENAME_ERA5_UMEP):
                     met_filepath = os.path.join(tiled_city_data.source_met_files_path, met_filename)
 
                     if met_filename != '<download_era5>' and verify_path(met_filepath) is False:

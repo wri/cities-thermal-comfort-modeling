@@ -1,5 +1,6 @@
 from attr.converters import to_bool
-from src.constants import FILENAME_METHOD_YML_CONFIG, VALID_PRIMARY_TYPES, METHOD_TRIGGER_ERA5_DOWNLOAD, FILENAME_ERA5
+from src.constants import FILENAME_METHOD_YML_CONFIG, VALID_PRIMARY_TYPES, METHOD_TRIGGER_ERA5_DOWNLOAD, \
+    FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN
 from src.workers.worker_tools import read_yaml, unpack_quoted_value, any_value_matches_in_dict_list
 
 
@@ -42,7 +43,7 @@ def parse_processing_areas_config(yml_values):
     return utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters, remove_mrt_buffer_for_final_output
 
 
-def parse_met_files_config(yml_values):
+def parse_met_files_config(yml_values, new_task_method):
     try:
         met_filenames = yml_values[2].get('MetFiles')
         has_era_met_download = any_value_matches_in_dict_list(met_filenames, METHOD_TRIGGER_ERA5_DOWNLOAD)
@@ -50,7 +51,7 @@ def parse_met_files_config(yml_values):
         if has_era_met_download:
             for item in met_filenames:
                 if item["filename"] == METHOD_TRIGGER_ERA5_DOWNLOAD:
-                    item["filename"] = FILENAME_ERA5
+                    item["filename"] = FILENAME_ERA5_UPENN if new_task_method == 'upenn_model' else FILENAME_ERA5_UMEP
 
     except Exception as e_msg:
         raise Exception(

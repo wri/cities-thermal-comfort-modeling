@@ -1,0 +1,14 @@
+,Source,City,State,Country,Latitude,Longitude,Time Zone,Elevation,Local Time Zone,Clearsky DHI Units,Clearsky DNI Units,Clearsky GHI Units,Dew Point Units,DHI Units,DNI Units,GHI Units,Solar Zenith Angle Units,Temperature Units,Pressure Units,Relative Humidity Units,Precipitable Water Units,Wind Direction Units,Wind Speed Units,Cloud Type -15,Cloud Type 0,Cloud Type 1,Cloud Type 2,Cloud Type 3,Cloud Type 4,Cloud Type 5,Cloud Type 6,Cloud Type 7,Cloud Type 8,Cloud Type 9,Cloud Type 10,Cloud Type 11,Cloud Type 12,Fill Flag 0,Fill Flag 1,Fill Flag 2,Fill Flag 3,Fill Flag 4,Fill Flag 5,Surface Albedo Units,Version
+0,CDS-ERA5,-,-,-,38.93,-77.02,-5,62,-5,w/m2,w/m2,w/m2,c,w/m2,w/m2,w/m2,Degree,c,mbar,%,cm,Degrees,m/s,,Clear,Probably Clear,Fog,Water,Super-Cooled Water,Mixed,Opaque Ice,Cirrus,Overlapping,Overshooting,Unknown,Dust,Smoke,,Missing Image,Low Irradiance,Exceeds Clearsky,Missing CLoud Properties,Rayleigh Violation,,v3.2.2
+Index,Year,Month,Day,Hour,Minute,DHI,DNI,GHI,Clearsky DHI,Clearsky DNI,Clearsky GHI,Wind Speed,Relative Humidity,Temperature,Pressure,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+1,2023,9,7,12,0,224.45,396.1199951,543.1599731,229.17,229.17,740.5900269,2.589999914,50.68999863,33.43000031,1004.200012,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+2,2023,9,7,15,0,308.22,455.4200134,638.2600098,278.51,278.51,738.3599854,3.339999914,41.15999985,35.18999863,1002.809998,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+3,2023,9,7,18,0,208.13,153.4900055,247.8800049,232.39,232.39,290.25,2.420000076,42.31999969,32.25999832,1003.01001,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+1,Year,Month,Day,Hour,Minute,DHI,DNI,GHI,Clearsky DHI,Clearsky DNI,Clearsky GHI,Wind Speed,Relative Humidity,Temperature,Pressure,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+11978,2022,9,7,12,0,93,0,93,119,840,815,2.8,68.57,24.7,1013,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+11984,2022,9,7,15,0,119,14,127,110,741,555,2.2,74.11,23.7,1012,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+11990,2022,9,7,18,0,12,0,12,24,120,32,0.9,92.57,20.8,1013,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,

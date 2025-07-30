@@ -14,47 +14,12 @@ create_folder(SCRATCH_TARGET_DIR)
 
 RUN_CORE_TESTS_ONLY = False
 
-def test_ZAF_Capetown_full_cif_upenn():
-    source_city_folder_name = r'ZAF_Capetown_full_cif_upenn'
-    non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
-
-    remove_folder(non_tiled_city_data.target_city_parent_path)
-
-    try:
-        return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
-        # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
-
-        vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
-
-        mrt_file_name = 'Tmrt_2023_1_1200D.tif'
-        expected_mrt_file = os.path.join(non_tiled_city_data.source_city_path, 'expected_results', mrt_file_name)
-        target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_001', mrt_file_name)
-
-        mrt_files_are_equal, mrt_diff_count, rounded_mrt_diff_count = compare_raster_data(expected_mrt_file, target_met_file)
-
-        if not mrt_files_are_equal:
-            print(f"bad run: mrt_diff_count:{mrt_diff_count}, mrt_rounded_diff_count:{rounded_mrt_diff_count}")
-
-        assert mrt_files_are_equal
-
-        assert return_code == 0
-        assert vrt_count == 13
-
-    finally:
-        if CLEANUP_RESULTS:
-            remove_folder(non_tiled_city_data.target_city_parent_path)
-
 def test_USA_Philadelphia_downtown_cif_upenn():
     source_city_folder_name = r'USA_Philadelphia_downtown_cif_upenn'
     non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
-
-    remove_folder(non_tiled_city_data.target_city_parent_path)
-
     try:
+        remove_folder(non_tiled_city_data.target_city_parent_path)
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
-        # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
-
-        vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         mrt_file_name = 'Tmrt_2023_250_1200D.tif'
         expected_mrt_file = os.path.join(non_tiled_city_data.source_city_path, 'expected_results', mrt_file_name)
@@ -67,6 +32,35 @@ def test_USA_Philadelphia_downtown_cif_upenn():
 
         assert mrt_files_are_equal
 
+        vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
+
+        assert return_code == 0
+        assert vrt_count == 13
+
+    finally:
+        if CLEANUP_RESULTS:
+            remove_folder(non_tiled_city_data.target_city_parent_path)
+
+def test_USA_Portland_cif_upenn():
+    source_city_folder_name = r'USA_Portland_cif_upenn'
+    non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+    try:
+        remove_folder(non_tiled_city_data.target_city_parent_path)
+        return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+
+        mrt_file_name = 'Tmrt_2023_226_1200D.tif'
+        expected_mrt_file = os.path.join(non_tiled_city_data.source_city_path, 'expected_results', mrt_file_name)
+        target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_001', mrt_file_name)
+
+        mrt_files_are_equal, mrt_diff_count, rounded_mrt_diff_count = compare_raster_data(expected_mrt_file, target_met_file)
+
+        if not mrt_files_are_equal:
+            print(f"bad run: mrt_diff_count:{mrt_diff_count}, mrt_rounded_diff_count:{rounded_mrt_diff_count}")
+
+        assert mrt_files_are_equal
+
+        vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
+
         assert return_code == 0
         assert vrt_count == 13
 
@@ -77,14 +71,9 @@ def test_USA_Philadelphia_downtown_cif_upenn():
 def test_USA_WashingtonDC_cif_upenn():
     source_city_folder_name = r'USA_WashingtonDC_cif_upenn'
     non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
-
-    remove_folder(non_tiled_city_data.target_city_parent_path)
-
     try:
+        remove_folder(non_tiled_city_data.target_city_parent_path)
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
-        # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
-
-        vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         mrt_file_name = 'Tmrt_2023_247_1200D.tif'
         expected_mrt_file = os.path.join(non_tiled_city_data.source_city_path, 'expected_results', mrt_file_name)
@@ -96,6 +85,36 @@ def test_USA_WashingtonDC_cif_upenn():
             print(f"bad run: mrt_diff_count:{mrt_diff_count}, mrt_rounded_diff_count:{rounded_mrt_diff_count}")
 
         assert mrt_files_are_equal
+
+        vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
+
+        assert return_code == 0
+        assert vrt_count == 13
+
+    finally:
+        if CLEANUP_RESULTS:
+            remove_folder(non_tiled_city_data.target_city_parent_path)
+
+
+def test_ZAF_Capetown_cif_upenn():
+    source_city_folder_name = r'ZAF_Capetown_cif_upenn'
+    non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+    try:
+        remove_folder(non_tiled_city_data.target_city_parent_path)
+        return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+
+        mrt_file_name = 'Tmrt_2023_1_1200D.tif'
+        expected_mrt_file = os.path.join(non_tiled_city_data.source_city_path, 'expected_results', mrt_file_name)
+        target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_001', mrt_file_name)
+
+        mrt_files_are_equal, mrt_diff_count, rounded_mrt_diff_count = compare_raster_data(expected_mrt_file, target_met_file)
+
+        if not mrt_files_are_equal:
+            print(f"bad run: mrt_diff_count:{mrt_diff_count}, mrt_rounded_diff_count:{rounded_mrt_diff_count}")
+
+        assert mrt_files_are_equal
+
+        vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         assert return_code == 0
         assert vrt_count == 13

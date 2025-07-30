@@ -1,7 +1,6 @@
 import os
 import shapely
 
-from src.constants import FILENAME_ERA5
 from src.workers.city_data import CityData
 from src.workers.source_cif_data_downloader import get_cif_data
 from src.workers.worker_tools import remove_folder, remove_file

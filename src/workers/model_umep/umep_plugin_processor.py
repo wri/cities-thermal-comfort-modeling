@@ -4,13 +4,9 @@ import time
 import shutil
 import warnings
 import sys
-import processing
-from processing.core.Processing import Processing
-from processing_umep.processing_umep import ProcessingUMEPProvider
 
 from pathlib import Path
 from datetime import datetime
-from qgis.core import QgsApplication
 
 from src.constants import FILENAME_SVFS_ZIP
 from src.workers.worker_tools import remove_file, remove_folder, compute_time_diff_mins, create_folder, get_configurations
@@ -37,6 +33,9 @@ def run_umep_plugin(step_index, step_method, folder_name_city_data, folder_name_
 
     # Initiate QGIS and UMEP processing
     try:
+        import processing
+        from processing.core.Processing import Processing
+        from processing_umep.processing_umep import ProcessingUMEPProvider
         qgis_app = qgis_app_init()
         umep_provider = ProcessingUMEPProvider()
         qgis_app.processingRegistry().addProvider(umep_provider)
@@ -224,6 +223,7 @@ def qgis_app_init():
     qgis_home_path, qgis_plugin_path = get_configurations()
     sys.path.append(qgis_plugin_path)
 
+    from qgis.core import QgsApplication
     QgsApplication.setPrefixPath(qgis_home_path, True)
     qgis_app = QgsApplication([], False)
     qgis_app.initQgis()

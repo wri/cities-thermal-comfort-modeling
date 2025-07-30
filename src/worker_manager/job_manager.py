@@ -7,14 +7,15 @@ import pandas as pd
 import shapely
 import dask
 
-from src.constants import SRC_DIR, FILENAME_ERA5
+from src.constants import SRC_DIR, FILENAME_ERA5_UMEP
 from src.data_validation.manager import print_invalids
 from src.data_validation.meteorological_data_validator import evaluate_meteorological_data
 from src.worker_manager.ancillary_files import write_tile_grid, write_qgis_files
 from src.worker_manager.graph_builder import get_aoi_fishnet, get_aoi_from_config
 from src.workers.logger_tools import setup_logger, log_general_file_message
 from src.worker_manager.reporter import parse_row_results, report_results
-from src.workers.model_umep.worker_meteorological_processor import get_met_data
+from src.workers.model_umep.worker_umep_met_processor import get_umep_met_data
+from src.workers.model_upenn.worker_upenn_met_processor import get_upenn_met_data
 from src.workers.worker_tools import create_folder
 
 warnings.filterwarnings('ignore')
@@ -48,7 +49,11 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
         sampling_local_hours = non_tiled_city_data.sampling_local_hours
 
         target_met_files_path = non_tiled_city_data.target_met_files_path
-        return_code = get_met_data(target_met_files_path, aoi_boundary_polygon, utc_offset, sampling_local_hours)
+        if non_tiled_city_data.new_task_method == 'umep_solweig':
+            return_code = get_umep_met_data(target_met_files_path, aoi_boundary_polygon, utc_offset, sampling_local_hours)
+        else:
+            return_code = get_upenn_met_data(target_met_files_path, aoi_boundary_polygon, utc_offset,
+                                            sampling_local_hours)
         if return_code != 0:
             print("Stopping. Failed downloading ERA5 meteorological data")
             exit(1)
@@ -149,7 +154,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
 def _transfer_custom_met_files(non_tiled_city_data):
     create_folder(non_tiled_city_data.target_met_files_path)
     for met_file in non_tiled_city_data.met_filenames:
-        if not(non_tiled_city_data.has_era_met_download and met_file['filename'] == FILENAME_ERA5):
+        if not(non_tiled_city_data.has_era_met_download):
             source_path = os.path.join(non_tiled_city_data.source_met_files_path, met_file['filename'])
             target_path = os.path.join(non_tiled_city_data.target_met_files_path, met_file['filename'])
             shutil.copyfile(source_path, target_path)

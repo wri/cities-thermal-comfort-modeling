@@ -4,12 +4,11 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.12.7
+  - python=3.13.5
   - gdal=3.10.3
-  - numpy=1.26.4
-  - matplotlib=3.10.1
-  - qgis=3.40.6
-  - matplotlib=3.10.1
+  - numpy=2.2.6
+  - matplotlib=3.10.3
+#  - qgis -- causes conda failure
   - scipy=1.15.2
   - conda-build=25.4.2
   - dask[complete]=2025.3.0

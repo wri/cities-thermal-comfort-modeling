@@ -1,34 +1,33 @@
 import time
 
-import shapely.wkt
 import geopandas as gp
 import pandas as pd
 import os
 import numpy as np
 
 from datetime import datetime
-from city_metrix.metrics import Era5MetPreprocessing
+from city_metrix.metrics import Era5MetPreprocessingUmep
 from city_metrix.metrix_model import GeoZone
 
-from src.constants import FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_PRIMARY_MET_FILES, FILENAME_ERA5
-from src.workers.worker_tools import compute_time_diff_mins, remove_file, create_folder
+from src.constants import FILENAME_ERA5_UMEP
+from src.workers.worker_tools import remove_file, create_folder
 
 MET_NULL_VALUE = -999
 TARGET_HEADING =  '%iy id it imin qn qh qe qs qf U RH Tair press rain kdown snow ldown fcld wuh xsmd lai kdiff kdir wdir'
 
-def get_met_data(target_met_files_path, aoi_boundary_poly, utc_offset, sampling_local_hours):
+def get_umep_met_data(target_met_files_path, aoi_boundary_poly, utc_offset, sampling_local_hours):
     start_time = datetime.now()
 
     # Create a GeoDataFrame with the polygon
     aoi_gdf = gp.GeoDataFrame(index=[0], crs="EPSG:4326", geometry=[aoi_boundary_poly])
 
     # Retrieve and write ERA5 data
-    return_code = _get_era5(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours)
+    return_code = _get_era5_umep(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours)
 
     return return_code
 
 
-def _get_era5(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours):
+def _get_era5_umep(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours):
     # Attempt to download data with up to 3 tries
     aoi_era_5 = None
     era5_failure_msg = ''
@@ -36,7 +35,7 @@ def _get_era5(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours):
     geo_zone = GeoZone(aoi_gdf)
     while count <= 5:
         try:
-            aoi_era_5 = Era5MetPreprocessing().get_metric(geo_zone)
+            aoi_era_5 = Era5MetPreprocessingUmep().get_metric(geo_zone)
             break
         except Exception as e_msg:
             era5_failure_msg = e_msg
@@ -67,7 +66,7 @@ def _get_era5(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours):
         reformatted_data.append(_reformat_line(row))
 
     # Write results to text file
-    target_met_file = os.path.join(target_met_files_path, FILENAME_ERA5)
+    target_met_file = os.path.join(target_met_files_path, FILENAME_ERA5_UMEP)
     create_folder(target_met_files_path)
     remove_file(target_met_file)
     with open(target_met_file, 'w') as file:

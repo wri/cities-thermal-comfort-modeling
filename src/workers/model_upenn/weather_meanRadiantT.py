@@ -57,12 +57,15 @@ def preprocessMeteorolgoicalData(csvfile, month='8', day='1', hour='12'):
     weather_df = weather_df[fields]
 
     # get the weather record for any specified month, day, hour, and minutes
-    weather_df_res = weather_df.loc[(weather_df['Month'] == month) & \
-                                    (weather_df['Day'] == day) & \
-                                    (weather_df['Hour'] == hour) & \
-                                    (weather_df['Minute'] == '0')]
+    # Note: WRI prefilters the met data to the specific day of interest, so do not need to filter date here.
+    # weather_df_res = weather_df.loc[(weather_df['Month'] == month) & \
+    #                                 (weather_df['Day'] == day) & \
+    #                                 (weather_df['Hour'] == hour) & \
+    #                                 (weather_df['Minute'] == '0')]
+    weather_df_res = weather_df.loc[(weather_df['Hour'] == hour) & (weather_df['Minute'] == '0')]
+    sampling_date = date(int(weather_df_res['Year'].iloc(0)[0]), int(weather_df_res['Month'].iloc(0)[0]), int(weather_df_res['Day'].iloc(0)[0]))
 
-    return weather_df_res
+    return weather_df_res, sampling_date
 
 
 def prepareAlbedo():
@@ -94,7 +97,7 @@ def _get_epsg_code(raster_path):
         epsg_code = int(spatial_ref.GetAttrValue("AUTHORITY", 1))
     return epsg_code
 
-def run_mrt_calculations(method_params, sampling_date: date, sampling_hours: str):
+def run_mrt_calculations(method_params, sampling_hours: str):
     # Expand parameters into local variables
     INPUT_DSM = method_params['INPUT_DSM']
     INPUT_SVF = method_params['INPUT_SVF']
@@ -275,9 +278,10 @@ def run_mrt_calculations(method_params, sampling_date: date, sampling_hours: str
 
     ## loop all the weather csv data to get the information meteorological data
     for hour in sampling_hours.split(","):
-        month = str(sampling_date.month)
-        day = str(sampling_date.day)
-        day_summer_df = preprocessMeteorolgoicalData(csvfile, month=month, day=day, hour=hour)
+        # NOTE: WRI does not filter by date in this code, so sampling date is not passed here.
+        month = None
+        day = None
+        day_summer_df, sampling_date = preprocessMeteorolgoicalData(csvfile, month=month, day=day, hour=hour)
 
         # calculate the average of mean radiant temperature in summer
         tmrt_mean = np.zeros((rows, cols))

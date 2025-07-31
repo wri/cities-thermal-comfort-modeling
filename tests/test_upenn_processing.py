@@ -1,7 +1,4 @@
 import os
-import pytest
-from pytest_check import equal # https://github.com/okken/pytest-check
-
 from src.constants import DATA_DIR
 from src.workers.city_data import CityData
 from src.workers.worker_tools import remove_folder, create_folder

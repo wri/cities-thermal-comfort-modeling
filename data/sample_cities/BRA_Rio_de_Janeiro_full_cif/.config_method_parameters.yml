@@ -37,7 +37,7 @@
   wall_aspect_filename: None
   wall_height_filename: None
 # Configurable attribute values for method processing
-# Valid methods are [download_only, umep_solweig]
+# Valid methods are [download_only, umep_solweig, upenn_model]
 # sampling_local_hours specifies hours for <download_era5> method.
 - MethodAttributes:
   method: umep_solweig

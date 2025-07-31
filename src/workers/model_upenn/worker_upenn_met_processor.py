@@ -15,8 +15,8 @@ from src.workers.worker_tools import remove_file, create_folder
 
 MET_NULL_VALUE = -999
 # TODO - Clean up the lead headings
-LEAD1_HEADING = ',Source,City,State,Country,Latitude,Longitude,Time Zone,Elevation,Local Time Zone,Clearsky DHI Units,Clearsky DNI Units,Clearsky GHI Units,Dew Point Units,DHI Units,DNI Units,GHI Units,Solar Zenith Angle Units,Temperature Units,Pressure Units,Relative Humidity Units,Precipitable Water Units,Wind Direction Units,Wind Speed Units,Cloud Type -15,Cloud Type 0,Cloud Type 1,Cloud Type 2,Cloud Type 3,Cloud Type 4,Cloud Type 5,Cloud Type 6,Cloud Type 7,Cloud Type 8,Cloud Type 9,Cloud Type 10,Cloud Type 11,Cloud Type 12,Fill Flag 0,Fill Flag 1,Fill Flag 2,Fill Flag 3,Fill Flag 4,Fill Flag 5,Surface Albedo Units,Version'
-LEAD2_HEADING = '0,CDS-ERA5,-,-,-,38.93,-77.02,-5,62,-5,w/m2,w/m2,w/m2,c,w/m2,w/m2,w/m2,Degree,c,mbar,%,cm,Degrees,m/s,,Clear,Probably Clear,Fog,Water,Super-Cooled Water,Mixed,Opaque Ice,Cirrus,Overlapping,Overshooting,Unknown,Dust,Smoke,,Missing Image,Low Irradiance,Exceeds Clearsky,Missing CLoud Properties,Rayleigh Violation,,v3.2.2'
+LEAD1_HEADING = ',Source,Latitude,Longitude,Local Time Zone,Clearsky DHI Units,Clearsky DNI Units,Clearsky GHI Units,DHI Units,DNI Units,GHI Units,Temperature Units,Pressure Units,Relative Humidity Units,Wind Speed Units'
+LEAD2_HEADING = '0,CDS-ERA5,<lat>,<lon>,<utc_offset>,w/m2,w/m2,w/m2,w/m2,w/m2,w/m2,c,mbar,%,m/s'
 TARGET_HEADING = 'Index,Year,Month,Day,Hour,Minute,DHI,DNI,GHI,Clearsky DHI,Clearsky DNI,Clearsky GHI,Wind Speed,Relative Humidity,Temperature,Pressure'
 
 def get_upenn_met_data(target_met_files_path, aoi_boundary_poly, utc_offset, sampling_local_hours):
@@ -63,11 +63,17 @@ def _get_era5_upenn(aoi_gdf, target_met_files_path, utc_offset, sampling_local_h
 
     # order by datetime
     filtered_era_5.sort_values(by='time', inplace=True, ascending=True)
+
+    # localize LEAD2_HEADING
+    lat = geo_zone.centroid.y
+    lon = geo_zone.centroid.x
+    local_lead2_heading = (LEAD2_HEADING.replace('<lat>', str(lat)).replace('<lon>', str(lon))
+                           .replace('<utc_offset>', str(utc_offset)))
     
     # Reformat into target format
     reformatted_data = []
     reformatted_data.append(LEAD1_HEADING)
-    reformatted_data.append(LEAD2_HEADING)
+    reformatted_data.append(local_lead2_heading)
     reformatted_data.append(TARGET_HEADING)
     row_id = 1
     for index, row in filtered_era_5.iterrows():

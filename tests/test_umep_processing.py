@@ -104,8 +104,8 @@ def test_tiled_custom_city():
 
 
 @pytest.mark.skipif(RUN_CORE_TESTS_ONLY == True, reason='Skipping since RUN_CORE_TESTS_ONLY set to True')
-def test_portland_full_custom_small():
-    source_city_folder_name = 'USA_Portland_small'
+def test_portland_swath_full_custom():
+    source_city_folder_name = 'USA_Portland_swath_umep'
     non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     remove_folder(non_tiled_city_data.target_city_parent_path)

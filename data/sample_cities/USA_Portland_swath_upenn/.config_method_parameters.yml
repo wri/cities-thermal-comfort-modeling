@@ -1,0 +1,62 @@
+# Description of scenario
+- Scenario:
+  short_title: first scenario
+  version: 1
+  description: Scenario that demonstrates blah.
+  author: author@wri.org
+# Processing Area of Interest used for tile construction and ERA5-data download. If any custom files
+# are specified above, then the system will not construct a new tile grid and will instead use the existing one.
+# Specify None for tile_side_meters to not subdivide the AOI. Recommended value for tile_buffer_meters is 600.
+# Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
+- ProcessingAOI:
+  utc_offset: -8
+  min_lon: -122.7037
+  min_lat: 45.51995
+  max_lon: -122.6923117
+  max_lat: 45.5232773
+  tile_side_meters: None
+  tile_buffer_meters: 100
+  remove_mrt_buffer_for_final_output: True
+# Names of meteorological files used by SOLWEIG method in "UMEP for Processing" plugin.
+# Specify custom files or "<download_era5>" method to automatically download ERA5 data into a file named met_era5_hottest_days.txt
+- MetFiles:
+  - filename: <download_era5>
+# Custom source-files that were independently created and will replace standard files pulled from CIF system.
+# All four file mappings must be specified here. Specify None for filename where custom file is not available for processing.
+# Recommended filenames: albedo.tif, dem.tif, dsm_ground_build.tif, lulc.tif, open_urban.tif, tree_canopy.tif
+# Auto-generated CIF filenames: cif_albedo.tif, cif_dem.tif, cif_dsm_ground_build.tif, cif_lulc.tif, cif_open_urban.tif, cif_tree_canopy.tif
+- CustomTiffFilenames:
+  albedo_tif_filename: None
+  dem_tif_filename: None
+  dsm_tif_filename: None
+  lulc_tif_filename: None
+  open_urban_tif_filename: None
+  tree_canopy_tif_filename: None
+- PreparedIntermediateFilenames:
+  skyview_factor_filename: None
+  wall_aspect_filename: None
+  wall_height_filename: None
+# Configurable attribute values for method processing
+# Valid methods are [download_only, umep_solweig, upenn_model]
+# sampling_local_hours specifies hours for <download_era5> method.
+- MethodAttributes:
+  method: upenn_model
+  wall_height_aspect:
+    lower_limit_for_wall_height: 3
+  skyview_factor:
+    transmissivity_of_light_through_vegetation: 3
+    trunk_zone_height: 25
+  solweig:
+    seasonal_leaf_coverage:
+      north_temperate_leaf_start: 96
+      north_temperate_leaf_end: 301
+      south_temperate_leaf_start: 282
+      south_temperate_leaf_end: 97
+    conifer_trees: False
+    albedo_walls: 0.2
+    albedo_ground: 0.15
+    emis_walls: 0.9
+    emis_ground: 0.95
+    output_tmrt: True
+    output_sh: True
+    sampling_local_hours: 12,15,18

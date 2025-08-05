@@ -36,7 +36,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     logger = setup_logger(non_tiled_city_data.target_manager_log_path)
     log_general_file_message('Starting jobs', __file__, logger)
 
-    aoi_boundary_polygon, tile_side_meters, tile_buffer_meters, utc_offset, config_crs = get_aoi_from_config(non_tiled_city_data)
+    aoi_boundary_polygon, tile_side_meters, tile_buffer_meters, seasonal_utc_offset, config_crs = get_aoi_from_config(non_tiled_city_data)
 
     combined_results_df = pd.DataFrame(
         columns=['status', 'tile', 'step_index', 'step_method', 'met_filename', 'return_code',
@@ -50,9 +50,9 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
 
         target_met_files_path = non_tiled_city_data.target_met_files_path
         if non_tiled_city_data.new_task_method == 'umep_solweig':
-            return_code = get_umep_met_data(target_met_files_path, aoi_boundary_polygon, utc_offset, sampling_local_hours)
+            return_code = get_umep_met_data(target_met_files_path, aoi_boundary_polygon, seasonal_utc_offset, sampling_local_hours)
         else:
-            return_code = get_upenn_met_data(target_met_files_path, aoi_boundary_polygon, utc_offset,
+            return_code = get_upenn_met_data(target_met_files_path, aoi_boundary_polygon, seasonal_utc_offset,
                                             sampling_local_hours)
         if return_code != 0:
             print("Stopping. Failed downloading ERA5 meteorological data")
@@ -91,7 +91,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
             proc_array = _construct_tile_proc_array(task_method, source_base_path, target_base_path,
                                                     city_folder_name, tile_folder_name, cif_primary_features,
                                                     ctcm_intermediate_features, tile_boundary, utm_crs, tile_resolution,
-                                                    utc_offset)
+                                                    seasonal_utc_offset)
 
             log_general_file_message(f'Staging: {proc_array}', __file__, logger)
 
@@ -117,7 +117,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
             proc_array = _construct_tile_proc_array(task_method, source_base_path, target_base_path,
                                                     city_folder_name, tile_folder_name, cif_primary_features,
                                                     ctcm_intermediate_features, tile_boundary, utm_crs, None,
-                                                    utc_offset)
+                                                    seasonal_utc_offset)
 
             log_general_file_message(f'Staging: {proc_array}', __file__, logger)
 
@@ -162,7 +162,7 @@ def _transfer_custom_met_files(non_tiled_city_data):
 
 def _construct_tile_proc_array(task_method, source_base_path, target_base_path, city_folder_name,
                                tile_folder_name, cif_primary_features, ctcm_intermediate_features,
-                               tile_boundary, crs, tile_resolution, utc_offset):
+                               tile_boundary, crs, tile_resolution, seasonal_utc_offset):
     if cif_primary_features:
         cif_features = ','.join(cif_primary_features)
     else:
@@ -184,7 +184,7 @@ def _construct_tile_proc_array(task_method, source_base_path, target_base_path, 
                   f'--tile_boundary={tile_boundary}',
                   f'--crs={crs}',
                   f'--tile_resolution={tile_resolution}',
-                  f'--utc_offset={utc_offset}'
+                  f'--seasonal_utc_offset={seasonal_utc_offset}'
                   ]
     return proc_array
 

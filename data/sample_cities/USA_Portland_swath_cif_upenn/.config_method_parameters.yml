@@ -9,7 +9,7 @@
 # Specify None for tile_side_meters to not subdivide the AOI. Recommended value for tile_buffer_meters is 600.
 # Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
-  utc_offset: -8
+  seasonal_utc_offset: -8
   min_lon: -122.7037
   min_lat: 45.51995
   max_lon: -122.6923117

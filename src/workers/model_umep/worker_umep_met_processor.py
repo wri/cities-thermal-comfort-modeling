@@ -15,19 +15,19 @@ from src.workers.worker_tools import remove_file, create_folder
 MET_NULL_VALUE = -999
 TARGET_HEADING =  '%iy id it imin qn qh qe qs qf U RH Tair press rain kdown snow ldown fcld wuh xsmd lai kdiff kdir wdir'
 
-def get_umep_met_data(target_met_files_path, aoi_boundary_poly, utc_offset, sampling_local_hours):
+def get_umep_met_data(target_met_files_path, aoi_boundary_poly, seasonal_utc_offset, sampling_local_hours):
     start_time = datetime.now()
 
     # Create a GeoDataFrame with the polygon
     aoi_gdf = gp.GeoDataFrame(index=[0], crs="EPSG:4326", geometry=[aoi_boundary_poly])
 
     # Retrieve and write ERA5 data
-    return_code = _get_era5_umep(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours)
+    return_code = _get_era5_umep(aoi_gdf, target_met_files_path, seasonal_utc_offset, sampling_local_hours)
 
     return return_code
 
 
-def _get_era5_umep(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours):
+def _get_era5_umep(aoi_gdf, target_met_files_path, seasonal_utc_offset, sampling_local_hours):
     # Attempt to download data with up to 3 tries
     aoi_era_5 = None
     era5_failure_msg = ''
@@ -49,8 +49,8 @@ def _get_era5_umep(aoi_gdf, target_met_files_path, utc_offset, sampling_local_ho
     aoi_era_5 = aoi_era_5.round(2)
 
     # adjust for utc
-    int_utc_offset = int(utc_offset)
-    aoi_era_5['local_time'] = aoi_era_5['time'] + pd.Timedelta(hours=int_utc_offset)
+    int_seasonal_utc_offset = int(seasonal_utc_offset)
+    aoi_era_5['local_time'] = aoi_era_5['time'] + pd.Timedelta(hours=int_seasonal_utc_offset)
 
     # filter to specific hours of day
     filter_hours = [int(x) for x in sampling_local_hours.split(',')]

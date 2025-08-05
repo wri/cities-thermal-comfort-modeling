@@ -28,7 +28,7 @@ def evaluate_aoi_primary_configs(non_tiled_city_data):
     invalids = []
 
     # AOI metrics
-    utc_offset = non_tiled_city_data.utc_offset
+    seasonal_utc_offset = non_tiled_city_data.seasonal_utc_offset
     aoi_min_lon, aoi_min_lat, aoi_max_lon, aoi_max_lat = _parse_aoi_dimensions(non_tiled_city_data)
 
     # Evaluate AOI

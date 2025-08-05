@@ -23,7 +23,7 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
     target_base_path = non_tiled_city_data.target_base_path
     city_folder_name = non_tiled_city_data.folder_name_city_data
 
-    utc_offset = non_tiled_city_data.utc_offset
+    seasonal_utc_offset = non_tiled_city_data.seasonal_utc_offset
     tile_side_meters = non_tiled_city_data.tile_side_meters
     tile_buffer_meters = non_tiled_city_data.tile_buffer_meters
 
@@ -142,7 +142,7 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
                                f'method: {task_method} in .config_method_parameters.yml.')
                         invalids.append((msg, True))
 
-            if not -24 <= utc_offset <= 24:
+            if not -24 <= seasonal_utc_offset <= 24:
                 msg = f'UTC-offset for: {met_filename} not in -24 to 24 hours range as specified in .config_method_parameters.yml.'
                 invalids.append((msg, True))
 

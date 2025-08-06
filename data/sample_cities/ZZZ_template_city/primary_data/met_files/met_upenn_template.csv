@@ -1,0 +1,3 @@
+,Source,Latitude,Longitude,Local Time Zone,Clearsky DHI Units,Clearsky DNI Units,Clearsky GHI Units,DHI Units,DNI Units,GHI Units,Temperature Units,Pressure Units,Relative Humidity Units,Wind Speed Units,
+0,CDS-ERA5,,,,w/m2,w/m2,w/m2,w/m2,w/m2,w/m2,c,mbar,%,m/s,
+Index,Year,Month,Day,Hour,Minute,DHI,DNI,GHI,Clearsky DHI,Clearsky DNI,Clearsky GHI,Wind Speed,Relative Humidity,Temperature,Pressure

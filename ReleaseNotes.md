@@ -1,5 +1,9 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/08/05
+1. Renamed utc_offset as seasonal_utc_offset
+2. Now passes seasonal_utc_offset to Era5MetPreprocessing metrics
+
 ## 2025/07/30
 
 1. CDB-419. Added 'upenn_model' option to config yml file.

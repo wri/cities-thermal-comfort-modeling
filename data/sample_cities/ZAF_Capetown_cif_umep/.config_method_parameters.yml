@@ -41,7 +41,7 @@
 # Valid methods are [download_only, umep_solweig, upenn_model]
 # sampling_local_hours specifies hours for <download_era5> method.
 - MethodAttributes:
-  method: upenn_model
+  method: umep_solweig
   wall_height_aspect:
     lower_limit_for_wall_height: 3
   skyview_factor:

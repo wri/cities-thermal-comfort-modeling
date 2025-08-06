@@ -24,7 +24,7 @@ def parse_processing_areas_config(yml_values):
     try:
         processing_area = yml_values[1]
         
-        utc_offset = unpack_quoted_value(processing_area['utc_offset'])
+        seasonal_utc_offset = unpack_quoted_value(processing_area['seasonal_utc_offset'])
         min_lon = unpack_quoted_value(processing_area['min_lon'])
         min_lat = unpack_quoted_value(processing_area['min_lat'])
         max_lon = unpack_quoted_value(processing_area['max_lon'])
@@ -40,7 +40,7 @@ def parse_processing_areas_config(yml_values):
         raise Exception(
             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
 
-    return utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters, remove_mrt_buffer_for_final_output
+    return seasonal_utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters, remove_mrt_buffer_for_final_output
 
 
 def parse_met_files_config(yml_values, new_task_method):

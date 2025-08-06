@@ -5,23 +5,27 @@ import shutil
 import warnings
 import sys
 
+
 from pathlib import Path
 from datetime import datetime
 
 from src.constants import FILENAME_SVFS_ZIP
+from src.workers.model_upenn.svfsCalculator_veg import run_skyview_calculations
+from src.workers.model_upenn.weather_meanRadiantT import run_mrt_calculations
 from src.workers.worker_tools import remove_file, remove_folder, compute_time_diff_mins, create_folder, get_configurations
 from src.workers.city_data import CityData
 from src.workers.logger_tools import setup_logger, log_method_start, log_method_failure, log_method_completion, \
     log_model_metadata_message, setup_metadata_logger
+from src.workers.model_upenn.aspect_height import run_wall_calculations
 
 warnings.filterwarnings("ignore")
 
-MAX_RETRY_COUNT = 3
-RETRY_PAUSE_TIME_SEC = 10
+MAX_RETRY_COUNT = 10
+RETRY_PAUSE_TIME_SEC = 1
 
 
-def run_umep_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path,
-                    target_base_path, met_filename, seasonal_utc_offset):
+def run_upenn_module(step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path,
+                     target_base_path, met_filename, seasonal_utc_offset):
     start_time = datetime.now()
 
     tiled_city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
@@ -31,36 +35,27 @@ def run_umep_plugin(step_index, step_method, folder_name_city_data, folder_name_
     method_title_with_tile = f'{method_title} for {folder_name_tile_data}'
     log_method_start(method_title_with_tile, None, tiled_city_data.target_base_path, processing_logger)
 
-    # Initiate QGIS and UMEP processing
-    try:
-        import processing
-        from processing.core.Processing import Processing
-        from processing_umep.processing_umep import ProcessingUMEPProvider
-        qgis_app = qgis_app_init()
-        umep_provider = ProcessingUMEPProvider()
-        qgis_app.processingRegistry().addProvider(umep_provider)
-        Processing.initialize()
-    except Exception as e_msg:
-        msg = f'Processing could not initialize UMEP processing {e_msg}'
-        log_method_failure(datetime.now(), 'UMEP', tiled_city_data.source_base_path, msg, processing_logger)
-
-
     e_msg = ''
     return_code = -999
     retry_count = 0
     with (tempfile.TemporaryDirectory() as tmpdirname):
         # Get the UMEP processing parameters and prepare for the method
-        method_params, umep_method_title, keepers = _prepare_method_execution(step_method, tiled_city_data, tmpdirname,
-                                                                              metadata_logger, met_filename, seasonal_utc_offset)
-
+        method_params, keepers = _prepare_method_execution(step_method, tiled_city_data, tmpdirname, metadata_logger,
+                                                           met_filename, seasonal_utc_offset)
         while retry_count < MAX_RETRY_COUNT and return_code != 0:
             try:
-                # Run the UMEP plugin!!
-                processing.run(umep_method_title, method_params)
+                if step_method == 'wall_height_aspect':
+                    run_wall_calculations(method_params)
+                elif step_method == 'skyview_factor':
+                    run_skyview_calculations(method_params)
+                else:
+                    from datetime import date
+                    sampling_hours = tiled_city_data.sampling_local_hours
+                    run_mrt_calculations(method_params, sampling_hours)
 
                 # Prepare target folder and transfer over the temporary results
                 try:
-                    if step_method == 'umep_solweig_only':
+                    if step_method == 'skyview_factor':
                         for temp_result_path, target_base_path in keepers.items():
                             remove_folder(target_base_path)
                             shutil.move(str(temp_result_path), str(target_base_path))
@@ -103,7 +98,7 @@ def _write_metadata(method, met_filename, input_params, exclusion_keys, metadata
         if key not in exclusion_keys:
             log_model_metadata_message(method, met_filename, key, value, metadata_logger)
 
-def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logger, met_filename=None, seasonal_utc_offset=None):
+def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logger, met_filename, seasonal_utc_offset):
     keepers = {}
 
     if method == 'wall_height_aspect':
@@ -117,7 +112,6 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logg
             'OUTPUT_HEIGHT': temp_target_wallheight_path,
             'OUTPUT_ASPECT': temp_target_wallaspect_path,
         }
-        umep_method_title = "umep:Urban Geometry: Wall Height and Aspect"
         keepers[temp_target_wallheight_path] = tiled_city_data.target_wallheight_path
         keepers[temp_target_wallaspect_path] = tiled_city_data.target_wallaspect_path
 
@@ -127,10 +121,9 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logg
 
     elif method == 'skyview_factor':
         create_folder(tiled_city_data.target_intermediate_tile_data_path)
-
-        temp_svfs_file_no_extension = os.path.join(tmpdirname, Path(tiled_city_data.target_svfszip_path).stem)
-        skview_factor_plugin_output_default_filename = FILENAME_SVFS_ZIP
-        temp_svfs_file_with_extension = os.path.join(tmpdirname, skview_factor_plugin_output_default_filename)
+        temp_svfs_file_no_extension = Path(tiled_city_data.target_svfszip_path).stem
+        temp_svfs_file_path = os.path.join(tmpdirname, temp_svfs_file_no_extension)
+        create_folder(temp_svfs_file_path)
         method_params = {
             'INPUT_DSM': tiled_city_data.target_dsm_path,
             'INPUT_CDSM': tiled_city_data.target_tree_canopy_path,
@@ -139,14 +132,14 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logg
             'INPUT_THEIGHT': tiled_city_data.trunk_zone_height,
             'ANISO': True,
             'OUTPUT_DIR': tmpdirname,
-            'OUTPUT_FILE': temp_svfs_file_no_extension
+            'OUTPUT_FILE': temp_svfs_file_path
         }
-        umep_method_title = 'umep:Urban Geometry: Sky View Factor'
-        keepers[temp_svfs_file_with_extension] = tiled_city_data.target_svfszip_path
+        keepers[temp_svfs_file_path] = tiled_city_data.target_svfszip_path
 
         # exclude output paths and write remainder to log file
         exclusion_keys = ['OUTPUT_DIR', 'OUTPUT_FILE']
         _write_metadata(method, None, method_params, exclusion_keys, metadata_logger)
+
     else:
         target_met_file_path = os.path.join(tiled_city_data.target_met_files_path, met_filename)
         temp_met_folder = os.path.join(tmpdirname, Path(met_filename).stem, tiled_city_data.folder_name_tile_data)
@@ -158,6 +151,7 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logg
             "INPUT_HEIGHT": tiled_city_data.target_wallheight_path,
             "INPUT_ASPECT": tiled_city_data.target_wallaspect_path,
             "INPUT_CDSM": tiled_city_data.target_tree_canopy_path,
+            "INPUT_ALBEDO": tiled_city_data.target_albedo_path,
             "TRANS_VEG": tiled_city_data.light_transmissivity,
             "LEAF_START": tiled_city_data.leaf_start,
             "LEAF_END": tiled_city_data.leaf_end,
@@ -196,17 +190,15 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logg
             "OUTPUT_LUP": False,
             "OUTPUT_SH": tiled_city_data.output_sh,
             "OUTPUT_TREEPLANTER": False,
-            "OUTPUT_DIR": temp_met_folder
+            "OUTPUT_DIR": temp_met_folder,
         }
-        umep_method_title = 'umep:Outdoor Thermal Comfort: SOLWEIG'
-
         keepers[temp_met_folder] = target_met_folder
 
         # exclude output paths and write remainder to log file
         exclusion_keys = ['OUTPUT_DIR']
         _write_metadata(method, met_filename, method_params, exclusion_keys, metadata_logger)
 
-    return method_params, umep_method_title, keepers
+    return method_params, keepers
 
 
 def _assign_method_title(method):
@@ -217,15 +209,3 @@ def _assign_method_title(method):
     else:
         method_title = 'SOLWEIG'
     return method_title
-
-
-def qgis_app_init():
-    qgis_home_path, qgis_plugin_path = get_configurations()
-    sys.path.append(qgis_plugin_path)
-
-    from qgis.core import QgsApplication
-    QgsApplication.setPrefixPath(qgis_home_path, True)
-    qgis_app = QgsApplication([], False)
-    qgis_app.initQgis()
-
-    return qgis_app

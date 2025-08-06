@@ -10,11 +10,11 @@
 # Specify None for tile_side_meters to not subdivide the AOI. Recommended value for tile_buffer_meters is 600.
 # Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
-  seasonal_utc_offset: 2
-  min_lon: 18.41294
-  min_lat: -33.92100
-  max_lon: 18.41401
-  max_lat: -33.91999
+  seasonal_utc_offset: -7
+  min_lon: -122.69393
+  min_lat: 45.52772
+  max_lon: -122.69066
+  max_lat: 45.52935
   tile_side_meters: None
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: true
@@ -41,7 +41,7 @@
 # Valid methods are [download_only, umep_solweig, upenn_model]
 # sampling_local_hours specifies hours for <download_era5> method.
 - MethodAttributes:
-  method: upenn_model
+  method: umep_solweig
   wall_height_aspect:
     lower_limit_for_wall_height: 3
   skyview_factor:

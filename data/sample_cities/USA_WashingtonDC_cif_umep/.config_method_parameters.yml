@@ -3,19 +3,19 @@
   short_title: first scenario
   version: 1
   description: Scenario that demonstrates blah.
-  author: author@wri.org
+  author: kenn.cartier@wri.org
 # Processing Area of Interest used for tile construction and ERA5-data download. If any custom files
 # are specified in CustomTiffFilenames section, then the system will not construct a new tile grid and will instead use the existing one.
 # Specify the seasonal_utc_offset including DST offset if AOI follows this practice for anticipated hottest season.
 # Specify None for tile_side_meters to not subdivide the AOI. Recommended value for tile_buffer_meters is 600.
 # Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
-  seasonal_utc_offset: 2
-  min_lon: 18.41294
-  min_lat: -33.92100
-  max_lon: 18.41401
-  max_lat: -33.91999
-  tile_side_meters: None
+  seasonal_utc_offset: -4
+  min_lon: -77.02136
+  min_lat: 38.90765
+  max_lon: -77.01165
+  max_lat: 38.91384
+  tile_side_meters: 1000
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: true
 # Names of meteorological files used for generating MRT and Shadow results.
@@ -41,7 +41,7 @@
 # Valid methods are [download_only, umep_solweig, upenn_model]
 # sampling_local_hours specifies hours for <download_era5> method.
 - MethodAttributes:
-  method: upenn_model
+  method: umep_solweig
   wall_height_aspect:
     lower_limit_for_wall_height: 3
   skyview_factor:

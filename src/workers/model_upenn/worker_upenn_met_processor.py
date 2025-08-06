@@ -16,22 +16,22 @@ from src.workers.worker_tools import remove_file, create_folder
 MET_NULL_VALUE = -999
 # TODO - Clean up the lead headings
 LEAD1_HEADING = ',Source,Latitude,Longitude,Local Time Zone,Clearsky DHI Units,Clearsky DNI Units,Clearsky GHI Units,DHI Units,DNI Units,GHI Units,Temperature Units,Pressure Units,Relative Humidity Units,Wind Speed Units'
-LEAD2_HEADING = '0,CDS-ERA5,<lat>,<lon>,<utc_offset>,w/m2,w/m2,w/m2,w/m2,w/m2,w/m2,c,mbar,%,m/s'
+LEAD2_HEADING = '0,CDS-ERA5,<lat>,<lon>,<seasonal_utc_offset>,w/m2,w/m2,w/m2,w/m2,w/m2,w/m2,c,mbar,%,m/s'
 TARGET_HEADING = 'Index,Year,Month,Day,Hour,Minute,DHI,DNI,GHI,Clearsky DHI,Clearsky DNI,Clearsky GHI,Wind Speed,Relative Humidity,Temperature,Pressure'
 
-def get_upenn_met_data(target_met_files_path, aoi_boundary_poly, utc_offset, sampling_local_hours):
+def get_upenn_met_data(target_met_files_path, aoi_boundary_poly, seasonal_utc_offset, sampling_local_hours):
     start_time = datetime.now()
 
     # Create a GeoDataFrame with the polygon
     aoi_gdf = gp.GeoDataFrame(index=[0], crs="EPSG:4326", geometry=[aoi_boundary_poly])
 
     # Retrieve and write ERA5 data
-    return_code = _get_era5_upenn(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours)
+    return_code = _get_era5_upenn(aoi_gdf, target_met_files_path, seasonal_utc_offset, sampling_local_hours)
 
     return return_code
 
 
-def _get_era5_upenn(aoi_gdf, target_met_files_path, utc_offset, sampling_local_hours):
+def _get_era5_upenn(aoi_gdf, target_met_files_path, seasonal_utc_offset, sampling_local_hours):
     # Attempt to download data with up to 3 tries
     aoi_era_5 = None
     era5_failure_msg = ''
@@ -39,7 +39,7 @@ def _get_era5_upenn(aoi_gdf, target_met_files_path, utc_offset, sampling_local_h
     geo_zone = GeoZone(aoi_gdf)
     while count <= 5:
         try:
-            aoi_era_5 = Era5MetPreprocessingUPenn().get_metric(geo_zone)
+            aoi_era_5 = Era5MetPreprocessingUPenn(seasonal_utc_offset=seasonal_utc_offset).get_metric(geo_zone)
             break
         except Exception as e_msg:
             era5_failure_msg = e_msg
@@ -53,7 +53,7 @@ def _get_era5_upenn(aoi_gdf, target_met_files_path, utc_offset, sampling_local_h
     aoi_era_5 = aoi_era_5.round(2)
 
     # adjust for utc
-    int_utc_offset = int(utc_offset)
+    int_utc_offset = int(seasonal_utc_offset)
     aoi_era_5['time'] = pd.to_datetime(aoi_era_5[['Year', 'Month', 'Day', 'Hour', 'Minute']])
     aoi_era_5['local_time'] = aoi_era_5['time'] + pd.Timedelta(hours=int_utc_offset)
 
@@ -68,7 +68,7 @@ def _get_era5_upenn(aoi_gdf, target_met_files_path, utc_offset, sampling_local_h
     lat = geo_zone.centroid.y
     lon = geo_zone.centroid.x
     local_lead2_heading = (LEAD2_HEADING.replace('<lat>', str(lat)).replace('<lon>', str(lon))
-                           .replace('<utc_offset>', str(utc_offset)))
+                           .replace('<seasonal_utc_offset>', str(seasonal_utc_offset)))
     
     # Reformat into target format
     reformatted_data = []

@@ -22,7 +22,6 @@
 # Specify either custom files or "<download_era5>" method to automatically download ERA5 data.
 - MetFiles:
   - filename: <download_era5>
-  - filename: met_20jan2022.txt
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
 # All file mappings must be specified here. Specify None for filename where custom file is not available for processing.
 # Recommended filenames: albedo.tif, dem.tif, dsm_ground_build.tif, lulc.tif, open_urban.tif, tree_canopy.tif

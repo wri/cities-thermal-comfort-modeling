@@ -5,14 +5,13 @@
 2. Now passes seasonal_utc_offset to Era5MetPreprocessing metrics
 
 ## 2025/07/30
-
 1. CDB-419. Added 'upenn_model' option to config yml file.
 2. CDB-419. Added albedo_tif_filename option to config yml file.
 3. CDB-419. Modified to use ERA5-UPenn data for UPenn model
 4. CDB-426. Modified UPenn code to output valid tree shadows.
+5. Note: UMEP met files have .txt extension, but UPenn met files have .csv extension
 
 ## 2025/06/05
-
 1. CDB-337. Fixed bug of not passing the configured values for transmissivity\_of\_light\_through\_vegetation and trunk\_tree\_height to skyview-factor UMEP plugin.
 
 ## 2025/05/29

@@ -9,7 +9,7 @@ import dask
 
 from src.constants import SRC_DIR, FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN
 from src.data_validation.manager import print_invalids
-from src.data_validation.meteorological_data_validator import evaluate_meteorological_data
+from src.data_validation.meteorological_data_validator import evaluate_meteorological_umep_data
 from src.worker_manager.ancillary_files import write_tile_grid, write_qgis_files
 from src.worker_manager.graph_builder import get_aoi_fishnet, get_aoi_from_config
 from src.workers.logger_tools import setup_logger, log_general_file_message
@@ -62,7 +62,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     _transfer_custom_met_files(non_tiled_city_data)
 
     if non_tiled_city_data.new_task_method != 'upenn_model':
-        invalids = evaluate_meteorological_data(non_tiled_city_data, in_target_folder=True)
+        invalids = evaluate_meteorological_umep_data(non_tiled_city_data, in_target_folder=True)
         if invalids:
             print_invalids(invalids)
             print("Stopping. Identified invalid values in meteorological files(s)")

@@ -24,6 +24,11 @@ FILENAME_ERA5_UPENN = 'met_era5_hottest_days.csv'
 METHOD_TRIGGER_ERA5_DOWNLOAD = '<download_era5>'
 PROCESSING_METHODS = ['download_only', 'umep_solweig', 'upenn_model']
 
+MET_HEADER_UMEP = ['%iy', 'id', 'it', 'imin', 'qn', 'qh', 'qe', 'qs', 'qf', 'U', 'RH', 'Tair', 'press', 'rain', 'kdown', 'snow', 'ldown', 'fcld', 'wuh', 'xsmd', 'lai', 'kdiff', 'kdir', 'wdir']
+MET_HEADER_0_UPENN = ['', 'Source', 'Latitude', 'Longitude', 'Local Time Zone', 'Clearsky DHI Units', 'Clearsky DNI Units', 'Clearsky GHI Units', 'DHI Units', 'DNI Units', 'GHI Units', 'Temperature Units', 'Pressure Units', 'Relative Humidity Units', 'Wind Speed Units']
+MET_HEADER_1_UPENN = ['0', 'CDS-ERA5', '<lat>', '<lon>', '<seasonal_utc_offset>', 'w/m2', 'w/m2', 'w/m2', 'w/m2', 'w/m2', 'w/m2', 'c', 'mbar', '%', 'm/s']
+MET_HEADER_2_UPENN = ['Index', 'Year', 'Month', 'Day', 'Hour', 'Minute', 'DHI', 'DNI', 'GHI', 'Clearsky DHI', 'Clearsky DNI', 'Clearsky GHI', 'Wind Speed', 'Relative Humidity', 'Temperature', 'Pressure']
+
 VALID_PRIMARY_TYPES = [
     {
         "short_name": "dem",

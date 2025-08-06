@@ -10,14 +10,11 @@ from datetime import datetime
 from city_metrix import Era5MetPreprocessingUPenn
 from city_metrix.metrix_model import GeoZone
 
-from src.constants import FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN
+from src.constants import FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN, MET_HEADER_0_UPENN, MET_HEADER_1_UPENN, \
+    MET_HEADER_2_UPENN
 from src.workers.worker_tools import remove_file, create_folder
 
 MET_NULL_VALUE = -999
-# TODO - Clean up the lead headings
-LEAD1_HEADING = ',Source,Latitude,Longitude,Local Time Zone,Clearsky DHI Units,Clearsky DNI Units,Clearsky GHI Units,DHI Units,DNI Units,GHI Units,Temperature Units,Pressure Units,Relative Humidity Units,Wind Speed Units'
-LEAD2_HEADING = '0,CDS-ERA5,<lat>,<lon>,<seasonal_utc_offset>,w/m2,w/m2,w/m2,w/m2,w/m2,w/m2,c,mbar,%,m/s'
-TARGET_HEADING = 'Index,Year,Month,Day,Hour,Minute,DHI,DNI,GHI,Clearsky DHI,Clearsky DNI,Clearsky GHI,Wind Speed,Relative Humidity,Temperature,Pressure'
 
 def get_upenn_met_data(target_met_files_path, aoi_boundary_poly, seasonal_utc_offset, sampling_local_hours):
     start_time = datetime.now()
@@ -39,7 +36,7 @@ def _get_era5_upenn(aoi_gdf, target_met_files_path, seasonal_utc_offset, samplin
     geo_zone = GeoZone(aoi_gdf)
     while count <= 5:
         try:
-            aoi_era_5 = Era5MetPreprocessingUPenn().get_metric(geo_zone)
+            aoi_era_5 = Era5MetPreprocessingUPenn(seasonal_utc_offset=seasonal_utc_offset).get_metric(geo_zone)
             break
         except Exception as e_msg:
             era5_failure_msg = e_msg
@@ -64,17 +61,22 @@ def _get_era5_upenn(aoi_gdf, target_met_files_path, seasonal_utc_offset, samplin
     # order by datetime
     filtered_era_5.sort_values(by='time', inplace=True, ascending=True)
 
+    met_header_1_upenn = ','.join(MET_HEADER_0_UPENN)
+    met_header_2_upenn = ','.join(MET_HEADER_1_UPENN)
+    met_header_3_upenn = ','.join(MET_HEADER_2_UPENN)
+
     # localize LEAD2_HEADING
     lat = geo_zone.centroid.y
     lon = geo_zone.centroid.x
-    local_lead2_heading = (LEAD2_HEADING.replace('<lat>', str(lat)).replace('<lon>', str(lon))
+
+    local_header_2 = (met_header_2_upenn.replace('<lat>', str(lat)).replace('<lon>', str(lon))
                            .replace('<seasonal_utc_offset>', str(seasonal_utc_offset)))
     
     # Reformat into target format
     reformatted_data = []
-    reformatted_data.append(LEAD1_HEADING)
-    reformatted_data.append(local_lead2_heading)
-    reformatted_data.append(TARGET_HEADING)
+    reformatted_data.append(met_header_1_upenn)
+    reformatted_data.append(local_header_2)
+    reformatted_data.append(met_header_3_upenn)
     row_id = 1
     for index, row in filtered_era_5.iterrows():
         reformatted_data.append(_reformat_line(row_id, row))

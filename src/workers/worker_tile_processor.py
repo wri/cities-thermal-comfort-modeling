@@ -125,8 +125,8 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
             return_stdouts.extend(return_vals)
         elif task_method == 'upenn_model':
             return_vals = _execute_upenn_model_steps(city_folder_name, tile_folder_name,
-                                                             source_base_path, target_base_path, met_filenames,
-                                                             ctcm_intermediate_features, seasonal_utc_offset)
+                                                     source_base_path, target_base_path, met_filenames,
+                                                     ctcm_intermediate_features, seasonal_utc_offset)
             return_stdouts.extend(return_vals)
         elif task_method in 'PROCESSING_METHODS':
             from src.workers.model_umep.umep_plugin_processor import run_umep_plugin
@@ -261,7 +261,7 @@ if __name__ == "__main__":
     parser.add_argument('--tile_boundary', metavar='str', required=True, help='geographic boundary of tile')
     parser.add_argument('--crs', metavar='str', required=True, help='coordinate reference system')
     parser.add_argument('--tile_resolution', metavar='str', required=True, help='resolution of tile in m.')
-    parser.add_argument('--seasonal_utc_offset', metavar='str', required=True, help='hour offset from utc')
+    parser.add_argument('--seasonal_utc_offset', metavar='str', required=True, help='seasonal hour offset from utc')
 
     args = parser.parse_args()
 

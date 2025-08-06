@@ -51,7 +51,7 @@ def run_umep_plugin(step_index, step_method, folder_name_city_data, folder_name_
     with (tempfile.TemporaryDirectory() as tmpdirname):
         # Get the UMEP processing parameters and prepare for the method
         method_params, umep_method_title, keepers = _prepare_method_execution(step_method, tiled_city_data, tmpdirname,
-                                                                             metadata_logger, met_filename, seasonal_utc_offset)
+                                                                              metadata_logger, met_filename, seasonal_utc_offset)
 
         while retry_count < MAX_RETRY_COUNT and return_code != 0:
             try:

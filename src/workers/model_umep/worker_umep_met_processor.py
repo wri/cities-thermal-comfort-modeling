@@ -9,11 +9,10 @@ from datetime import datetime
 from city_metrix.metrics import Era5MetPreprocessingUmep
 from city_metrix.metrix_model import GeoZone
 
-from src.constants import FILENAME_ERA5_UMEP
+from src.constants import FILENAME_ERA5_UMEP, MET_HEADER_UMEP
 from src.workers.worker_tools import remove_file, create_folder
 
 MET_NULL_VALUE = -999
-TARGET_HEADING =  '%iy id it imin qn qh qe qs qf U RH Tair press rain kdown snow ldown fcld wuh xsmd lai kdiff kdir wdir'
 
 def get_umep_met_data(target_met_files_path, aoi_boundary_poly, seasonal_utc_offset, sampling_local_hours):
     start_time = datetime.now()
@@ -35,7 +34,7 @@ def _get_era5_umep(aoi_gdf, target_met_files_path, seasonal_utc_offset, sampling
     geo_zone = GeoZone(aoi_gdf)
     while count <= 5:
         try:
-            aoi_era_5 = Era5MetPreprocessingUmep().get_metric(geo_zone)
+            aoi_era_5 = Era5MetPreprocessingUmep(seasonal_utc_offset=seasonal_utc_offset).get_metric(geo_zone)
             break
         except Exception as e_msg:
             era5_failure_msg = e_msg
@@ -61,7 +60,8 @@ def _get_era5_umep(aoi_gdf, target_met_files_path, seasonal_utc_offset, sampling
     
     # Reformat into target format
     reformatted_data = []
-    reformatted_data.append(TARGET_HEADING)
+    target_heading = ' '.join(MET_HEADER_UMEP)
+    reformatted_data.append(target_heading)
     for index, row in filtered_era_5.iterrows():
         reformatted_data.append(_reformat_line(row))
 

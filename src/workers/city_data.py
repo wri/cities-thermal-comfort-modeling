@@ -47,7 +47,7 @@ class CityData:
                                                                  southern_leaf_start, southern_leaf_end)
 
         # Adjust seasonal_utc_offset for time zones that do not have whole number offsets
-        obj.seasonal_utc_offset = _time_shift_seasonal_utc_offset(obj.seasonal_utc_offset)
+        obj.seasonal_utc_offset = _time_shift_utc_offset(obj.seasonal_utc_offset)
 
         obj.met_filenames, obj.has_era_met_download = parse_met_files_config(yml_values, obj.new_task_method)
 
@@ -132,8 +132,9 @@ def _get_latitude_based_leaf_start_end(min_lat, max_lat, northern_leaf_start, no
 
     return leaf_start, leaf_end
 
-def _time_shift_seasonal_utc_offset(seasonal_utc_offset):
-    # Adjust seasonal_utc_offsets that are not on a whole hour. This adjustment uses the same time shifting used
+
+def _time_shift_utc_offset(seasonal_utc_offset):
+    # Adjust seasonal_utc_offset that are not on a whole hour. This adjustment uses the same time shifting used
     # in CIF era_5_hottest_day layer class
     if seasonal_utc_offset - int(seasonal_utc_offset) != 0:
         hour_fraction = seasonal_utc_offset - int(seasonal_utc_offset)

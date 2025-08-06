@@ -7,9 +7,9 @@ import pandas as pd
 import shapely
 import dask
 
-from src.constants import SRC_DIR, FILENAME_ERA5_UMEP
+from src.constants import SRC_DIR, FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN
 from src.data_validation.manager import print_invalids
-from src.data_validation.meteorological_data_validator import evaluate_meteorological_data
+from src.data_validation.meteorological_data_validator import evaluate_meteorological_umep_data
 from src.worker_manager.ancillary_files import write_tile_grid, write_qgis_files
 from src.worker_manager.graph_builder import get_aoi_fishnet, get_aoi_from_config
 from src.workers.logger_tools import setup_logger, log_general_file_message
@@ -62,7 +62,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     _transfer_custom_met_files(non_tiled_city_data)
 
     if non_tiled_city_data.new_task_method != 'upenn_model':
-        invalids = evaluate_meteorological_data(non_tiled_city_data, in_target_folder=True)
+        invalids = evaluate_meteorological_umep_data(non_tiled_city_data, in_target_folder=True)
         if invalids:
             print_invalids(invalids)
             print("Stopping. Identified invalid values in meteorological files(s)")
@@ -83,6 +83,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
         write_tile_grid(tile_unique_values, utm_crs, non_tiled_city_data.target_qgis_data_path, 'tile_grid')
 
         print(f'\nProcessing over {len(tile_unique_values)} existing tiles..')
+        tile_unique_values.reset_index(drop=True, inplace=True)
         for index, tile_metrics in tile_unique_values.iterrows():
             tile_folder_name = tile_metrics['tile_name']
             tile_boundary = tile_metrics['boundary']
@@ -107,6 +108,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
             write_tile_grid(unbuffered_tile_grid, utm_crs, non_tiled_city_data.target_qgis_data_path, 'unbuffered_tile_grid')
 
         print(f'\nCreating data for {tile_grid.geometry.size} new tiles..')
+        tile_grid.reset_index(drop=True, inplace=True)
         for tile_index, cell in tile_grid.iterrows():
             cell_bounds = cell.geometry.bounds
             tile_boundary = str(shapely.box(cell_bounds[0], cell_bounds[1], cell_bounds[2], cell_bounds[3]))
@@ -154,7 +156,9 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
 def _transfer_custom_met_files(non_tiled_city_data):
     create_folder(non_tiled_city_data.target_met_files_path)
     for met_file in non_tiled_city_data.met_filenames:
-        if not(non_tiled_city_data.has_era_met_download):
+        if not(non_tiled_city_data.has_era_met_download
+               and (met_file['filename'] == FILENAME_ERA5_UMEP or met_file['filename'] == FILENAME_ERA5_UPENN)
+        ):
             source_path = os.path.join(non_tiled_city_data.source_met_files_path, met_file['filename'])
             target_path = os.path.join(non_tiled_city_data.target_met_files_path, met_file['filename'])
             shutil.copyfile(source_path, target_path)

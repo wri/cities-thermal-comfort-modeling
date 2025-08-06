@@ -15,14 +15,14 @@ from src.workers.worker_tools import create_folder, unpack_quoted_value, save_ti
 PROCESSING_PAUSE_TIME_SEC = 10
 
 def process_tile(task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
-                 cif_primary_features, ctcm_intermediate_features, tile_boundary, crs, tile_resolution, utc_offset):
+                 cif_primary_features, ctcm_intermediate_features, tile_boundary, crs, tile_resolution, seasonal_utc_offset):
     tiled_city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
     cif_primary_features = unpack_quoted_value(cif_primary_features)
     custom_primary_features = tiled_city_data.custom_primary_feature_list
     target_tcm_results_path = tiled_city_data.target_tcm_results_path
     ctcm_intermediate_features = unpack_quoted_value(ctcm_intermediate_features)
     tile_resolution = unpack_quoted_value(tile_resolution)
-    utc_offset = unpack_quoted_value(utc_offset)
+    seasonal_utc_offset = unpack_quoted_value(seasonal_utc_offset)
     met_filenames = tiled_city_data.met_filenames
 
     def _execute_retrieve_cif_data(source_path, target_path, folder_city, folder_tile, cif_features,
@@ -121,12 +121,12 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
         if task_method == 'umep_solweig':
             return_vals = _execute_umep_solweig_plugin_steps(city_folder_name, tile_folder_name,
                                                              source_base_path, target_base_path, met_filenames,
-                                                             ctcm_intermediate_features, utc_offset)
+                                                             ctcm_intermediate_features, seasonal_utc_offset)
             return_stdouts.extend(return_vals)
         elif task_method == 'upenn_model':
             return_vals = _execute_upenn_model_steps(city_folder_name, tile_folder_name,
-                                                             source_base_path, target_base_path, met_filenames,
-                                                             ctcm_intermediate_features, utc_offset)
+                                                     source_base_path, target_base_path, met_filenames,
+                                                     ctcm_intermediate_features, seasonal_utc_offset)
             return_stdouts.extend(return_vals)
         elif task_method in 'PROCESSING_METHODS':
             from src.workers.model_umep.umep_plugin_processor import run_umep_plugin
@@ -261,13 +261,13 @@ if __name__ == "__main__":
     parser.add_argument('--tile_boundary', metavar='str', required=True, help='geographic boundary of tile')
     parser.add_argument('--crs', metavar='str', required=True, help='coordinate reference system')
     parser.add_argument('--tile_resolution', metavar='str', required=True, help='resolution of tile in m.')
-    parser.add_argument('--utc_offset', metavar='str', required=True, help='hour offset from utc')
+    parser.add_argument('--seasonal_utc_offset', metavar='str', required=True, help='seasonal hour offset from utc')
 
     args = parser.parse_args()
 
     return_stdout =process_tile(args.task_method, args.source_base_path, args.target_base_path,
                                 args.city_folder_name, args.tile_folder_name,
                                 args.cif_primary_features, args.ctcm_intermediate_features,
-                                args.tile_boundary, args.crs, args.tile_resolution, args.utc_offset)
+                                args.tile_boundary, args.crs, args.tile_resolution, args.seasonal_utc_offset)
 
     print(return_stdout)

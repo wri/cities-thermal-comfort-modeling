@@ -5,11 +5,12 @@
   description: Scenario that demonstrates blah.
   author: kenn.cartier@wri.org
 # Processing Area of Interest used for tile construction and ERA5-data download. If any custom files
-# are specified above, then the system will not construct a new tile grid and will instead use the existing one.
+# are specified in CustomTiffFilenames section, then the system will not construct a new tile grid and will instead use the existing one.
+# Specify the seasonal_utc_offset including DST offset if AOI follows this practice for anticipated hottest season.
 # Specify None for tile_side_meters to not subdivide the AOI. Recommended value for tile_buffer_meters is 600.
 # Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
-  utc_offset: -4
+  seasonal_utc_offset: -4
   min_lon: -77.02136
   min_lat: 38.90765
   max_lon: -77.01165
@@ -17,12 +18,12 @@
   tile_side_meters: 1000
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: true
-# Names of meteorological files used by SOLWEIG method in "UMEP for Processing" plugin.
-# Specify custom files or "<download_era5>" method to automatically download ERA5 data into a file named met_era5_hottest_days.csv
+# Names of meteorological files used for generating MRT and Shadow results.
+# Specify either custom files or "<download_era5>" method to automatically download ERA5 data.
 - MetFiles:
   - filename: <download_era5>
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
-# All four file mappings must be specified here. Specify None for filename where custom file is not available for processing.
+# All file mappings must be specified here. Specify None for filename where custom file is not available for processing.
 # Recommended filenames: albedo.tif, dem.tif, dsm_ground_build.tif, lulc.tif, open_urban.tif, tree_canopy.tif
 # Auto-generated CIF filenames: cif_albedo.tif, cif_dem.tif, cif_dsm_ground_build.tif, cif_lulc.tif, cif_open_urban.tif, cif_tree_canopy.tif
 - CustomTiffFilenames:

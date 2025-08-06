@@ -25,7 +25,7 @@ class CityData:
         obj.scenario_short_title, obj.scenario_version, obj.scenario_description, obj.scenario_author = (
             parse_scenario_config(yml_values))
 
-        (obj.utc_offset, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat, obj.tile_side_meters,
+        (obj.seasonal_utc_offset, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat, obj.tile_side_meters,
          obj.tile_buffer_meters, obj.remove_mrt_buffer_for_final_output) = \
             parse_processing_areas_config(yml_values)
 
@@ -46,8 +46,8 @@ class CityData:
                                                                  northern_leaf_start, northern_leaf_end,
                                                                  southern_leaf_start, southern_leaf_end)
 
-        # Adjust utc_offset for time zones that do not have whole number offsets
-        obj.utc_offset = _time_shift_utc_offset(obj.utc_offset)
+        # Adjust seasonal_utc_offset for time zones that do not have whole number offsets
+        obj.seasonal_utc_offset = _time_shift_utc_offset(obj.seasonal_utc_offset)
 
         obj.met_filenames, obj.has_era_met_download = parse_met_files_config(yml_values, obj.new_task_method)
 
@@ -132,14 +132,14 @@ def _get_latitude_based_leaf_start_end(min_lat, max_lat, northern_leaf_start, no
 
     return leaf_start, leaf_end
 
-def _time_shift_utc_offset(utc_offset):
-    # Adjust utc_offsets that are not on a whole hour. This adjustment uses the same time shifting used
+def _time_shift_utc_offset(seasonal_utc_offset):
+    # Adjust seasonal_utc_offset that are not on a whole hour. This adjustment uses the same time shifting used
     # in CIF era_5_hottest_day layer class
-    if utc_offset - int(utc_offset) != 0:
-        hour_fraction = utc_offset - int(utc_offset)
+    if seasonal_utc_offset - int(seasonal_utc_offset) != 0:
+        hour_fraction = seasonal_utc_offset - int(seasonal_utc_offset)
         if hour_fraction <= 0.5:
-            utc_offset = int(utc_offset)
+            seasonal_utc_offset = int(seasonal_utc_offset)
         else:
-            utc_offset = int(utc_offset) + 1
+            seasonal_utc_offset = int(seasonal_utc_offset) + 1
 
-    return utc_offset
+    return seasonal_utc_offset

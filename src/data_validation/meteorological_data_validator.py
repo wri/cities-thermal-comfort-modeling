@@ -1,15 +1,50 @@
 import csv
 import os
+from datetime import datetime
 from pathlib import Path
-from src.constants import MET_HEADER_UMEP, MET_HEADER_0_UPENN, MET_HEADER_2_UPENN
 
+from city_metrix.metrix_tools import is_date
+
+from src.constants import MET_HEADER_UMEP, MET_HEADER_0_UPENN, MET_HEADER_2_UPENN, PRIOR_5_YEAR_KEYWORD
+
+
+def evaluate_met_files(non_tiled_city_data):
+    invalids = []
+
+    # ERA5 date range
+    era5_date_range = non_tiled_city_data.era5_date_range
+    if era5_date_range is not None:
+        parsed_dates = era5_date_range.split(',')
+        if not (parsed_dates[0] == PRIOR_5_YEAR_KEYWORD
+                or (len(parsed_dates) == 2 and is_date(parsed_dates[0].strip()) and is_date(parsed_dates[1].strip()))):
+            msg = 'Specified era5_date_range has invalid values.'
+            invalids.append((msg, True))
+
+        if parsed_dates[0] != PRIOR_5_YEAR_KEYWORD:
+            start_date = datetime.strptime(parsed_dates[0].strip(), "%Y-%m-%d").date()
+            end_date = datetime.strptime(parsed_dates[0].strip(), "%Y-%m-%d").date()
+            year_difference = end_date.year - start_date.year
+            if year_difference > 5:
+                msg = 'Specified era5_date_range must be 5 years or less.'
+                invalids.append((msg, True))
+
+            if start_date > end_date:
+                msg = f'era5_date_range start_date must be before end_date.'
+                invalids.append((msg, True))
+
+            record_start_year = 1940  # For ERA5 https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels?tab=overview
+            latest_complete_record_year = datetime.now().year - 1
+            if not (record_start_year <= start_date.year <= latest_complete_record_year
+                    and record_start_year <= end_date.year <= latest_complete_record_year):
+                msg = f'era5_date_range must be between {record_start_year} and {latest_complete_record_year}.'
+                invalids.append((msg, True))
+
+    return invalids
 
 def evaluate_meteorological_umep_data(non_tiled_city_data, in_target_folder:bool=True):
     invalids = []
     non_nullable_columns = [0,1,2,3,9,10,11,14,16,22]
-    for met_file in non_tiled_city_data.met_filenames:
-        met_filename = met_file['filename']
-
+    for met_filename in non_tiled_city_data.met_filenames:
         if in_target_folder:
             met_folder_path = non_tiled_city_data.target_met_files_path
         else:
@@ -42,9 +77,7 @@ def evaluate_meteorological_umep_data(non_tiled_city_data, in_target_folder:bool
 def evaluate_meteorological_upenn_data(non_tiled_city_data, in_target_folder:bool=True):
     invalids = []
     non_nullable_columns = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]
-    for met_file in non_tiled_city_data.met_filenames:
-        met_filename = met_file['filename']
-
+    for met_filename in non_tiled_city_data.met_filenames:
         if in_target_folder:
             met_folder_path = non_tiled_city_data.target_met_files_path
         else:

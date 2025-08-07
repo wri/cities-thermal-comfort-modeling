@@ -1,5 +1,9 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/08/07
+1. Enable specification of date range for ERA5 retrieval
+2. Updated yml file to support specification of ERA5 date range
+
 ## 2025/08/05
 1. Renamed utc_offset as seasonal_utc_offset
 2. Now passes seasonal_utc_offset to Era5MetPreprocessing metrics

@@ -64,11 +64,11 @@ def write_qgis_files(city_data, crs_str):
     # Build VRTs for tcm results
     met_filenames = []
     set_id = 0
-    for met_file in city_data.met_filenames:
-        if met_file.get('filename') == METHOD_TRIGGER_ERA5_DOWNLOAD:
+    for met_filename in city_data.met_filenames:
+        if met_filename == METHOD_TRIGGER_ERA5_DOWNLOAD:
             met_file_name = FILENAME_ERA5_UPENN if city_data.new_task_method == 'upenn_model' else FILENAME_ERA5_UMEP
         else:
-            met_file_name = met_file.get('filename')
+            met_file_name = met_filename
 
         met_folder_name = Path(met_file_name).stem
         target_tcm_folder = str(os.path.join(city_data.target_tcm_results_path, met_folder_name))

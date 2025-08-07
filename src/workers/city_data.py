@@ -25,8 +25,8 @@ class CityData:
         obj.scenario_short_title, obj.scenario_version, obj.scenario_description, obj.scenario_author = (
             parse_scenario_config(yml_values))
 
-        (obj.seasonal_utc_offset, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat, obj.tile_side_meters,
-         obj.tile_buffer_meters, obj.remove_mrt_buffer_for_final_output) = \
+        (obj.seasonal_utc_offset, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat,
+         obj.tile_side_meters, obj.tile_buffer_meters, obj.remove_mrt_buffer_for_final_output) = \
             parse_processing_areas_config(yml_values)
 
         (obj.dem_tif_filename, obj.dsm_tif_filename, obj.lulc_tif_filename, obj.open_urban_tif_filename, obj.tree_canopy_tif_filename,
@@ -49,7 +49,7 @@ class CityData:
         # Adjust seasonal_utc_offset for time zones that do not have whole number offsets
         obj.seasonal_utc_offset = _time_shift_utc_offset(obj.seasonal_utc_offset)
 
-        obj.met_filenames, obj.has_era_met_download = parse_met_files_config(yml_values, obj.new_task_method)
+        obj.met_filenames, obj.has_era_met_download, obj.era5_date_range = parse_met_files_config(yml_values, obj.new_task_method)
 
         if obj.folder_name_tile_data:
             obj.source_raster_files_path = os.path.join(obj.source_city_primary_data_path, FOLDER_NAME_PRIMARY_RASTER_FILES)

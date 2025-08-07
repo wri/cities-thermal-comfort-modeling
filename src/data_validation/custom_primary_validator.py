@@ -6,7 +6,8 @@ from city_metrix.constants import ProjectionType
 from city_metrix.metrix_tools import get_projection_type
 
 from src.constants import FILENAME_METHOD_YML_CONFIG, \
-    FOLDER_NAME_PRIMARY_RASTER_FILES, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSING_METHODS, FILENAME_ERA5_UMEP
+    FOLDER_NAME_PRIMARY_RASTER_FILES, METHOD_TRIGGER_ERA5_DOWNLOAD, PROCESSING_METHODS, FILENAME_ERA5_UMEP, \
+    FILENAME_ERA5_UPENN
 from src.data_validation.tools import verify_path
 from src.worker_manager.tools import  list_files_with_extension
 from src.workers.city_data import CityData
@@ -132,18 +133,18 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
                 msg = (f'Required source file: {prior_dem} not found for method: {task_method} as '
                        f'specified in {FILENAME_METHOD_YML_CONFIG} file.')
                 invalids.append((msg, True))
-            for met_file_row in tiled_city_data.met_filenames:
-                met_filename = met_file_row.get('filename')
-                if not(non_tiled_city_data.has_era_met_download and met_filename == FILENAME_ERA5_UMEP):
+            for met_filename in tiled_city_data.met_filenames:
+                if not(non_tiled_city_data.has_era_met_download
+                       and (met_filename == FILENAME_ERA5_UMEP or met_filename == FILENAME_ERA5_UPENN)):
                     met_filepath = os.path.join(tiled_city_data.source_met_files_path, met_filename)
 
-                    if met_filename != '<download_era5>' and verify_path(met_filepath) is False:
+                    if verify_path(met_filepath) is False:
                         msg = (f'Required meteorological file: {met_filepath} not found for '
                                f'method: {task_method} in .config_method_parameters.yml.')
                         invalids.append((msg, True))
 
-            if not -24 <= seasonal_utc_offset <= 24:
-                msg = f'UTC-offset for: {met_filename} not in -24 to 24 hours range as specified in .config_method_parameters.yml.'
+            if len(tiled_city_data.met_filenames) > 2:
+                msg = 'A maximum of 2 meteorological files can be specified.'
                 invalids.append((msg, True))
 
             if task_method in ['umep_solweig_only']:

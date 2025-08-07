@@ -8,7 +8,7 @@ from src.data_validation.basic_validation import evaluate_basic_config
 from src.data_validation.custom_intermediate_validator import evaluate_custom_intermediate_config
 from src.data_validation.custom_primary_validator import evaluate_custom_primary_config
 from src.data_validation.meteorological_data_validator import evaluate_meteorological_umep_data, \
-    evaluate_meteorological_upenn_data
+    evaluate_meteorological_upenn_data, evaluate_met_files
 from src.worker_manager.tools import get_existing_tile_metrics, get_aoi_area_in_square_meters
 
 def validate_config(non_tiled_city_data, existing_tiles_metrics, processing_option):
@@ -28,6 +28,9 @@ def validate_config(non_tiled_city_data, existing_tiles_metrics, processing_opti
 
         aoi_invalids, updated_aoi = evaluate_aoi(non_tiled_city_data, existing_tiles_metrics, processing_option)
         combined_invalids.extend(aoi_invalids)
+
+        met_invalids = evaluate_met_files(non_tiled_city_data)
+        combined_invalids.extend(met_invalids)
 
         if non_tiled_city_data.new_task_method != 'upenn_model':
             met_invalids = evaluate_meteorological_umep_data(non_tiled_city_data, in_target_folder=False)

@@ -21,7 +21,9 @@ FILENAME_SVFS_ZIP = 'svfs.zip'
 FILENAME_ERA5_UMEP = 'met_era5_hottest_days.txt'
 FILENAME_ERA5_UPENN = 'met_era5_hottest_days.csv'
 
-METHOD_TRIGGER_ERA5_DOWNLOAD = '<download_era5>'
+METHOD_TRIGGER_ERA5_DOWNLOAD = 'ERA5:<*>'
+PRIOR_5_YEAR_KEYWORD = "prior_5_years"
+
 PROCESSING_METHODS = ['download_only', 'umep_solweig', 'upenn_model']
 
 MET_HEADER_UMEP = ['%iy', 'id', 'it', 'imin', 'qn', 'qh', 'qe', 'qs', 'qf', 'U', 'RH', 'Tair', 'press', 'rain', 'kdown', 'snow', 'ldown', 'fcld', 'wuh', 'xsmd', 'lai', 'kdiff', 'kdir', 'wdir']

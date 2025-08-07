@@ -36,11 +36,11 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
         from src.workers.model_umep.umep_plugin_processor import run_umep_plugin
 
         out_list = []
-        for met_file in met_names:
-            if met_file.get('filename') == METHOD_TRIGGER_ERA5_DOWNLOAD:
+        for met_filename in met_names:
+            if met_filename== METHOD_TRIGGER_ERA5_DOWNLOAD:
                 met_filename = FILENAME_ERA5_UPENN if task_method == 'upenn_model' else FILENAME_ERA5_UMEP
             else:
-                met_filename = met_file.get('filename')
+                met_filename = met_filename
 
             if task_method == 'umep_solweig':
                 stdout = run_umep_plugin(step_index, task_method, folder_city, folder_tile, source_path, target_path,

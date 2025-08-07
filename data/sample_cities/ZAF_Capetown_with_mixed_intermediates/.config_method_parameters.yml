@@ -19,7 +19,7 @@
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: True
 # Names of custom meteorological file(s) or ERA5 data range. Maximum of two filenames can be specified.
-# Fpr custom files, specify the filename with either .csv extension for UPenn model or .txt extension for UMEP model
+# For custom files, specify the filename with either .csv extension for UPenn model or .txt extension for UMEP model
 # For era5 download, specify either "ERA5:<prior_5_years>" or two dates as "ERA5:<2023-01-01,2023-12-31>"
 - MetFiles:
   - filename: met_20jan2022.txt

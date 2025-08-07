@@ -170,9 +170,9 @@ def _trim_mrt_buffer(target_tcm_results_path, tile_folder_name, met_filenames, t
     bounds = (west, south, east, north)
     polygon = gpd.GeoSeries([box(*bounds)])
 
-    for met_file_folder in met_filenames:
-        met_folder = Path(met_file_folder['filename']).stem
-        tile_path = str(os.path.join(target_tcm_results_path, met_folder, tile_folder_name))
+    for met_filename in met_filenames:
+        file_stem = Path(met_filename).stem
+        tile_path = str(os.path.join(target_tcm_results_path, file_stem, tile_folder_name))
         for file in os.listdir(tile_path):
             if file.endswith('.tif'):
                 file_path = os.path.join(tile_path, file)

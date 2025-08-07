@@ -245,7 +245,7 @@ def test_custom_city_with_mixed_intermediates():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
-        expected_count = 16
+        expected_count = 22
         equal(vrt_count, expected_count,
               msg=f"Expected VRT count of {expected_count} files, but actual count is {vrt_count}")
     finally:

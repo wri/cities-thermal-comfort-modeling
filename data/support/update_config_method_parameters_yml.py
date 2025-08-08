@@ -46,7 +46,7 @@ directory = r'C:\Users\kenn.cartier\Documents\temp_gh\cities-thermal-comfort-mod
 make_yml_backup(directory)
 
 old_string = '# Processing Area of Interest used for tile construction and ERA5-data download. If any custom files\n# are specified above, then the system will not construct a new tile grid and will instead use the existing one.'
-new_string = '# Processing Area of Interest used for tile construction and ERA5-data download. If any custom files are specified in\n# CustomTiffFilenames section, then the system will not construct a new tile grid and will instead use the existing one.\n# Specify the seasonal_utc_offset including DST offset if AOI follows this practice for the anticipated hottest season.'
+new_string = '# Processing Area of Interest used for tile construction and ERA5-data download. If any custom files are specified in\n# CustomTiffFilenames section, then the system will not construct a new tile grid and will instead use the existing one.\n# Specify the seasonal_utc_offset including DST offset for UPenn model if AOI follows this practice for the hottest season.\n# Note: Use ST offset for UMEP and DST for UPenn when appropriate. Useful site: https://www.timeanddate.com/'
 find_and_replace(directory, old_string, new_string, False)
 
 old_string = "  utc_offset:"
@@ -71,6 +71,11 @@ find_and_replace(directory, old_string, new_string, True)
 
 old_string = '# Valid methods are [download_only, umep_solweig]'
 new_string = '# Valid methods are [download_only, umep_solweig, upenn_model]'
+find_and_replace(directory, old_string, new_string, False)
+
+
+old_string = '# sampling_local_hours specifies hours for <download_era5> method.'
+new_string = '# sampling_local_hours specifies hours for ERA5 download.'
 find_and_replace(directory, old_string, new_string, False)
 
 # old_string = ''

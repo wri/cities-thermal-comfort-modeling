@@ -6,11 +6,12 @@
   author: kenn.cartier@wri.org
 # Processing Area of Interest used for tile construction and ERA5-data download. If any custom files are specified in
 # CustomTiffFilenames section, then the system will not construct a new tile grid and will instead use the existing one.
-# Specify the seasonal_utc_offset including DST offset if AOI follows this practice for the anticipated hottest season.
+# Specify the seasonal_utc_offset including DST offset for UPenn model if AOI follows this practice for the hottest season.
+# Note: Use ST offset for UMEP and DST for UPenn when appropriate. Useful site: https://www.timeanddate.com/
 # Specify None for tile_side_meters to not subdivide the AOI. Recommended value for tile_buffer_meters is 600.
 # Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
-  seasonal_utc_offset: -4
+  seasonal_utc_offset: -4 # DST offset
   min_lon: -75.17402
   min_lat: 39.94726
   max_lon: -75.16865
@@ -40,7 +41,7 @@
   wall_height_filename: None
 # Configurable attribute values for method processing
 # Valid methods are [download_only, umep_solweig, upenn_model]
-# sampling_local_hours specifies hours for <download_era5> method.
+# sampling_local_hours specifies hours for ERA5 download.
 - MethodAttributes:
   method: upenn_model
   wall_height_aspect:

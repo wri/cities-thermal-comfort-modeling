@@ -230,7 +230,7 @@ def _get_albedo_cloud_masked(tiled_city_data, tile_data_path, aoi_gdf, output_re
         if albedo_cloud_masked is None:
             return False
 
-        with (tempfile.TemporaryDirectory() as tmpdirname):
+        with tempfile.TemporaryDirectory() as tmpdirname:
             temp_file = 'albedo_cloud_mask_temporary.tif'
             try:
                 # first attempt to save the file in the preferred NS direction

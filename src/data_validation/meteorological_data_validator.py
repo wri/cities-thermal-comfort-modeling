@@ -23,7 +23,7 @@ def evaluate_met_files(non_tiled_city_data):
 
         if parsed_dates[0] != PRIOR_5_YEAR_KEYWORD:
             start_date = datetime.strptime(parsed_dates[0].strip(), "%Y-%m-%d").date()
-            end_date = datetime.strptime(parsed_dates[0].strip(), "%Y-%m-%d").date()
+            end_date = datetime.strptime(parsed_dates[1].strip(), "%Y-%m-%d").date()
             year_difference = end_date.year - start_date.year
             if year_difference > 5:
                 msg = 'Specified era5_date_range must be 5 years or less.'

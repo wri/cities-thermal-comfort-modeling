@@ -37,7 +37,7 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
 
         out_list = []
         for met_filename in met_names:
-            if met_filename== METHOD_TRIGGER_ERA5_DOWNLOAD:
+            if met_filename == METHOD_TRIGGER_ERA5_DOWNLOAD:
                 met_filename = FILENAME_ERA5_UPENN if task_method == 'upenn_model' else FILENAME_ERA5_UMEP
             else:
                 met_filename = met_filename

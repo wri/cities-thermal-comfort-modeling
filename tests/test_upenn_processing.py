@@ -12,6 +12,26 @@ create_folder(SCRATCH_TARGET_DIR)
 
 RUN_CORE_TESTS_ONLY = False
 
+def test_tiled_buffered_cif_city_upenn():
+    source_city_folder_name = 'NLD_Amsterdam_buftile_cif_upenn'
+    non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+
+    remove_folder(non_tiled_city_data.target_city_parent_path)
+
+    try:
+        return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+        # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+
+        vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
+
+        equal(0, return_code, msg=f"Expected 0 for return code, but actual return code is {return_code}")
+        expected_count = 17
+        equal(vrt_count, expected_count,
+              msg=f"Expected VRT count of {expected_count} files, but actual count is {vrt_count}")
+    finally:
+        if CLEANUP_RESULTS:
+            remove_folder(non_tiled_city_data.target_city_parent_path)
+
 def test_USA_Philadelphia_downtown_cif_upenn():
     source_city_folder_name = r'USA_Philadelphia_downtown_cif_upenn'
     non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)

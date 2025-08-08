@@ -22,7 +22,7 @@
 # For custom files, specify the filename with either .csv extension for UPenn model or .txt extension for UMEP model
 # For era5 download, specify either "ERA5:<prior_5_years>" or two dates as "ERA5:<2023-01-01,2023-12-31>"
 - MetFiles:
-  - filename: met_era5_hottest_days.txt
+  - filename: ERA5:<prior_5_years>
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
 # All file mappings must be specified here. Specify None for filename where custom file is not available for processing.
 # Recommended filenames: albedo_cloud_masked.tif, dem.tif, dsm_ground_build.tif, lulc.tif, open_urban.tif, tree_canopy.tif
@@ -42,7 +42,7 @@
 # Valid methods are [download_only, umep_solweig, upenn_model]
 # sampling_local_hours specifies hours for <download_era5> method.
 - MethodAttributes:
-  method: umep_solweig
+  method: upenn_model
   wall_height_aspect:
     lower_limit_for_wall_height: 3
   skyview_factor:

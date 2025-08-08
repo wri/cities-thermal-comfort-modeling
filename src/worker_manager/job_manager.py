@@ -3,11 +3,14 @@ import shutil
 import subprocess
 import multiprocessing as mp
 import warnings
+from datetime import datetime
+
 import pandas as pd
 import shapely
 import dask
+from city_metrix.metrix_tools import is_date
 
-from src.constants import SRC_DIR, FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN
+from src.constants import SRC_DIR, FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN, PRIOR_5_YEAR_KEYWORD
 from src.data_validation.manager import print_invalids
 from src.data_validation.meteorological_data_validator import evaluate_meteorological_umep_data
 from src.worker_manager.ancillary_files import write_tile_grid, write_qgis_files
@@ -48,12 +51,15 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
         log_general_file_message('Retrieving ERA meteorological data', __file__, logger)
         sampling_local_hours = non_tiled_city_data.sampling_local_hours
 
+        start_date, end_date = _determine_era5_era5_date_range(non_tiled_city_data.era5_date_range)
+
         target_met_files_path = non_tiled_city_data.target_met_files_path
         if non_tiled_city_data.new_task_method == 'umep_solweig':
-            return_code = get_umep_met_data(target_met_files_path, aoi_boundary_polygon, seasonal_utc_offset, sampling_local_hours)
+            return_code = get_umep_met_data(target_met_files_path, aoi_boundary_polygon,
+                                            start_date, end_date, seasonal_utc_offset, sampling_local_hours)
         else:
-            return_code = get_upenn_met_data(target_met_files_path, aoi_boundary_polygon, seasonal_utc_offset,
-                                            sampling_local_hours)
+            return_code = get_upenn_met_data(target_met_files_path, aoi_boundary_polygon,
+                                             start_date, end_date, seasonal_utc_offset, sampling_local_hours)
         if return_code != 0:
             print("Stopping. Failed downloading ERA5 meteorological data")
             exit(1)
@@ -152,15 +158,30 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
 
     return return_code, return_str
 
+def _determine_era5_era5_date_range(sampling_date_range:str):
+    parsed_dates = sampling_date_range.split(',')
+
+    current_year = datetime.now().year
+    latest_complete_record_year = current_year - 1
+    if parsed_dates[0] == PRIOR_5_YEAR_KEYWORD:
+        # assume 5-year interval
+        prior_interval_start_year = current_year - 6
+        prior_interval_end_year = latest_complete_record_year
+        sampling_start_date = datetime(prior_interval_start_year, 1, 1).strftime('%Y-%m-%d')
+        sampling_end_date = datetime(prior_interval_end_year, 12, 31).strftime('%Y-%m-%d')
+    else:
+        sampling_start_date = datetime.strptime(parsed_dates[0].strip(), "%Y-%m-%d").date()
+        sampling_end_date = datetime.strptime(parsed_dates[1].strip(), "%Y-%m-%d").date()
+
+    return str(sampling_start_date), str(sampling_end_date)
+
 
 def _transfer_custom_met_files(non_tiled_city_data):
     create_folder(non_tiled_city_data.target_met_files_path)
-    for met_file in non_tiled_city_data.met_filenames:
-        if not(non_tiled_city_data.has_era_met_download
-               and (met_file['filename'] == FILENAME_ERA5_UMEP or met_file['filename'] == FILENAME_ERA5_UPENN)
-        ):
-            source_path = os.path.join(non_tiled_city_data.source_met_files_path, met_file['filename'])
-            target_path = os.path.join(non_tiled_city_data.target_met_files_path, met_file['filename'])
+    for met_filename in non_tiled_city_data.met_filenames:
+        if not(non_tiled_city_data.has_era_met_download and met_filename in [FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN]):
+            source_path = os.path.join(non_tiled_city_data.source_met_files_path, met_filename)
+            target_path = os.path.join(non_tiled_city_data.target_met_files_path, met_filename)
             shutil.copyfile(source_path, target_path)
 
 

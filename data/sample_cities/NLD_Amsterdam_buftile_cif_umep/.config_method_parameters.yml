@@ -11,19 +11,19 @@
 # Specify None for tile_side_meters to not subdivide the AOI. Recommended value for tile_buffer_meters is 600.
 # Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
-  seasonal_utc_offset: 2 # year-round
-  min_lon: 18.41294
-  min_lat: -33.92100
-  max_lon: 18.41401
-  max_lat: -33.91999
-  tile_side_meters: None
+  seasonal_utc_offset: 1 # ST offset
+  min_lon: 4.9012
+  min_lat: 52.3720
+  max_lon: 4.9083
+  max_lat: 52.3752
+  tile_side_meters: 170
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: True
 # Names of custom meteorological file(s) or ERA5 data range. Maximum of two filenames can be specified.
 # For custom files, specify the filename with either .csv extension for UPenn model or .txt extension for UMEP model
 # For era5 download, specify either "ERA5:<prior_5_years>" or two dates as "ERA5:<2023-01-01,2023-12-31>"
 - MetFiles:
-  - filename: ERA5:<2023-01-01,2023-12-31>
+  - filename: ERA5:<prior_5_years>
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
 # All file mappings must be specified here. Specify None for filename where custom file is not available for processing.
 # Recommended filenames: albedo_cloud_masked.tif, dem.tif, dsm_ground_build.tif, lulc.tif, open_urban.tif, tree_canopy.tif
@@ -43,7 +43,7 @@
 # Valid methods are [download_only, umep_solweig, upenn_model]
 # sampling_local_hours specifies hours for ERA5 download.
 - MethodAttributes:
-  method: download_only
+  method: umep_solweig
   wall_height_aspect:
     lower_limit_for_wall_height: 3
   skyview_factor:
@@ -63,3 +63,4 @@
     output_tmrt: True
     output_sh: True
     sampling_local_hours: 12,15,18
+

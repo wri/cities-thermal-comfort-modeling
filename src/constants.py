@@ -21,7 +21,9 @@ FILENAME_SVFS_ZIP = 'svfs.zip'
 FILENAME_ERA5_UMEP = 'met_era5_hottest_days.txt'
 FILENAME_ERA5_UPENN = 'met_era5_hottest_days.csv'
 
-METHOD_TRIGGER_ERA5_DOWNLOAD = '<download_era5>'
+METHOD_TRIGGER_ERA5_DOWNLOAD = 'ERA5:<*>'
+PRIOR_5_YEAR_KEYWORD = "prior_5_years"
+
 PROCESSING_METHODS = ['download_only', 'umep_solweig', 'upenn_model']
 
 MET_HEADER_UMEP = ['%iy', 'id', 'it', 'imin', 'qn', 'qh', 'qe', 'qs', 'qf', 'U', 'RH', 'Tair', 'press', 'rain', 'kdown', 'snow', 'ldown', 'fcld', 'wuh', 'xsmd', 'lai', 'kdiff', 'kdir', 'wdir']
@@ -30,6 +32,11 @@ MET_HEADER_1_UPENN = ['0', 'CDS-ERA5', '<lat>', '<lon>', '<seasonal_utc_offset>'
 MET_HEADER_2_UPENN = ['Index', 'Year', 'Month', 'Day', 'Hour', 'Minute', 'DHI', 'DNI', 'GHI', 'Clearsky DHI', 'Clearsky DNI', 'Clearsky GHI', 'Wind Speed', 'Relative Humidity', 'Temperature', 'Pressure']
 
 VALID_PRIMARY_TYPES = [
+    {
+        "short_name": "albedo_cloud_masked",
+        "yml_tag": "albedo_cloud_masked_tif_filename",
+        "cif_template_name": 'cif_albedo_cloud_masked.tif'
+    },
     {
         "short_name": "dem",
         "yml_tag": "dem_tif_filename",
@@ -55,11 +62,5 @@ VALID_PRIMARY_TYPES = [
         "yml_tag": "tree_canopy_tif_filename",
         "cif_template_name": 'cif_tree_canopy.tif'
     },
-    {
-        "short_name": "albedo",
-        "yml_tag": "albedo_tif_filename",
-        "cif_template_name": 'cif_albedo.tif'
-    },
-
 ]
 

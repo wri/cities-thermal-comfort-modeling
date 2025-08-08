@@ -6,7 +6,7 @@ import math
 from city_metrix.metrix_tools import reproject_units
 from city_metrix.metrix_model import get_haversine_distance
 from shapely.geometry import box
-from src.constants import FILENAME_METHOD_YML_CONFIG, WGS_CRS
+from src.constants import FILENAME_METHOD_YML_CONFIG, WGS_CRS, PRIOR_5_YEAR_KEYWORD
 
 
 def evaluate_aoi(non_tiled_city_data, existing_tiles_metrics, processing_option):
@@ -30,6 +30,11 @@ def evaluate_aoi_primary_configs(non_tiled_city_data):
     # AOI metrics
     seasonal_utc_offset = non_tiled_city_data.seasonal_utc_offset
     aoi_min_lon, aoi_min_lat, aoi_max_lon, aoi_max_lat = _parse_aoi_dimensions(non_tiled_city_data)
+
+    # Note: Valid range is between -12 and 14 based on internet search
+    if not (-12 <= seasonal_utc_offset <= 14):
+        msg = 'Specified seasonal_utc_offset is outside of valid range.'
+        invalids.append((msg, True))
 
     # Evaluate AOI
     if (not isinstance(aoi_min_lon, numbers.Number) or not isinstance(aoi_min_lat, numbers.Number) or

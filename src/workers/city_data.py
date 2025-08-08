@@ -25,12 +25,12 @@ class CityData:
         obj.scenario_short_title, obj.scenario_version, obj.scenario_description, obj.scenario_author = (
             parse_scenario_config(yml_values))
 
-        (obj.seasonal_utc_offset, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat, obj.tile_side_meters,
-         obj.tile_buffer_meters, obj.remove_mrt_buffer_for_final_output) = \
+        (obj.seasonal_utc_offset, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat,
+         obj.tile_side_meters, obj.tile_buffer_meters, obj.remove_mrt_buffer_for_final_output) = \
             parse_processing_areas_config(yml_values)
 
         (obj.dem_tif_filename, obj.dsm_tif_filename, obj.lulc_tif_filename, obj.open_urban_tif_filename, obj.tree_canopy_tif_filename,
-         obj.albedo_tif_filename, obj.custom_primary_feature_list, obj.custom_primary_filenames,
+         obj.albedo_cloud_masked_tif_filename, obj.custom_primary_feature_list, obj.custom_primary_filenames,
          obj.cif_primary_feature_list) = parse_primary_filenames_config(yml_values)
 
         (obj.new_task_method, northern_leaf_start, northern_leaf_end, southern_leaf_start, southern_leaf_end,
@@ -49,17 +49,17 @@ class CityData:
         # Adjust seasonal_utc_offset for time zones that do not have whole number offsets
         obj.seasonal_utc_offset = _time_shift_utc_offset(obj.seasonal_utc_offset)
 
-        obj.met_filenames, obj.has_era_met_download = parse_met_files_config(yml_values, obj.new_task_method)
+        obj.met_filenames, obj.has_era_met_download, obj.era5_date_range = parse_met_files_config(yml_values, obj.new_task_method)
 
         if obj.folder_name_tile_data:
             obj.source_raster_files_path = os.path.join(obj.source_city_primary_data_path, FOLDER_NAME_PRIMARY_RASTER_FILES)
             obj.source_primary_raster_tile_data_path = os.path.join(obj.source_raster_files_path, obj.folder_name_tile_data)
+            obj.source_albedo_cloud_masked = os.path.join(obj.source_primary_raster_tile_data_path, obj.albedo_cloud_masked_tif_filename)
             obj.source_dem_path = os.path.join(obj.source_primary_raster_tile_data_path, obj.dem_tif_filename)
             obj.source_dsm_path = os.path.join(obj.source_primary_raster_tile_data_path, obj.dsm_tif_filename)
             obj.source_lulc_path = os.path.join(obj.source_primary_raster_tile_data_path, obj.lulc_tif_filename)
             obj.source_open_urban_path = os.path.join(obj.source_primary_raster_tile_data_path, obj.open_urban_tif_filename)
             obj.source_tree_canopy_path = os.path.join(obj.source_primary_raster_tile_data_path, obj.tree_canopy_tif_filename)
-            obj.source_albedo_path = os.path.join(obj.source_primary_raster_tile_data_path, obj.albedo_tif_filename)
 
             source_intermediate_tile_data_path = os.path.join(obj.source_intermediate_data_path, obj.folder_name_tile_data)
             obj.source_wallheight_path = os.path.join(source_intermediate_tile_data_path, obj.wall_height_filename)
@@ -99,14 +99,14 @@ class CityData:
                                                             FOLDER_NAME_PRIMARY_RASTER_FILES)
                 obj.target_primary_tile_data_path = os.path.join(obj.target_raster_files_path, obj.folder_name_tile_data)
 
+                obj.target_albedo_cloud_masked_path = os.path.join(obj.target_primary_tile_data_path,
+                                                           obj.albedo_cloud_masked_tif_filename)
                 obj.target_dem_path = os.path.join(obj.target_primary_tile_data_path, obj.dem_tif_filename)
                 obj.target_dsm_path = os.path.join(obj.target_primary_tile_data_path, obj.dsm_tif_filename)
                 obj.target_lulc_path = os.path.join(obj.target_primary_tile_data_path, obj.lulc_tif_filename)
                 obj.target_open_urban_path = os.path.join(obj.target_primary_tile_data_path, obj.open_urban_tif_filename)
                 obj.target_tree_canopy_path = os.path.join(obj.target_primary_tile_data_path,
                                                            obj.tree_canopy_tif_filename)
-                obj.target_albedo_path = os.path.join(obj.target_primary_tile_data_path,
-                                                           obj.albedo_tif_filename)
 
                 obj.target_intermediate_tile_data_path = os.path.join(obj.target_intermediate_data_path, obj.folder_name_tile_data)
                 obj.target_wallheight_path = os.path.join(obj.target_intermediate_tile_data_path, obj.wall_height_filename)
@@ -131,6 +131,7 @@ def _get_latitude_based_leaf_start_end(min_lat, max_lat, northern_leaf_start, no
         leaf_end = southern_leaf_end
 
     return leaf_start, leaf_end
+
 
 def _time_shift_utc_offset(seasonal_utc_offset):
     # Adjust seasonal_utc_offset that are not on a whole hour. This adjustment uses the same time shifting used

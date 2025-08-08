@@ -39,9 +39,9 @@ def compare_raster_data(file1, file2):
     import rasterio
     with rasterio.open(file1) as src1, rasterio.open(file2) as src2:
         if src1.shape != src2.shape:
-            return False, None  # Different dimensions
+            return False, 1, None, None  # Different dimensions
         if src1.count != src2.count:
-            return False, None  # Different number of bands
+            return False, 2, None, None  # Different number of bands
         for band in range(1, src1.count + 1):
             data1 = src1.read(band)
             data2 = src2.read(band)
@@ -53,7 +53,9 @@ def compare_raster_data(file1, file2):
                 rounded_arr = np.round(diff, 2)
                 rounded_count_non_zero = np.count_nonzero(rounded_arr)
 
-                return False, count_non_zero, rounded_count_non_zero  # Pixel data differs
-    return True, 0, 0
+                return False, 3, count_non_zero, rounded_count_non_zero  # Pixel data differs
+
+    #mrt_files_are_equal, error_number, mrt_diff_count, rounded_mrt_diff_count
+    return True, None, 0, 0
 
 

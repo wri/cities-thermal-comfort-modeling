@@ -1,11 +1,7 @@
 import time
-
 import geopandas as gp
 import pandas as pd
 import os
-import numpy as np
-
-from datetime import datetime
 
 from city_metrix import Era5MetPreprocessingUPenn
 from city_metrix.metrix_model import GeoZone
@@ -16,19 +12,18 @@ from src.workers.worker_tools import remove_file, create_folder
 
 MET_NULL_VALUE = -999
 
-def get_upenn_met_data(target_met_files_path, aoi_boundary_poly, seasonal_utc_offset, sampling_local_hours):
-    start_time = datetime.now()
-
+def get_upenn_met_data(target_met_files_path, aoi_boundary_poly, start_date, end_date,
+                       seasonal_utc_offset, sampling_local_hours):
     # Create a GeoDataFrame with the polygon
     aoi_gdf = gp.GeoDataFrame(index=[0], crs="EPSG:4326", geometry=[aoi_boundary_poly])
 
     # Retrieve and write ERA5 data
-    return_code = _get_era5_upenn(aoi_gdf, target_met_files_path, seasonal_utc_offset, sampling_local_hours)
+    return_code = _get_era5_upenn(aoi_gdf, target_met_files_path, start_date, end_date, seasonal_utc_offset, sampling_local_hours)
 
     return return_code
 
 
-def _get_era5_upenn(aoi_gdf, target_met_files_path, seasonal_utc_offset, sampling_local_hours):
+def _get_era5_upenn(aoi_gdf, target_met_files_path, start_date, end_date, seasonal_utc_offset, sampling_local_hours):
     # Attempt to download data with up to 3 tries
     aoi_era_5 = None
     era5_failure_msg = ''
@@ -36,7 +31,8 @@ def _get_era5_upenn(aoi_gdf, target_met_files_path, seasonal_utc_offset, samplin
     geo_zone = GeoZone(aoi_gdf)
     while count <= 5:
         try:
-            aoi_era_5 = Era5MetPreprocessingUPenn(seasonal_utc_offset=seasonal_utc_offset).get_metric(geo_zone)
+            aoi_era_5 = (Era5MetPreprocessingUPenn(start_date=start_date, end_date=end_date, seasonal_utc_offset=seasonal_utc_offset)
+                         .get_metric(geo_zone))
             break
         except Exception as e_msg:
             era5_failure_msg = e_msg
@@ -50,9 +46,9 @@ def _get_era5_upenn(aoi_gdf, target_met_files_path, seasonal_utc_offset, samplin
     aoi_era_5 = aoi_era_5.round(2)
 
     # adjust for utc
-    int_utc_offset = int(seasonal_utc_offset)
+    int_seasonal_utc_offset = int(seasonal_utc_offset)
     aoi_era_5['time'] = pd.to_datetime(aoi_era_5[['Year', 'Month', 'Day', 'Hour', 'Minute']])
-    aoi_era_5['local_time'] = aoi_era_5['time'] + pd.Timedelta(hours=int_utc_offset)
+    aoi_era_5['local_time'] = aoi_era_5['time'] + pd.Timedelta(hours=int_seasonal_utc_offset)
 
     # filter to specific hours of day
     filter_hours = [int(x) for x in sampling_local_hours.split(',')]
@@ -68,6 +64,7 @@ def _get_era5_upenn(aoi_gdf, target_met_files_path, seasonal_utc_offset, samplin
     # localize LEAD2_HEADING
     lat = geo_zone.centroid.y
     lon = geo_zone.centroid.x
+
     local_header_2 = (met_header_2_upenn.replace('<lat>', str(lat)).replace('<lon>', str(lon))
                            .replace('<seasonal_utc_offset>', str(seasonal_utc_offset)))
     

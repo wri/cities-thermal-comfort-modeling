@@ -151,7 +151,7 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logg
             "INPUT_HEIGHT": tiled_city_data.target_wallheight_path,
             "INPUT_ASPECT": tiled_city_data.target_wallaspect_path,
             "INPUT_CDSM": tiled_city_data.target_tree_canopy_path,
-            "INPUT_ALBEDO": tiled_city_data.target_albedo_path,
+            "INPUT_ALBEDO": tiled_city_data.target_albedo_cloud_masked_path,
             "TRANS_VEG": tiled_city_data.light_transmissivity,
             "LEAF_START": tiled_city_data.leaf_start,
             "LEAF_END": tiled_city_data.leaf_end,

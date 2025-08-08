@@ -1,3 +1,6 @@
+import os.path
+import tempfile
+
 import xarray as xr
 import shapely.wkt
 import geopandas as gp
@@ -5,6 +8,7 @@ import numpy as np
 import random
 import time
 
+from osgeo import gdal
 from city_metrix.metrix_model import GeoExtent
 from rasterio.enums import Resampling
 from datetime import datetime
@@ -83,13 +87,13 @@ def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile
                 this_success = _get_tree_canopy_height(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time,f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
-        elif feature_sequence_id == 6:
-            if 'albedo' in feature_list:
-                time.sleep(wait_time_sec)
-                log_method_start(f'CIF-albedo download for {tile_id}', None, '', logger)
-                this_success = _get_albedo(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
-                result_flags.append(this_success)
-                log_method_completion(start_time,f'CIF-albedo download for {tile_id}', None, '', logger)
+
+    # Execute Albedo last since it must be aligned with other layers
+    if 'albedo_cloud_masked' in feature_list:
+        log_method_start(f'CIF-albedo_cloud_masked download for {tile_id}', None, '', logger)
+        this_success = _get_albedo_cloud_masked(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
+        result_flags.append(this_success)
+        log_method_completion(start_time,f'CIF-albedo_cloud_masked download for {tile_id}', None, '', logger)
 
 
     return_code = 0 if all(result_flags) else 1
@@ -216,29 +220,57 @@ def _get_tree_canopy_height(tiled_city_data, tile_data_path, aoi_gdf, output_res
         log_method_failure(datetime.now(), 'tree_canopy_height', tiled_city_data.source_base_path, msg, logger)
         return False
 
-def _get_albedo(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
+def _get_albedo_cloud_masked(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
-        from city_metrix.layers import Albedo
+        from city_metrix.layers import AlbedoCloudMasked
 
         bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
-        albedo = Albedo().get_data(bbox=bbox, spatial_resolution=output_resolution)
+        albedo_cloud_masked = AlbedoCloudMasked().get_data(bbox=bbox, spatial_resolution=output_resolution)
 
-        if albedo is None:
+        if albedo_cloud_masked is None:
             return False
 
-        try:
-            # first attempt to save the file in the preferred NS direction
-            was_reversed, standardized_albedo = ctcm_standardize_y_dimension_direction(albedo)
-            save_tiff_file(standardized_albedo, tile_data_path, tiled_city_data.albedo_tif_filename)
-            return True
-        except:
-            # otherwise save without flipping direction
-            save_tiff_file(albedo, tile_data_path, tiled_city_data.albedo_tif_filename)
-            return True
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            temp_file = 'albedo_cloud_mask_temporary.tif'
+            try:
+                # first attempt to save the file in the preferred NS direction
+                was_reversed, standardized_albedo_cloud_masked = ctcm_standardize_y_dimension_direction(albedo_cloud_masked)
+                save_tiff_file(standardized_albedo_cloud_masked, tmpdirname, temp_file)
+            except:
+                # otherwise save without flipping direction
+                save_tiff_file(albedo_cloud_masked, tmpdirname, temp_file)
+
+            # Open the reference file to get its spatial reference and resolution
+            reference_ds = gdal.Open(tiled_city_data.target_dem_path)
+            reference_proj = reference_ds.GetProjection()
+            reference_geotransform = reference_ds.GetGeoTransform()
+            reference_width = reference_ds.RasterXSize
+            reference_height = reference_ds.RasterYSize
+
+            # Warp the input file to match the reference file
+            output_tif = tiled_city_data.target_albedo_cloud_masked_path
+            input_tif = os.path.join(tmpdirname, temp_file)
+            gdal.Warp(
+                output_tif,
+                input_tif,
+                format='GTiff',
+                dstSRS=reference_proj,  # Set the spatial reference
+                outputBounds=[
+                    reference_geotransform[0],
+                    reference_geotransform[3] + reference_height * reference_geotransform[5],
+                    reference_geotransform[0] + reference_width * reference_geotransform[1],
+                    reference_geotransform[3]
+                ],
+                width=reference_width,
+                height=reference_height,
+                resampleAlg="bilinear"
+            )
+
+        return True
 
     except Exception as e_msg:
-        msg = f'Albedo processing cancelled due to failure {e_msg}.'
-        log_method_failure(datetime.now(), 'Albedo', tiled_city_data.source_base_path, msg, logger)
+        msg = f'Albedo-cloud-masked processing cancelled due to failure {e_msg}.'
+        log_method_failure(datetime.now(), 'Albedo_cloud_masked', tiled_city_data.source_base_path, msg, logger)
         return False
 
 def _get_dem(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):

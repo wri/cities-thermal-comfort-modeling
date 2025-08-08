@@ -90,7 +90,7 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
         prior_lulc = tiled_city_data.source_lulc_path
         prior_open_urban = tiled_city_data.source_open_urban_path
         prior_tree_canopy = tiled_city_data.source_tree_canopy_path
-        prior_albedo = tiled_city_data.source_albedo_path
+        prior_albedo_cloud_masked = tiled_city_data.source_albedo_cloud_masked
 
         if cif_features is not None and 'dem' not in cif_features and verify_path(prior_dem) is False:
             msg = f'Specified custom source file: {prior_dem} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
@@ -112,8 +112,8 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
             msg = f'Specified custom  source file: {prior_tree_canopy} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
             invalids.append((msg, True))
 
-        if cif_features is not None and 'albedo' not in cif_features and verify_path(prior_albedo) is False:
-            msg = f'Specified custom  source file: {prior_albedo} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
+        if cif_features is not None and 'albedo_cloud_masked' not in cif_features and verify_path(prior_albedo_cloud_masked) is False:
+            msg = f'Specified custom  source file: {prior_albedo_cloud_masked} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
             invalids.append((msg, True))
 
         if task_method in PROCESSING_METHODS:

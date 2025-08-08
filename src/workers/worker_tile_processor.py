@@ -196,7 +196,9 @@ def _trim_mrt_buffer(target_tcm_results_path, tile_folder_name, met_filenames, t
 def _transfer_custom_files(tiled_city_data, custom_feature_list):
     source_paths = []
     for feature in custom_feature_list:
-        if feature == 'dem':
+        if feature == 'albedo_cloud_masked':
+            source_paths.append((tiled_city_data.source_albedo_cloud_masked, tiled_city_data.target_albedo_cloud_masked_path, 'file'))
+        elif feature == 'dem':
             source_paths.append((tiled_city_data.source_dem_path, tiled_city_data.target_dem_path, 'file'))
         elif feature == 'dsm':
             source_paths.append((tiled_city_data.source_dsm_path, tiled_city_data.target_dsm_path, 'file'))
@@ -206,8 +208,6 @@ def _transfer_custom_files(tiled_city_data, custom_feature_list):
             source_paths.append((tiled_city_data.source_open_urban_path, tiled_city_data.target_open_urban_path, 'file'))
         elif feature == 'tree_canopy':
             source_paths.append((tiled_city_data.source_tree_canopy_path, tiled_city_data.target_tree_canopy_path, 'file'))
-        elif feature == 'albedo':
-            source_paths.append((tiled_city_data.source_albedo_path, tiled_city_data.target_albedo_path, 'file'))
         elif feature == 'wallaspect':
             source_paths.append((tiled_city_data.source_wallaspect_path, tiled_city_data.target_wallaspect_path, 'file'))
         elif feature == 'wallheight':
@@ -233,7 +233,7 @@ def ensure_y_dimension_direction(city_data):
     _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_lulc_path)
     _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_open_urban_path)
     _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_tree_canopy_path)
-    _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_albedo_path)
+    _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_albedo_cloud_masked_path)
 
 
 def _enforce_tiff_upper_left_origin(tile_data_path, file_path):

@@ -115,8 +115,8 @@ def parse_primary_filenames_config(yml_values):
         custom_features.extend(this_custom_feature_list)
         custom_primary_filenames.extend(this_custom_primary_filenames)
 
-        albedo_tif_filename, this_cif_feature_list, this_custom_feature_list, this_custom_primary_filenames =\
-            _assign_primary_type_variables('albedo', yml_values)
+        albedo_cloud_masked_tif_filename, this_cif_feature_list, this_custom_feature_list, this_custom_primary_filenames =\
+            _assign_primary_type_variables('albedo_cloud_masked', yml_values)
         cif_features.extend(this_cif_feature_list)
         custom_features.extend(this_custom_feature_list)
         custom_primary_filenames.extend(this_custom_primary_filenames)
@@ -126,7 +126,7 @@ def parse_primary_filenames_config(yml_values):
             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
 
     return (dem_tif_filename, dsm_tif_filename, lulc_tif_filename, open_urban_tif_filename, tree_canopy_tif_filename,
-            albedo_tif_filename, custom_features, custom_primary_filenames, cif_features)
+            albedo_cloud_masked_tif_filename, custom_features, custom_primary_filenames, cif_features)
 
 
 def _assign_primary_type_variables(primary_type_short_name, yml_values):

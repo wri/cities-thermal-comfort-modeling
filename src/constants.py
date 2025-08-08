@@ -33,6 +33,11 @@ MET_HEADER_2_UPENN = ['Index', 'Year', 'Month', 'Day', 'Hour', 'Minute', 'DHI', 
 
 VALID_PRIMARY_TYPES = [
     {
+        "short_name": "albedo_cloud_masked",
+        "yml_tag": "albedo_cloud_masked_tif_filename",
+        "cif_template_name": 'cif_albedo_cloud_masked.tif'
+    },
+    {
         "short_name": "dem",
         "yml_tag": "dem_tif_filename",
         "cif_template_name": 'cif_dem.tif',
@@ -57,11 +62,5 @@ VALID_PRIMARY_TYPES = [
         "yml_tag": "tree_canopy_tif_filename",
         "cif_template_name": 'cif_tree_canopy.tif'
     },
-    {
-        "short_name": "albedo",
-        "yml_tag": "albedo_tif_filename",
-        "cif_template_name": 'cif_albedo.tif'
-    },
-
 ]
 

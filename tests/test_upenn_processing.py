@@ -52,7 +52,7 @@ def test_USA_Philadelphia_downtown_cif_upenn():
 
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
-        # assert return_code == 0
+        assert return_code == 0
         assert vrt_count == 13
 
     finally:

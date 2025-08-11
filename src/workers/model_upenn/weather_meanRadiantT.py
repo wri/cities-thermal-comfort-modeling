@@ -6,7 +6,7 @@
 import shutil
 
 # this the cpu version, with out the calculation of the UTCI
-# last by Xiaojiang Li, Oct 15, 2024
+# last by Xiaojiang Li, Oct 15, 2024 
 
 # this the cpu version, with out the calculation of the UTCI
 # last by Xiaojiang Li, Oct 15, 2024
@@ -312,6 +312,7 @@ def run_mrt_calculations(method_params, sampling_hours: str):
 
             ## after preparation of parameters, start to compute the mean radiant temperature
             tmrtplot = np.zeros((rows, cols))
+            shadowplot = np.zeros((rows, cols))
             TgOut1 = np.zeros((rows, cols))
 
             for i in np.arange(0, Ta.__len__()):
@@ -353,6 +354,7 @@ def run_mrt_calculations(method_params, sampling_hours: str):
                         timeaddW, timeaddN, timestepdec, Tgmap1, Tgmap1E, Tgmap1S, Tgmap1W, Tgmap1N, CI, TgOut1, diffsh, ani)
 
                 tmrtplot = tmrtplot + Tmrt
+                shadowplot = shadowplot + shadow
                 tmrt_mean = tmrt_mean + Tmrt
                 num_hour = num_hour + 1
 
@@ -366,8 +368,12 @@ def run_mrt_calculations(method_params, sampling_hours: str):
             print(tmrtplot.shape)
 
             mrtFile = f"Tmrt_{sampling_date.year}_{sampling_date.timetuple().tm_yday}_{hour}00D.tif"
-            print('The output file name is:', mrtFile)
+            print('The output MRT file name is:', mrtFile)
             solweiglib.saverasternd(gdal_dsm, os.path.join(mrtfolder, mrtFile), tmrtplot)
+            
+            shadowFile = f"Shadow_{sampling_date.year}_{sampling_date.timetuple().tm_yday}_{hour}00D.tif"
+            print('The output shadow file name is:', shadowFile)
+            solweiglib.saverasternd(gdal_dsm, os.path.join(mrtfolder, shadowFile), shadowplot)
 
 
 

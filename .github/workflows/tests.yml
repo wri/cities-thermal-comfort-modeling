@@ -1,0 +1,23 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: |
+        conda env create -f environment.yml -n test
+        conda run -n test pip install pytest pytest-check
+    - name: Run tests
+      run: |
+        conda run -n test pytest tests/test_ancillary_writers.py tests/test_cif_data_downloader.py

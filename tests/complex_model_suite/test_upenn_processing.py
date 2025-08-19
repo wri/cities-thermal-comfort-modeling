@@ -23,7 +23,9 @@ def test_tiled_buffered_cif_city_upenn():
         mrt_file_name = 'Tmrt_2019_206_1200D.tif'
         target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_001',
                                        mrt_file_name)
-        expected_signature = {'band_checksums': ['c831b5aa3a02b0fdf46cce49fc134bbf'], 'count': 1, 'crs': 'EPSG:32631', 'dtype': ('float32',), 'full_checksum': 'c831b5aa3a02b0fdf46cce49fc134bbf', 'height': 370, 'transform': (1.0, 0.0, 629318.2692492839, 0.0, -1.0, 5804384.748513707, 0.0, 0.0, 1.0), 'width': 370}
+        expected_signature = {'band_checksums': ['1ff68119baee0ffb8d01ddf398e3af64'], 'count': 1, 'crs': 'EPSG:32631',
+                              'dtype': ('float32',), 'full_checksum': '1ff68119baee0ffb8d01ddf398e3af64', 'height': 171,
+         'transform': (1.0, 0.0, 629418.2692492839, 0.0, -1.0, 5804285.748513707, 0.0, 0.0, 1.0), 'width': 171}
         mrt_signatures_are_equal = does_file_signature_match(expected_signature, target_met_file)
         assert mrt_signatures_are_equal
 

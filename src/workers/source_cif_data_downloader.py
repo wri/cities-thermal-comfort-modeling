@@ -24,8 +24,12 @@ DEBUG = False
 # Unify the layers on the same resolution
 DEFAULT_LULC_RESOLUTION = 1
 
-MINIMUM_QUERY_WAIT_SEC = 5
-MAXIMUM_QUERY_WAIT_SEC = 10
+MINIMUM_QUERY_WAIT_SEC = 10
+MAXIMUM_QUERY_WAIT_SEC = 30
+
+MIN_LAYER_RETRY_MINS = 2
+MAX_LAYER_RETRY_MINS = 5
+MAX_RETRY_COUNT = 3
 
 def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile_id, cif_primary_features,
                  tile_boundary, crs, tile_resolution):
@@ -118,7 +122,17 @@ def _get_lulc(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logge
 
         # Load data
         bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
-        lulc = OpenUrban().get_data(bbox)
+        for i in range(MAX_RETRY_COUNT):
+            try:
+                lulc = OpenUrban().get_data(bbox)
+                break
+            except Exception as e_msg:
+                if i < MAX_RETRY_COUNT - 1:
+                    print(f"LULC download failed. Retrying...")
+                    wait_secs = int(random.uniform(MIN_LAYER_RETRY_MINS * 60, MAX_LAYER_RETRY_MINS * 60))
+                    time.sleep(wait_secs)
+                else:
+                    raise Exception(f"Layer LULC download failed due to error: {e_msg}")
 
         # Get resolution of the data
         # lulc.rio.resolution()
@@ -167,7 +181,17 @@ def _get_open_urban(tiled_city_data, tile_data_path, aoi_gdf, output_resolution,
         from city_metrix.layers import OpenUrban
 
         bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
-        open_urban = OpenUrban().get_data(bbox)
+        for i in range(MAX_RETRY_COUNT):
+            try:
+                open_urban = OpenUrban().get_data(bbox)
+                break
+            except Exception as e_msg:
+                if i < MAX_RETRY_COUNT - 1:
+                    print(f"OpenUrban download failed. Retrying...")
+                    wait_secs = int(random.uniform(MIN_LAYER_RETRY_MINS * 60, MAX_LAYER_RETRY_MINS * 60))
+                    time.sleep(wait_secs)
+                else:
+                    raise Exception(f"Layer OpenUrban download failed due to error: {e_msg}")
 
         if open_urban is None:
             return False
@@ -198,7 +222,18 @@ def _get_tree_canopy_height(tiled_city_data, tile_data_path, aoi_gdf, output_res
 
         # Load layer
         bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
-        tree_canopy_height = TreeCanopyHeight().get_data(bbox, spatial_resolution=output_resolution)
+        for i in range(MAX_RETRY_COUNT):
+            try:
+                tree_canopy_height = TreeCanopyHeight().get_data(bbox, spatial_resolution=output_resolution)
+                break
+            except Exception as e_msg:
+                if i < MAX_RETRY_COUNT - 1:
+                    print(f"TreeCanopyHeight download failed. Retrying...")
+                    wait_secs = int(random.uniform(MIN_LAYER_RETRY_MINS * 60, MAX_LAYER_RETRY_MINS * 60))
+                    time.sleep(wait_secs)
+                else:
+                    raise Exception(f"Layer TreeCanopyHeight download failed due to error: {e_msg}")
+
         tree_canopy_height_float32 = tree_canopy_height.astype('float32')
 
         if tree_canopy_height_float32 is None:
@@ -225,7 +260,17 @@ def _get_albedo_cloud_masked(tiled_city_data, tile_data_path, aoi_gdf, output_re
         from city_metrix.layers import AlbedoCloudMasked
 
         bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
-        albedo_cloud_masked = AlbedoCloudMasked().get_data(bbox=bbox, spatial_resolution=output_resolution)
+        for i in range(MAX_RETRY_COUNT):
+            try:
+                albedo_cloud_masked = AlbedoCloudMasked().get_data(bbox=bbox, spatial_resolution=output_resolution)
+                break
+            except Exception as e_msg:
+                if i < MAX_RETRY_COUNT - 1:
+                    print(f"AlbedoCloudMasked download failed. Retrying...")
+                    wait_secs = int(random.uniform(MIN_LAYER_RETRY_MINS * 60, MAX_LAYER_RETRY_MINS * 60))
+                    time.sleep(wait_secs)
+                else:
+                    raise Exception(f"Layer AlbedoCloudMasked download failed due to error: {e_msg}")
 
         if albedo_cloud_masked is None:
             return False
@@ -278,7 +323,17 @@ def _get_dem(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger
         from city_metrix.layers import FabDEM
 
         bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
-        dem = FabDEM().get_data(bbox, spatial_resolution=output_resolution)
+        for i in range(MAX_RETRY_COUNT):
+            try:
+                dem = FabDEM().get_data(bbox, spatial_resolution=output_resolution)
+                break
+            except Exception as e_msg:
+                if i < MAX_RETRY_COUNT - 1:
+                    print(f"FabDEM download failed. Retrying...")
+                    wait_secs = int(random.uniform(MIN_LAYER_RETRY_MINS * 60, MAX_LAYER_RETRY_MINS * 60))
+                    time.sleep(wait_secs)
+                else:
+                    raise Exception(f"Layer FabDEM download failed due to error: {e_msg}")
 
         if dem is None:
             return False
@@ -303,7 +358,17 @@ def _get_building_height_dsm(tiled_city_data, tile_data_path, aoi_gdf, output_re
         from city_metrix.layers import OvertureBuildingsDSM
 
         bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
-        building_dsm = OvertureBuildingsDSM().get_data(bbox, spatial_resolution=output_resolution)
+        for i in range(MAX_RETRY_COUNT):
+            try:
+                building_dsm = OvertureBuildingsDSM().get_data(bbox, spatial_resolution=output_resolution)
+                break
+            except Exception as e_msg:
+                if i < MAX_RETRY_COUNT - 1:
+                    print(f"OvertureBuildingsDSM download failed. Retrying...")
+                    wait_secs = int(random.uniform(MIN_LAYER_RETRY_MINS * 60, MAX_LAYER_RETRY_MINS * 60))
+                    time.sleep(wait_secs)
+                else:
+                    raise Exception(f"Layer OvertureBuildingsDSM download failed due to error: {e_msg}")
 
         if building_dsm is None:
             return False

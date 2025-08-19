@@ -17,6 +17,7 @@ dependencies:
   - rioxarray=0.19.0
   - cdsapi=0.7.5
   - pytest=8.3.5
+  - pytest-xdist
   - pytest_check=2.5.1
   - utm=0.7.0
   - shapely=2.1.0

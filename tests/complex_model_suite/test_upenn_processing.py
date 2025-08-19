@@ -32,7 +32,7 @@ def test_tiled_buffered_cif_city_upenn():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         assert return_code == 0
-        assert vrt_count == 13
+        assert vrt_count == 16
     finally:
         if CLEANUP_RESULTS:
             remove_folder(non_tiled_city_data.target_city_parent_path)
@@ -56,7 +56,7 @@ def test_USA_Philadelphia_downtown_cif_upenn():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         assert return_code == 0
-        assert vrt_count == 13
+        assert vrt_count == 16
 
     finally:
         if CLEANUP_RESULTS:
@@ -81,7 +81,7 @@ def test_USA_Portland_cif_upenn():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         assert return_code == 0
-        assert vrt_count == 13
+        assert vrt_count == 16
 
     finally:
         if CLEANUP_RESULTS:
@@ -106,7 +106,7 @@ def test_USA_Portland_swath_cif_upenn():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         assert return_code == 0
-        assert vrt_count == 13
+        assert vrt_count == 16
 
     finally:
         if CLEANUP_RESULTS:
@@ -131,7 +131,7 @@ def test_USA_WashingtonDC_cif_upenn():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         assert return_code == 0
-        assert vrt_count == 13
+        assert vrt_count == 16
 
     finally:
         if CLEANUP_RESULTS:
@@ -157,7 +157,7 @@ def test_ZAF_Capetown_cif_local_era5_upenn():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         assert return_code == 0
-        assert vrt_count == 13
+        assert vrt_count == 16
     finally:
         if CLEANUP_RESULTS:
             remove_folder(non_tiled_city_data.target_city_parent_path)

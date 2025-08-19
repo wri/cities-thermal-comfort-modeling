@@ -1,5 +1,10 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/08/19
+1. Added retry loops for layer downloads with goal of improved robustness
+2. UPenn model now also outputs shadow raster files
+3. Updated generated QGIS viewer for higher transparency on shadow files.
+
 ## 2025/08/07
 1. Enable specification of date range for ERA5 retrieval
 2. Updated yml file to support specification of ERA5 date range

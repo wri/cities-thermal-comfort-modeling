@@ -29,7 +29,7 @@ def test_ZAF_Capetown_cif_upenn():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         assert return_code == 0
-        assert vrt_count == 13
+        assert vrt_count == 16
 
     finally:
         if CLEANUP_RESULTS:

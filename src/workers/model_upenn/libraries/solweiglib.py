@@ -2832,7 +2832,8 @@ def transform_prep(epsgcode):
 
     return transform
 
-def prepareData(mrtfolder, svffolder, dsmfile, chmfile, wallfile, aspectfile, trans, epsgcode):
+# Note: WRI added demfile parameter
+def prepareData(mrtfolder, svffolder, dsmfile, demfile, chmfile, wallfile, aspectfile, trans, epsgcode):
     # if the folder already exist, then skip or create folder and start the computing
     # if os.path.exists(mrtfolder) and os.path.exists(utcifolder): 
     #     continue
@@ -2840,6 +2841,10 @@ def prepareData(mrtfolder, svffolder, dsmfile, chmfile, wallfile, aspectfile, tr
 
     if not os.path.exists(mrtfolder):
         os.mkdir(mrtfolder)
+
+    # Note: WRI added reading DEM file
+    gdal_dem = gdal.Open(demfile)
+    dem = gdal_dem.ReadAsArray().astype(float)
 
     # Read the dem and dsm file to np arrays and calculate the scale using gdal
     gdal_dsm = gdal.Open(dsmfile)
@@ -2954,7 +2959,7 @@ def prepareData(mrtfolder, svffolder, dsmfile, chmfile, wallfile, aspectfile, tr
     bush = np.logical_not((vegdsm2 * vegdsm)) * vegdsm
     svfbuveg = (svf - (1. - svfveg) * (1. - trans))  # % major bug fixed 20141203
 
-    return lon, lat, scale, rows, cols, alt, dsm, svf, svfN, svfS, svfE, svfW, svfveg, svfNveg, \
+    return lon, lat, scale, rows, cols, alt, dsm, dem, svf, svfN, svfS, svfE, svfW, svfveg, svfNveg, \
         svfSveg, svfEveg, svfWveg, svfaveg, svfNaveg, svfSaveg, svfEaveg,\
         svfWaveg, svfalfa, wallheight, wallaspect, amaxvalue, vegdsm, \
         vegdsm2, bush, svfbuveg, gdal_dsm

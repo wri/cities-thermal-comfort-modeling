@@ -1,0 +1,11 @@
+1. How is alt (altitude) used? It current is calculated in solweiglib.prepareData as below. Since the DSM is computed from source-DSM-DEM, then this is derived from building altitudes.
+    alt = np.median(dsm)
+    if alt < 0:
+        alt = 3
+
+ 2. In weather_meanRadiantT, what are the units for the value "2" in this code snippet?
+     buildings[buildings < 2.] = 1.
+    buildings[buildings >= 2.] = 0.
+
+ 3. Do we need to make any adjustments for southern hemisphere?
+

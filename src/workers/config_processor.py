@@ -1,5 +1,6 @@
 from attr.converters import to_bool
-from src.constants import FILENAME_METHOD_YML_CONFIG, VALID_PRIMARY_TYPES, METHOD_TRIGGER_ERA5_DOWNLOAD, FILENAME_ERA5
+from src.constants import FILENAME_METHOD_YML_CONFIG, VALID_PRIMARY_TYPES, METHOD_TRIGGER_ERA5_DOWNLOAD, \
+    FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN
 from src.workers.worker_tools import read_yaml, unpack_quoted_value, any_value_matches_in_dict_list
 
 
@@ -23,7 +24,7 @@ def parse_processing_areas_config(yml_values):
     try:
         processing_area = yml_values[1]
         
-        utc_offset = unpack_quoted_value(processing_area['utc_offset'])
+        seasonal_utc_offset = unpack_quoted_value(processing_area['seasonal_utc_offset'])
         min_lon = unpack_quoted_value(processing_area['min_lon'])
         min_lat = unpack_quoted_value(processing_area['min_lat'])
         max_lon = unpack_quoted_value(processing_area['max_lon'])
@@ -39,24 +40,44 @@ def parse_processing_areas_config(yml_values):
         raise Exception(
             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
 
-    return utc_offset, min_lon, min_lat, max_lon, max_lat, tile_side_meters, tile_buffer_meters, remove_mrt_buffer_for_final_output
+    return (seasonal_utc_offset, min_lon, min_lat, max_lon, max_lat,
+            tile_side_meters, tile_buffer_meters, remove_mrt_buffer_for_final_output)
 
 
-def parse_met_files_config(yml_values):
+def parse_met_files_config(yml_values, new_task_method):
+    import fnmatch
     try:
         met_filenames = yml_values[2].get('MetFiles')
-        has_era_met_download = any_value_matches_in_dict_list(met_filenames, METHOD_TRIGGER_ERA5_DOWNLOAD)
-        # Replace era_download keyword with standard name for era data file
-        if has_era_met_download:
-            for item in met_filenames:
-                if item["filename"] == METHOD_TRIGGER_ERA5_DOWNLOAD:
-                    item["filename"] = FILENAME_ERA5
+
+        result_met_filenames = []
+        has_era_met_download = False
+        era5_date_range = None
+        for item in met_filenames:
+            filename = list(item.values())[0]
+            if fnmatch.fnmatch(filename, METHOD_TRIGGER_ERA5_DOWNLOAD):
+                has_era_met_download = True
+                era5_date_range = _extract_wildcard_match(filename, METHOD_TRIGGER_ERA5_DOWNLOAD)
+                if new_task_method == 'upenn_model':
+                    result_met_filenames.append(FILENAME_ERA5_UPENN)
+                else:
+                    result_met_filenames.append(FILENAME_ERA5_UMEP)
+            else:
+                result_met_filenames.append(filename)
 
     except Exception as e_msg:
         raise Exception(
             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
 
-    return met_filenames, has_era_met_download
+    return result_met_filenames, has_era_met_download, era5_date_range
+
+def _extract_wildcard_match(text, pattern):
+    import re
+    # Escape all regex characters except the wildcard
+    regex_pattern = re.escape(pattern).replace(r'\*', '(.*?)')
+    match = re.match(regex_pattern, text)
+    if match:
+        return match.group(1)  # Group 1 corresponds to the wildcard
+    return None
 
 def parse_primary_filenames_config(yml_values):
     try:
@@ -94,8 +115,8 @@ def parse_primary_filenames_config(yml_values):
         custom_features.extend(this_custom_feature_list)
         custom_primary_filenames.extend(this_custom_primary_filenames)
 
-        albedo_tif_filename, this_cif_feature_list, this_custom_feature_list, this_custom_primary_filenames =\
-            _assign_primary_type_variables('albedo', yml_values)
+        albedo_cloud_masked_tif_filename, this_cif_feature_list, this_custom_feature_list, this_custom_primary_filenames =\
+            _assign_primary_type_variables('albedo_cloud_masked', yml_values)
         cif_features.extend(this_cif_feature_list)
         custom_features.extend(this_custom_feature_list)
         custom_primary_filenames.extend(this_custom_primary_filenames)
@@ -105,7 +126,7 @@ def parse_primary_filenames_config(yml_values):
             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
 
     return (dem_tif_filename, dsm_tif_filename, lulc_tif_filename, open_urban_tif_filename, tree_canopy_tif_filename,
-            albedo_tif_filename, custom_features, custom_primary_filenames, cif_features)
+            albedo_cloud_masked_tif_filename, custom_features, custom_primary_filenames, cif_features)
 
 
 def _assign_primary_type_variables(primary_type_short_name, yml_values):

@@ -1,7 +1,8 @@
 import os
 import subprocess
-
 import numpy as np
+import rasterio
+import hashlib
 
 from src.constants import DATA_DIR, ROOT_DIR
 
@@ -35,25 +36,33 @@ def file_count_in_vrt_directory(non_tiled_city_data):
     number_files = len(lst)
     return number_files
 
-def compare_raster_data(file1, file2):
-    import rasterio
-    with rasterio.open(file1) as src1, rasterio.open(file2) as src2:
-        if src1.shape != src2.shape:
-            return False, None  # Different dimensions
-        if src1.count != src2.count:
-            return False, None  # Different number of bands
-        for band in range(1, src1.count + 1):
-            data1 = src1.read(band)
-            data2 = src2.read(band)
-            if not np.array_equal(data1, data2):
-                diff = (data1 - data2)
+def does_file_signature_match(expected_signature, file):
+    file_signature = get_geotiff_signature(file)
+    return True if file_signature == expected_signature else False
 
-                count_non_zero = np.count_nonzero(diff)
 
-                rounded_arr = np.round(diff, 2)
-                rounded_count_non_zero = np.count_nonzero(rounded_arr)
+def get_geotiff_signature(file_path):
+    with rasterio.open(file_path) as src:
+        # Extract metadata
+        meta = {
+            'crs': src.crs.to_string() if src.crs else None,
+            'transform': tuple(src.transform),
+            'width': src.width,
+            'height': src.height,
+            'count': src.count,
+            'dtype': src.dtypes,
+            'band_checksums': []
+        }
 
-                return False, count_non_zero, rounded_count_non_zero  # Pixel data differs
-    return True, 0, 0
+        # Compute checksum for each band
+        for i in range(1, src.count + 1):
+            band = src.read(i)
+            checksum = hashlib.md5(band.tobytes()).hexdigest()
+            meta['band_checksums'].append(checksum)
 
+        # Optional: checksum of entire raster stack
+        all_data = src.read()
+        meta['full_checksum'] = hashlib.md5(all_data.tobytes()).hexdigest()
+
+    return meta
 

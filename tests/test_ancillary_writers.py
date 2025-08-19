@@ -1,5 +1,4 @@
 from pytest_check import equal # https://github.com/okken/pytest-check
-
 from src.workers.worker_tools import remove_folder
 from tests.testing_tools import SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, file_count_in_vrt_directory
 from src.worker_manager.ancillary_files import write_qgis_files

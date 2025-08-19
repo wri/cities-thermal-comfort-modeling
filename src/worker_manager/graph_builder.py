@@ -8,7 +8,7 @@ from src.worker_manager.tools import construct_polygon_from_bounds, coordinates_
 
 def get_aoi_from_config(non_tiled_city_data):
     # AOI metrics
-    utc_offset = non_tiled_city_data.utc_offset
+    seasonal_utc_offset = non_tiled_city_data.seasonal_utc_offset
     min_lon = non_tiled_city_data.min_lon
     min_lat = non_tiled_city_data.min_lat
     max_lon = non_tiled_city_data.max_lon
@@ -20,7 +20,7 @@ def get_aoi_from_config(non_tiled_city_data):
 
     crs = WGS_CRS
 
-    return aoi_boundary, tile_side_meters, tile_buffer_meters, utc_offset, crs
+    return aoi_boundary, tile_side_meters, tile_buffer_meters, seasonal_utc_offset, crs
 
 
 def get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters, in_crs):

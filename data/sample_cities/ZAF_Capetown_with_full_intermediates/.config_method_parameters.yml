@@ -4,12 +4,14 @@
   version: 1
   description: Scenario that demonstrates blah.
   author: author@wri.org
-# Processing Area of Interest used for tile construction and ERA5-data download. If any custom files
-# are specified above, then the system will not construct a new tile grid and will instead use the existing one.
+# Processing Area of Interest used for tile construction and ERA5-data download. If any custom files are specified in
+# CustomTiffFilenames section, then the system will not construct a new tile grid and will instead use the existing one.
+# Specify the seasonal_utc_offset including DST offset for UPenn model if AOI follows this practice for the hottest season.
+# Note: Use ST offset for UMEP and DST for UPenn when appropriate. Useful site: https://www.timeanddate.com/
 # Specify None for tile_side_meters to not subdivide the AOI. Recommended value for tile_buffer_meters is 600.
 # Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
-  utc_offset: 2
+  seasonal_utc_offset: 2 # year-round
   min_lon: 18.41294
   min_lat: -33.92100
   max_lon: 18.41401
@@ -17,29 +19,30 @@
   tile_side_meters: None
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: True
-# Names of meteorological files used by SOLWEIG method in "UMEP for Processing" plugin.
-# Specify custom files or "<download_era5>" method to automatically download ERA5 data into a file named met_era5_hottest_days.txt
+# Names of custom meteorological file(s) or ERA5 data range. Maximum of two filenames can be specified.
+# For custom files, specify the filename with either .csv extension for UPenn model or .txt extension for UMEP model
+# For era5 download, specify either "ERA5:<prior_5_years>" or two dates as "ERA5:<2023-01-01,2023-12-31>"
 - MetFiles:
   - filename: met_20jan2022.txt
-  - filename: met_22jan2022.txt
+  - filename: ERA5:<2023-01-01,2023-12-31>
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
-# All four file mappings must be specified here. Specify None for filename where custom file is not available for processing.
-# Recommended filenames: dem.tif, dsm_ground_build.tif, lulc.tif, open_urban.tif, tree_canopy.tif, albedo.tif
-# Auto-generated CIF filenames: cif_dem.tif, cif_dsm_ground_build.tif, cif_lulc.tif, cif_open_urban.tif, cif_tree_canopy.tif, cif_albedo.tif
+# All file mappings must be specified here. Specify None for filename where custom file is not available for processing.
+# Recommended filenames: albedo_cloud_masked.tif, dem.tif, dsm_ground_build.tif, lulc.tif, open_urban.tif, tree_canopy.tif
+# Auto-generated CIF filenames: cif_albedo_cloud_masked.tif, cif_dem.tif, cif_dsm_ground_build.tif, cif_lulc.tif, cif_open_urban.tif, cif_tree_canopy.tif
 - CustomTiffFilenames:
+  albedo_cloud_masked_tif_filename: albedo_cloud_masked.tif
   dem_tif_filename: dem.tif
   dsm_tif_filename: dsm_ground_build.tif
   lulc_tif_filename: lulc.tif
   open_urban_tif_filename: open_urban.tif
   tree_canopy_tif_filename: tree_canopy.tif
-  albedo_tif_filename: albedo.tif
 - PreparedIntermediateFilenames:
   skyview_factor_filename: svfs.zip
   wall_aspect_filename: wallaspect.tif
   wall_height_filename: wallheight.tif
 # Configurable attribute values for method processing
-# Valid methods are [download_only, umep_solweig]
-# sampling_local_hours specifies hours for <download_era5> method.
+# Valid methods are [download_only, umep_solweig, upenn_model]
+# sampling_local_hours specifies hours for ERA5 download.
 - MethodAttributes:
   method: umep_solweig
   wall_height_aspect:

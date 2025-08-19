@@ -3,7 +3,8 @@ import shutil
 import pandas as pd
 
 from pathlib import Path
-from src.constants import DATA_DIR, FILENAME_METHOD_YML_CONFIG, FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD
+from src.constants import DATA_DIR, FILENAME_METHOD_YML_CONFIG, FILENAME_ERA5_UMEP, METHOD_TRIGGER_ERA5_DOWNLOAD, \
+    FILENAME_ERA5_UPENN
 from src.worker_manager.reporter import _find_files_with_name
 from src.worker_manager.tools import delete_files_with_extension
 from src.workers.worker_dao import write_raster_vrt_gdal, write_raster_vrt_wri
@@ -24,7 +25,7 @@ def write_qgis_files(city_data, crs_str):
     lulc_file_name = city_data.lulc_tif_filename
     open_urban_file_name = city_data.open_urban_tif_filename
     tree_canopy_file_name = city_data.tree_canopy_tif_filename
-    albedo_file_name = city_data.albedo_tif_filename
+    albedo_cloud_masked_file_name = city_data.albedo_cloud_masked_tif_filename
 
     target_raster_files = []
     target_bucket = Path(target_folder).stem
@@ -38,8 +39,8 @@ def write_qgis_files(city_data, crs_str):
     target_raster_files += open_urban
     tree_canopy = _build_file_dict(target_bucket, 'base','tree_canopy', 0, [tree_canopy_file_name])
     target_raster_files += tree_canopy
-    albedo = _build_file_dict(target_bucket, 'base','albedo', 0, [albedo_file_name])
-    target_raster_files += albedo
+    albedo_cloud_masked = _build_file_dict(target_bucket, 'base','albedo_cloud_masked', 0, [albedo_cloud_masked_file_name])
+    target_raster_files += albedo_cloud_masked
     _write_raster_vrt_file_for_folder(target_folder, target_raster_files, target_qgis_data_folder)
 
     # Build VRTs for preprocessed results
@@ -63,11 +64,11 @@ def write_qgis_files(city_data, crs_str):
     # Build VRTs for tcm results
     met_filenames = []
     set_id = 0
-    for met_file in city_data.met_filenames:
-        if met_file.get('filename') == METHOD_TRIGGER_ERA5_DOWNLOAD:
-            met_file_name = FILENAME_ERA5
+    for met_filename in city_data.met_filenames:
+        if met_filename == METHOD_TRIGGER_ERA5_DOWNLOAD:
+            met_file_name = FILENAME_ERA5_UPENN if city_data.new_task_method == 'upenn_model' else FILENAME_ERA5_UMEP
         else:
-            met_file_name = met_file.get('filename')
+            met_file_name = met_filename
 
         met_folder_name = Path(met_file_name).stem
         target_tcm_folder = str(os.path.join(city_data.target_tcm_results_path, met_folder_name))
@@ -261,7 +262,7 @@ def _update_custom_yml_parameters(non_tiled_city_data, updated_aoi):
     if has_era_met_download:
         for item in met_filenames:
             if item["filename"] == METHOD_TRIGGER_ERA5_DOWNLOAD:
-                item["filename"] = FILENAME_ERA5
+                item["filename"] = FILENAME_ERA5_UPENN if non_tiled_city_data.new_task_method == 'upenn_model' else FILENAME_ERA5_UMEP
 
     custom_primary_filenames = list_doc[3]
     custom_primary_filenames['dem_tif_filename'] = non_tiled_city_data.dem_tif_filename
@@ -269,7 +270,7 @@ def _update_custom_yml_parameters(non_tiled_city_data, updated_aoi):
     custom_primary_filenames['lulc_tif_filename'] = non_tiled_city_data.lulc_tif_filename
     custom_primary_filenames['open_urban_tif_filename'] = non_tiled_city_data.open_urban_tif_filename
     custom_primary_filenames['tree_canopy_tif_filename'] = non_tiled_city_data.tree_canopy_tif_filename
-    custom_primary_filenames['albedo_tif_filename'] = non_tiled_city_data.albedo_tif_filename
+    custom_primary_filenames['albedo_cloud_masked_tif_filename'] = non_tiled_city_data.albedo_cloud_masked_tif_filename
 
     custom_intermediate_filenames = list_doc[4]
     custom_intermediate_filenames['skyview_factor_filename'] = non_tiled_city_data.skyview_factor_filename

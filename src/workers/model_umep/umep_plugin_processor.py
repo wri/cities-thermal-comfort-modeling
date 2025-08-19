@@ -4,13 +4,9 @@ import time
 import shutil
 import warnings
 import sys
-import processing
-from processing.core.Processing import Processing
-from processing_umep.processing_umep import ProcessingUMEPProvider
 
 from pathlib import Path
 from datetime import datetime
-from qgis.core import QgsApplication
 
 from src.constants import FILENAME_SVFS_ZIP
 from src.workers.worker_tools import remove_file, remove_folder, compute_time_diff_mins, create_folder, get_configurations
@@ -25,7 +21,7 @@ RETRY_PAUSE_TIME_SEC = 10
 
 
 def run_umep_plugin(step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path,
-                    target_base_path, met_filename, utc_offset):
+                    target_base_path, met_filename, seasonal_utc_offset):
     start_time = datetime.now()
 
     tiled_city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
@@ -37,6 +33,9 @@ def run_umep_plugin(step_index, step_method, folder_name_city_data, folder_name_
 
     # Initiate QGIS and UMEP processing
     try:
+        import processing
+        from processing.core.Processing import Processing
+        from processing_umep.processing_umep import ProcessingUMEPProvider
         qgis_app = qgis_app_init()
         umep_provider = ProcessingUMEPProvider()
         qgis_app.processingRegistry().addProvider(umep_provider)
@@ -52,7 +51,7 @@ def run_umep_plugin(step_index, step_method, folder_name_city_data, folder_name_
     with (tempfile.TemporaryDirectory() as tmpdirname):
         # Get the UMEP processing parameters and prepare for the method
         method_params, umep_method_title, keepers = _prepare_method_execution(step_method, tiled_city_data, tmpdirname,
-                                                                             metadata_logger, met_filename, utc_offset)
+                                                                              metadata_logger, met_filename, seasonal_utc_offset)
 
         while retry_count < MAX_RETRY_COUNT and return_code != 0:
             try:
@@ -104,7 +103,7 @@ def _write_metadata(method, met_filename, input_params, exclusion_keys, metadata
         if key not in exclusion_keys:
             log_model_metadata_message(method, met_filename, key, value, metadata_logger)
 
-def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logger, met_filename=None, utc_offset=None):
+def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logger, met_filename=None, seasonal_utc_offset=None):
     keepers = {}
 
     if method == 'wall_height_aspect':
@@ -180,7 +179,7 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logg
             "CYL": True,
             "INPUTMET": target_met_file_path,
             "ONLYGLOBAL": True,
-            "UTC": utc_offset,
+            "UTC": seasonal_utc_offset,
             "POI_FILE": None,
             "POI_FIELD": '',
             "AGE": 35,
@@ -224,6 +223,7 @@ def qgis_app_init():
     qgis_home_path, qgis_plugin_path = get_configurations()
     sys.path.append(qgis_plugin_path)
 
+    from qgis.core import QgsApplication
     QgsApplication.setPrefixPath(qgis_home_path, True)
     qgis_app = QgsApplication([], False)
     qgis_app.initQgis()

@@ -5,7 +5,7 @@ import rioxarray
 
 from pathlib import Path
 
-from src.constants import FILENAME_ERA5, METHOD_TRIGGER_ERA5_DOWNLOAD
+from src.constants import FILENAME_ERA5_UMEP, METHOD_TRIGGER_ERA5_DOWNLOAD, FILENAME_ERA5_UPENN
 from src.workers.city_data import CityData
 from src.workers.model_upenn.upenn_module_processor import run_upenn_module
 from src.workers.worker_tools import create_folder, unpack_quoted_value, save_tiff_file, remove_file, \
@@ -15,14 +15,14 @@ from src.workers.worker_tools import create_folder, unpack_quoted_value, save_ti
 PROCESSING_PAUSE_TIME_SEC = 10
 
 def process_tile(task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
-                 cif_primary_features, ctcm_intermediate_features, tile_boundary, crs, tile_resolution, utc_offset):
+                 cif_primary_features, ctcm_intermediate_features, tile_boundary, crs, tile_resolution, seasonal_utc_offset):
     tiled_city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
     cif_primary_features = unpack_quoted_value(cif_primary_features)
     custom_primary_features = tiled_city_data.custom_primary_feature_list
     target_tcm_results_path = tiled_city_data.target_tcm_results_path
     ctcm_intermediate_features = unpack_quoted_value(ctcm_intermediate_features)
     tile_resolution = unpack_quoted_value(tile_resolution)
-    utc_offset = unpack_quoted_value(utc_offset)
+    seasonal_utc_offset = unpack_quoted_value(seasonal_utc_offset)
     met_filenames = tiled_city_data.met_filenames
 
     def _execute_retrieve_cif_data(source_path, target_path, folder_city, folder_tile, cif_features,
@@ -36,11 +36,11 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
         from src.workers.model_umep.umep_plugin_processor import run_umep_plugin
 
         out_list = []
-        for met_file in met_names:
-            if met_file.get('filename') == METHOD_TRIGGER_ERA5_DOWNLOAD:
-                met_filename = FILENAME_ERA5
+        for met_filename in met_names:
+            if met_filename == METHOD_TRIGGER_ERA5_DOWNLOAD:
+                met_filename = FILENAME_ERA5_UPENN if task_method == 'upenn_model' else FILENAME_ERA5_UMEP
             else:
-                met_filename = met_file.get('filename')
+                met_filename = met_filename
 
             if task_method == 'umep_solweig':
                 stdout = run_umep_plugin(step_index, task_method, folder_city, folder_tile, source_path, target_path,
@@ -121,12 +121,12 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
         if task_method == 'umep_solweig':
             return_vals = _execute_umep_solweig_plugin_steps(city_folder_name, tile_folder_name,
                                                              source_base_path, target_base_path, met_filenames,
-                                                             ctcm_intermediate_features, utc_offset)
+                                                             ctcm_intermediate_features, seasonal_utc_offset)
             return_stdouts.extend(return_vals)
         elif task_method == 'upenn_model':
             return_vals = _execute_upenn_model_steps(city_folder_name, tile_folder_name,
-                                                             source_base_path, target_base_path, met_filenames,
-                                                             ctcm_intermediate_features, utc_offset)
+                                                     source_base_path, target_base_path, met_filenames,
+                                                     ctcm_intermediate_features, seasonal_utc_offset)
             return_stdouts.extend(return_vals)
         elif task_method in 'PROCESSING_METHODS':
             from src.workers.model_umep.umep_plugin_processor import run_umep_plugin
@@ -170,9 +170,9 @@ def _trim_mrt_buffer(target_tcm_results_path, tile_folder_name, met_filenames, t
     bounds = (west, south, east, north)
     polygon = gpd.GeoSeries([box(*bounds)])
 
-    for met_file_folder in met_filenames:
-        met_folder = Path(met_file_folder['filename']).stem
-        tile_path = str(os.path.join(target_tcm_results_path, met_folder, tile_folder_name))
+    for met_filename in met_filenames:
+        file_stem = Path(met_filename).stem
+        tile_path = str(os.path.join(target_tcm_results_path, file_stem, tile_folder_name))
         for file in os.listdir(tile_path):
             if file.endswith('.tif'):
                 file_path = os.path.join(tile_path, file)
@@ -196,7 +196,9 @@ def _trim_mrt_buffer(target_tcm_results_path, tile_folder_name, met_filenames, t
 def _transfer_custom_files(tiled_city_data, custom_feature_list):
     source_paths = []
     for feature in custom_feature_list:
-        if feature == 'dem':
+        if feature == 'albedo_cloud_masked':
+            source_paths.append((tiled_city_data.source_albedo_cloud_masked, tiled_city_data.target_albedo_cloud_masked_path, 'file'))
+        elif feature == 'dem':
             source_paths.append((tiled_city_data.source_dem_path, tiled_city_data.target_dem_path, 'file'))
         elif feature == 'dsm':
             source_paths.append((tiled_city_data.source_dsm_path, tiled_city_data.target_dsm_path, 'file'))
@@ -206,8 +208,6 @@ def _transfer_custom_files(tiled_city_data, custom_feature_list):
             source_paths.append((tiled_city_data.source_open_urban_path, tiled_city_data.target_open_urban_path, 'file'))
         elif feature == 'tree_canopy':
             source_paths.append((tiled_city_data.source_tree_canopy_path, tiled_city_data.target_tree_canopy_path, 'file'))
-        elif feature == 'albedo':
-            source_paths.append((tiled_city_data.source_albedo_path, tiled_city_data.target_albedo_path, 'file'))
         elif feature == 'wallaspect':
             source_paths.append((tiled_city_data.source_wallaspect_path, tiled_city_data.target_wallaspect_path, 'file'))
         elif feature == 'wallheight':
@@ -233,7 +233,7 @@ def ensure_y_dimension_direction(city_data):
     _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_lulc_path)
     _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_open_urban_path)
     _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_tree_canopy_path)
-    _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_albedo_path)
+    _enforce_tiff_upper_left_origin(tile_data_path, city_data.target_albedo_cloud_masked_path)
 
 
 def _enforce_tiff_upper_left_origin(tile_data_path, file_path):
@@ -261,13 +261,13 @@ if __name__ == "__main__":
     parser.add_argument('--tile_boundary', metavar='str', required=True, help='geographic boundary of tile')
     parser.add_argument('--crs', metavar='str', required=True, help='coordinate reference system')
     parser.add_argument('--tile_resolution', metavar='str', required=True, help='resolution of tile in m.')
-    parser.add_argument('--utc_offset', metavar='str', required=True, help='hour offset from utc')
+    parser.add_argument('--seasonal_utc_offset', metavar='str', required=True, help='seasonal hour offset from utc')
 
     args = parser.parse_args()
 
     return_stdout =process_tile(args.task_method, args.source_base_path, args.target_base_path,
                                 args.city_folder_name, args.tile_folder_name,
                                 args.cif_primary_features, args.ctcm_intermediate_features,
-                                args.tile_boundary, args.crs, args.tile_resolution, args.utc_offset)
+                                args.tile_boundary, args.crs, args.tile_resolution, args.seasonal_utc_offset)
 
     print(return_stdout)

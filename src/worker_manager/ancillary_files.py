@@ -281,7 +281,7 @@ def _update_custom_yml_parameters(non_tiled_city_data, updated_aoi):
     return list_doc
 
 
-def _add_tile_name_column(tile_grid):
+def add_tile_name_column(tile_grid):
     tile_grid['tile_name'] = (tile_grid.index
                               .to_series()
                               .apply(lambda x: f'tile_{str(x + 1).zfill(TILE_NUMBER_PADCOUNT)}.tif'))
@@ -293,7 +293,7 @@ def write_tile_grid(tile_grid, source_crs, target_qgis_data_path, filename):
 
     if isinstance(tile_grid,dict):
         modified_tile_grid = pd.DataFrame(columns=['id', 'geometry'])
-        modified_tile_grid = _add_tile_name_column(modified_tile_grid)
+        modified_tile_grid = add_tile_name_column(modified_tile_grid)
         for key, value in tile_grid.items():
             poly = wkt.loads(str(value[0]))
             modified_tile_grid.loc[len(modified_tile_grid)] = [key, poly]
@@ -301,12 +301,12 @@ def write_tile_grid(tile_grid, source_crs, target_qgis_data_path, filename):
         # TODO figure out how to retain the index
         if 'immutable_fishnet_geometry' in tile_grid.columns:
             modified_tile_grid = tile_grid.drop(columns='immutable_fishnet_geometry', axis=1)
-            modified_tile_grid = _add_tile_name_column(modified_tile_grid)
+            modified_tile_grid = add_tile_name_column(modified_tile_grid)
         else:
             modified_tile_grid = tile_grid
     elif isinstance(tile_grid, pd.DataFrame):
         modified_tile_grid = pd.DataFrame(columns=['id', 'geometry'])
-        modified_tile_grid = _add_tile_name_column(modified_tile_grid)
+        modified_tile_grid = add_tile_name_column(modified_tile_grid)
         for index, value in tile_grid.iterrows():
             tile_id = value['tile_name']
             geom = value['boundary']

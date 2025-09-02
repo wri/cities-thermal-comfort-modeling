@@ -10,6 +10,7 @@ from src.worker_manager.tools import delete_files_with_extension
 from src.workers.worker_dao import write_raster_vrt_gdal, write_raster_vrt_wri
 from src.workers.worker_tools import create_folder, write_commented_yaml, read_commented_yaml, remove_file
 
+TILE_NUMBER_PADCOUNT = 4
 
 def write_qgis_files(city_data, crs_str):
     from src.worker_manager.reporter import find_files_with_substring_in_name
@@ -280,12 +281,19 @@ def _update_custom_yml_parameters(non_tiled_city_data, updated_aoi):
     return list_doc
 
 
+def add_tile_name_column(tile_grid):
+    tile_grid['tile_name'] = (tile_grid.index
+                              .to_series()
+                              .apply(lambda x: f'tile_{str(x + 1).zfill(TILE_NUMBER_PADCOUNT)}.tif'))
+    return tile_grid
+
 def write_tile_grid(tile_grid, source_crs, target_qgis_data_path, filename):
     from shapely import wkt
     import geopandas as gpd
 
     if isinstance(tile_grid,dict):
         modified_tile_grid = pd.DataFrame(columns=['id', 'geometry'])
+        modified_tile_grid = add_tile_name_column(modified_tile_grid)
         for key, value in tile_grid.items():
             poly = wkt.loads(str(value[0]))
             modified_tile_grid.loc[len(modified_tile_grid)] = [key, poly]
@@ -293,10 +301,12 @@ def write_tile_grid(tile_grid, source_crs, target_qgis_data_path, filename):
         # TODO figure out how to retain the index
         if 'immutable_fishnet_geometry' in tile_grid.columns:
             modified_tile_grid = tile_grid.drop(columns='immutable_fishnet_geometry', axis=1)
+            modified_tile_grid = add_tile_name_column(modified_tile_grid)
         else:
             modified_tile_grid = tile_grid
     elif isinstance(tile_grid, pd.DataFrame):
         modified_tile_grid = pd.DataFrame(columns=['id', 'geometry'])
+        modified_tile_grid = add_tile_name_column(modified_tile_grid)
         for index, value in tile_grid.iterrows():
             tile_id = value['tile_name']
             geom = value['boundary']

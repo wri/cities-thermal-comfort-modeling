@@ -4,6 +4,7 @@ from city_metrix.metrix_model import GeoExtent, create_fishnet_grid
 from city_metrix.metrix_tools import get_utm_zone_from_latlon_point, reproject_units
 from shapely.geometry.point import Point
 from src.constants import WGS_CRS
+from src.worker_manager.ancillary_files import add_tile_name_column
 from src.worker_manager.tools import construct_polygon_from_bounds, coordinates_to_bbox
 
 def get_aoi_from_config(non_tiled_city_data):
@@ -67,4 +68,6 @@ def get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters, in_crs):
         tile_gpd = create_fishnet_grid(bbox, tile_side_meters, tile_buffer_meters, length_units="meters",
                                        output_as=ProjectionType.UTM)
 
+    tile_gpd = add_tile_name_column(tile_gpd)
+    unbuffered_tile_gpd = add_tile_name_column(unbuffered_tile_gpd)
     return tile_gpd, unbuffered_tile_gpd

@@ -97,23 +97,23 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
             invalids.append((msg, True))
 
         if cif_features is not None and 'dsm' not in cif_features and verify_path(prior_dsm) is False:
-            msg = f'Specified custom  source file: {prior_dsm} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
+            msg = f'Specified custom source file: {prior_dsm} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
             invalids.append((msg, True))
 
         if cif_features is not None and 'lulc' not in cif_features and verify_path(prior_lulc) is False:
-            msg = f'Specified custom  source file: {prior_lulc} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
+            msg = f'Specified custom source file: {prior_lulc} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
             invalids.append((msg, True))
 
         if cif_features is not None and 'open_urban' not in cif_features and verify_path(prior_open_urban) is False:
-            msg = f'Specified custom  source file: {prior_open_urban} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
+            msg = f'Specified custom source file: {prior_open_urban} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
             invalids.append((msg, True))
 
         if cif_features is not None and 'tree_canopy' not in cif_features and verify_path(prior_tree_canopy) is False:
-            msg = f'Specified custom  source file: {prior_tree_canopy} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
+            msg = f'Specified custom source file: {prior_tree_canopy} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
             invalids.append((msg, True))
 
         if cif_features is not None and 'albedo_cloud_masked' not in cif_features and verify_path(prior_albedo_cloud_masked) is False:
-            msg = f'Specified custom  source file: {prior_albedo_cloud_masked} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
+            msg = f'Specified custom source file: {prior_albedo_cloud_masked} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
             invalids.append((msg, True))
 
         if task_method in PROCESSING_METHODS:

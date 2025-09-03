@@ -14,10 +14,10 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
    1. If you will be processing your own "custom" source TIFF files, then follow below steps, skip this step if you instead want the system to automatically retrieve the base TIFF files.
       1. Copy TIFF files for your city into subfoqlders under .\primary_data\raster_files underneath your city folder.
          * **Note**: You can provide up to four source files for DSM, DEM, LULC, OpenUrban, and TreeCanopy, but you can also have a partial set of these files.
-         1. The subfolders must be named 'tile_001', 'tile_002', and so on.
+         1. The subfolders must be named 'tile_00001', 'tile_00002', and so on.
             1. See the ZAF_Capetown_small_tile\primary_data\raster_files folder for an example setup.
             1. **Tip**: You can use the "aws s3" command to download files from S3.
-               * For example, to download a zip file for a sample tile, run "aws.exe s3 cp s3://wri-cities-heat/demo/kenn_transfer/tile_001.zip ." 
+               * For example, to download a zip file for a sample tile, run "aws.exe s3 cp s3://wri-cities-heat/demo/kenn_transfer/tile_00001.zip ." 
    1. If you are providing your own meteorological files, copy them into the .\primary_data\met_files folder.
       * **Note**: Since you may currently not have meteorological data in the correct format for your city, copy over a file from the ZAF_Capetown_small_tile\primary_data\met_files folder.
 

@@ -11,7 +11,7 @@
     </Metadata>
     <ColorInterp>Gray</ColorInterp>
     <SimpleSource resampling="nearest">
-      <SourceFilename relativeToVRT="0">C:\Users\kenn.cartier\Documents\github\cities-thermal-comfort-modeling\sample_cities\ZAF_Capetown_small_tile\results_data\preprocessed_data\tile_001\wallheight.tif</SourceFilename>
+      <SourceFilename relativeToVRT="0">C:\Users\kenn.cartier\Documents\github\cities-thermal-comfort-modeling\sample_cities\ZAF_Capetown_small_tile\results_data\preprocessed_data\tile_00001\wallheight.tif</SourceFilename>
       <SourceBand>1</SourceBand>
       <SourceProperties RasterXSize="32" RasterYSize="38" DataType="Float32" BlockXSize="32" BlockYSize="38" />
       <SrcRect xOff="0" yOff="0" xSize="32" ySize="38" />

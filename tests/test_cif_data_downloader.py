@@ -14,7 +14,7 @@ max_lat= 45.521
 tile_boundary = str(shapely.box(min_lon, min_lat, max_lon, max_lat))
 
 folder_name_city_data = 'USA_Portland_cif_umep'
-folder_name_tile_data = 'tile_099'
+folder_name_tile_data = 'tile_00099'
 city_data = CityData(folder_name_city_data, folder_name_tile_data, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 tile_data_path = city_data.target_primary_tile_data_path
 

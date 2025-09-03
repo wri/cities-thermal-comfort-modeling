@@ -4,13 +4,12 @@ import pandas as pd
 
 from pathlib import Path
 from src.constants import DATA_DIR, FILENAME_METHOD_YML_CONFIG, FILENAME_ERA5_UMEP, METHOD_TRIGGER_ERA5_DOWNLOAD, \
-    FILENAME_ERA5_UPENN
+    FILENAME_ERA5_UPENN, TILE_NUMBER_PADCOUNT
 from src.worker_manager.reporter import _find_files_with_name
 from src.worker_manager.tools import delete_files_with_extension
 from src.workers.worker_dao import write_raster_vrt_gdal, write_raster_vrt_wri
 from src.workers.worker_tools import create_folder, write_commented_yaml, read_commented_yaml, remove_file
 
-TILE_NUMBER_PADCOUNT = 4
 
 def write_qgis_files(city_data, crs_str):
     from src.worker_manager.reporter import find_files_with_substring_in_name
@@ -47,7 +46,7 @@ def write_qgis_files(city_data, crs_str):
     # Build VRTs for preprocessed results
     preprocessed_files = []
     target_preproc_folder = city_data.target_intermediate_data_path
-    target_preproc_first_tile_folder = os.path.join(target_preproc_folder, 'tile_001')
+    target_preproc_first_tile_folder = os.path.join(target_preproc_folder, 'tile_00001')
     if os.path.exists(target_preproc_first_tile_folder):
         wall_aspect_file_stem = Path(city_data.wall_aspect_filename).stem
         wall_aspect_file_names = find_files_with_substring_in_name(target_preproc_first_tile_folder, wall_aspect_file_stem, '.tif')
@@ -73,7 +72,7 @@ def write_qgis_files(city_data, crs_str):
 
         met_folder_name = Path(met_file_name).stem
         target_tcm_folder = str(os.path.join(city_data.target_tcm_results_path, met_folder_name))
-        target_tcm_first_tile_folder = os.path.join(target_tcm_folder, 'tile_001')
+        target_tcm_first_tile_folder = os.path.join(target_tcm_folder, 'tile_00001')
 
         if os.path.exists(target_tcm_first_tile_folder):
             shadow_file_names = find_files_with_substring_in_name(target_tcm_first_tile_folder, 'Shadow_', '.tif')
@@ -284,7 +283,7 @@ def _update_custom_yml_parameters(non_tiled_city_data, updated_aoi):
 def add_tile_name_column(tile_grid):
     tile_grid['tile_name'] = (tile_grid.index
                               .to_series()
-                              .apply(lambda x: f'tile_{str(x + 1).zfill(TILE_NUMBER_PADCOUNT)}.tif'))
+                              .apply(lambda x: f'tile_{str(x + 1).zfill(TILE_NUMBER_PADCOUNT)}'))
     return tile_grid
 
 def write_tile_grid(tile_grid, source_crs, target_qgis_data_path, filename):
@@ -293,7 +292,6 @@ def write_tile_grid(tile_grid, source_crs, target_qgis_data_path, filename):
 
     if isinstance(tile_grid,dict):
         modified_tile_grid = pd.DataFrame(columns=['id', 'geometry'])
-        modified_tile_grid = add_tile_name_column(modified_tile_grid)
         for key, value in tile_grid.items():
             poly = wkt.loads(str(value[0]))
             modified_tile_grid.loc[len(modified_tile_grid)] = [key, poly]
@@ -301,12 +299,10 @@ def write_tile_grid(tile_grid, source_crs, target_qgis_data_path, filename):
         # TODO figure out how to retain the index
         if 'immutable_fishnet_geometry' in tile_grid.columns:
             modified_tile_grid = tile_grid.drop(columns='immutable_fishnet_geometry', axis=1)
-            modified_tile_grid = add_tile_name_column(modified_tile_grid)
         else:
             modified_tile_grid = tile_grid
     elif isinstance(tile_grid, pd.DataFrame):
         modified_tile_grid = pd.DataFrame(columns=['id', 'geometry'])
-        modified_tile_grid = add_tile_name_column(modified_tile_grid)
         for index, value in tile_grid.iterrows():
             tile_id = value['tile_name']
             geom = value['boundary']
@@ -314,6 +310,8 @@ def write_tile_grid(tile_grid, source_crs, target_qgis_data_path, filename):
             modified_tile_grid.loc[len(modified_tile_grid)] = [tile_id, poly]
     else:
         raise Exception("inconvertible")
+
+    modified_tile_grid = add_tile_name_column(modified_tile_grid)
 
     # projected_gdf = gpd.GeoDataFrame(modified_tile_grid, crs=source_crs)
 

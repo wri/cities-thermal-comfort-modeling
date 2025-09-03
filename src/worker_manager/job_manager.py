@@ -10,7 +10,7 @@ import shapely
 import dask
 from city_metrix.metrix_tools import is_date
 
-from src.constants import SRC_DIR, FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN, PRIOR_5_YEAR_KEYWORD
+from src.constants import SRC_DIR, FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN, PRIOR_5_YEAR_KEYWORD, TILE_NUMBER_PADCOUNT
 from src.data_validation.manager import print_invalids
 from src.data_validation.meteorological_data_validator import evaluate_meteorological_umep_data
 from src.worker_manager.ancillary_files import write_tile_grid, write_qgis_files
@@ -119,7 +119,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
             cell_bounds = cell.geometry.bounds
             tile_boundary = str(shapely.box(cell_bounds[0], cell_bounds[1], cell_bounds[2], cell_bounds[3]))
 
-            tile_id = str(tile_index + 1).zfill(3)
+            tile_id = str(tile_index + 1).zfill(TILE_NUMBER_PADCOUNT)
             tile_folder_name = f'tile_{tile_id}'
 
             proc_array = _construct_tile_proc_array(task_method, source_base_path, target_base_path,

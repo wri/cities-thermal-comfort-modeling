@@ -58,9 +58,20 @@ def evaluate_aoi_primary_configs(non_tiled_city_data):
         msg = f'Min latitude must be less than max latitude in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
         invalids.append((msg, True))
 
-    # TODO improve this evaluation
-    if abs(aoi_max_lon - aoi_min_lon) > 0.3 or abs(aoi_max_lon - aoi_min_lon) > 0.3:
-        msg = f'Specified AOI must be less than 30km on a side in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+    # Specifying an AOI side limit. It's reasonable that the limit should roughly fall within one UTM zone to minimize
+    # projection distortion. UTM zone size is ~6degrees*111km/degree or ~700km at the equator, so 500km seems a
+    # reasonable compromise value.
+    maximum_side_length_m = 500000 # 500 km
+    center_lon = (aoi_min_lon + aoi_max_lon)/2
+    lat_offset_m = get_haversine_distance(center_lon, aoi_min_lat, center_lon, aoi_max_lat)
+    if lat_offset_m > maximum_side_length_m:
+        msg = f'Specified AOI must have latitude offset of <= 500km as specified in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+        invalids.append((msg, True))
+
+    center_lat = (aoi_min_lat + aoi_max_lat)/2
+    lon_offset_m = get_haversine_distance(aoi_min_lon, center_lat, aoi_max_lon, center_lat)
+    if lon_offset_m > maximum_side_length_m:
+        msg = f'Specified AOI must have longitude offset of <= 500km as specified in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
         invalids.append((msg, True))
 
     return invalids

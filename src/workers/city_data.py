@@ -1,4 +1,7 @@
 import os
+
+from PyQt5.QtCore import center
+
 from src.constants import FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_INTERMEDIATE_DATA, FOLDER_NAME_PRIMARY_MET_FILES, \
     FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_UMEP_TCM_RESULTS
 from src.workers.config_processor import *
@@ -6,7 +9,7 @@ from src.workers.config_processor import *
 
 class CityData:
 
-    def __new__(cls, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path):
+    def __new__(cls, city_geoextent, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path):
         obj = super().__new__(cls)
 
         obj.folder_name_city_data = folder_name_city_data
@@ -21,13 +24,20 @@ class CityData:
         obj.city_method_config_path = os.path.join(obj.source_city_path, FILENAME_METHOD_YML_CONFIG)
 
         # parse config file
-        yml_values = read_yaml(obj.city_method_config_path)
+        yml_values = get_yml_content(source_base_path, folder_name_city_data)
         obj.scenario_short_title, obj.scenario_version, obj.scenario_description, obj.scenario_author = (
             parse_scenario_config(yml_values))
 
-        (obj.seasonal_utc_offset, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat,
+        (obj.seasonal_utc_offset, obj.city_id, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat,
          obj.tile_side_meters, obj.tile_buffer_meters, obj.remove_mrt_buffer_for_final_output) = \
             parse_processing_areas_config(yml_values)
+
+        if obj.min_lon is None and city_geoextent is not None:
+            geo_bbox = city_geoextent.as_geographic_bbox()
+            obj.min_lon = geo_bbox.min_x
+            obj.min_lat = geo_bbox.min_y
+            obj.max_lon = geo_bbox.max_x
+            obj.max_lat = geo_bbox.max_y
 
         (obj.dem_tif_filename, obj.dsm_tif_filename, obj.lulc_tif_filename, obj.open_urban_tif_filename, obj.tree_canopy_tif_filename,
          obj.albedo_cloud_masked_tif_filename, obj.custom_primary_feature_list, obj.custom_primary_filenames,
@@ -42,7 +52,11 @@ class CityData:
          obj.custom_intermediate_list, obj.ctcm_intermediate_list) = parse_intermediate_filenames_config(yml_values, obj.new_task_method)
 
         # set leave start/end for latitude
-        obj.leaf_start, obj.leaf_end =_get_latitude_based_leaf_start_end(obj.min_lat, obj.max_lat,
+        if obj.min_lat is not None:
+            center_lat = (obj.min_lat + obj.max_lat)/2
+        else:
+            center_lat = 45 # dummy value to avoid failure at this point
+        obj.leaf_start, obj.leaf_end =_get_latitude_based_leaf_start_end(center_lat,
                                                                  northern_leaf_start, northern_leaf_end,
                                                                  southern_leaf_start, southern_leaf_end)
 
@@ -115,15 +129,22 @@ class CityData:
 
         return obj
 
+def get_yml_content(source_base_path, folder_name_city_data):
+    source_city_path = str(os.path.join(source_base_path, folder_name_city_data))
+    city_method_config_path = os.path.join(source_city_path, FILENAME_METHOD_YML_CONFIG)
+
+    # parse config file
+    yml_values = read_yaml(city_method_config_path)
+    return yml_values
+
 # Logic for function: https://gfw.atlassian.net/browse/CIF-317 and https://gfw.atlassian.net/browse/CDB-300
-def _get_latitude_based_leaf_start_end(min_lat, max_lat, northern_leaf_start, northern_leaf_end,
+def _get_latitude_based_leaf_start_end(center_lat, northern_leaf_start, northern_leaf_end,
                                        southern_leaf_start, southern_leaf_end):
     tropical_latitude = 23.5
-    mid_lat = (min_lat + max_lat) / 2
-    if abs(mid_lat) <= tropical_latitude:  # tropical zone
+    if abs(center_lat) <= tropical_latitude:  # tropical zone
         leaf_start = 0
         leaf_end = 366
-    elif mid_lat > tropical_latitude:
+    elif center_lat > tropical_latitude:
         leaf_start = northern_leaf_start
         leaf_end = northern_leaf_end
     else:

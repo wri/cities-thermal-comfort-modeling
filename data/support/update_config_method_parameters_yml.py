@@ -41,41 +41,28 @@ def find_and_replace(directory, old_string, new_string, use_start_string_match):
 
 
 # Example usage
-directory = r'C:\Users\kenn.cartier\Documents\temp_gh\cities-thermal-comfort-modeling\data\sample_cities'
+directory = r'C:\Users\kenn.cartier\Documents\github\cities-thermal-comfort-modeling\data\sample_cities'
 
 make_yml_backup(directory)
 
-old_string = '# Processing Area of Interest used for tile construction and ERA5-data download. If any custom files\n# are specified above, then the system will not construct a new tile grid and will instead use the existing one.'
-new_string = '# Processing Area of Interest used for tile construction and ERA5-data download. If any custom files are specified in\n# CustomTiffFilenames section, then the system will not construct a new tile grid and will instead use the existing one.\n# Specify the seasonal_utc_offset including DST offset for UPenn model if AOI follows this practice for the hottest season.\n# Note: Use ST offset for UMEP and DST for UPenn when appropriate. Useful site: https://www.timeanddate.com/'
+old_string = '# Specify None for tile_side_meters'
+new_string = '# Specify either a city, an aoi_bounds, or both for when city extent includes the aoi_bounds. See ZZZ_template_city\n# for example ciy specification.\n# Specify None for tile_side_meters'
 find_and_replace(directory, old_string, new_string, False)
 
-old_string = "  utc_offset:"
-new_string = "  seasonal_utc_offset:"
+old_string = '  min_lon:'
+new_string = '  city: None\n  aoi_bounds:\n    min_lon:'
 find_and_replace(directory, old_string, new_string, False)
 
-old_string = '# Names of meteorological files used by SOLWEIG method in "UMEP for Processing" plugin.\n# Specify custom files or "<download_era5>" method to automatically download ERA5 data into a file named met_era5_hottest_days.txt'
-new_string = '# Names of custom meteorological file(s) or ERA5 data range. Maximum of two filenames can be specified.\n# For custom files, specify the filename with either .csv extension for UPenn model or .txt extension for UMEP model\n# For era5 download, specify either "ERA5:<prior_5_years>" or two dates as "ERA5:<2023-01-01,2023-12-31>"'
+old_string = '  min_lat:'
+new_string = '    min_lat:'
 find_and_replace(directory, old_string, new_string, False)
 
-old_string = '- filename: <download_era5>'
-new_string = '- filename: ERA5:<2023-01-01,2023-12-31>'
+old_string = '  max_lon:'
+new_string = '    max_lon:'
 find_and_replace(directory, old_string, new_string, False)
 
-old_string = '# All four file mappings must be specified here. Specify None for filename where custom file is not available for processing.\n# Recommended filenames: dem.tif, dsm_ground_build.tif, tree_canopy.tif, lulc.tif\n# Auto-generated filenames from CIF: cif_dem.tif, cif_dsm_ground_build.tif, cif_lulc.tif, cif_open_urban.tif, cif_tree_canopy.tif'
-new_string = '# All file mappings must be specified here. Specify None for filename where custom file is not available for processing.\n# Recommended filenames: albedo_cloud_masked.tif, dem.tif, dsm_ground_build.tif, lulc.tif, open_urban.tif, tree_canopy.tif\n# Auto-generated CIF filenames: cif_albedo_cloud_masked.tif, cif_dem.tif, cif_dsm_ground_build.tif, cif_lulc.tif, cif_open_urban.tif, cif_tree_canopy.tif'
-find_and_replace(directory, old_string, new_string, False)
-
-old_string = '- CustomTiffFilenames:'
-new_string = '  albedo_cloud_masked_tif_filename: None'
-find_and_replace(directory, old_string, new_string, True)
-
-old_string = '# Valid methods are [download_only, umep_solweig]'
-new_string = '# Valid methods are [download_only, umep_solweig, upenn_model]'
-find_and_replace(directory, old_string, new_string, False)
-
-
-old_string = '# sampling_local_hours specifies hours for <download_era5> method.'
-new_string = '# sampling_local_hours specifies hours for ERA5 download.'
+old_string = '  max_lat:'
+new_string = '    max_lat:'
 find_and_replace(directory, old_string, new_string, False)
 
 # old_string = ''

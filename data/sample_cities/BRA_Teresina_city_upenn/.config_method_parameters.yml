@@ -1,7 +1,7 @@
 # Description of scenario
 - Scenario:
   short_title: first scenario
-  version: 2
+  version: 1
   description: Scenario that demonstrates blah.
   author: author@wri.org
 # Processing Area of Interest used for tile construction and ERA5-data download. If any custom files are specified in
@@ -13,33 +13,32 @@
 # Specify None for tile_side_meters to not subdivide the AOI. Recommended value for tile_buffer_meters is 600.
 # Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
-  seasonal_utc_offset: 2 # year-round
-  city: None
+  seasonal_utc_offset: -3 # year-round
+  city: {"city_id": "BRA-Teresina", "city_aoi_id": "urban_extent"}
   aoi_bounds:
-    min_lon: 18.41294
-    min_lat: -33.92100
-    max_lon: 18.41401
-    max_lat: -33.91999
-  tile_side_meters: None
-  tile_buffer_meters: 100
+    min_lon: None
+    min_lat: None
+    max_lon: None
+    max_lat: None
+  tile_side_meters: 1000
+  tile_buffer_meters: 600
   remove_mrt_buffer_for_final_output: True
 # Names of custom meteorological file(s) or ERA5 data range. Maximum of two filenames can be specified.
 # For custom files, specify the filename with either .csv extension for UPenn model or .txt extension for UMEP model
 # For era5 download, specify either "ERA5:<prior_5_years>" or two dates as "ERA5:<2023-01-01,2023-12-31>"
 - MetFiles:
-  - filename: met_era5_hottest_days.txt
-  - filename: met_20jan2022.txt
+  - filename: ERA5:<2023-01-01,2023-12-31>
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
 # All file mappings must be specified here. Specify None for filename where custom file is not available for processing.
 # Recommended filenames: albedo_cloud_masked.tif, dem.tif, dsm_ground_build.tif, lulc.tif, open_urban.tif, tree_canopy.tif
 # Auto-generated CIF filenames: cif_albedo_cloud_masked.tif, cif_dem.tif, cif_dsm_ground_build.tif, cif_lulc.tif, cif_open_urban.tif, cif_tree_canopy.tif
 - CustomTiffFilenames:
-  albedo_cloud_masked_tif_filename: albedo_cloud_masked.tif
-  dem_tif_filename: dem.tif
-  dsm_tif_filename: dsm_ground_build.tif
-  lulc_tif_filename: lulc.tif
-  open_urban_tif_filename: open_urban.tif
-  tree_canopy_tif_filename: tree_canopy.tif
+  albedo_cloud_masked_tif_filename: None
+  dem_tif_filename: None
+  dsm_tif_filename: None
+  lulc_tif_filename: None
+  open_urban_tif_filename: None
+  tree_canopy_tif_filename: None
 - PreparedIntermediateFilenames:
   skyview_factor_filename: None
   wall_aspect_filename: None
@@ -48,7 +47,7 @@
 # Valid methods are [download_only, umep_solweig, upenn_model]
 # sampling_local_hours specifies hours for ERA5 download.
 - MethodAttributes:
-  method: umep_solweig
+  method: upenn_model
   wall_height_aspect:
     lower_limit_for_wall_height: 3
   skyview_factor:

@@ -80,7 +80,7 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
     for idx, tile_row in unique_tile_names.iterrows():
         tile_folder_name = tile_row['tile_name']
         try:
-            tiled_city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
+            tiled_city_data = CityData(None, city_folder_name, tile_folder_name, source_base_path, target_base_path)
         except Exception as e_msg:
             invalids.append(e_msg)
             break

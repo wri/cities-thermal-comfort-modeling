@@ -15,7 +15,7 @@ tile_boundary = str(shapely.box(min_lon, min_lat, max_lon, max_lat))
 
 folder_name_city_data = 'USA_Portland_cif_umep'
 folder_name_tile_data = 'tile_00099'
-city_data = CityData(folder_name_city_data, folder_name_tile_data, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+city_data = CityData(None, folder_name_city_data, folder_name_tile_data, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 tile_data_path = city_data.target_primary_tile_data_path
 
 DEBUG = False
@@ -26,7 +26,7 @@ def test_get_cif_non_terrain_data():
 
     remove_output_files(cif_feature_list)
 
-    get_cif_data(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, folder_name_city_data, folder_name_tile_data,
+    get_cif_data(None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, folder_name_city_data, folder_name_tile_data,
                  cif_features, tile_boundary,  crs,None)
 
     if 'lulc' in cif_feature_list:
@@ -50,7 +50,7 @@ def test_get_cif_terrain_data():
     cif_features = ','.join(cif_feature_list)
 
     remove_output_files(cif_feature_list)
-    get_cif_data(SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, folder_name_city_data, folder_name_tile_data,
+    get_cif_data(None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, folder_name_city_data, folder_name_tile_data,
                  cif_features, tile_boundary,  crs,None)
 
 

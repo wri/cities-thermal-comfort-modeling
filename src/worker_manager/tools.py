@@ -4,6 +4,7 @@ import rasterio
 import shapely
 import hashlib
 import pandas as pd
+import math
 
 from pyproj import Transformer, CRS
 from shapely.geometry import Polygon
@@ -86,7 +87,7 @@ def get_aoi_area_in_square_meters(min_lon, min_lat, max_lon, max_lat):
     bbox_poly = construct_polygon_from_bounds(min_lon, min_lat, max_lon, max_lat)
 
     geod = Geod(ellps="WGS84")
-    
+
     # Calculate the area in square meters
     area, _ = geod.geometry_area_perimeter(bbox_poly)
 

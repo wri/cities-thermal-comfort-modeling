@@ -8,14 +8,18 @@
 # CustomTiffFilenames section, then the system will not construct a new tile grid and will instead use the existing one.
 # Specify the seasonal_utc_offset including DST offset for UPenn model if AOI follows this practice for the hottest season.
 # Note: Use ST offset for UMEP and DST for UPenn when appropriate. Useful site: https://www.timeanddate.com/
+# Specify either a city, an aoi_bounds, or both for when city extent includes the aoi_bounds. See ZZZ_template_city
+# for example ciy specification.
 # Specify None for tile_side_meters to not subdivide the AOI. Recommended value for tile_buffer_meters is 600.
 # Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
   seasonal_utc_offset: -4 # DST offset
-  min_lon: -77.02136
-  min_lat: 38.90765
-  max_lon: -77.01165
-  max_lat: 38.91384
+  city: None
+  aoi_bounds:
+    min_lon: -77.02136
+    min_lat: 38.90765
+    max_lon: -77.01165
+    max_lat: 38.91384
   tile_side_meters: 1000
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: true

@@ -25,10 +25,13 @@ def parse_processing_areas_config(yml_values):
         processing_area = yml_values[1]
         
         seasonal_utc_offset = unpack_quoted_value(processing_area['seasonal_utc_offset'])
-        min_lon = unpack_quoted_value(processing_area['min_lon'])
-        min_lat = unpack_quoted_value(processing_area['min_lat'])
-        max_lon = unpack_quoted_value(processing_area['max_lon'])
-        max_lat = unpack_quoted_value(processing_area['max_lat'])
+        city = unpack_quoted_value(processing_area['city'])
+        city_id = None if city is None else city['city_id']
+        aoi_bounds = unpack_quoted_value(processing_area['aoi_bounds'])
+        min_lon = unpack_quoted_value(aoi_bounds['min_lon'])
+        min_lat = unpack_quoted_value(aoi_bounds['min_lat'])
+        max_lon = unpack_quoted_value(aoi_bounds['max_lon'])
+        max_lat = unpack_quoted_value(aoi_bounds['max_lat'])
         tile_side_meters = unpack_quoted_value(processing_area['tile_side_meters'])
         tile_buffer_meters = unpack_quoted_value(processing_area['tile_buffer_meters'])
         remove_mrt_buffer_for_final_output = unpack_quoted_value(processing_area['remove_mrt_buffer_for_final_output'])
@@ -40,9 +43,8 @@ def parse_processing_areas_config(yml_values):
         raise Exception(
             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
 
-    return (seasonal_utc_offset, min_lon, min_lat, max_lon, max_lat,
+    return (seasonal_utc_offset, city_id, min_lon, min_lat, max_lon, max_lat,
             tile_side_meters, tile_buffer_meters, remove_mrt_buffer_for_final_output)
-
 
 def parse_met_files_config(yml_values, new_task_method):
     import fnmatch

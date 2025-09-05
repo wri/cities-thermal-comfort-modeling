@@ -18,7 +18,7 @@ create_folder(SCRATCH_TARGET_DIR)
 @pytest.mark.skipif(RUN_COMPLEX_MODEL_SUITE is False, reason=f"Skipping since RUN_FULL_TEST_SUITE set to {RUN_COMPLEX_MODEL_SUITE}")
 def test_tropical_full_cif_city():
     source_city_folder_name = 'BRA_Rio_de_Janeiro_full_cif'
-    non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+    non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
         remove_folder(non_tiled_city_data.target_city_parent_path)
@@ -43,7 +43,7 @@ def test_tropical_full_cif_city():
 @pytest.mark.skipif(RUN_COMPLEX_MODEL_SUITE is False, reason=f"Skipping since RUN_FULL_TEST_SUITE set to {RUN_COMPLEX_MODEL_SUITE}")
 def test_tiled_cif_city():
     source_city_folder_name = 'NLD_Amsterdam'
-    non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+    non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
         remove_folder(non_tiled_city_data.target_city_parent_path)
@@ -68,7 +68,7 @@ def test_tiled_cif_city():
 @pytest.mark.skipif(RUN_COMPLEX_MODEL_SUITE is False, reason=f"Skipping since RUN_FULL_TEST_SUITE set to {RUN_COMPLEX_MODEL_SUITE}")
 def test_tiled_buffered_cif_city_umep():
     source_city_folder_name = 'NLD_Amsterdam_buftile_cif_umep'
-    non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+    non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
         remove_folder(non_tiled_city_data.target_city_parent_path)
@@ -93,7 +93,7 @@ def test_tiled_buffered_cif_city_umep():
 @pytest.mark.skipif(RUN_COMPLEX_MODEL_SUITE is False, reason=f"Skipping since RUN_FULL_TEST_SUITE set to {RUN_COMPLEX_MODEL_SUITE}")
 def test_tiled_custom_city():
     source_city_folder_name = 'NLD_Amsterdam_custom_tiled'
-    non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+    non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
         remove_folder(non_tiled_city_data.target_city_parent_path)
@@ -118,7 +118,7 @@ def test_tiled_custom_city():
 @pytest.mark.skipif(RUN_COMPLEX_MODEL_SUITE is False, reason=f"Skipping since RUN_FULL_TEST_SUITE set to {RUN_COMPLEX_MODEL_SUITE}")
 def test_portland_swath_cif_umep():
     source_city_folder_name = 'USA_Portland_swath_cif_umep'
-    non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+    non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
         remove_folder(non_tiled_city_data.target_city_parent_path)
@@ -143,7 +143,7 @@ def test_portland_swath_cif_umep():
 @pytest.mark.skipif(RUN_COMPLEX_MODEL_SUITE is False, reason=f"Skipping since RUN_FULL_TEST_SUITE set to {RUN_COMPLEX_MODEL_SUITE}")
 def test_USA_WashingtonDC_cif_umep():
     source_city_folder_name = 'USA_WashingtonDC_cif_umep'
-    non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+    non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
         remove_folder(non_tiled_city_data.target_city_parent_path)
@@ -168,7 +168,7 @@ def test_USA_WashingtonDC_cif_umep():
 @pytest.mark.skipif(RUN_COMPLEX_MODEL_SUITE is False, reason=f"Skipping since RUN_FULL_TEST_SUITE set to {RUN_COMPLEX_MODEL_SUITE}")
 def test_download_only_cif_city():
     source_city_folder_name = 'ZAF_Capetown_cif_download_only'
-    non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+    non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
         remove_folder(non_tiled_city_data.target_city_parent_path)
@@ -188,7 +188,7 @@ def test_download_only_cif_city():
 @pytest.mark.skipif(RUN_COMPLEX_MODEL_SUITE is False, reason=f"Skipping since RUN_FULL_TEST_SUITE set to {RUN_COMPLEX_MODEL_SUITE}")
 def test_ZAF_Capetown_cif_local_era5_umep():
     source_city_folder_name = 'ZAF_Capetown_cif_local_era5_umep'
-    non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+    non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
         remove_folder(non_tiled_city_data.target_city_parent_path)
@@ -213,7 +213,7 @@ def test_ZAF_Capetown_cif_local_era5_umep():
 @pytest.mark.skipif(RUN_COMPLEX_MODEL_SUITE is False, reason=f"Skipping since RUN_FULL_TEST_SUITE set to {RUN_COMPLEX_MODEL_SUITE}")
 def test_mixed_custom_city():
     source_city_folder_name = 'ZAF_Capetown_small_mixed_cif'
-    non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+    non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
         remove_folder(non_tiled_city_data.target_city_parent_path)
@@ -238,7 +238,7 @@ def test_mixed_custom_city():
 @pytest.mark.skipif(RUN_COMPLEX_MODEL_SUITE is False, reason=f"Skipping since RUN_FULL_TEST_SUITE set to {RUN_COMPLEX_MODEL_SUITE}")
 def test_custom_city():
     source_city_folder_name = 'ZAF_Capetown_small_tile'
-    non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+    non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
         remove_folder(non_tiled_city_data.target_city_parent_path)
@@ -263,7 +263,7 @@ def test_custom_city():
 @pytest.mark.skipif(RUN_COMPLEX_MODEL_SUITE is False, reason=f"Skipping since RUN_FULL_TEST_SUITE set to {RUN_COMPLEX_MODEL_SUITE}")
 def test_custom_city_with_full_intermediates():
     source_city_folder_name = 'ZAF_Capetown_with_full_intermediates'
-    non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+    non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
         remove_folder(non_tiled_city_data.target_city_parent_path)
@@ -288,7 +288,7 @@ def test_custom_city_with_full_intermediates():
 @pytest.mark.skipif(RUN_COMPLEX_MODEL_SUITE is False, reason=f"Skipping since RUN_FULL_TEST_SUITE set to {RUN_COMPLEX_MODEL_SUITE}")
 def test_custom_city_with_mixed_intermediates():
     source_city_folder_name = 'ZAF_Capetown_with_mixed_intermediates'
-    non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+    non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
         remove_folder(non_tiled_city_data.target_city_parent_path)
@@ -313,7 +313,7 @@ def test_custom_city_with_mixed_intermediates():
 @pytest.mark.skipif(RUN_COMPLEX_MODEL_SUITE is False, reason=f"Skipping since RUN_FULL_TEST_SUITE set to {RUN_COMPLEX_MODEL_SUITE}")
 def test_USA_Philadelphia_downtown_cif_umep():
     source_city_folder_name = r'USA_Philadelphia_downtown_cif_umep'
-    non_tiled_city_data = CityData(source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
+    non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
     try:
         remove_folder(non_tiled_city_data.target_city_parent_path)
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')

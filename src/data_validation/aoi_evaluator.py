@@ -9,13 +9,13 @@ from shapely.geometry import box
 from src.constants import FILENAME_METHOD_YML_CONFIG, WGS_CRS, PRIOR_5_YEAR_KEYWORD
 
 
-def evaluate_aoi(non_tiled_city_data, existing_tiles_metrics, processing_option):
+def evaluate_aoi(non_tiled_city_data, existing_tiles_metrics, city_geoextent, processing_option):
     combined_invalids = []
 
-    aoi_primary_invalids = evaluate_aoi_primary_configs(non_tiled_city_data)
+    aoi_primary_invalids = evaluate_aoi_primary_configs(non_tiled_city_data, city_geoextent)
     combined_invalids.extend(aoi_primary_invalids)
 
-    tiling_invalids = evaluate_aoi_configs_for_tiling(non_tiled_city_data)
+    tiling_invalids = evaluate_aoi_configs_for_tiling(non_tiled_city_data, city_geoextent)
     combined_invalids.extend(tiling_invalids)
 
     aoi_invalids, updated_aoi = evaluate_aoi_discrepancy(non_tiled_city_data, existing_tiles_metrics, processing_option)
@@ -24,7 +24,7 @@ def evaluate_aoi(non_tiled_city_data, existing_tiles_metrics, processing_option)
     return combined_invalids, updated_aoi
 
 
-def evaluate_aoi_primary_configs(non_tiled_city_data):
+def evaluate_aoi_primary_configs(non_tiled_city_data, city_geoextent):
     invalids = []
 
     # AOI metrics
@@ -36,27 +36,43 @@ def evaluate_aoi_primary_configs(non_tiled_city_data):
         msg = 'Specified seasonal_utc_offset is outside of valid range.'
         invalids.append((msg, True))
 
-    # Evaluate AOI
-    if (not isinstance(aoi_min_lon, numbers.Number) or not isinstance(aoi_min_lat, numbers.Number) or
-            not isinstance(aoi_max_lon, numbers.Number) or not isinstance(aoi_max_lat, numbers.Number)):
-        msg = f'Parameters in NewProcessingAOI section must be defined in {FILENAME_METHOD_YML_CONFIG}'
+    if city_geoextent is None and aoi_min_lon is None:
+        msg = f'Parameters city and aoi_bound cannot both be None in {FILENAME_METHOD_YML_CONFIG}'
         invalids.append((msg, True))
 
-    if not (-180 <= aoi_min_lon <= 180) or not (-180 <= aoi_max_lon <= 180):
-        msg = f'Min and max longitude values must be between -180 and 180 in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
-        invalids.append((msg, True))
+    # Evaluate bounds
+    if aoi_min_lon is not None:
+        if (not isinstance(aoi_min_lon, numbers.Number) or not isinstance(aoi_min_lat, numbers.Number) or
+                not isinstance(aoi_max_lon, numbers.Number) or not isinstance(aoi_max_lat, numbers.Number)):
+            msg = f'Parameters in NewProcessingAOI section must be defined in {FILENAME_METHOD_YML_CONFIG}'
+            invalids.append((msg, True))
 
-    if not (-90 <= aoi_min_lat <= 90) or not (-90 <= aoi_max_lat <= 90):
-        msg = f'Min and max latitude values must be between -90 and 90 in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
-        invalids.append((msg, True))
+        if not (-180 <= aoi_min_lon <= 180) or not (-180 <= aoi_max_lon <= 180):
+            msg = f'Min and max longitude values must be between -180 and 180 in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+            invalids.append((msg, True))
 
-    if not (aoi_min_lon <= aoi_max_lon):
-        msg = f'Min longitude must be less than max longitude in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
-        invalids.append((msg, True))
+        if not (-90 <= aoi_min_lat <= 90) or not (-90 <= aoi_max_lat <= 90):
+            msg = f'Min and max latitude values must be between -90 and 90 in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+            invalids.append((msg, True))
 
-    if not (aoi_min_lat <= aoi_max_lat):
-        msg = f'Min latitude must be less than max latitude in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
-        invalids.append((msg, True))
+        if not (aoi_min_lon <= aoi_max_lon):
+            msg = f'Min longitude must be less than max longitude in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+            invalids.append((msg, True))
+
+        if not (aoi_min_lat <= aoi_max_lat):
+            msg = f'Min latitude must be less than max latitude in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+            invalids.append((msg, True))
+
+    if city_geoextent is not None and aoi_min_lon is not None:
+        geo_bbox = city_geoextent.as_geographic_bbox()
+        city_min_lon = geo_bbox.min_x
+        city_min_lat = geo_bbox.min_y
+        city_max_lon = geo_bbox.max_x
+        city_max_lat = geo_bbox.max_y
+        if not (city_min_lon <= aoi_min_lon and aoi_max_lon <= city_max_lon) \
+                or not (city_min_lat <= aoi_min_lat and aoi_max_lat <= city_max_lat):
+            msg = f'The city-based AOI does not spatiall overlap the aoi_bounds in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+            invalids.append((msg, True))
 
     # Specifying an AOI side limit. It's reasonable that the limit should roughly fall within one UTM zone to minimize
     # projection distortion. UTM zone size is ~6degrees*111km/degree or ~700km at the equator, so 500km seems a
@@ -77,7 +93,7 @@ def evaluate_aoi_primary_configs(non_tiled_city_data):
     return invalids
 
 
-def evaluate_aoi_configs_for_tiling(non_tiled_city_data):
+def evaluate_aoi_configs_for_tiling(non_tiled_city_data, city_geoextent):
     custom_primary_features = non_tiled_city_data.custom_primary_feature_list
     tile_side_meters = non_tiled_city_data.tile_side_meters
     tile_buffer_meters = non_tiled_city_data.tile_buffer_meters
@@ -96,6 +112,10 @@ def evaluate_aoi_configs_for_tiling(non_tiled_city_data):
 
         if remove_mrt_buffer_for_final_output is True:
             msg = f"remove_mrt_buffer_for_final_output is not used and ignored if the dataset contains custom primary files in {FILENAME_METHOD_YML_CONFIG}."
+            invalids.append((msg, False))
+
+        if city_geoextent is not None and tile_side_meters is None:
+            msg = f"tile_side_meters must be specified when city_id is specified in {FILENAME_METHOD_YML_CONFIG}."
             invalids.append((msg, False))
     else:
         if tile_side_meters is not None:

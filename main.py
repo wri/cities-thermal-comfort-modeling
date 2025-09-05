@@ -6,35 +6,55 @@ from src.data_validation.manager import validate_config
 from src.worker_manager.ancillary_files import write_config_files
 from src.worker_manager.job_manager import start_jobs
 from src.worker_manager.tools import get_existing_tile_metrics, get_aoi_area_in_square_meters
-from src.workers.city_data import CityData
-from src.workers.worker_tools import remove_folder
+from src.workers.city_data import CityData, get_yml_content
+from src.workers.worker_tools import remove_folder, unpack_quoted_value
+from city_metrix import GeoZone
+from city_metrix.metrix_model import GeoExtent
+from city_metrix.metrix_tools import construct_city_aoi_json
+
 
 """
 Guide to creating standalone app for calling QGIS: https://docs.qgis.org/3.16/en/docs/pyqgis_developer_cookbook/intro.html
 https://medium.com/@giovannigallon/how-i-automate-qgis-tasks-using-python-54df35d8d63f
 """
 
+def _get_city_geoextent(source_base_path, folder_name_city_data):
+    yml_values = get_yml_content(source_base_path, folder_name_city_data)
+    processing_area = yml_values[1]
+    city = unpack_quoted_value(processing_area['city'])
+    if city is not None:
+        city_id = city['city_id']
+        city_aoi_id = city['city_aoi_id']
+        city_admin_json = construct_city_aoi_json(city_id, city_aoi_id)
+        city_geozone = GeoZone(geo_zone=city_admin_json)
+        city_geoextent = GeoExtent(city_geozone)
+    else:
+        city_geoextent = None
+    return city_geoextent
 
 def start_processing(source_base_path, target_base_path, city_folder_name, processing_option):
     abs_source_base_path = os.path.abspath(source_base_path)
     abs_target_base_path = os.path.abspath(target_base_path)
 
-    non_tiled_city_data = CityData(city_folder_name, None, abs_source_base_path, abs_target_base_path)
+    # get city extent this one time since retrieval is slow
+    city_geoextent = _get_city_geoextent(source_base_path, city_folder_name)
+
+    non_tiled_city_data = CityData(city_geoextent, city_folder_name, None, abs_source_base_path, abs_target_base_path)
     existing_tiles_metrics = _get_existing_tiles(non_tiled_city_data)
 
-    updated_aoi, config_return_code = validate_config(non_tiled_city_data, existing_tiles_metrics, processing_option)
+    updated_aoi, config_return_code = validate_config(non_tiled_city_data, existing_tiles_metrics, city_geoextent, processing_option)
 
     if config_return_code != 0:
         raise ValueError('Invalid configuration(s). Stopping.')
 
     # Print runtime estimate
-    umep_solweig_cell_count = _get_tile_counts(non_tiled_city_data, existing_tiles_metrics)
-    if umep_solweig_cell_count is not None:
-        x = umep_solweig_cell_count
-        if umep_solweig_cell_count < 1E4:
-            print(f'\nEstimated runtime for full solweig without intermediate files is a few minutes or less for {x:,} raster cells.\n')
+    umep_solweig_raster_cell_count = _get_tile_raster_cell_count(non_tiled_city_data, existing_tiles_metrics)
+    if umep_solweig_raster_cell_count is not None:
+        x = umep_solweig_raster_cell_count
+        if umep_solweig_raster_cell_count < 1E4:
+            print(f'\nEstimated runtime for processing each tile is a few minutes or less for tiles with {x:,} raster cells.\n')
         else:
-            if umep_solweig_cell_count < 4E6:
+            if umep_solweig_raster_cell_count < 4E6:
                 est_runtime_mins = math.ceil(3.0166957E-5*x +3.2689E1)
             else:
                 est_runtime_mins = math.ceil(6.26228065090E-4*x -2.28907E3)
@@ -68,10 +88,14 @@ def _get_existing_tiles(non_tiled_city_data):
     return existing_tiles_metrics
 
 
-def _get_tile_counts(non_tiled_city_data, existing_tiles_metrics):
+def _get_tile_raster_cell_count(non_tiled_city_data, existing_tiles_metrics):
+    tile_side_meters = non_tiled_city_data.tile_side_meters
     if non_tiled_city_data.custom_primary_feature_list:
         # Get representative cell count
         cell_count = existing_tiles_metrics['cell_count'][0]
+    elif tile_side_meters is not None:
+        # Assume 1-m resolution
+        cell_count = tile_side_meters * tile_side_meters
     else:
         # Infer raster cell count from aoi
         square_meters = get_aoi_area_in_square_meters(non_tiled_city_data.min_lon, non_tiled_city_data.min_lat,
@@ -82,12 +106,7 @@ def _get_tile_counts(non_tiled_city_data, existing_tiles_metrics):
 
 def _print_runtime_estimate(cell_count, est_runtime_mins):
     est_runtime_hours = round(est_runtime_mins / 60, 1)
-    now = datetime.datetime.now()
-    time_change = datetime.timedelta(minutes=est_runtime_mins)
-    est_end_time = now + time_change
-    print(f'\nEstimated runtime for full solweig without intermediate files is {est_runtime_hours} hours for {cell_count:,} raster cells.')
-    print(f'Estimated completion time for processing of tile_00001: {est_end_time.strftime('%m/%d/%Y %I:%M %p')}\n')
-
+    print(f'\nEstimated runtime for processing of each tile is {est_runtime_hours} hours for {cell_count:,} raster cells per tile.')
 
 def _highlighted_yellow_print(msg):
     print('\n\x1b[6;30;43m' + msg + '\x1b[0m')

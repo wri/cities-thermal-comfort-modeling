@@ -28,6 +28,7 @@ TILE_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(SRC_DIR, 'workers', '
 
 
 def start_jobs(non_tiled_city_data, existing_tiles_metrics):
+    city_id = non_tiled_city_data.city_id
     source_base_path = non_tiled_city_data.source_base_path
     target_base_path = non_tiled_city_data.target_base_path
     city_folder_name = non_tiled_city_data.folder_name_city_data
@@ -95,7 +96,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
             tile_boundary = tile_metrics['boundary']
             tile_resolution = tile_metrics['avg_res']
 
-            proc_array = _construct_tile_proc_array(task_method, source_base_path, target_base_path,
+            proc_array = _construct_tile_proc_array(city_id, task_method, source_base_path, target_base_path,
                                                     city_folder_name, tile_folder_name, cif_primary_features,
                                                     ctcm_intermediate_features, tile_boundary, utm_crs, tile_resolution,
                                                     seasonal_utc_offset)
@@ -122,7 +123,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
             tile_id = str(tile_index + 1).zfill(TILE_NUMBER_PADCOUNT)
             tile_folder_name = f'tile_{tile_id}'
 
-            proc_array = _construct_tile_proc_array(task_method, source_base_path, target_base_path,
+            proc_array = _construct_tile_proc_array(city_id, task_method, source_base_path, target_base_path,
                                                     city_folder_name, tile_folder_name, cif_primary_features,
                                                     ctcm_intermediate_features, tile_boundary, utm_crs, None,
                                                     seasonal_utc_offset)
@@ -185,7 +186,7 @@ def _transfer_custom_met_files(non_tiled_city_data):
             shutil.copyfile(source_path, target_path)
 
 
-def _construct_tile_proc_array(task_method, source_base_path, target_base_path, city_folder_name,
+def _construct_tile_proc_array(city_id, task_method, source_base_path, target_base_path, city_folder_name,
                                tile_folder_name, cif_primary_features, ctcm_intermediate_features,
                                tile_boundary, crs, tile_resolution, seasonal_utc_offset):
     if cif_primary_features:
@@ -199,6 +200,7 @@ def _construct_tile_proc_array(task_method, source_base_path, target_base_path, 
         ctcm_features = None
 
     proc_array = ['python', TILE_PROCESSING_MODULE_PATH,
+                  f'--city_id={city_id}',
                   f'--task_method={task_method}',
                   f'--source_base_path={source_base_path}',
                   f'--target_base_path={target_base_path}',

@@ -31,11 +31,14 @@ MIN_LAYER_RETRY_MINS = 2
 MAX_LAYER_RETRY_MINS = 5
 MAX_RETRY_COUNT = 3
 
-def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile_id, cif_primary_features,
+def get_cif_data(city_id, source_base_path, target_base_path, folder_name_city_data, tile_id, cif_primary_features,
                  tile_boundary, crs, tile_resolution):
+    if city_id == 'None':
+        city_id = None
+
     start_time = datetime.now()
 
-    tiled_city_data = CityData(folder_name_city_data, tile_id, source_base_path, target_base_path)
+    tiled_city_data = CityData(None, folder_name_city_data, tile_id, source_base_path, target_base_path)
 
     logger = setup_logger(tiled_city_data.target_model_log_path)
     log_method_start(f'CIF download: ({cif_primary_features}) in tile {tile_id}', None, '', logger)
@@ -401,65 +404,65 @@ def _resample_categorical_raster(xarray, resolution_m):
 
 
 
-def prototype_refinement_building_Elevation_estimates(overture_bldgs):
-    # TODO This function is an initial exploration of using OSM tags to refine estimate of building height.
-    # TODO Results are moderately successful for Amsterdam, but could be improved with additional building-height data.
-    '''
-    https://www.33rdsquare.com/how-tall-is-a-floor-meters/
-    Single Family Homes: 2.4 – 2.7 meters (8 – 9 feet)
-    Condominiums/Apartments: 2.1 – 2.4 meters (7 – 8 feet)
-    Office Spaces: 2.4 – 3 meters (8 – 10 feet)
-    Retail Stores: 3 – 4.5 meters (10 – 15 feet)
-    Industrial Spaces: 3 – 6 meters (10 – 20 feet)
-    class = transportation, sports_hall, service, school, retail, industrial, houseboat,house, commercial, apartments,
-    class/subtype = {null, entertainment}
-    '''
-
-    house_typical_floors = 4
-    apartment_typical_floors = 5
-    industrial_typical_floors = 3
-    commercial_typical_floors = 4
-    houseboat_typical_floors = 1
-    school_typical_floors = 3
-    other_typical_floors = 2
-    floor_height = 2.5
-    overture_bldgs.loc[overture_bldgs['num_floors'].notnull(), 'inferred_height'] = (
-                overture_bldgs['num_floors'] * floor_height)
-    overture_bldgs.loc[
-        (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'apartments'), 'inferred_height'] = \
-        (apartment_typical_floors * floor_height)
-    overture_bldgs.loc[
-        (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'house'), 'inferred_height'] = \
-        (house_typical_floors * floor_height)
-    overture_bldgs.loc[
-        (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'industrial'), 'inferred_height'] = \
-        (industrial_typical_floors * floor_height)
-    overture_bldgs.loc[
-        (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'commercial'), 'inferred_height'] = \
-        (commercial_typical_floors * floor_height)
-    overture_bldgs.loc[
-        (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'commercial'), 'inferred_height'] = \
-        (commercial_typical_floors * floor_height)
-    overture_bldgs.loc[
-        (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'houseboat'), 'inferred_height'] = \
-        (houseboat_typical_floors * floor_height)
-    overture_bldgs.loc[
-        (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'school'), 'inferred_height'] = \
-        (school_typical_floors * floor_height)
-    overture_bldgs['guessed_height'] = overture_bldgs['inferred_height'] + overture_bldgs['BaseDTM_min']
-
-    overture_bldgs.loc[overture_bldgs['height'].notnull(), 'best_guess_height'] = overture_bldgs['height']
-    overture_bldgs.loc[((overture_bldgs['best_guess_height'].isnull()) & (
-        overture_bldgs['guessed_height'].isnull())), 'best_guess_height'] = \
-        overture_bldgs['Elevation_estimate']
-    overture_bldgs.loc[(
-                (overture_bldgs['best_guess_height'].isnull()) & (overture_bldgs['Elevation_estimate'].notnull()) & (
-            overture_bldgs['guessed_height'].notnull())), 'best_guess_height'] = \
-        0.6 * overture_bldgs['Elevation_estimate'] + 0.4 * overture_bldgs['guessed_height']
-    overture_bldgs.loc[(
-                (overture_bldgs['best_guess_height'].isnull()) & (overture_bldgs['Elevation_estimate'].isnull()) & (
-            overture_bldgs['inferred_height'].notnull())), 'best_guess_height'] = \
-        overture_bldgs['inferred_height']
-    overture_bldgs.loc[overture_bldgs['best_guess_height'].isnull(), 'best_guess_height'] = (
-                other_typical_floors * floor_height)
+# def prototype_refinement_building_Elevation_estimates(overture_bldgs):
+#     # TODO This function is an initial exploration of using OSM tags to refine estimate of building height.
+#     # TODO Results are moderately successful for Amsterdam, but could be improved with additional building-height data.
+#     '''
+#     https://www.33rdsquare.com/how-tall-is-a-floor-meters/
+#     Single Family Homes: 2.4 – 2.7 meters (8 – 9 feet)
+#     Condominiums/Apartments: 2.1 – 2.4 meters (7 – 8 feet)
+#     Office Spaces: 2.4 – 3 meters (8 – 10 feet)
+#     Retail Stores: 3 – 4.5 meters (10 – 15 feet)
+#     Industrial Spaces: 3 – 6 meters (10 – 20 feet)
+#     class = transportation, sports_hall, service, school, retail, industrial, houseboat,house, commercial, apartments,
+#     class/subtype = {null, entertainment}
+#     '''
+#
+#     house_typical_floors = 4
+#     apartment_typical_floors = 5
+#     industrial_typical_floors = 3
+#     commercial_typical_floors = 4
+#     houseboat_typical_floors = 1
+#     school_typical_floors = 3
+#     other_typical_floors = 2
+#     floor_height = 2.5
+#     overture_bldgs.loc[overture_bldgs['num_floors'].notnull(), 'inferred_height'] = (
+#                 overture_bldgs['num_floors'] * floor_height)
+#     overture_bldgs.loc[
+#         (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'apartments'), 'inferred_height'] = \
+#         (apartment_typical_floors * floor_height)
+#     overture_bldgs.loc[
+#         (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'house'), 'inferred_height'] = \
+#         (house_typical_floors * floor_height)
+#     overture_bldgs.loc[
+#         (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'industrial'), 'inferred_height'] = \
+#         (industrial_typical_floors * floor_height)
+#     overture_bldgs.loc[
+#         (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'commercial'), 'inferred_height'] = \
+#         (commercial_typical_floors * floor_height)
+#     overture_bldgs.loc[
+#         (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'commercial'), 'inferred_height'] = \
+#         (commercial_typical_floors * floor_height)
+#     overture_bldgs.loc[
+#         (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'houseboat'), 'inferred_height'] = \
+#         (houseboat_typical_floors * floor_height)
+#     overture_bldgs.loc[
+#         (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'school'), 'inferred_height'] = \
+#         (school_typical_floors * floor_height)
+#     overture_bldgs['guessed_height'] = overture_bldgs['inferred_height'] + overture_bldgs['BaseDTM_min']
+#
+#     overture_bldgs.loc[overture_bldgs['height'].notnull(), 'best_guess_height'] = overture_bldgs['height']
+#     overture_bldgs.loc[((overture_bldgs['best_guess_height'].isnull()) & (
+#         overture_bldgs['guessed_height'].isnull())), 'best_guess_height'] = \
+#         overture_bldgs['Elevation_estimate']
+#     overture_bldgs.loc[(
+#                 (overture_bldgs['best_guess_height'].isnull()) & (overture_bldgs['Elevation_estimate'].notnull()) & (
+#             overture_bldgs['guessed_height'].notnull())), 'best_guess_height'] = \
+#         0.6 * overture_bldgs['Elevation_estimate'] + 0.4 * overture_bldgs['guessed_height']
+#     overture_bldgs.loc[(
+#                 (overture_bldgs['best_guess_height'].isnull()) & (overture_bldgs['Elevation_estimate'].isnull()) & (
+#             overture_bldgs['inferred_height'].notnull())), 'best_guess_height'] = \
+#         overture_bldgs['inferred_height']
+#     overture_bldgs.loc[overture_bldgs['best_guess_height'].isnull(), 'best_guess_height'] = (
+#                 other_typical_floors * floor_height)
 

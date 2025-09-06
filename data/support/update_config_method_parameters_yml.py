@@ -46,7 +46,7 @@ directory = r'C:\Users\kenn.cartier\Documents\github\cities-thermal-comfort-mode
 make_yml_backup(directory)
 
 old_string = '# Specify None for tile_side_meters'
-new_string = '# Specify either a city, an aoi_bounds, or both for when city extent includes the aoi_bounds. See ZZZ_template_city\n# for example ciy specification.\n# Specify None for tile_side_meters'
+new_string = '# Specify either city_id/aoi_id json, an aoi_bounds, or both for when city extent includes the aoi_bounds. See ZZZ_template_city\n# for example ciy specification.\n# Specify None for tile_side_meters'
 find_and_replace(directory, old_string, new_string, False)
 
 old_string = '  min_lon:'

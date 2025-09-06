@@ -3,6 +3,7 @@ import shapely
 import numbers
 import math
 
+from city_metrix.constants import CTCM_MAX_TILE_BUFFER_M
 from city_metrix.metrix_tools import reproject_units
 from city_metrix.metrix_model import get_haversine_distance
 from shapely.geometry import box
@@ -115,7 +116,7 @@ def evaluate_aoi_configs_for_tiling(non_tiled_city_data, city_geoextent):
             invalids.append((msg, False))
 
         if city_geoextent is not None and tile_side_meters is None:
-            msg = f"tile_side_meters must be specified when city_id is specified in {FILENAME_METHOD_YML_CONFIG}."
+            msg = f"tile_side_meters must be specified when city is specified in {FILENAME_METHOD_YML_CONFIG}."
             invalids.append((msg, False))
     else:
         if tile_side_meters is not None:
@@ -139,8 +140,8 @@ def evaluate_aoi_configs_for_tiling(non_tiled_city_data, city_geoextent):
             msg = f"Requested tile_buffer_meters must be 100 m or more in {FILENAME_METHOD_YML_CONFIG} with recommended value of 600."
             invalids.append((msg, True))
 
-        if tile_buffer_meters is not None and int(tile_buffer_meters) > 600:
-            msg = f"Requested tile_buffer_meters must be less than or equal to 600 m in {FILENAME_METHOD_YML_CONFIG}."
+        if tile_buffer_meters is not None and int(tile_buffer_meters) > CTCM_MAX_TILE_BUFFER_M:
+            msg = f"Requested tile_buffer_meters must be less than or equal to {CTCM_MAX_TILE_BUFFER_M} m in {FILENAME_METHOD_YML_CONFIG}."
             invalids.append((msg, True))
 
     return invalids

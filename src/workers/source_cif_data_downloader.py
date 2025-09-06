@@ -8,8 +8,10 @@ import numpy as np
 import random
 import time
 
+from city_metrix.constants import CIF_TESTING_S3_BUCKET_URI, DEFAULT_DEVELOPMENT_ENV, CTCM_CACHE_S3_BUCKET_URI
+from city_metrix.metrix_tools import construct_city_aoi_json
 from osgeo import gdal
-from city_metrix.metrix_model import GeoExtent
+from city_metrix.metrix_model import GeoExtent, GeoZone
 from rasterio.enums import Resampling
 from datetime import datetime
 
@@ -31,11 +33,12 @@ MIN_LAYER_RETRY_MINS = 2
 MAX_LAYER_RETRY_MINS = 5
 MAX_RETRY_COUNT = 3
 
-def get_cif_data(city_id, source_base_path, target_base_path, folder_name_city_data, tile_id, cif_primary_features,
-                 tile_boundary, crs, tile_resolution):
-    if city_id == 'None':
-        city_id = None
+S3_BUCKET = CIF_TESTING_S3_BUCKET_URI # for testing
+# S3_BUCKET = CTCM_CACHE_S3_BUCKET_URI # for production
+S3_ENV = DEFAULT_DEVELOPMENT_ENV
 
+def get_cif_data(city_json_str, source_base_path, target_base_path, folder_name_city_data, tile_id, cif_primary_features,
+                 tile_boundary, crs, tile_resolution):
     start_time = datetime.now()
 
     tiled_city_data = CityData(None, folder_name_city_data, tile_id, source_base_path, target_base_path)
@@ -45,8 +48,16 @@ def get_cif_data(city_id, source_base_path, target_base_path, folder_name_city_d
 
     tile_cif_data_path = tiled_city_data.target_primary_tile_data_path
 
-    d = {'geometry': [shapely.wkt.loads(tile_boundary)]}
-    tiled_aoi_gdf = gp.GeoDataFrame(d, crs=crs)
+    tile_boundary_df = {'geometry': [shapely.wkt.loads(tile_boundary)]}
+    tiled_aoi_gdf = gp.GeoDataFrame(tile_boundary_df, crs=crs)
+
+    if city_json_str == 'None':
+        city_geoextent = GeoExtent(tiled_aoi_gdf.total_bounds, tiled_aoi_gdf.crs.srs)
+        city_aoi = None
+    else:
+        city_geozone = GeoZone(geo_zone=city_json_str)
+        city_geoextent = GeoExtent(city_geozone)
+        city_aoi = tiled_aoi_gdf.total_bounds
 
     feature_list = cif_primary_features.split(',')
 
@@ -63,42 +74,42 @@ def get_cif_data(city_id, source_base_path, target_base_path, folder_name_city_d
             if 'dem' in feature_list:
                 time.sleep(wait_time_sec)
                 log_method_start(f'CIF-DEM download for {tile_id}', None, '', logger)
-                this_success = _get_dem(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
+                this_success = _get_dem(city_geoextent, city_aoi, tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-DEM download for {tile_id}', None, '', logger)
         elif feature_sequence_id == 2:
             if 'dsm' in feature_list:
                 time.sleep(wait_time_sec)
                 log_method_start(f'CIF-DSM download for {tile_id}', None, '', logger)
-                this_success = _get_building_height_dsm(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
+                this_success = _get_building_height_dsm(city_geoextent, city_aoi, tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-DSM download for {tile_id}', None, '', logger)
         elif feature_sequence_id == 3:
             if 'lulc' in feature_list:
                 time.sleep(wait_time_sec)
                 log_method_start(f'CIF-lulc download for {tile_id}', None, '', logger)
-                this_success = _get_lulc(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
+                this_success = _get_lulc(city_geoextent, city_aoi, tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-lulc download for tile {tile_id}', None, '', logger)
         elif feature_sequence_id == 4:
             if 'open_urban' in feature_list:
                 time.sleep(wait_time_sec)
                 log_method_start(f'CIF-open_urban download for {tile_id}', None, '', logger)
-                this_success = _get_open_urban(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
+                this_success = _get_open_urban(city_geoextent, city_aoi, tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-open_urban download for tile {tile_id}', None, '', logger)
         elif feature_sequence_id == 5:
             if 'tree_canopy' in feature_list:
                 time.sleep(wait_time_sec)
                 log_method_start(f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
-                this_success = _get_tree_canopy_height(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
+                this_success = _get_tree_canopy_height(city_geoextent, city_aoi, tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time,f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
 
     # Execute Albedo last since it must be aligned with other layers
     if 'albedo_cloud_masked' in feature_list:
         log_method_start(f'CIF-albedo_cloud_masked download for {tile_id}', None, '', logger)
-        this_success = _get_albedo_cloud_masked(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
+        this_success = _get_albedo_cloud_masked(city_geoextent, city_aoi, tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
         result_flags.append(this_success)
         log_method_completion(start_time,f'CIF-albedo_cloud_masked download for {tile_id}', None, '', logger)
 
@@ -118,16 +129,16 @@ def get_cif_data(city_id, source_base_path, target_base_path, folder_name_city_d
     return return_stdout
 
 
-def _get_lulc(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
+def _get_lulc(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
         from city_metrix.layers.open_urban import reclass_map
         from city_metrix.layers import OpenUrban
 
         # Load data
-        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
         for i in range(MAX_RETRY_COUNT):
             try:
-                lulc = OpenUrban().get_data(bbox)
+                lulc = OpenUrban().retrieve_data(city_geoextent, s3_bucket=S3_BUCKET, s3_env=S3_ENV,
+                                               city_aoi_modifier=city_aoi)
                 break
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
@@ -179,14 +190,14 @@ def _get_lulc(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logge
         return False
 
 
-def _get_open_urban(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
+def _get_open_urban(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
         from city_metrix.layers import OpenUrban
 
-        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
         for i in range(MAX_RETRY_COUNT):
             try:
-                open_urban = OpenUrban().get_data(bbox)
+                open_urban = OpenUrban().retrieve_data(city_geoextent, s3_bucket=S3_BUCKET, s3_env=S3_ENV,
+                                               city_aoi_modifier=city_aoi)
                 break
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
@@ -219,15 +230,16 @@ def _count_occurrences(data, value):
     return data.where(data == value).count().item()
 
 
-def _get_tree_canopy_height(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
+def _get_tree_canopy_height(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
         from city_metrix.layers import TreeCanopyHeight
 
         # Load layer
-        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
         for i in range(MAX_RETRY_COUNT):
             try:
-                tree_canopy_height = TreeCanopyHeight().get_data(bbox, spatial_resolution=output_resolution)
+                tree_canopy_height = (TreeCanopyHeight()
+                                      .retrieve_data(city_geoextent, s3_bucket=S3_BUCKET, s3_env=S3_ENV,
+                                                     city_aoi_modifier=city_aoi, spatial_resolution=output_resolution))
                 break
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
@@ -258,14 +270,15 @@ def _get_tree_canopy_height(tiled_city_data, tile_data_path, aoi_gdf, output_res
         log_method_failure(datetime.now(), 'tree_canopy_height', tiled_city_data.source_base_path, msg, logger)
         return False
 
-def _get_albedo_cloud_masked(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
+def _get_albedo_cloud_masked(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
         from city_metrix.layers import AlbedoCloudMasked
 
-        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
         for i in range(MAX_RETRY_COUNT):
             try:
-                albedo_cloud_masked = AlbedoCloudMasked().get_data(bbox=bbox, spatial_resolution=output_resolution)
+                albedo_cloud_masked = (AlbedoCloudMasked()
+                                       .retrieve_data(city_geoextent, s3_bucket=S3_BUCKET, s3_env=S3_ENV,
+                                                      city_aoi_modifier=city_aoi, spatial_resolution=output_resolution))
                 break
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
@@ -321,14 +334,14 @@ def _get_albedo_cloud_masked(tiled_city_data, tile_data_path, aoi_gdf, output_re
         log_method_failure(datetime.now(), 'Albedo_cloud_masked', tiled_city_data.source_base_path, msg, logger)
         return False
 
-def _get_dem(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
+def _get_dem(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
         from city_metrix.layers import FabDEM
 
-        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
         for i in range(MAX_RETRY_COUNT):
             try:
-                dem = FabDEM().get_data(bbox, spatial_resolution=output_resolution)
+                dem = FabDEM().retrieve_data(city_geoextent, s3_bucket=S3_BUCKET, s3_env=S3_ENV,
+                                               city_aoi_modifier=city_aoi, spatial_resolution=output_resolution)
                 break
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
@@ -356,14 +369,15 @@ def _get_dem(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger
         log_method_failure(datetime.now(), 'DEM', tiled_city_data.source_base_path, msg, logger)
         return False
 
-def _get_building_height_dsm(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
+def _get_building_height_dsm(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
         from city_metrix.layers import OvertureBuildingsDSM
 
-        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
         for i in range(MAX_RETRY_COUNT):
             try:
-                building_dsm = OvertureBuildingsDSM().get_data(bbox, spatial_resolution=output_resolution)
+                building_dsm = (OvertureBuildingsDSM()
+                                .retrieve_data(city_geoextent, s3_bucket=S3_BUCKET, s3_env=S3_ENV,
+                                               city_aoi_modifier=city_aoi, spatial_resolution=output_resolution))
                 break
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
@@ -390,7 +404,6 @@ def _get_building_height_dsm(tiled_city_data, tile_data_path, aoi_gdf, output_re
         msg = f'Building DSM processing cancelled due to failure {e_msg}.'
         log_method_failure(datetime.now(), 'DEM', tiled_city_data.source_base_path, msg, logger)
         return False
-
 
 
 def _resample_categorical_raster(xarray, resolution_m):

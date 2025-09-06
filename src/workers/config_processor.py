@@ -1,3 +1,5 @@
+import json
+
 from attr.converters import to_bool
 from src.constants import FILENAME_METHOD_YML_CONFIG, VALID_PRIMARY_TYPES, METHOD_TRIGGER_ERA5_DOWNLOAD, \
     FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN
@@ -25,8 +27,8 @@ def parse_processing_areas_config(yml_values):
         processing_area = yml_values[1]
         
         seasonal_utc_offset = unpack_quoted_value(processing_area['seasonal_utc_offset'])
-        city = unpack_quoted_value(processing_area['city'])
-        city_id = None if city is None else city['city_id']
+        city = processing_area['city']
+        city_json_str = None if city == 'None' else json.dumps(city)
         aoi_bounds = unpack_quoted_value(processing_area['aoi_bounds'])
         min_lon = unpack_quoted_value(aoi_bounds['min_lon'])
         min_lat = unpack_quoted_value(aoi_bounds['min_lat'])
@@ -43,7 +45,7 @@ def parse_processing_areas_config(yml_values):
         raise Exception(
             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
 
-    return (seasonal_utc_offset, city_id, min_lon, min_lat, max_lon, max_lat,
+    return (seasonal_utc_offset, city_json_str, min_lon, min_lat, max_lon, max_lat,
             tile_side_meters, tile_buffer_meters, remove_mrt_buffer_for_final_output)
 
 def parse_met_files_config(yml_values, new_task_method):

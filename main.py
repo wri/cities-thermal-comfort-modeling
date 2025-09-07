@@ -1,3 +1,4 @@
+import json
 import os
 import math
 import datetime
@@ -7,30 +8,14 @@ from src.worker_manager.ancillary_files import write_config_files
 from src.worker_manager.job_manager import start_jobs
 from src.worker_manager.tools import get_existing_tile_metrics, get_aoi_area_in_square_meters
 from src.workers.city_data import CityData, get_yml_content
-from src.workers.worker_tools import remove_folder, unpack_quoted_value
+from src.workers.worker_tools import remove_folder
 from city_metrix import GeoZone
 from city_metrix.metrix_model import GeoExtent
-from city_metrix.metrix_tools import construct_city_aoi_json
-
 
 """
 Guide to creating standalone app for calling QGIS: https://docs.qgis.org/3.16/en/docs/pyqgis_developer_cookbook/intro.html
 https://medium.com/@giovannigallon/how-i-automate-qgis-tasks-using-python-54df35d8d63f
 """
-
-def _get_city_geoextent(source_base_path, folder_name_city_data):
-    yml_values = get_yml_content(source_base_path, folder_name_city_data)
-    processing_area = yml_values[1]
-    city = unpack_quoted_value(processing_area['city'])
-    if city is not None:
-        city_id = city['city_id']
-        city_aoi_id = city['city_aoi_id']
-        city_admin_json = construct_city_aoi_json(city_id, city_aoi_id)
-        city_geozone = GeoZone(geo_zone=city_admin_json)
-        city_geoextent = GeoExtent(city_geozone)
-    else:
-        city_geoextent = None
-    return city_geoextent
 
 def start_processing(source_base_path, target_base_path, city_folder_name, processing_option):
     abs_source_base_path = os.path.abspath(source_base_path)
@@ -77,6 +62,16 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
             _highlighted_yellow_print(return_str)
         return return_code
 
+def _get_city_geoextent(source_base_path, folder_name_city_data):
+    yml_values = get_yml_content(source_base_path, folder_name_city_data)
+    processing_area = yml_values[1]
+    city_json_str = None if processing_area['city'] == 'None' else json.dumps(processing_area['city'])
+    if city_json_str  is not None:
+        city_geozone = GeoZone(geo_zone=city_json_str)
+        city_geoextent = GeoExtent(city_geozone)
+    else:
+        city_geoextent = None
+    return city_geoextent
 
 def _get_existing_tiles(non_tiled_city_data):
     if non_tiled_city_data.custom_primary_feature_list:

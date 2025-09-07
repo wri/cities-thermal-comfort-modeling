@@ -8,7 +8,8 @@ import numpy as np
 import random
 import time
 
-from city_metrix.constants import CIF_TESTING_S3_BUCKET_URI, DEFAULT_DEVELOPMENT_ENV, CTCM_CACHE_S3_BUCKET_URI
+from city_metrix.constants import CIF_TESTING_S3_BUCKET_URI, DEFAULT_DEVELOPMENT_ENV, CTCM_CACHE_S3_BUCKET_URI, \
+    CTCM_MAX_TILE_BUFFER_M
 from city_metrix.metrix_tools import construct_city_aoi_json
 from osgeo import gdal
 from city_metrix.metrix_model import GeoExtent, GeoZone
@@ -33,8 +34,8 @@ MIN_LAYER_RETRY_MINS = 2
 MAX_LAYER_RETRY_MINS = 5
 MAX_RETRY_COUNT = 3
 
-S3_BUCKET = CIF_TESTING_S3_BUCKET_URI # for testing
-# S3_BUCKET = CTCM_CACHE_S3_BUCKET_URI # for production
+# S3_BUCKET = CIF_TESTING_S3_BUCKET_URI # for testing
+S3_BUCKET = CTCM_CACHE_S3_BUCKET_URI # for production
 S3_ENV = DEFAULT_DEVELOPMENT_ENV
 
 def get_cif_data(city_json_str, source_base_path, target_base_path, folder_name_city_data, tile_id, cif_primary_features,
@@ -138,7 +139,7 @@ def _get_lulc(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf
         for i in range(MAX_RETRY_COUNT):
             try:
                 lulc = OpenUrban().retrieve_data(city_geoextent, s3_bucket=S3_BUCKET, s3_env=S3_ENV,
-                                               city_aoi_modifier=city_aoi)
+                                                 aoi_buffer_m=CTCM_MAX_TILE_BUFFER_M, city_aoi_modifier=city_aoi)
                 break
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
@@ -197,7 +198,7 @@ def _get_open_urban(city_geoextent, city_aoi, tiled_city_data, tile_data_path, a
         for i in range(MAX_RETRY_COUNT):
             try:
                 open_urban = OpenUrban().retrieve_data(city_geoextent, s3_bucket=S3_BUCKET, s3_env=S3_ENV,
-                                               city_aoi_modifier=city_aoi)
+                                               aoi_buffer_m=CTCM_MAX_TILE_BUFFER_M, city_aoi_modifier=city_aoi)
                 break
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
@@ -239,7 +240,8 @@ def _get_tree_canopy_height(city_geoextent, city_aoi, tiled_city_data, tile_data
             try:
                 tree_canopy_height = (TreeCanopyHeight()
                                       .retrieve_data(city_geoextent, s3_bucket=S3_BUCKET, s3_env=S3_ENV,
-                                                     city_aoi_modifier=city_aoi, spatial_resolution=output_resolution))
+                                                     aoi_buffer_m=CTCM_MAX_TILE_BUFFER_M, city_aoi_modifier=city_aoi,
+                                                     spatial_resolution=output_resolution))
                 break
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
@@ -278,7 +280,8 @@ def _get_albedo_cloud_masked(city_geoextent, city_aoi, tiled_city_data, tile_dat
             try:
                 albedo_cloud_masked = (AlbedoCloudMasked()
                                        .retrieve_data(city_geoextent, s3_bucket=S3_BUCKET, s3_env=S3_ENV,
-                                                      city_aoi_modifier=city_aoi, spatial_resolution=output_resolution))
+                                                      aoi_buffer_m=CTCM_MAX_TILE_BUFFER_M, city_aoi_modifier=city_aoi,
+                                                      spatial_resolution=output_resolution))
                 break
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
@@ -341,7 +344,8 @@ def _get_dem(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf,
         for i in range(MAX_RETRY_COUNT):
             try:
                 dem = FabDEM().retrieve_data(city_geoextent, s3_bucket=S3_BUCKET, s3_env=S3_ENV,
-                                               city_aoi_modifier=city_aoi, spatial_resolution=output_resolution)
+                                             aoi_buffer_m=CTCM_MAX_TILE_BUFFER_M, city_aoi_modifier=city_aoi,
+                                             spatial_resolution=output_resolution)
                 break
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
@@ -377,7 +381,8 @@ def _get_building_height_dsm(city_geoextent, city_aoi, tiled_city_data, tile_dat
             try:
                 building_dsm = (OvertureBuildingsDSM()
                                 .retrieve_data(city_geoextent, s3_bucket=S3_BUCKET, s3_env=S3_ENV,
-                                               city_aoi_modifier=city_aoi, spatial_resolution=output_resolution))
+                                               aoi_buffer_m=CTCM_MAX_TILE_BUFFER_M, city_aoi_modifier=city_aoi,
+                                               spatial_resolution=output_resolution))
                 break
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:

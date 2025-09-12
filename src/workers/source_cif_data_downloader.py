@@ -24,15 +24,15 @@ DEBUG = False
 # Unify the layers on the same resolution
 DEFAULT_LULC_RESOLUTION = 1
 
-MINIMUM_QUERY_WAIT_SEC = 10
-MAXIMUM_QUERY_WAIT_SEC = 30
+MINIMUM_QUERY_WAIT_SEC = 5
+MAXIMUM_QUERY_WAIT_SEC = 10
 
 MIN_LAYER_RETRY_MINS = 2
 MAX_LAYER_RETRY_MINS = 5
 MAX_RETRY_COUNT = 3
 
 def get_cif_data(city_json_str, source_base_path, target_base_path, folder_name_city_data, tile_id, cif_primary_features,
-                 tile_boundary, crs, tile_resolution):
+                 tile_boundary, tile_resolution, target_crs):
     start_time = datetime.now()
 
     tiled_city_data = CityData(None, folder_name_city_data, tile_id, source_base_path, target_base_path)
@@ -43,7 +43,7 @@ def get_cif_data(city_json_str, source_base_path, target_base_path, folder_name_
     tile_cif_data_path = tiled_city_data.target_primary_tile_data_path
 
     tile_boundary_df = {'geometry': [shapely.wkt.loads(tile_boundary)]}
-    tiled_aoi_gdf = gp.GeoDataFrame(tile_boundary_df, crs=crs)
+    tiled_aoi_gdf = gp.GeoDataFrame(tile_boundary_df, crs=target_crs)
 
     if city_json_str == 'None':
         city_geoextent = GeoExtent(tiled_aoi_gdf.total_bounds, tiled_aoi_gdf.crs.srs)
@@ -226,12 +226,12 @@ def _count_occurrences(data, value):
 
 def _get_tree_canopy_height(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
-        from city_metrix.layers import TreeCanopyHeight
+        from city_metrix.layers import TreeCanopyHeightCTCM
 
         # Load layer
         for i in range(MAX_RETRY_COUNT):
             try:
-                tree_canopy_height = (TreeCanopyHeight()
+                tree_canopy_height = (TreeCanopyHeightCTCM()
                                       .retrieve_data(city_geoextent, s3_bucket=S3_PUBLICATION_BUCKET, s3_env=S3_PUBLICATION_ENV,
                                                      aoi_buffer_m=CTCM_PADDED_AOI_BUFFER, city_aoi_modifier=city_aoi,
                                                      spatial_resolution=output_resolution))

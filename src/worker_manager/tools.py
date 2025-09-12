@@ -4,9 +4,8 @@ import rasterio
 import shapely
 import hashlib
 import pandas as pd
-import math
 
-from pyproj import Transformer, CRS
+from pyproj import CRS
 from shapely.geometry import Polygon
 from pyproj import Geod
 from pathlib import Path
@@ -20,7 +19,7 @@ def get_existing_tile_metrics(source_city_path, custom_file_names, include_exten
     if include_extended_metrics:
         columns = ['tile_name', 'primary_file', 'checksum']
     else:
-        columns = ['tile_name', 'primary_file', 'boundary', 'avg_res', 'cell_count', 'source_crs']
+        columns = ['tile_name', 'primary_file', 'boundary', 'avg_res', 'cell_count', 'custom_tile_crs']
 
     tile_metrics_df = pd.DataFrame(columns=columns)
 
@@ -41,15 +40,15 @@ def get_existing_tile_metrics(source_city_path, custom_file_names, include_exten
                                        'checksum': chksum}
                             tile_metrics_df = tile_metrics_df._append(new_row, ignore_index=True)
                         else:
-                            tile_boundary, avg_res, resolution_x, resolution_y, cell_count, source_crs = (
+                            tile_boundary, avg_res, resolution_x, resolution_y, cell_count, custom_tile_crs = (
                                 _get_spatial_dimensions_of_geotiff_file(file_obj))
                             new_row = {'tile_name': tile_name, 'primary_file': file_stem, 'boundary': tile_boundary,
                                        'avg_res': avg_res, 'resolution_x': resolution_x, 'resolution_y': resolution_y,
-                                       'cell_count': cell_count, 'source_crs': source_crs}
+                                       'cell_count': cell_count, 'custom_tile_crs': custom_tile_crs}
 
                             tile_metrics_df = tile_metrics_df._append(new_row, ignore_index=True)
                             import geopandas as gpd
-                            tile_metrics_df = gpd.GeoDataFrame(tile_metrics_df, geometry="boundary", crs=source_crs)
+                            tile_metrics_df = gpd.GeoDataFrame(tile_metrics_df, geometry="boundary", crs=custom_tile_crs)
 
     return tile_metrics_df
 
@@ -65,7 +64,7 @@ def _get_spatial_dimensions_of_geotiff_file(file_path):
         width = dataset.width
 
         source_epsg = CRS.from_wkt(dataset.crs.wkt).to_epsg()
-        source_crs = f'EPSG:{source_epsg}'
+        custom_tile_crs = f'EPSG:{source_epsg}'
         tile_boundary = coordinates_to_bbox(min_x, min_y, max_x, max_y)
         # tile_boundary = (min_x, min_y, max_x, max_y)
 
@@ -75,7 +74,7 @@ def _get_spatial_dimensions_of_geotiff_file(file_path):
         avg_res = int(round((dataset.res[0] + dataset.res[1])/2, 0))
         cell_count = width * height
 
-    return tile_boundary, avg_res, resolution_x, resolution_y, cell_count, source_crs
+    return tile_boundary, avg_res, resolution_x, resolution_y, cell_count, custom_tile_crs
 
 
 def coordinates_to_bbox(min_x, min_y, max_x, max_y):

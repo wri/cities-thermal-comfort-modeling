@@ -1,7 +1,6 @@
 import json
 import os
 import math
-import datetime
 
 from src.data_validation.manager import validate_config
 from src.worker_manager.ancillary_files import write_config_files

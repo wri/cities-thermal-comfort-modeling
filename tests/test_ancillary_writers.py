@@ -15,8 +15,7 @@ def test_vrt_writer():
     remove_folder(hacked_city_data.target_city_parent_path)
 
     try:
-        crs = 'EPSG:32734'
-        write_qgis_files(hacked_city_data, crs)
+        write_qgis_files(hacked_city_data)
 
         vrt_count = file_count_in_vrt_directory(hacked_city_data)
 
@@ -36,8 +35,7 @@ def test_vrt_writer_amsterdam():
     remove_folder(hacked_city_data.target_city_parent_path)
 
     try:
-        crs = 'EPSG:32631'
-        write_qgis_files(hacked_city_data, crs)
+        write_qgis_files(hacked_city_data)
 
         vrt_count = file_count_in_vrt_directory(hacked_city_data)
 

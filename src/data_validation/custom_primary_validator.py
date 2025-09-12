@@ -68,7 +68,7 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
         msg = f"Inconsistent raster boundary found in files in these tiles: {inconsistent_tiles}"
         invalids.append((msg, True))
 
-    tile_crs_values = existing_tiles_metrics['source_crs'].unique()
+    tile_crs_values = existing_tiles_metrics['custom_tile_crs'].unique()
     for tile_crs in tile_crs_values:
         if get_projection_type(tile_crs) == ProjectionType.GEOGRAPHIC:
             msg = f'Custom files can not have geographic coordinates.'

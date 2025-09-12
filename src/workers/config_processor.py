@@ -30,6 +30,8 @@ def parse_processing_areas_config(yml_values):
         city = processing_area['city']
         city_json_str = None if city == 'None' else json.dumps(city)
         aoi_bounds = unpack_quoted_value(processing_area['aoi_bounds'])
+        aoi_epsg = unpack_quoted_value(aoi_bounds['epsg_code'])
+        source_aoi_crs = f"EPSG:{aoi_epsg}" if aoi_epsg is not None else None
         min_lon = unpack_quoted_value(aoi_bounds['min_lon'])
         min_lat = unpack_quoted_value(aoi_bounds['min_lat'])
         max_lon = unpack_quoted_value(aoi_bounds['max_lon'])
@@ -45,7 +47,7 @@ def parse_processing_areas_config(yml_values):
         raise Exception(
             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
 
-    return (seasonal_utc_offset, city_json_str, min_lon, min_lat, max_lon, max_lat,
+    return (seasonal_utc_offset, city_json_str, source_aoi_crs, min_lon, min_lat, max_lon, max_lat,
             tile_side_meters, tile_buffer_meters, remove_mrt_buffer_for_final_output)
 
 def parse_met_files_config(yml_values, new_task_method):

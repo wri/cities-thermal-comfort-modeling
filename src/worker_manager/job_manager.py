@@ -10,7 +10,8 @@ import shapely
 import dask
 from city_metrix.metrix_tools import is_date
 
-from src.constants import SRC_DIR, FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN, PRIOR_5_YEAR_KEYWORD, TILE_NUMBER_PADCOUNT
+from src.constants import SRC_DIR, FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN, PRIOR_5_YEAR_KEYWORD, TILE_NUMBER_PADCOUNT, \
+    WGS_CRS
 from src.data_validation.manager import print_invalids
 from src.data_validation.meteorological_data_validator import evaluate_meteorological_umep_data
 from src.worker_manager.ancillary_files import write_tile_grid, write_qgis_files
@@ -40,7 +41,8 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     logger = setup_logger(non_tiled_city_data.target_manager_log_path)
     log_general_file_message('Starting jobs', __file__, logger)
 
-    aoi_boundary_polygon, tile_side_meters, tile_buffer_meters, seasonal_utc_offset, config_crs = get_aoi_from_config(non_tiled_city_data)
+    aoi_boundary_polygon, tile_side_meters, tile_buffer_meters, seasonal_utc_offset, source_aoi_crs, target_crs = (
+        get_aoi_from_config(non_tiled_city_data))
 
     combined_results_df = pd.DataFrame(
         columns=['status', 'tile', 'step_index', 'step_method', 'met_filename', 'return_code',
@@ -49,17 +51,25 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
 
     # meteorological data
     if non_tiled_city_data.has_era_met_download:
+        import geopandas as gpd
+        if source_aoi_crs != WGS_CRS:
+            gdf = gpd.GeoDataFrame({'geometry': [aoi_boundary_polygon]}, crs=target_crs)
+            geog_gdf = gdf.to_crs(WGS_CRS)
+            geographic_aoi_boundary_polygon = geog_gdf.geometry[0].wkt
+        else:
+            geographic_aoi_boundary_polygon = aoi_boundary_polygon
+
         log_general_file_message('Retrieving ERA meteorological data', __file__, logger)
         sampling_local_hours = non_tiled_city_data.sampling_local_hours
 
-        start_date, end_date = _determine_era5_era5_date_range(non_tiled_city_data.era5_date_range)
+        start_date, end_date = _determine_era5_date_range(non_tiled_city_data.era5_date_range)
 
         target_met_files_path = non_tiled_city_data.target_met_files_path
         if non_tiled_city_data.new_task_method == 'umep_solweig':
-            return_code = get_umep_met_data(target_met_files_path, aoi_boundary_polygon,
+            return_code = get_umep_met_data(target_met_files_path, geographic_aoi_boundary_polygon,
                                             start_date, end_date, seasonal_utc_offset, sampling_local_hours)
         else:
-            return_code = get_upenn_met_data(target_met_files_path, aoi_boundary_polygon,
+            return_code = get_upenn_met_data(target_met_files_path, geographic_aoi_boundary_polygon,
                                              start_date, end_date, seasonal_utc_offset, sampling_local_hours)
         if return_code != 0:
             print("Stopping. Failed downloading ERA5 meteorological data")
@@ -81,16 +91,16 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
 
     # Retrieve CIF data
     if custom_primary_filenames:
-        tile_unique_values = existing_tiles_metrics[['tile_name', 'boundary', 'avg_res', 'source_crs']].drop_duplicates()
+        no_layer_atts = existing_tiles_metrics[['tile_name', 'boundary', 'avg_res', 'custom_tile_crs']]
+        tile_unique_values = no_layer_atts.drop_duplicates().reset_index(drop=True)
         number_of_tiles = len(tile_unique_values.tile_name)
 
-        # TODO  Assume customer files are always in UTM
-        utm_crs = tile_unique_values['source_crs'].values[0]
+        # TODO  Assume custom files are always in UTM and all tiles have the same UTM
+        custom_source_crs = tile_unique_values['custom_tile_crs'].values[0]
 
-        write_tile_grid(tile_unique_values, utm_crs, non_tiled_city_data.target_qgis_data_path, 'tile_grid')
+        write_tile_grid(tile_unique_values, non_tiled_city_data.target_qgis_data_path, 'tile_grid')
 
         print(f'\nProcessing over {len(tile_unique_values)} existing tiles..')
-        tile_unique_values.reset_index(drop=True, inplace=True)
         for index, tile_metrics in tile_unique_values.iterrows():
             tile_folder_name = tile_metrics['tile_name']
             tile_boundary = tile_metrics['boundary']
@@ -98,21 +108,21 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
 
             proc_array = _construct_tile_proc_array(city_json_str, task_method, source_base_path, target_base_path,
                                                     city_folder_name, tile_folder_name, cif_primary_features,
-                                                    ctcm_intermediate_features, tile_boundary, utm_crs, tile_resolution,
-                                                    seasonal_utc_offset)
+                                                    ctcm_intermediate_features, tile_boundary, tile_resolution,
+                                                    seasonal_utc_offset, custom_source_crs)
 
             log_general_file_message(f'Staging: {proc_array}', __file__, logger)
 
             delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
             futures.append(delay_tile_array)
     else:
-        tile_grid, unbuffered_tile_grid = get_aoi_fishnet(aoi_boundary_polygon, tile_side_meters, tile_buffer_meters, config_crs)
+        tile_grid, unbuffered_tile_grid = (
+            get_aoi_fishnet(aoi_boundary_polygon, tile_side_meters, tile_buffer_meters, source_aoi_crs, target_crs))
         number_of_tiles = tile_grid.shape[0]
-        utm_crs = tile_grid.crs.srs
 
-        write_tile_grid(tile_grid, utm_crs, non_tiled_city_data.target_qgis_data_path, 'tile_grid')
+        write_tile_grid(tile_grid, non_tiled_city_data.target_qgis_data_path, 'tile_grid')
         if unbuffered_tile_grid is not None:
-            write_tile_grid(unbuffered_tile_grid, utm_crs, non_tiled_city_data.target_qgis_data_path, 'unbuffered_tile_grid')
+            write_tile_grid(unbuffered_tile_grid, non_tiled_city_data.target_qgis_data_path, 'unbuffered_tile_grid')
 
         print(f'\nCreating data for {tile_grid.geometry.size} new tiles..')
         tile_grid.reset_index(drop=True, inplace=True)
@@ -125,8 +135,8 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
 
             proc_array = _construct_tile_proc_array(city_json_str, task_method, source_base_path, target_base_path,
                                                     city_folder_name, tile_folder_name, cif_primary_features,
-                                                    ctcm_intermediate_features, tile_boundary, utm_crs, None,
-                                                    seasonal_utc_offset)
+                                                    ctcm_intermediate_features, tile_boundary, None,
+                                                    seasonal_utc_offset, target_crs)
 
             log_general_file_message(f'Staging: {proc_array}', __file__, logger)
 
@@ -150,7 +160,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
 
     if return_code == 0 and delays_all_passed:
         log_general_file_message('Building QGIS viewer objects', __file__, logger)
-        write_qgis_files(non_tiled_city_data, utm_crs)
+        write_qgis_files(non_tiled_city_data)
         return_str = "Processing encountered no errors."
     else:
         return_str = 'Processing encountered errors. See log file.'
@@ -159,7 +169,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
 
     return return_code, return_str
 
-def _determine_era5_era5_date_range(sampling_date_range:str):
+def _determine_era5_date_range(sampling_date_range:str):
     parsed_dates = sampling_date_range.split(',')
 
     current_year = datetime.now().year
@@ -188,7 +198,7 @@ def _transfer_custom_met_files(non_tiled_city_data):
 
 def _construct_tile_proc_array(city_json_str, task_method, source_base_path, target_base_path, city_folder_name,
                                tile_folder_name, cif_primary_features, ctcm_intermediate_features,
-                               tile_boundary, crs, tile_resolution, seasonal_utc_offset):
+                               tile_boundary, tile_resolution, seasonal_utc_offset, target_crs):
     if cif_primary_features:
         cif_features = ','.join(cif_primary_features)
     else:
@@ -209,9 +219,9 @@ def _construct_tile_proc_array(city_json_str, task_method, source_base_path, tar
                   f'--cif_primary_features={cif_features}',
                   f'--ctcm_intermediate_features={ctcm_features}',
                   f'--tile_boundary={tile_boundary}',
-                  f'--crs={crs}',
                   f'--tile_resolution={tile_resolution}',
-                  f'--seasonal_utc_offset={seasonal_utc_offset}'
+                  f'--seasonal_utc_offset={seasonal_utc_offset}',
+                  f'--target_crs={target_crs}'
                   ]
     return proc_array
 

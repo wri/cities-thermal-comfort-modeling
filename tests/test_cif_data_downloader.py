@@ -27,7 +27,7 @@ def test_get_cif_non_terrain_data():
     remove_output_files(cif_feature_list)
 
     get_cif_data(None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, folder_name_city_data, folder_name_tile_data,
-                 cif_features, tile_boundary,  crs,None)
+                 cif_features, tile_boundary,None, crs)
 
     if 'lulc' in cif_feature_list:
         expected_file = os.path.join(tile_data_path, city_data.lulc_tif_filename)
@@ -51,7 +51,7 @@ def test_get_cif_terrain_data():
 
     remove_output_files(cif_feature_list)
     get_cif_data(None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR, folder_name_city_data, folder_name_tile_data,
-                 cif_features, tile_boundary,  crs,None)
+                 cif_features, tile_boundary, None, crs)
 
 
     if 'dem' in cif_feature_list:

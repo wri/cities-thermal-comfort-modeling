@@ -1,9 +1,11 @@
 import os
 
-from PyQt5.QtCore import center
+from city_metrix.constants import ProjectionType, GeoType
+from city_metrix.metrix_tools import get_utm_zone_from_latlon_point, get_projection_type
+from shapely import Point
 
 from src.constants import FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_INTERMEDIATE_DATA, FOLDER_NAME_PRIMARY_MET_FILES, \
-    FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_UMEP_TCM_RESULTS
+    FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_UMEP_TCM_RESULTS, WGS_CRS
 from src.workers.config_processor import *
 
 
@@ -28,7 +30,7 @@ class CityData:
         obj.scenario_short_title, obj.scenario_version, obj.scenario_description, obj.scenario_author = (
             parse_scenario_config(yml_values))
 
-        (obj.seasonal_utc_offset, obj.city_json_str, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat,
+        (obj.seasonal_utc_offset, obj.city_json_str, obj.source_aoi_crs, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat,
          obj.tile_side_meters, obj.tile_buffer_meters, obj.remove_mrt_buffer_for_final_output) = \
             parse_processing_areas_config(yml_values)
 
@@ -38,6 +40,9 @@ class CityData:
             obj.min_lat = geo_bbox.min_y
             obj.max_lon = geo_bbox.max_x
             obj.max_lat = geo_bbox.max_y
+            obj.source_aoi_crs = WGS_CRS
+
+        obj.target_crs = _get_target_crs(city_geoextent, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat, obj.source_aoi_crs)
 
         (obj.dem_tif_filename, obj.dsm_tif_filename, obj.lulc_tif_filename, obj.open_urban_tif_filename, obj.tree_canopy_tif_filename,
          obj.albedo_cloud_masked_tif_filename, obj.custom_primary_feature_list, obj.custom_primary_filenames,
@@ -128,6 +133,21 @@ class CityData:
                 obj.target_svfszip_path = os.path.join(obj.target_intermediate_tile_data_path, obj.skyview_factor_filename)
 
         return obj
+
+def _get_target_crs(city_geoextent, min_lon, min_lat, max_lon, max_lat, source_aoi_crs):
+    target_crs = None
+    if city_geoextent is not None and city_geoextent.geo_type == GeoType.CITY:
+        target_crs = city_geoextent.crs
+    elif min_lon is not None:
+        if source_aoi_crs is not None and get_projection_type(source_aoi_crs) == ProjectionType.UTM:
+            target_crs = source_aoi_crs
+        elif source_aoi_crs is not None and min_lon is not None:
+            center_lon = (min_lon + max_lon) / 2
+            center_lat = (min_lat + max_lat) / 2
+            centroid = Point(center_lon, center_lat)
+            target_crs = get_utm_zone_from_latlon_point(centroid)
+
+    return target_crs
 
 def get_yml_content(source_base_path, folder_name_city_data):
     source_city_path = str(os.path.join(source_base_path, folder_name_city_data))

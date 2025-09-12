@@ -11,10 +11,11 @@ from src.workers.worker_dao import write_raster_vrt_gdal, write_raster_vrt_wri
 from src.workers.worker_tools import create_folder, write_commented_yaml, read_commented_yaml, remove_file
 
 
-def write_qgis_files(city_data, crs_str):
+def write_qgis_files(city_data):
     from src.worker_manager.reporter import find_files_with_substring_in_name
 
     target_city_path = city_data.target_city_path
+    crs_str = city_data.target_crs
     target_qgis_data_folder = city_data.target_qgis_data_path
     create_folder(target_qgis_data_folder)
 
@@ -286,7 +287,7 @@ def add_tile_name_column(tile_grid):
                               .apply(lambda x: f'tile_{str(x + 1).zfill(TILE_NUMBER_PADCOUNT)}'))
     return tile_grid
 
-def write_tile_grid(tile_grid, source_crs, target_qgis_data_path, filename):
+def write_tile_grid(tile_grid, target_qgis_data_path, filename):
     from shapely import wkt
     import geopandas as gpd
 
@@ -312,8 +313,6 @@ def write_tile_grid(tile_grid, source_crs, target_qgis_data_path, filename):
         raise Exception("inconvertible")
 
     modified_tile_grid = add_tile_name_column(modified_tile_grid)
-
-    # projected_gdf = gpd.GeoDataFrame(modified_tile_grid, crs=source_crs)
 
     target_file_name = f'{filename}.geojson'
     target_path = target_qgis_data_path

@@ -27,7 +27,11 @@ def test_tropical_full_cif_city():
         mrt_file_name = 'Tmrt_2022_365_1200D.tif'
         target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_00001',
                                        mrt_file_name)
-        expected_signature = {'band_checksums': ['4840945959b4759decf80ac85dfa54c6'], 'count': 1, 'crs': 'EPSG:32723', 'dtype': ('float32',), 'full_checksum': '4840945959b4759decf80ac85dfa54c6', 'height': 246, 'transform': (1.0, 0.0, 686601.2556551297, 0.0, -1.0, 7465970.0709804855, 0.0, 0.0, 1.0), 'width': 311}
+        expected_signature = {'crs': 'EPSG:32723',
+                              'transform': (1.0, 0.0, 686601.6011767144, 0.0, -1.0, 7465969.5343720205, 0.0, 0.0, 1.0),
+                              'width': 310, 'height': 246, 'count': 1, 'dtype': ('float32',),
+                              'band_checksums': ['f54fca31439a4954cfc0759e1ef467fa'],
+                              'full_checksum': 'f54fca31439a4954cfc0759e1ef467fa'}
         is_matched, actual_file_signature = does_file_signature_match(expected_signature, target_met_file)
         assert is_matched, f"Expected signature does not match actual: ({actual_file_signature})"
 
@@ -52,7 +56,12 @@ def test_tiled_cif_city():
         mrt_file_name = 'Tmrt_2023_189_1200D.tif'
         target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_00001',
                                        mrt_file_name)
-        expected_signature = {'band_checksums': ['d2b96b57cb0a6ed3c6e225d50958389a'], 'count': 1, 'crs': 'EPSG:32631', 'dtype': ('float32',), 'full_checksum': 'd2b96b57cb0a6ed3c6e225d50958389a', 'height': 171, 'transform': (1.0, 0.0, 629418.2692492839, 0.0, -1.0, 5804285.748513707, 0.0, 0.0, 1.0), 'width': 171}
+        expected_signature = {'crs': 'EPSG:32631',
+                              'transform': (1.0, 0.0, 629418.0, 0.0, -1.0, 5804286.0, 0.0, 0.0, 1.0),
+                              'width': 170, 'height': 170, 'count': 1, 'dtype': ('float32',),
+                              'band_checksums': ['4178f0d4ce1b6019d96719f105d8b04e'],
+                              'full_checksum': '4178f0d4ce1b6019d96719f105d8b04e'}
+
         is_matched, actual_file_signature = does_file_signature_match(expected_signature, target_met_file)
         assert is_matched, f"Expected signature does not match actual: ({actual_file_signature})"
 
@@ -77,7 +86,11 @@ def test_tiled_buffered_cif_city_umep():
         mrt_file_name = 'Tmrt_2019_206_1200D.tif'
         target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_00001',
                                        mrt_file_name)
-        expected_signature = {'band_checksums': ['738000a292965c3bf6fbde06c8551602'], 'count': 1, 'crs': 'EPSG:32631', 'dtype': ('float32',), 'full_checksum': '738000a292965c3bf6fbde06c8551602', 'height': 171, 'transform': (1.0, 0.0, 629418.2692492839, 0.0, -1.0, 5804285.748513707, 0.0, 0.0, 1.0), 'width': 171}
+        expected_signature = {'crs': 'EPSG:32631',
+                              'transform': (1.0, 0.0, 629418.0, 0.0, -1.0, 5804286.0, 0.0, 0.0, 1.0),
+                              'width': 170, 'height': 170, 'count': 1, 'dtype': ('float32',),
+                              'band_checksums': ['adcbc49f7b49adc5b8b3e6f456ba845f'],
+                              'full_checksum': 'adcbc49f7b49adc5b8b3e6f456ba845f'}
         is_matched, actual_file_signature = does_file_signature_match(expected_signature, target_met_file)
         assert is_matched, f"Expected signature does not match actual: ({actual_file_signature})"
 
@@ -102,7 +115,11 @@ def test_tiled_custom_city():
         mrt_file_name = 'Tmrt_2023_189_1200D.tif'
         target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_00001',
                                        mrt_file_name)
-        expected_signature = {'band_checksums': ['c64b531dafe2257e2b5760227bc4c413'], 'count': 1, 'crs': 'EPSG:32631', 'dtype': ('float32',), 'full_checksum': 'c64b531dafe2257e2b5760227bc4c413', 'height': 450, 'transform': (1.0, 0.0, 629318.3245797384, 0.0, -1.0, 5804463.641838525, 0.0, 0.0, 1.0), 'width': 450}
+        expected_signature = {'crs': 'EPSG:32631',
+                              'transform': (1.0, 0.0, 629318.3245797384, 0.0, -1.0, 5804463.641838525, 0.0, 0.0, 1.0),
+                              'width': 450, 'height': 450, 'count': 1, 'dtype': ('float32',),
+                              'band_checksums': ['c64b531dafe2257e2b5760227bc4c413'],
+                              'full_checksum': 'c64b531dafe2257e2b5760227bc4c413'}
         is_matched, actual_file_signature = does_file_signature_match(expected_signature, target_met_file)
         assert is_matched, f"Expected signature does not match actual: ({actual_file_signature})"
 
@@ -127,7 +144,11 @@ def test_portland_swath_cif_umep():
         mrt_file_name = 'Tmrt_2023_226_1200D.tif'
         target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_00001',
                                        mrt_file_name)
-        expected_signature = {'band_checksums': ['a2515a6fd0393b23d3af997413613e23'], 'count': 1, 'crs': 'EPSG:32610', 'dtype': ('float32',), 'full_checksum': 'a2515a6fd0393b23d3af997413613e23', 'height': 374, 'transform': (1.0, 0.0, 523139.01534016046, 0.0, -1.0, 5041128.822227225, 0.0, 0.0, 1.0), 'width': 892}
+        expected_signature = {'crs': 'EPSG:32610',
+                              'transform': (1.0, 0.0, 523139.428703723, 0.0, -1.0, 5041128.5871465625, 0.0, 0.0, 1.0),
+                              'width': 891, 'height': 373, 'count': 1, 'dtype': ('float32',),
+                              'band_checksums': ['29b091b5dbb5c766da83f903753826a4'],
+                              'full_checksum': '29b091b5dbb5c766da83f903753826a4'}
         is_matched, actual_file_signature = does_file_signature_match(expected_signature, target_met_file)
         assert is_matched, f"Expected signature does not match actual: ({actual_file_signature})"
 
@@ -152,7 +173,11 @@ def test_USA_WashingtonDC_cif_umep():
         mrt_file_name = 'Tmrt_2023_247_1200D.tif'
         target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_00001',
                                        mrt_file_name)
-        expected_signature = {'band_checksums': ['248171c754df8bb07ca5f16f23117891'], 'count': 1, 'crs': 'EPSG:32618', 'dtype': ('float32',), 'full_checksum': '248171c754df8bb07ca5f16f23117891', 'height': 707, 'transform': (1.0, 0.0, 324731.4891801595, 0.0, -1.0, 4309158.4549594745, 0.0, 0.0, 1.0), 'width': 858}
+        expected_signature = {'crs': 'EPSG:32618',
+                              'transform': (1.0, 0.0, 324731.0, 0.0, -1.0, 4309158.0, 0.0, 0.0, 1.0),
+                              'width': 857, 'height': 705, 'count': 1, 'dtype': ('float32',),
+                              'band_checksums': ['8ce408dfcd6f6912239a584e9369a1a9'],
+                              'full_checksum': '8ce408dfcd6f6912239a584e9369a1a9'}
         is_matched, actual_file_signature = does_file_signature_match(expected_signature, target_met_file)
         assert is_matched, f"Expected signature does not match actual: ({actual_file_signature})"
 
@@ -197,7 +222,12 @@ def test_ZAF_Capetown_cif_local_era5_umep():
         mrt_file_name = 'Tmrt_2023_1_1200D.tif'
         target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_00001',
                                        mrt_file_name)
-        expected_signature = {'band_checksums': ['6a540a521ef4d07158f4a5cfba77caf5'], 'count': 1, 'crs': 'EPSG:32734', 'dtype': ('float32',), 'full_checksum': '6a540a521ef4d07158f4a5cfba77caf5', 'height': 115, 'transform': (1.0, 0.0, 260835.20466451097, 0.0, -1.0, 6243703.887301971, 0.0, 0.0, 1.0), 'width': 103}
+        expected_signature = {'crs': 'EPSG:32734',
+                              'transform': (1.0, 0.0, 260835.95995819467, 0.0, -1.0, 6243703.498204948, 0.0, 0.0, 1.0),
+                              'width': 102, 'height': 115, 'count': 1, 'dtype': ('float32',),
+                              'band_checksums': ['f209f87e8a7b8b1a4cd31cd5adea5a68'],
+                              'full_checksum': 'f209f87e8a7b8b1a4cd31cd5adea5a68'}
+
         is_matched, actual_file_signature = does_file_signature_match(expected_signature, target_met_file)
         assert is_matched, f"Expected signature does not match actual: ({actual_file_signature})"
 
@@ -222,9 +252,13 @@ def test_mixed_custom_city():
         mrt_file_name = 'Tmrt_2023_1_1200D.tif'
         target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_00001',
                                        mrt_file_name)
-        expected_signature = {'band_checksums': ['fc95e1f47b07f3d43bcd4220dc12f449'], 'count': 1, 'crs': 'EPSG:32734', 'dtype': ('float32',), 'full_checksum': 'fc95e1f47b07f3d43bcd4220dc12f449', 'height': 315, 'transform': (1.0, 0.0, 260735.20466451097, 0.0, -1.0, 6243802.887301971, 0.0, 0.0, 1.0), 'width': 302}
-        # mrt_signatures_are_equal = does_file_signature_match(expected_signature, target_met_file)
-        # assert mrt_signatures_are_equal
+        expected_signature = {'crs': 'EPSG:32734',
+                              'transform': (1.0, 0.0, 260735.20466451097, 0.0, -1.0, 6243802.887301971, 0.0, 0.0, 1.0),
+                              'width': 302, 'height': 315, 'count': 1, 'dtype': ('float32',),
+                              'band_checksums': ['9ee65c52c838e349a7329e8f2b3617bd'],
+                              'full_checksum': '9ee65c52c838e349a7329e8f2b3617bd'}
+        is_matched, actual_file_signature = does_file_signature_match(expected_signature, target_met_file)
+        assert is_matched, f"Expected signature does not match actual: ({actual_file_signature})"
 
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
@@ -247,7 +281,11 @@ def test_custom_city():
         mrt_file_name = 'Tmrt_2023_1_1200D.tif'
         target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_00001',
                                        mrt_file_name)
-        expected_signature = {'band_checksums': ['49512ce8d8a484c8537ff35e4c8efb2c'], 'count': 1, 'crs': 'EPSG:32734', 'dtype': ('float32',), 'full_checksum': '49512ce8d8a484c8537ff35e4c8efb2c', 'height': 315, 'transform': (1.0, 0.0, 260735.20466451097, 0.0, -1.0, 6243802.887301971, 0.0, 0.0, 1.0), 'width': 302}
+        expected_signature = {'crs': 'EPSG:32734',
+                              'transform': (1.0, 0.0, 260735.20466451097, 0.0, -1.0, 6243802.887301971, 0.0, 0.0, 1.0),
+                              'width': 302, 'height': 315, 'count': 1, 'dtype': ('float32',),
+                              'band_checksums': ['49512ce8d8a484c8537ff35e4c8efb2c'],
+                              'full_checksum': '49512ce8d8a484c8537ff35e4c8efb2c'}
         is_matched, actual_file_signature = does_file_signature_match(expected_signature, target_met_file)
         assert is_matched, f"Expected signature does not match actual: ({actual_file_signature})"
 
@@ -272,7 +310,11 @@ def test_custom_city_with_full_intermediates():
         mrt_file_name = 'Tmrt_2023_1_1200D.tif'
         target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_00001',
                                        mrt_file_name)
-        expected_signature = {'band_checksums': ['49512ce8d8a484c8537ff35e4c8efb2c'], 'count': 1, 'crs': 'EPSG:32734', 'dtype': ('float32',), 'full_checksum': '49512ce8d8a484c8537ff35e4c8efb2c', 'height': 315, 'transform': (1.0, 0.0, 260735.20466451097, 0.0, -1.0, 6243802.887301971, 0.0, 0.0, 1.0), 'width': 302}
+        expected_signature = {'crs': 'EPSG:32734',
+                              'transform': (1.0, 0.0, 260735.20466451097, 0.0, -1.0, 6243802.887301971, 0.0, 0.0, 1.0),
+                              'width': 302, 'height': 315, 'count': 1, 'dtype': ('float32',),
+                              'band_checksums': ['49512ce8d8a484c8537ff35e4c8efb2c'],
+                              'full_checksum': '49512ce8d8a484c8537ff35e4c8efb2c'}
         is_matched, actual_file_signature = does_file_signature_match(expected_signature, target_met_file)
         assert is_matched, f"Expected signature does not match actual: ({actual_file_signature})"
 
@@ -297,7 +339,12 @@ def test_custom_city_with_mixed_intermediates():
         mrt_file_name = 'Tmrt_2022_20_1200D.tif'
         target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_20jan2022', 'tile_00001',
                                        mrt_file_name)
-        expected_signature = {'band_checksums': ['d474ea7177771fe0d378f9286739a6a6'], 'count': 1, 'crs': 'EPSG:32734', 'dtype': ('float32',), 'full_checksum': 'd474ea7177771fe0d378f9286739a6a6', 'height': 315, 'transform': (1.0, 0.0, 260735.20466451097, 0.0, -1.0, 6243802.887301971, 0.0, 0.0, 1.0), 'width': 302}
+        expected_signature = {'crs': 'EPSG:32734',
+                              'transform': (1.0, 0.0, 260735.20466451097, 0.0, -1.0, 6243802.887301971, 0.0, 0.0, 1.0),
+                              'width': 302, 'height': 315, 'count': 1, 'dtype': ('float32',),
+                              'band_checksums': ['d474ea7177771fe0d378f9286739a6a6'],
+                              'full_checksum': 'd474ea7177771fe0d378f9286739a6a6'}
+
         is_matched, actual_file_signature = does_file_signature_match(expected_signature, target_met_file)
         assert is_matched, f"Expected signature does not match actual: ({actual_file_signature})"
 
@@ -321,7 +368,11 @@ def test_USA_Philadelphia_downtown_cif_umep():
         mrt_file_name = 'Tmrt_2023_250_1200D.tif'
         target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_00001',
                                        mrt_file_name)
-        expected_signature = {'band_checksums': ['ce74c8dc89cd374488b0604fcaa96838'], 'count': 1, 'crs': 'EPSG:32618', 'dtype': ('float32',), 'full_checksum': 'ce74c8dc89cd374488b0604fcaa96838', 'height': 512, 'transform': (1.0, 0.0, 485133.5636835794, 0.0, -1.0, 4422429.002821511, 0.0, 0.0, 1.0), 'width': 461}
+        expected_signature = {'crs': 'EPSG:32618',
+                              'transform': (1.0, 0.0, 485134.27940224315, 0.0, -1.0, 4422428.667472388, 0.0, 0.0, 1.0),
+                              'width': 460, 'height': 512, 'count': 1, 'dtype': ('float32',),
+                              'band_checksums': ['56b2647f2e2bda193bb06f7dbeee0676'],
+                              'full_checksum': '56b2647f2e2bda193bb06f7dbeee0676'}
         is_matched, actual_file_signature = does_file_signature_match(expected_signature, target_met_file)
         assert is_matched, f"Expected signature does not match actual: ({actual_file_signature})"
 

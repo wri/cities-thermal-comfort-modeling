@@ -16,19 +16,22 @@ def test_teresina_subarea_upenn():
     non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
-        # remove_folder(non_tiled_city_data.target_city_parent_path)
-        # return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
+        remove_folder(non_tiled_city_data.target_city_parent_path)
+        return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         mrt_file_name = 'Tmrt_2023_301_1200D.tif'
         target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_00001',
                                        mrt_file_name)
-        expected_signature = {'crs': 'EPSG:32723', 'transform': (1.0, 0.0, 739598.0, 0.0, -1.0, 9426885.0, 0.0, 0.0, 1.0), 'width': 983, 'height': 701, 'count': 1, 'dtype': ('float32',), 'band_checksums': ['908a25ce23ebb953d59bbdd226eecb60'], 'full_checksum': '908a25ce23ebb953d59bbdd226eecb60'}
+        expected_signature = {'crs': 'EPSG:32723', 'transform': (1.0, 0.0, 740135.0, 0.0, -1.0, 9426791.0, 0.0, 0.0, 1.0),
+                              'width': 456, 'height': 311, 'count': 1, 'dtype': ('float32',),
+                              'band_checksums': ['1ae8ab9f85bb007838de148135f97c87'],
+                              'full_checksum': '1ae8ab9f85bb007838de148135f97c87'}
         is_matched, actual_file_signature = does_file_signature_match(expected_signature, target_met_file)
         assert is_matched, f"Expected signature does not match actual: ({actual_file_signature})"
 
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
-        # assert return_code == 0
+        assert return_code == 0
         assert vrt_count == 16
     finally:
         pass

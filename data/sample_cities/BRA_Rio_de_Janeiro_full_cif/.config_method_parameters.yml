@@ -17,10 +17,10 @@
   city: None
   aoi_bounds:
     epsg_code: 4326
-    min_lon: -43.18064
-    min_lat: -22.90604
-    max_lon: -43.17765
-    max_lat: -22.90386
+    west: -43.18064
+    south: -22.90604
+    east: -43.17765
+    north: -22.90386
   tile_side_meters: None
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: True

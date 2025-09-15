@@ -45,25 +45,25 @@ directory = r'C:\Users\kenn.cartier\Documents\github\cities-thermal-comfort-mode
 
 make_yml_backup(directory)
 
-old_string = '# Specify None for tile_side_meters'
-new_string = '# Specify either city_id/aoi_id json, an aoi_bounds, or both for when city extent includes the aoi_bounds. Specify the\n# EPSG code for aoi_bounds coordinates. See ZZZ_template_city for example ciy specification.\n# Specify None for tile_side_meters'
-find_and_replace(directory, old_string, new_string, False)
-
-old_string = '  min_lon:'
-new_string = '  city: None\n  aoi_bounds:\n    epsg_code: 4326\n    min_lon:'
-find_and_replace(directory, old_string, new_string, False)
-
-old_string = '  min_lat:'
-new_string = '    min_lat:'
-find_and_replace(directory, old_string, new_string, False)
-
-old_string = '  max_lon:'
-new_string = '    max_lon:'
-find_and_replace(directory, old_string, new_string, False)
-
-old_string = '  max_lat:'
-new_string = '    max_lat:'
-find_and_replace(directory, old_string, new_string, False)
+# old_string = '# Specify None for tile_side_meters'
+# new_string = '# Specify either city_id/aoi_id json, an aoi_bounds, or both for when city extent includes the aoi_bounds. Specify the\n# EPSG code for aoi_bounds coordinates. See ZZZ_template_city for example ciy specification.\n# Specify None for tile_side_meters'
+# find_and_replace(directory, old_string, new_string, False)
+#
+# old_string = '  min_lon:'
+# new_string = '  city: None\n  aoi_bounds:\n    epsg_code: 4326\n    west:'
+# find_and_replace(directory, old_string, new_string, False)
+#
+# old_string = '  min_lat:'
+# new_string = '    south:'
+# find_and_replace(directory, old_string, new_string, False)
+#
+# old_string = '  max_lon:'
+# new_string = '    east:'
+# find_and_replace(directory, old_string, new_string, False)
+#
+# old_string = '  max_lat:'
+# new_string = '    north:'
+# find_and_replace(directory, old_string, new_string, False)
 
 # old_string = ''
 # new_string = ''

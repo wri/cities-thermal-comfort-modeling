@@ -17,10 +17,10 @@
   city: {"city_id": "BRA-Teresina", "aoi_id": "urban_extent"}
   aoi_bounds:
     epsg_code: 4326
-    min_lon: <>
-    min_lat: <>
-    max_lon: <>
-    max_lat: <>
+    west: <>
+    south: <>
+    east: <>
+    north: <>
   tile_side_meters: None
   tile_buffer_meters: 600
   remove_mrt_buffer_for_final_output: True

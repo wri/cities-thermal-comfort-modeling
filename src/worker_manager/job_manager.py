@@ -9,6 +9,7 @@ import pandas as pd
 import shapely
 import dask
 from city_metrix.metrix_tools import is_date
+from shapely import wkt
 
 from src.constants import SRC_DIR, FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN, PRIOR_5_YEAR_KEYWORD, TILE_NUMBER_PADCOUNT, \
     WGS_CRS
@@ -55,7 +56,8 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
         if source_aoi_crs != WGS_CRS:
             gdf = gpd.GeoDataFrame({'geometry': [aoi_boundary_polygon]}, crs=target_crs)
             geog_gdf = gdf.to_crs(WGS_CRS)
-            geographic_aoi_boundary_polygon = geog_gdf.geometry[0].wkt
+            geographic_aoi_boundary_polygon_wkt = geog_gdf.geometry[0].wkt
+            geographic_aoi_boundary_polygon = wkt.loads(geographic_aoi_boundary_polygon_wkt)
         else:
             geographic_aoi_boundary_polygon = aoi_boundary_polygon
 

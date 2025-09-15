@@ -22,9 +22,13 @@ def test_ZAF_Capetown_cif_upenn():
         mrt_file_name = 'Tmrt_2023_1_1200D.tif'
         target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_00001',
                                        mrt_file_name)
-        expected_signature = {'band_checksums': ['3e0e5bbedc56aa562e4e54d41a5dd68a'], 'count': 1, 'crs': 'EPSG:32734', 'dtype': ('float32',), 'full_checksum': '3e0e5bbedc56aa562e4e54d41a5dd68a', 'height': 115, 'transform': (1.0, 0.0, 260835.20466451097, 0.0, -1.0, 6243703.887301971, 0.0, 0.0, 1.0), 'width': 103}
-        mrt_signatures_are_equal = does_file_signature_match(expected_signature, target_met_file)
-        assert mrt_signatures_are_equal
+        expected_signature = {'crs': 'EPSG:32734',
+                              'transform': (1.0, 0.0, 260835.95995819467, 0.0, -1.0, 6243703.498204948, 0.0, 0.0, 1.0),
+                              'width': 102, 'height': 115, 'count': 1, 'dtype': ('float32',),
+                              'band_checksums': ['324aaaa2166f661cf700ff980bed0ef0'],
+                              'full_checksum': '324aaaa2166f661cf700ff980bed0ef0'}
+        is_matched, actual_file_signature = does_file_signature_match(expected_signature, target_met_file)
+        assert is_matched, f"Expected signature does not match actual: ({actual_file_signature})"
 
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
@@ -46,11 +50,16 @@ def test_ZAF_Capetown_cif_umep():
         mrt_file_name = 'Tmrt_2023_1_1200D.tif'
         target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_00001',
                                        mrt_file_name)
-        expected_signature = get_geotiff_signature(target_met_file)
+        # expected_signature = get_geotiff_signature(target_met_file)
 
-        # expected_signature =
-        mrt_signatures_are_equal = does_file_signature_match(expected_signature, target_met_file)
-        assert mrt_signatures_are_equal
+        expected_signature = {'crs': 'EPSG:32734',
+                              'transform': (1.0, 0.0, 260835.95995819467, 0.0, -1.0, 6243703.498204948, 0.0, 0.0, 1.0),
+                              'width': 102, 'height': 115, 'count': 1, 'dtype': ('float32',),
+                              'band_checksums': ['f209f87e8a7b8b1a4cd31cd5adea5a68'],
+                              'full_checksum': 'f209f87e8a7b8b1a4cd31cd5adea5a68'}
+
+        is_matched, actual_file_signature = does_file_signature_match(expected_signature, target_met_file)
+        assert is_matched, f"Expected signature does not match actual: ({actual_file_signature})"
 
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 

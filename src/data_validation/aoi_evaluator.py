@@ -48,20 +48,21 @@ def evaluate_aoi_primary_configs(non_tiled_city_data, city_geoextent, existing_t
             msg = f'If specified, AOI epsg code must be 4326 or a WGS84 UTM epsg code in {FILENAME_METHOD_YML_CONFIG}'
             invalids.append((msg, True))
 
-    target_crs = non_tiled_city_data.target_crs
-    if target_crs is None:
+    source_aoi_crs = non_tiled_city_data.source_aoi_crs
+    target_aoi_crs = non_tiled_city_data.target_crs
+    if target_aoi_crs is None:
         msg = f'Target CRS could not be determined from city or aoi_bounds in {FILENAME_METHOD_YML_CONFIG}'
         invalids.append((msg, True))
 
-    if custom_tile_crs is not None and custom_tile_crs[0] != target_crs:
+    if custom_tile_crs is not None and custom_tile_crs[0] != target_aoi_crs:
         msg = f'Custom tile CRS does not match target CRS determined from {FILENAME_METHOD_YML_CONFIG}'
         invalids.append((msg, True))
 
-    if get_projection_type(target_crs) == ProjectionType.GEOGRAPHIC:
+    if get_projection_type(source_aoi_crs) == ProjectionType.GEOGRAPHIC:
         msg = f'WARNING: Result bounds will be imprecise since target CRS is WGS84 as configured in {FILENAME_METHOD_YML_CONFIG}'
         invalids.append((msg, False))
 
-    if get_projection_type(target_crs) == ProjectionType.UTM and non_tiled_city_data.city_json_str is None:
+    if get_projection_type(source_aoi_crs) == ProjectionType.UTM and non_tiled_city_data.city_json_str is None:
         msg = f'WARNING: Result bounds will be imprecise since city option is not configured in {FILENAME_METHOD_YML_CONFIG}'
         invalids.append((msg, False))
 
@@ -69,10 +70,16 @@ def evaluate_aoi_primary_configs(non_tiled_city_data, city_geoextent, existing_t
     if aoi_min_lon is not None:
         if (not isinstance(aoi_min_lon, numbers.Number) or not isinstance(aoi_min_lat, numbers.Number) or
                 not isinstance(aoi_max_lon, numbers.Number) or not isinstance(aoi_max_lat, numbers.Number)):
-            msg = f'Parameters in NewProcessingAOI section must be defined in {FILENAME_METHOD_YML_CONFIG}'
+            msg = f'All coordinates in ProcessingAOI section must be defined in {FILENAME_METHOD_YML_CONFIG}'
             invalids.append((msg, True))
 
-        if target_crs == WGS_CRS:
+        if source_aoi_crs != WGS_CRS:
+            if not (isinstance(aoi_min_lon, int) and isinstance(aoi_min_lat, int)
+                    and isinstance(aoi_max_lon, int) and isinstance(aoi_max_lat, int)):
+                msg = f'AOI UTM coordinates must be integers of whole meters for {FILENAME_METHOD_YML_CONFIG}'
+                invalids.append((msg, True))
+
+        if source_aoi_crs == WGS_CRS:
             if not (-180 <= aoi_min_lon <= 180) or not (-180 <= aoi_max_lon <= 180):
                 msg = f'Min and max longitude values must be between -180 and 180 in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
                 invalids.append((msg, True))
@@ -106,7 +113,7 @@ def evaluate_aoi_primary_configs(non_tiled_city_data, city_geoextent, existing_t
     # projection distortion. UTM zone size is ~6degrees*111km/degree or ~700km at the equator, so 500km seems a
     # reasonable compromise value.
     maximum_side_length_m = 500000 # 500 km
-    if target_crs == WGS_CRS:
+    if source_aoi_crs == WGS_CRS:
         center_lon = (aoi_min_lon + aoi_max_lon)/2
         lat_offset_m = get_haversine_distance(center_lon, aoi_min_lat, center_lon, aoi_max_lat)
         if lat_offset_m > maximum_side_length_m:

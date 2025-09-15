@@ -22,7 +22,7 @@
     max_lon: None
     max_lat: None
   tile_side_meters: 1000
-  tile_buffer_meters: 600
+  tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: True
 # Names of custom meteorological file(s) or ERA5 data range. Maximum of two filenames can be specified.
 # For custom files, specify the filename with either .csv extension for UPenn model or .txt extension for UMEP model

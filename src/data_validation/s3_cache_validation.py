@@ -1,7 +1,8 @@
 from city_metrix import GeoExtent
+from city_metrix.cache_manager import is_cache_usable
 from city_metrix.constants import CTCM_PADDED_AOI_BUFFER, GeoType
 from city_metrix.layers import FabDEM, OpenUrban, OvertureBuildingsDSM, AlbedoCloudMasked, TreeCanopyHeightCTCM
-from city_metrix.cache_manager import determine_cache_usability
+
 from city_metrix.metrix_tools import is_openurban_available_for_city
 from src.constants import S3_PUBLICATION_BUCKET, S3_PUBLICATION_ENV
 
@@ -38,8 +39,8 @@ def check_city_data_availability(city_geoextent: GeoExtent):
     return invalids
 
 def _check_layer_availability(layer_object, city_geoextent):
-    layer_has_usable_cache = determine_cache_usability(S3_PUBLICATION_BUCKET, S3_PUBLICATION_ENV, layer_object, city_geoextent,
-                                                     aoi_buffer_m=CTCM_PADDED_AOI_BUFFER, city_aoi_modifier=None)
+    layer_has_usable_cache = is_cache_usable(S3_PUBLICATION_BUCKET, S3_PUBLICATION_ENV, layer_object, city_geoextent,
+                                                     aoi_buffer_m=CTCM_PADDED_AOI_BUFFER, city_aoi_subarea=None)
 
     if not layer_has_usable_cache:
         msg = (f"Cache not found for {city_geoextent.city_id}, {city_geoextent.aoi_id}, {layer_object.__class__.__name__}, "

@@ -31,6 +31,12 @@ MIN_LAYER_RETRY_MINS = 2
 MAX_LAYER_RETRY_MINS = 5
 MAX_RETRY_COUNT = 3
 
+# The wait time constants below were reduced from 10-30 seconds to 5-10 seconds.
+# This change was made to improve responsiveness and reduce overall processing time,
+# based on recent testing which showed no increase in contention or throttling issues
+# with the external services being accessed. If contention or rate limiting is observed
+# in the future, consider increasing these values or implementing exponential backoff.
+
 def get_cif_data(city_json_str, source_base_path, target_base_path, folder_name_city_data, tile_id, cif_primary_features,
                  tile_boundary, tile_resolution, target_crs):
     start_time = datetime.now()

@@ -28,7 +28,7 @@ def run_upenn_module(step_index, step_method, folder_name_city_data, folder_name
                      target_base_path, met_filename, seasonal_utc_offset):
     start_time = datetime.now()
 
-    tiled_city_data = CityData(folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
+    tiled_city_data = CityData(None, folder_name_city_data, folder_name_tile_data, source_base_path, target_base_path)
     processing_logger = setup_logger(tiled_city_data.target_model_log_path)
     metadata_logger = setup_metadata_logger(tiled_city_data.target_umep_metadata_log_path)
     method_title = _assign_method_title(step_method)

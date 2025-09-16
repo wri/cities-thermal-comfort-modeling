@@ -38,7 +38,9 @@ def file_count_in_vrt_directory(non_tiled_city_data):
 
 def does_file_signature_match(expected_signature, file):
     file_signature = get_geotiff_signature(file)
-    return True if file_signature == expected_signature else False
+    is_matched = True if file_signature == expected_signature else False
+
+    return is_matched, file_signature
 
 
 def get_geotiff_signature(file_path):

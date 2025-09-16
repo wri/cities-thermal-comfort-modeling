@@ -14,9 +14,9 @@ from src.workers.worker_tools import create_folder, unpack_quoted_value, save_ti
 
 PROCESSING_PAUSE_TIME_SEC = 10
 
-def process_tile(task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
-                 cif_primary_features, ctcm_intermediate_features, tile_boundary, crs, tile_resolution, seasonal_utc_offset):
-    tiled_city_data = CityData(city_folder_name, tile_folder_name, source_base_path, target_base_path)
+def process_tile(city_json_str, task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
+                 cif_primary_features, ctcm_intermediate_features, tile_boundary, tile_resolution, seasonal_utc_offset, target_crs):
+    tiled_city_data = CityData(None, city_folder_name, tile_folder_name, source_base_path, target_base_path)
     cif_primary_features = unpack_quoted_value(cif_primary_features)
     custom_primary_features = tiled_city_data.custom_primary_feature_list
     target_tcm_results_path = tiled_city_data.target_tcm_results_path
@@ -25,11 +25,12 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
     seasonal_utc_offset = unpack_quoted_value(seasonal_utc_offset)
     met_filenames = tiled_city_data.met_filenames
 
-    def _execute_retrieve_cif_data(source_path, target_path, folder_city, folder_tile, cif_features,
-                                   boundary, crs, resolution):
+    def _execute_retrieve_cif_data(cif_city_json_str, source_path, target_path, folder_city, folder_tile, cif_features,
+                                   boundary, resolution, target_crs):
         from source_cif_data_downloader import get_cif_data
         cif_stdout = \
-            get_cif_data(source_path, target_path, folder_city, folder_tile, cif_features, boundary, crs, resolution)
+            get_cif_data(cif_city_json_str, source_path, target_path, folder_city, folder_tile, cif_features, boundary,
+                         resolution, target_crs)
         return cif_stdout
 
     def _execute_mrt_method(step_index, task_method, folder_city, folder_tile, source_path, target_path, met_names, offset_utc):
@@ -107,9 +108,9 @@ def process_tile(task_method, source_base_path, target_base_path, city_folder_na
 
     # get cif data
     if cif_primary_features is not None:
-        return_val = _execute_retrieve_cif_data(source_base_path, target_base_path, city_folder_name,
-                                                tile_folder_name, cif_primary_features, tile_boundary, crs,
-                                                tile_resolution)
+        return_val = _execute_retrieve_cif_data(city_json_str, source_base_path, target_base_path, city_folder_name,
+                                                tile_folder_name, cif_primary_features, tile_boundary,
+                                                tile_resolution, target_crs)
         return_stdouts.append(return_val)
         time.sleep(PROCESSING_PAUSE_TIME_SEC)
 
@@ -251,6 +252,7 @@ def _enforce_tiff_upper_left_origin(tile_data_path, file_path):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Process tile.')
+    parser.add_argument('--city_json_str', metavar='str', required=True, help='city to be processed')
     parser.add_argument('--task_method', metavar='str', required=True, help='method to run')
     parser.add_argument('--source_base_path', metavar='path', required=True, help='folder for source data')
     parser.add_argument('--target_base_path', metavar='path', required=True, help='folder for writing data')
@@ -259,15 +261,15 @@ if __name__ == "__main__":
     parser.add_argument('--cif_primary_features', metavar='str', required=True, help='coma-delimited list of cif features to retrieve')
     parser.add_argument('--ctcm_intermediate_features', metavar='str', required=True, help='coma-delimited list of intermediates to be created')
     parser.add_argument('--tile_boundary', metavar='str', required=True, help='geographic boundary of tile')
-    parser.add_argument('--crs', metavar='str', required=True, help='coordinate reference system')
     parser.add_argument('--tile_resolution', metavar='str', required=True, help='resolution of tile in m.')
     parser.add_argument('--seasonal_utc_offset', metavar='str', required=True, help='seasonal hour offset from utc')
+    parser.add_argument('--target_crs', metavar='str', required=True, help='CRS used for tile generation')
 
     args = parser.parse_args()
 
-    return_stdout =process_tile(args.task_method, args.source_base_path, args.target_base_path,
+    return_stdout =process_tile(args.city_json_str, args.task_method, args.source_base_path, args.target_base_path,
                                 args.city_folder_name, args.tile_folder_name,
                                 args.cif_primary_features, args.ctcm_intermediate_features,
-                                args.tile_boundary, args.crs, args.tile_resolution, args.seasonal_utc_offset)
+                                args.tile_boundary, args.tile_resolution, args.seasonal_utc_offset, args.target_crs)
 
     print(return_stdout)

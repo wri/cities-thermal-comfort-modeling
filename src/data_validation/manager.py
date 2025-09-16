@@ -1,4 +1,3 @@
-import math
 import os
 
 from src.constants import FOLDER_NAME_PRIMARY_RASTER_FILES
@@ -9,9 +8,10 @@ from src.data_validation.custom_intermediate_validator import evaluate_custom_in
 from src.data_validation.custom_primary_validator import evaluate_custom_primary_config
 from src.data_validation.meteorological_data_validator import evaluate_meteorological_umep_data, \
     evaluate_meteorological_upenn_data, evaluate_met_files
-from src.worker_manager.tools import get_existing_tile_metrics, get_aoi_area_in_square_meters
+from src.data_validation.s3_cache_validation import check_city_data_availability
 
-def validate_config(non_tiled_city_data, existing_tiles_metrics, processing_option):
+
+def validate_config(non_tiled_city_data, existing_tiles_metrics, city_geoextent, processing_option):
     combined_invalids = []
 
     basic_invalids = evaluate_basic_config(non_tiled_city_data)
@@ -23,10 +23,13 @@ def validate_config(non_tiled_city_data, existing_tiles_metrics, processing_opti
         combined_invalids.append((msg, True))
         updated_aoi = None
     else:
+        s3_cache_invalids = check_city_data_availability(city_geoextent)
+        combined_invalids.extend(s3_cache_invalids)
+
         custom_primary_invalids = evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics)
         combined_invalids.extend(custom_primary_invalids)
 
-        aoi_invalids, updated_aoi = evaluate_aoi(non_tiled_city_data, existing_tiles_metrics, processing_option)
+        aoi_invalids, updated_aoi = evaluate_aoi(non_tiled_city_data, existing_tiles_metrics, city_geoextent, processing_option)
         combined_invalids.extend(aoi_invalids)
 
         met_invalids = evaluate_met_files(non_tiled_city_data)

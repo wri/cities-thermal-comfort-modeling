@@ -125,7 +125,7 @@ def save_tiff_file(raster_data_array, tile_data_path, tiff_filename):
     try:
         raster_data_array.rio.to_raster(raster_path=file_path, driver="COG")
     except Exception as e_msg:
-        print(f'GeoTiff file {tiff_filename} not written to {tile_data_path}.')
+        print(f'GeoTiff file {tiff_filename} not written to {tile_data_path} due to error {e_msg}.')
 
 
 def save_geojson_file(vector_geodataframe, tile_data_path, tiff_data_FILENAME):

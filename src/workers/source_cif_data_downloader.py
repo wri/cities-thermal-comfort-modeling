@@ -8,15 +8,15 @@ import numpy as np
 import random
 import time
 
+from city_metrix.constants import CTCM_PADDED_AOI_BUFFER
 from osgeo import gdal
-from city_metrix.metrix_model import GeoExtent
+from city_metrix.metrix_model import GeoExtent, GeoZone
 from rasterio.enums import Resampling
 from datetime import datetime
-
-from src.constants import VALID_PRIMARY_TYPES
+from src.constants import VALID_PRIMARY_TYPES, S3_PUBLICATION_BUCKET, S3_PUBLICATION_ENV
 from src.workers.city_data import CityData
 from src.workers.logger_tools import setup_logger, log_method_start, log_method_completion, log_method_failure
-from src.workers.worker_tools import compute_time_diff_mins, save_tiff_file, save_geojson_file, \
+from src.workers.worker_tools import compute_time_diff_mins, save_tiff_file, \
     unpack_quoted_value, ctcm_standardize_y_dimension_direction
 
 DEBUG = False
@@ -24,26 +24,40 @@ DEBUG = False
 # Unify the layers on the same resolution
 DEFAULT_LULC_RESOLUTION = 1
 
-MINIMUM_QUERY_WAIT_SEC = 10
-MAXIMUM_QUERY_WAIT_SEC = 30
+MINIMUM_QUERY_WAIT_SEC = 5
+MAXIMUM_QUERY_WAIT_SEC = 10
 
 MIN_LAYER_RETRY_MINS = 2
 MAX_LAYER_RETRY_MINS = 5
 MAX_RETRY_COUNT = 3
 
-def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile_id, cif_primary_features,
-                 tile_boundary, crs, tile_resolution):
+# The wait time constants below were reduced from 10-30 seconds to 5-10 seconds.
+# This change was made to improve responsiveness and reduce overall processing time,
+# based on recent testing which showed no increase in contention or throttling issues
+# with the external services being accessed. If contention or rate limiting is observed
+# in the future, consider increasing these values or implementing exponential backoff.
+
+def get_cif_data(city_json_str, source_base_path, target_base_path, folder_name_city_data, tile_id, cif_primary_features,
+                 tile_boundary, tile_resolution, target_crs):
     start_time = datetime.now()
 
-    tiled_city_data = CityData(folder_name_city_data, tile_id, source_base_path, target_base_path)
+    tiled_city_data = CityData(None, folder_name_city_data, tile_id, source_base_path, target_base_path)
 
     logger = setup_logger(tiled_city_data.target_model_log_path)
     log_method_start(f'CIF download: ({cif_primary_features}) in tile {tile_id}', None, '', logger)
 
     tile_cif_data_path = tiled_city_data.target_primary_tile_data_path
 
-    d = {'geometry': [shapely.wkt.loads(tile_boundary)]}
-    tiled_aoi_gdf = gp.GeoDataFrame(d, crs=crs)
+    tile_boundary_df = {'geometry': [shapely.wkt.loads(tile_boundary)]}
+    tiled_aoi_gdf = gp.GeoDataFrame(tile_boundary_df, crs=target_crs)
+
+    if city_json_str == 'None' or city_json_str is None:
+        city_geoextent = GeoExtent(tiled_aoi_gdf.total_bounds, tiled_aoi_gdf.crs.srs)
+        city_aoi = None
+    else:
+        city_geozone = GeoZone(geo_zone=city_json_str)
+        city_geoextent = GeoExtent(city_geozone)
+        city_aoi = tiled_aoi_gdf.total_bounds
 
     feature_list = cif_primary_features.split(',')
 
@@ -60,42 +74,42 @@ def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile
             if 'dem' in feature_list:
                 time.sleep(wait_time_sec)
                 log_method_start(f'CIF-DEM download for {tile_id}', None, '', logger)
-                this_success = _get_dem(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
+                this_success = _get_dem(city_geoextent, city_aoi, tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-DEM download for {tile_id}', None, '', logger)
         elif feature_sequence_id == 2:
             if 'dsm' in feature_list:
                 time.sleep(wait_time_sec)
                 log_method_start(f'CIF-DSM download for {tile_id}', None, '', logger)
-                this_success = _get_building_height_dsm(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
+                this_success = _get_building_height_dsm(city_geoextent, city_aoi, tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-DSM download for {tile_id}', None, '', logger)
         elif feature_sequence_id == 3:
             if 'lulc' in feature_list:
                 time.sleep(wait_time_sec)
                 log_method_start(f'CIF-lulc download for {tile_id}', None, '', logger)
-                this_success = _get_lulc(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
+                this_success = _get_lulc(city_geoextent, city_aoi, tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-lulc download for tile {tile_id}', None, '', logger)
         elif feature_sequence_id == 4:
             if 'open_urban' in feature_list:
                 time.sleep(wait_time_sec)
                 log_method_start(f'CIF-open_urban download for {tile_id}', None, '', logger)
-                this_success = _get_open_urban(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
+                this_success = _get_open_urban(city_geoextent, city_aoi, tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time, f'CIF-open_urban download for tile {tile_id}', None, '', logger)
         elif feature_sequence_id == 5:
             if 'tree_canopy' in feature_list:
                 time.sleep(wait_time_sec)
                 log_method_start(f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
-                this_success = _get_tree_canopy_height(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
+                this_success = _get_tree_canopy_height(city_geoextent, city_aoi, tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time,f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
 
     # Execute Albedo last since it must be aligned with other layers
     if 'albedo_cloud_masked' in feature_list:
         log_method_start(f'CIF-albedo_cloud_masked download for {tile_id}', None, '', logger)
-        this_success = _get_albedo_cloud_masked(tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
+        this_success = _get_albedo_cloud_masked(city_geoextent, city_aoi, tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
         result_flags.append(this_success)
         log_method_completion(start_time,f'CIF-albedo_cloud_masked download for {tile_id}', None, '', logger)
 
@@ -115,16 +129,16 @@ def get_cif_data(source_base_path, target_base_path, folder_name_city_data, tile
     return return_stdout
 
 
-def _get_lulc(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
+def _get_lulc(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
         from city_metrix.layers.open_urban import reclass_map
         from city_metrix.layers import OpenUrban
 
         # Load data
-        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
         for i in range(MAX_RETRY_COUNT):
             try:
-                lulc = OpenUrban().get_data(bbox)
+                lulc = OpenUrban().retrieve_data(city_geoextent, s3_bucket=S3_PUBLICATION_BUCKET, s3_env=S3_PUBLICATION_ENV,
+                                                 aoi_buffer_m=CTCM_PADDED_AOI_BUFFER, city_aoi_subarea=city_aoi)
                 break
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
@@ -176,14 +190,14 @@ def _get_lulc(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logge
         return False
 
 
-def _get_open_urban(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
+def _get_open_urban(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
         from city_metrix.layers import OpenUrban
 
-        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
         for i in range(MAX_RETRY_COUNT):
             try:
-                open_urban = OpenUrban().get_data(bbox)
+                open_urban = OpenUrban().retrieve_data(city_geoextent, s3_bucket=S3_PUBLICATION_BUCKET, s3_env=S3_PUBLICATION_ENV,
+                                                       aoi_buffer_m=CTCM_PADDED_AOI_BUFFER, city_aoi_subarea=city_aoi)
                 break
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
@@ -216,15 +230,18 @@ def _count_occurrences(data, value):
     return data.where(data == value).count().item()
 
 
-def _get_tree_canopy_height(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
+def _get_tree_canopy_height(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
-        from city_metrix.layers import TreeCanopyHeight
+        from city_metrix.layers import TreeCanopyHeightCTCM
 
         # Load layer
-        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
+        tree_canopy_height = None
         for i in range(MAX_RETRY_COUNT):
             try:
-                tree_canopy_height = TreeCanopyHeight().get_data(bbox, spatial_resolution=output_resolution)
+                tree_canopy_height = (TreeCanopyHeightCTCM()
+                                      .retrieve_data(city_geoextent, s3_bucket=S3_PUBLICATION_BUCKET, s3_env=S3_PUBLICATION_ENV,
+                                                     aoi_buffer_m=CTCM_PADDED_AOI_BUFFER, city_aoi_subarea=city_aoi,
+                                                     spatial_resolution=output_resolution))
                 break
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
@@ -255,14 +272,17 @@ def _get_tree_canopy_height(tiled_city_data, tile_data_path, aoi_gdf, output_res
         log_method_failure(datetime.now(), 'tree_canopy_height', tiled_city_data.source_base_path, msg, logger)
         return False
 
-def _get_albedo_cloud_masked(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
+def _get_albedo_cloud_masked(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
         from city_metrix.layers import AlbedoCloudMasked
 
-        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
+        albedo_cloud_masked = None
         for i in range(MAX_RETRY_COUNT):
             try:
-                albedo_cloud_masked = AlbedoCloudMasked().get_data(bbox=bbox, spatial_resolution=output_resolution)
+                albedo_cloud_masked = (AlbedoCloudMasked()
+                                       .retrieve_data(city_geoextent, s3_bucket=S3_PUBLICATION_BUCKET, s3_env=S3_PUBLICATION_ENV,
+                                                      aoi_buffer_m=CTCM_PADDED_AOI_BUFFER, city_aoi_subarea=city_aoi,
+                                                      spatial_resolution=output_resolution))
                 break
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
@@ -318,14 +338,16 @@ def _get_albedo_cloud_masked(tiled_city_data, tile_data_path, aoi_gdf, output_re
         log_method_failure(datetime.now(), 'Albedo_cloud_masked', tiled_city_data.source_base_path, msg, logger)
         return False
 
-def _get_dem(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
+def _get_dem(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
         from city_metrix.layers import FabDEM
 
-        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
+        dem = None
         for i in range(MAX_RETRY_COUNT):
             try:
-                dem = FabDEM().get_data(bbox, spatial_resolution=output_resolution)
+                dem = FabDEM().retrieve_data(city_geoextent, s3_bucket=S3_PUBLICATION_BUCKET, s3_env=S3_PUBLICATION_ENV,
+                                             aoi_buffer_m=CTCM_PADDED_AOI_BUFFER, city_aoi_subarea=city_aoi,
+                                             spatial_resolution=output_resolution)
                 break
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
@@ -353,14 +375,17 @@ def _get_dem(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger
         log_method_failure(datetime.now(), 'DEM', tiled_city_data.source_base_path, msg, logger)
         return False
 
-def _get_building_height_dsm(tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
+def _get_building_height_dsm(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger):
     try:
         from city_metrix.layers import OvertureBuildingsDSM
 
-        bbox = GeoExtent(aoi_gdf.total_bounds, aoi_gdf.crs.srs)
+        building_dsm = None
         for i in range(MAX_RETRY_COUNT):
             try:
-                building_dsm = OvertureBuildingsDSM().get_data(bbox, spatial_resolution=output_resolution)
+                building_dsm = (OvertureBuildingsDSM()
+                                .retrieve_data(city_geoextent, s3_bucket=S3_PUBLICATION_BUCKET, s3_env=S3_PUBLICATION_ENV,
+                                               aoi_buffer_m=CTCM_PADDED_AOI_BUFFER, city_aoi_subarea=city_aoi,
+                                               spatial_resolution=output_resolution))
                 break
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
@@ -389,7 +414,6 @@ def _get_building_height_dsm(tiled_city_data, tile_data_path, aoi_gdf, output_re
         return False
 
 
-
 def _resample_categorical_raster(xarray, resolution_m):
     resampled_array = xarray.rio.reproject(
         dst_crs=xarray.rio.crs,
@@ -401,65 +425,65 @@ def _resample_categorical_raster(xarray, resolution_m):
 
 
 
-def prototype_refinement_building_Elevation_estimates(overture_bldgs):
-    # TODO This function is an initial exploration of using OSM tags to refine estimate of building height.
-    # TODO Results are moderately successful for Amsterdam, but could be improved with additional building-height data.
-    '''
-    https://www.33rdsquare.com/how-tall-is-a-floor-meters/
-    Single Family Homes: 2.4 – 2.7 meters (8 – 9 feet)
-    Condominiums/Apartments: 2.1 – 2.4 meters (7 – 8 feet)
-    Office Spaces: 2.4 – 3 meters (8 – 10 feet)
-    Retail Stores: 3 – 4.5 meters (10 – 15 feet)
-    Industrial Spaces: 3 – 6 meters (10 – 20 feet)
-    class = transportation, sports_hall, service, school, retail, industrial, houseboat,house, commercial, apartments,
-    class/subtype = {null, entertainment}
-    '''
-
-    house_typical_floors = 4
-    apartment_typical_floors = 5
-    industrial_typical_floors = 3
-    commercial_typical_floors = 4
-    houseboat_typical_floors = 1
-    school_typical_floors = 3
-    other_typical_floors = 2
-    floor_height = 2.5
-    overture_bldgs.loc[overture_bldgs['num_floors'].notnull(), 'inferred_height'] = (
-                overture_bldgs['num_floors'] * floor_height)
-    overture_bldgs.loc[
-        (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'apartments'), 'inferred_height'] = \
-        (apartment_typical_floors * floor_height)
-    overture_bldgs.loc[
-        (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'house'), 'inferred_height'] = \
-        (house_typical_floors * floor_height)
-    overture_bldgs.loc[
-        (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'industrial'), 'inferred_height'] = \
-        (industrial_typical_floors * floor_height)
-    overture_bldgs.loc[
-        (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'commercial'), 'inferred_height'] = \
-        (commercial_typical_floors * floor_height)
-    overture_bldgs.loc[
-        (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'commercial'), 'inferred_height'] = \
-        (commercial_typical_floors * floor_height)
-    overture_bldgs.loc[
-        (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'houseboat'), 'inferred_height'] = \
-        (houseboat_typical_floors * floor_height)
-    overture_bldgs.loc[
-        (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'school'), 'inferred_height'] = \
-        (school_typical_floors * floor_height)
-    overture_bldgs['guessed_height'] = overture_bldgs['inferred_height'] + overture_bldgs['BaseDTM_min']
-
-    overture_bldgs.loc[overture_bldgs['height'].notnull(), 'best_guess_height'] = overture_bldgs['height']
-    overture_bldgs.loc[((overture_bldgs['best_guess_height'].isnull()) & (
-        overture_bldgs['guessed_height'].isnull())), 'best_guess_height'] = \
-        overture_bldgs['Elevation_estimate']
-    overture_bldgs.loc[(
-                (overture_bldgs['best_guess_height'].isnull()) & (overture_bldgs['Elevation_estimate'].notnull()) & (
-            overture_bldgs['guessed_height'].notnull())), 'best_guess_height'] = \
-        0.6 * overture_bldgs['Elevation_estimate'] + 0.4 * overture_bldgs['guessed_height']
-    overture_bldgs.loc[(
-                (overture_bldgs['best_guess_height'].isnull()) & (overture_bldgs['Elevation_estimate'].isnull()) & (
-            overture_bldgs['inferred_height'].notnull())), 'best_guess_height'] = \
-        overture_bldgs['inferred_height']
-    overture_bldgs.loc[overture_bldgs['best_guess_height'].isnull(), 'best_guess_height'] = (
-                other_typical_floors * floor_height)
+# def prototype_refinement_building_Elevation_estimates(overture_bldgs):
+#     # TODO This function is an initial exploration of using OSM tags to refine estimate of building height.
+#     # TODO Results are moderately successful for Amsterdam, but could be improved with additional building-height data.
+#     '''
+#     https://www.33rdsquare.com/how-tall-is-a-floor-meters/
+#     Single Family Homes: 2.4 – 2.7 meters (8 – 9 feet)
+#     Condominiums/Apartments: 2.1 – 2.4 meters (7 – 8 feet)
+#     Office Spaces: 2.4 – 3 meters (8 – 10 feet)
+#     Retail Stores: 3 – 4.5 meters (10 – 15 feet)
+#     Industrial Spaces: 3 – 6 meters (10 – 20 feet)
+#     class = transportation, sports_hall, service, school, retail, industrial, houseboat,house, commercial, apartments,
+#     class/subtype = {null, entertainment}
+#     '''
+#
+#     house_typical_floors = 4
+#     apartment_typical_floors = 5
+#     industrial_typical_floors = 3
+#     commercial_typical_floors = 4
+#     houseboat_typical_floors = 1
+#     school_typical_floors = 3
+#     other_typical_floors = 2
+#     floor_height = 2.5
+#     overture_bldgs.loc[overture_bldgs['num_floors'].notnull(), 'inferred_height'] = (
+#                 overture_bldgs['num_floors'] * floor_height)
+#     overture_bldgs.loc[
+#         (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'apartments'), 'inferred_height'] = \
+#         (apartment_typical_floors * floor_height)
+#     overture_bldgs.loc[
+#         (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'house'), 'inferred_height'] = \
+#         (house_typical_floors * floor_height)
+#     overture_bldgs.loc[
+#         (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'industrial'), 'inferred_height'] = \
+#         (industrial_typical_floors * floor_height)
+#     overture_bldgs.loc[
+#         (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'commercial'), 'inferred_height'] = \
+#         (commercial_typical_floors * floor_height)
+#     overture_bldgs.loc[
+#         (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'commercial'), 'inferred_height'] = \
+#         (commercial_typical_floors * floor_height)
+#     overture_bldgs.loc[
+#         (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'houseboat'), 'inferred_height'] = \
+#         (houseboat_typical_floors * floor_height)
+#     overture_bldgs.loc[
+#         (overture_bldgs['inferred_height'].isnull()) & (overture_bldgs['class'] == 'school'), 'inferred_height'] = \
+#         (school_typical_floors * floor_height)
+#     overture_bldgs['guessed_height'] = overture_bldgs['inferred_height'] + overture_bldgs['BaseDTM_min']
+#
+#     overture_bldgs.loc[overture_bldgs['height'].notnull(), 'best_guess_height'] = overture_bldgs['height']
+#     overture_bldgs.loc[((overture_bldgs['best_guess_height'].isnull()) & (
+#         overture_bldgs['guessed_height'].isnull())), 'best_guess_height'] = \
+#         overture_bldgs['Elevation_estimate']
+#     overture_bldgs.loc[(
+#                 (overture_bldgs['best_guess_height'].isnull()) & (overture_bldgs['Elevation_estimate'].notnull()) & (
+#             overture_bldgs['guessed_height'].notnull())), 'best_guess_height'] = \
+#         0.6 * overture_bldgs['Elevation_estimate'] + 0.4 * overture_bldgs['guessed_height']
+#     overture_bldgs.loc[(
+#                 (overture_bldgs['best_guess_height'].isnull()) & (overture_bldgs['Elevation_estimate'].isnull()) & (
+#             overture_bldgs['inferred_height'].notnull())), 'best_guess_height'] = \
+#         overture_bldgs['inferred_height']
+#     overture_bldgs.loc[overture_bldgs['best_guess_height'].isnull(), 'best_guess_height'] = (
+#                 other_typical_floors * floor_height)
 

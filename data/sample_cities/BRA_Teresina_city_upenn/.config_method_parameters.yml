@@ -13,15 +13,15 @@
 # Specify None for tile_side_meters to not subdivide the AOI. Recommended value for tile_buffer_meters is 600.
 # Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
-  seasonal_utc_offset: 2 # year-round
-  city: None
+  seasonal_utc_offset: -3 # year-round
+  city: {"city_id": "BRA-Teresina", "aoi_id": "urban_extent"}
   aoi_bounds:
     epsg_code: 4326
-    west: 18.41294
-    south: -33.92100
-    east: 18.41401
-    north: -33.91999
-  tile_side_meters: None
+    west: None
+    south: None
+    east: None
+    north: None
+  tile_side_meters: 1000
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: True
 # Names of custom meteorological file(s) or ERA5 data range. Maximum of two filenames can be specified.
@@ -48,7 +48,7 @@
 # Valid methods are [download_only, umep_solweig, upenn_model]
 # sampling_local_hours specifies hours for ERA5 download.
 - MethodAttributes:
-  method: download_only
+  method: upenn_model
   wall_height_aspect:
     lower_limit_for_wall_height: 3
   skyview_factor:

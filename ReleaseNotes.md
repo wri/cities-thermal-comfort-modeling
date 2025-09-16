@@ -1,5 +1,11 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/09/15
+1. updated to match CIF interface
+1. added city option to yml file
+1. added EPSG option to yml file
+1. renamed AOI bounds to west, south, east, north
+
 ## 2025/08/19
 1. Added retry loops for layer downloads with goal of improved robustness
 2. UPenn model now also outputs shadow raster files

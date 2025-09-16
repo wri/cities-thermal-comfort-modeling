@@ -3,19 +3,20 @@ import shapely
 import numbers
 import math
 
-from city_metrix.metrix_tools import reproject_units
+from city_metrix.constants import CTCM_MAX_TILE_BUFFER_M, ProjectionType
+from city_metrix.metrix_tools import reproject_units, get_projection_type
 from city_metrix.metrix_model import get_haversine_distance
 from shapely.geometry import box
 from src.constants import FILENAME_METHOD_YML_CONFIG, WGS_CRS, PRIOR_5_YEAR_KEYWORD
 
 
-def evaluate_aoi(non_tiled_city_data, existing_tiles_metrics, processing_option):
+def evaluate_aoi(non_tiled_city_data, existing_tiles_metrics, city_geoextent, processing_option):
     combined_invalids = []
 
-    aoi_primary_invalids = evaluate_aoi_primary_configs(non_tiled_city_data)
+    aoi_primary_invalids = evaluate_aoi_primary_configs(non_tiled_city_data, city_geoextent, existing_tiles_metrics)
     combined_invalids.extend(aoi_primary_invalids)
 
-    tiling_invalids = evaluate_aoi_configs_for_tiling(non_tiled_city_data)
+    tiling_invalids = evaluate_aoi_configs_for_tiling(non_tiled_city_data, city_geoextent)
     combined_invalids.extend(tiling_invalids)
 
     aoi_invalids, updated_aoi = evaluate_aoi_discrepancy(non_tiled_city_data, existing_tiles_metrics, processing_option)
@@ -24,11 +25,13 @@ def evaluate_aoi(non_tiled_city_data, existing_tiles_metrics, processing_option)
     return combined_invalids, updated_aoi
 
 
-def evaluate_aoi_primary_configs(non_tiled_city_data):
+def evaluate_aoi_primary_configs(non_tiled_city_data, city_geoextent, existing_tiles_metrics):
     invalids = []
 
     # AOI metrics
     seasonal_utc_offset = non_tiled_city_data.seasonal_utc_offset
+    source_aoi_crs = non_tiled_city_data.source_aoi_crs
+    custom_tile_crs = existing_tiles_metrics['custom_tile_crs'] if existing_tiles_metrics is not None else None
     aoi_min_lon, aoi_min_lat, aoi_max_lon, aoi_max_lat = _parse_aoi_dimensions(non_tiled_city_data)
 
     # Note: Valid range is between -12 and 14 based on internet search
@@ -36,48 +39,107 @@ def evaluate_aoi_primary_configs(non_tiled_city_data):
         msg = 'Specified seasonal_utc_offset is outside of valid range.'
         invalids.append((msg, True))
 
-    # Evaluate AOI
-    if (not isinstance(aoi_min_lon, numbers.Number) or not isinstance(aoi_min_lat, numbers.Number) or
-            not isinstance(aoi_max_lon, numbers.Number) or not isinstance(aoi_max_lat, numbers.Number)):
-        msg = f'Parameters in NewProcessingAOI section must be defined in {FILENAME_METHOD_YML_CONFIG}'
+    if city_geoextent is None and aoi_min_lon is None:
+        msg = f'Parameters city and aoi_bound cannot both be None in {FILENAME_METHOD_YML_CONFIG}'
         invalids.append((msg, True))
 
-    if not (-180 <= aoi_min_lon <= 180) or not (-180 <= aoi_max_lon <= 180):
-        msg = f'Min and max longitude values must be between -180 and 180 in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+    if source_aoi_crs is not None:
+        if not (get_projection_type(source_aoi_crs) == ProjectionType.UTM or get_projection_type(source_aoi_crs) == ProjectionType.GEOGRAPHIC):
+            msg = f'If specified, AOI epsg code must be 4326 or a WGS84 UTM epsg code in {FILENAME_METHOD_YML_CONFIG}'
+            invalids.append((msg, True))
+
+    source_aoi_crs = non_tiled_city_data.source_aoi_crs
+    target_aoi_crs = non_tiled_city_data.target_crs
+    if target_aoi_crs is None:
+        msg = f'Target CRS could not be determined from city or aoi_bounds in {FILENAME_METHOD_YML_CONFIG}'
         invalids.append((msg, True))
 
-    if not (-90 <= aoi_min_lat <= 90) or not (-90 <= aoi_max_lat <= 90):
-        msg = f'Min and max latitude values must be between -90 and 90 in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+    if custom_tile_crs is not None and custom_tile_crs[0] != target_aoi_crs:
+        msg = f'Custom tile CRS does not match target CRS determined from {FILENAME_METHOD_YML_CONFIG}'
         invalids.append((msg, True))
 
-    if not (aoi_min_lon <= aoi_max_lon):
-        msg = f'Min longitude must be less than max longitude in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
-        invalids.append((msg, True))
+    if get_projection_type(source_aoi_crs) == ProjectionType.GEOGRAPHIC:
+        msg = f'WARNING: Result bounds will be imprecise since target CRS is WGS84 as configured in {FILENAME_METHOD_YML_CONFIG}'
+        invalids.append((msg, False))
 
-    if not (aoi_min_lat <= aoi_max_lat):
-        msg = f'Min latitude must be less than max latitude in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
-        invalids.append((msg, True))
+    if get_projection_type(source_aoi_crs) == ProjectionType.UTM and non_tiled_city_data.city_json_str is None:
+        msg = f'WARNING: Result bounds will be imprecise since city option is not configured in {FILENAME_METHOD_YML_CONFIG}'
+        invalids.append((msg, False))
+
+    # Evaluate bounds
+    if aoi_min_lon is not None:
+        if (not isinstance(aoi_min_lon, numbers.Number) or not isinstance(aoi_min_lat, numbers.Number) or
+                not isinstance(aoi_max_lon, numbers.Number) or not isinstance(aoi_max_lat, numbers.Number)):
+            msg = f'All coordinates in ProcessingAOI section must be defined in {FILENAME_METHOD_YML_CONFIG}'
+            invalids.append((msg, True))
+
+        if source_aoi_crs != WGS_CRS:
+            if not (isinstance(aoi_min_lon, int) and isinstance(aoi_min_lat, int)
+                    and isinstance(aoi_max_lon, int) and isinstance(aoi_max_lat, int)):
+                msg = f'AOI UTM coordinates must be integers of whole meters for {FILENAME_METHOD_YML_CONFIG}'
+                invalids.append((msg, True))
+
+        if source_aoi_crs == WGS_CRS:
+            if not (-180 <= aoi_min_lon <= 180) or not (-180 <= aoi_max_lon <= 180):
+                msg = f'Min and max longitude values must be between -180 and 180 in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+                invalids.append((msg, True))
+
+            if not (-90 <= aoi_min_lat <= 90) or not (-90 <= aoi_max_lat <= 90):
+                msg = f'Min and max latitude values must be between -90 and 90 in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+                invalids.append((msg, True))
+
+            if not (aoi_min_lon <= aoi_max_lon):
+                msg = f'Min longitude must be less than max longitude in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+                invalids.append((msg, True))
+
+            if not (aoi_min_lat <= aoi_max_lat):
+                msg = f'Min latitude must be less than max latitude in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+                invalids.append((msg, True))
+
+    if city_geoextent is not None and aoi_min_lon is not None and source_aoi_crs == WGS_CRS:
+        geo_bbox = city_geoextent.as_geographic_bbox()
+        city_min_lon = geo_bbox.min_x
+        city_min_lat = geo_bbox.min_y
+        city_max_lon = geo_bbox.max_x
+        city_max_lat = geo_bbox.max_y
+        if not (city_min_lon <= aoi_min_lon and aoi_max_lon <= city_max_lon) \
+                or not (city_min_lat <= aoi_min_lat and aoi_max_lat <= city_max_lat):
+            msg = f'The city-based AOI does not spatiall overlap the aoi_bounds in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+            invalids.append((msg, True))
+
+    # TODO Add test for UTM aoi overlap with city extent
 
     # Specifying an AOI side limit. It's reasonable that the limit should roughly fall within one UTM zone to minimize
     # projection distortion. UTM zone size is ~6degrees*111km/degree or ~700km at the equator, so 500km seems a
     # reasonable compromise value.
     maximum_side_length_m = 500000 # 500 km
-    center_lon = (aoi_min_lon + aoi_max_lon)/2
-    lat_offset_m = get_haversine_distance(center_lon, aoi_min_lat, center_lon, aoi_max_lat)
-    if lat_offset_m > maximum_side_length_m:
-        msg = f'Specified AOI must have latitude offset of <= 500km as specified in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
-        invalids.append((msg, True))
+    if source_aoi_crs == WGS_CRS and aoi_min_lon is not None:
+        center_lon = (aoi_min_lon + aoi_max_lon)/2
+        lat_offset_m = get_haversine_distance(center_lon, aoi_min_lat, center_lon, aoi_max_lat)
+        if lat_offset_m > maximum_side_length_m:
+            msg = f'Specified AOI must have latitude offset of <= 500km as specified in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+            invalids.append((msg, True))
 
-    center_lat = (aoi_min_lat + aoi_max_lat)/2
-    lon_offset_m = get_haversine_distance(aoi_min_lon, center_lat, aoi_max_lon, center_lat)
-    if lon_offset_m > maximum_side_length_m:
-        msg = f'Specified AOI must have longitude offset of <= 500km as specified in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
-        invalids.append((msg, True))
+        center_lat = (aoi_min_lat + aoi_max_lat)/2
+        lon_offset_m = get_haversine_distance(aoi_min_lon, center_lat, aoi_max_lon, center_lat)
+        if lon_offset_m > maximum_side_length_m:
+            msg = f'Specified AOI must have longitude offset of <= 500km as specified in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+            invalids.append((msg, True))
+    elif source_aoi_crs != WGS_CRS and aoi_min_lon is not None:
+        lat_offset_m = aoi_max_lat - aoi_min_lat
+        if lat_offset_m > maximum_side_length_m:
+            msg = f'Specified AOI must have latitude offset of <= 500km as specified in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+            invalids.append((msg, True))
+
+        lon_offset_m = aoi_max_lon - aoi_min_lon
+        if lon_offset_m > maximum_side_length_m:
+            msg = f'Specified AOI must have longitude offset of <= 500km as specified in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+            invalids.append((msg, True))
 
     return invalids
 
 
-def evaluate_aoi_configs_for_tiling(non_tiled_city_data):
+def evaluate_aoi_configs_for_tiling(non_tiled_city_data, city_geoextent):
     custom_primary_features = non_tiled_city_data.custom_primary_feature_list
     tile_side_meters = non_tiled_city_data.tile_side_meters
     tile_buffer_meters = non_tiled_city_data.tile_buffer_meters
@@ -96,6 +158,10 @@ def evaluate_aoi_configs_for_tiling(non_tiled_city_data):
 
         if remove_mrt_buffer_for_final_output is True:
             msg = f"remove_mrt_buffer_for_final_output is not used and ignored if the dataset contains custom primary files in {FILENAME_METHOD_YML_CONFIG}."
+            invalids.append((msg, False))
+
+        if city_geoextent is not None and tile_side_meters is None:
+            msg = f"tile_side_meters must be specified when city is specified in {FILENAME_METHOD_YML_CONFIG}."
             invalids.append((msg, False))
     else:
         if tile_side_meters is not None:
@@ -119,8 +185,8 @@ def evaluate_aoi_configs_for_tiling(non_tiled_city_data):
             msg = f"Requested tile_buffer_meters must be 100 m or more in {FILENAME_METHOD_YML_CONFIG} with recommended value of 600."
             invalids.append((msg, True))
 
-        if tile_buffer_meters is not None and int(tile_buffer_meters) > 600:
-            msg = f"Requested tile_buffer_meters must be less than or equal to 600 m in {FILENAME_METHOD_YML_CONFIG}."
+        if tile_buffer_meters is not None and int(tile_buffer_meters) > CTCM_MAX_TILE_BUFFER_M:
+            msg = f"Requested tile_buffer_meters must be less than or equal to {CTCM_MAX_TILE_BUFFER_M} m in {FILENAME_METHOD_YML_CONFIG}."
             invalids.append((msg, True))
 
     return invalids

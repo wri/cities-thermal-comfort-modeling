@@ -113,7 +113,7 @@ def evaluate_aoi_primary_configs(non_tiled_city_data, city_geoextent, existing_t
     # projection distortion. UTM zone size is ~6degrees*111km/degree or ~700km at the equator, so 500km seems a
     # reasonable compromise value.
     maximum_side_length_m = 500000 # 500 km
-    if source_aoi_crs == WGS_CRS:
+    if source_aoi_crs == WGS_CRS and aoi_min_lon is not None:
         center_lon = (aoi_min_lon + aoi_max_lon)/2
         lat_offset_m = get_haversine_distance(center_lon, aoi_min_lat, center_lon, aoi_max_lat)
         if lat_offset_m > maximum_side_length_m:
@@ -125,7 +125,7 @@ def evaluate_aoi_primary_configs(non_tiled_city_data, city_geoextent, existing_t
         if lon_offset_m > maximum_side_length_m:
             msg = f'Specified AOI must have longitude offset of <= 500km as specified in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
             invalids.append((msg, True))
-    else:
+    elif source_aoi_crs != WGS_CRS and aoi_min_lon is not None:
         lat_offset_m = aoi_max_lat - aoi_min_lat
         if lat_offset_m > maximum_side_length_m:
             msg = f'Specified AOI must have latitude offset of <= 500km as specified in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'

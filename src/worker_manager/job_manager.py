@@ -161,8 +161,9 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     return_code = 0 if all(combined_delays_passed) or delays_all_passed else 1
 
     if return_code == 0 and delays_all_passed:
-        log_general_file_message('Building QGIS viewer objects', __file__, logger)
-        write_qgis_files(non_tiled_city_data)
+        if non_tiled_city_data.publishing_target in ('local', 'both'):
+            log_general_file_message('Building QGIS viewer objects', __file__, logger)
+            write_qgis_files(non_tiled_city_data)
         return_str = "Processing encountered no errors."
     else:
         return_str = 'Processing encountered errors. See log file.'

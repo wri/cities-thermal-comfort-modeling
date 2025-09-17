@@ -56,7 +56,6 @@ def read_yaml(config_path):
     with open(config_path, 'r') as stream:
         data = yaml.safe_load_all(stream)
         values = list(data)[0]
-        b=2
     return values
 
 

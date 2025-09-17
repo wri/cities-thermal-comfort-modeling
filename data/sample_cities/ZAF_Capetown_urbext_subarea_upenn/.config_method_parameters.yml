@@ -1,15 +1,12 @@
 # Description of scenario
 # Options for publishing_target: [local, s3, both].
-# Options for publishing_target: [local, s3, both].
 - Scenario:
   short_title: first scenario
-  infra_id: baseline
   infra_id: baseline
   version: 1
   description: Scenario that demonstrates blah.
   author: author@wri.org
   publishing_target: both
-  publishing_target: local
 # Processing Area of Interest used for tile construction and ERA5-data download. If any custom files are specified in
 # CustomTiffFilenames section, then the system will not construct a new tile grid and will instead use the existing one.
 # Specify the seasonal_utc_offset including DST offset for UPenn model if AOI follows this practice for the hottest season.

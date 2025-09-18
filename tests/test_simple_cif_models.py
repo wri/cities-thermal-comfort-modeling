@@ -16,7 +16,6 @@ def test_ZAF_Capetown_cif_upenn():
     source_city_folder_name = r'ZAF_Capetown_cif_upenn'
     non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
     try:
-        remove_folder(non_tiled_city_data.target_city_parent_path)
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         mrt_file_name = 'Tmrt_2023_1_1200D.tif'
@@ -44,7 +43,6 @@ def test_ZAF_Capetown_cif_umep():
     source_city_folder_name = r'ZAF_Capetown_cif_umep'
     non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
     try:
-        remove_folder(non_tiled_city_data.target_city_parent_path)
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         mrt_file_name = 'Tmrt_2023_1_1200D.tif'

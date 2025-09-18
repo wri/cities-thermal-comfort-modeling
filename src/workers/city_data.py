@@ -5,7 +5,8 @@ from city_metrix.metrix_tools import get_utm_zone_from_latlon_point, get_project
 from shapely import Point
 
 from src.constants import FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_INTERMEDIATE_DATA, FOLDER_NAME_PRIMARY_MET_FILES, \
-    FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_UMEP_TCM_RESULTS, WGS_CRS
+    FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_UMEP_TCM_RESULTS, WGS_CRS, FOLDER_NAME_ADMIN_DATA, \
+    FOLDER_NAME_QGIS_DATA
 from src.workers.config_processor import *
 
 
@@ -27,8 +28,8 @@ class CityData:
 
         # parse config file
         yml_values = get_yml_content(source_base_path, folder_name_city_data)
-        obj.scenario_short_title, obj.scenario_version, obj.scenario_description, obj.scenario_author = (
-            parse_scenario_config(yml_values))
+        (obj.scenario_scenario_name, obj.infra_id, obj.scenario_description, obj.scenario_author,
+         obj.publishing_target) = parse_scenario_config(yml_values)
 
         (obj.seasonal_utc_offset, obj.city_json_str, obj.source_aoi_crs, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat,
          obj.tile_side_meters, obj.tile_buffer_meters, obj.remove_mrt_buffer_for_final_output) = \
@@ -88,23 +89,20 @@ class CityData:
 
         if target_base_path:
             obj.target_base_path = target_base_path
+            obj.scenario_title = str(obj.scenario_scenario_name).strip().replace(" ", "_").replace(".","")
 
-            cleaned_tile = str(obj.scenario_short_title).strip().replace(" ", "_").replace(".","")
-            cleaned_version = str(obj.scenario_version).strip().replace(".", "_")
-            filled_title = f'{cleaned_tile}_v{cleaned_version}'
-
-            scenario_sub_folder =  f'{folder_name_city_data}_{filled_title}'
+            scenario_sub_folder =  f'{folder_name_city_data}_{obj.scenario_title}'
             obj.target_city_parent_path = str(os.path.join(target_base_path, folder_name_city_data))
             obj.target_city_path = str(os.path.join(obj.target_city_parent_path, scenario_sub_folder))
 
             obj.target_city_primary_data_path = str(os.path.join(obj.target_city_path, FOLDER_NAME_PRIMARY_DATA))
             obj.target_met_files_path = os.path.join(obj.target_city_primary_data_path, FOLDER_NAME_PRIMARY_MET_FILES)
 
-            obj.target_log_path = os.path.join(obj.target_city_path, '.admin')
+            obj.target_log_path = os.path.join(obj.target_city_path, FOLDER_NAME_ADMIN_DATA)
             obj.target_manager_log_path = os.path.join(obj.target_log_path, 'log_worker_manager.log')
             obj.target_model_log_path = os.path.join(obj.target_log_path, 'log_model_execution.log')
 
-            obj.target_qgis_data_path = os.path.join(obj.target_city_path, '.qgis_data')
+            obj.target_qgis_data_path = os.path.join(obj.target_city_path, FOLDER_NAME_QGIS_DATA)
 
             obj.target_intermediate_data_path = os.path.join(obj.target_city_path, FOLDER_NAME_INTERMEDIATE_DATA)
 

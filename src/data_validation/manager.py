@@ -9,6 +9,7 @@ from src.data_validation.custom_primary_validator import evaluate_custom_primary
 from src.data_validation.meteorological_data_validator import evaluate_meteorological_umep_data, \
     evaluate_meteorological_upenn_data, evaluate_met_files
 from src.data_validation.s3_cache_validation import check_city_data_availability
+from src.data_validation.scenario_evaluator import evaluate_scenario
 
 
 def validate_config(non_tiled_city_data, existing_tiles_metrics, city_geoextent, processing_option):
@@ -25,6 +26,9 @@ def validate_config(non_tiled_city_data, existing_tiles_metrics, city_geoextent,
     else:
         s3_cache_invalids = check_city_data_availability(city_geoextent)
         combined_invalids.extend(s3_cache_invalids)
+
+        scenario_invalids = evaluate_scenario(non_tiled_city_data)
+        combined_invalids.extend(scenario_invalids)
 
         custom_primary_invalids = evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics)
         combined_invalids.extend(custom_primary_invalids)

@@ -41,9 +41,29 @@ def find_and_replace(directory, old_string, new_string, use_start_string_match):
 
 
 # Example usage
-directory = r'C:\Users\kenn.cartier\Documents\github\cities-thermal-comfort-modeling\data\sample_cities'
+directory = r'C:\Users\kenn.cartier\Documents\github\cities-thermal-comfort-modeling\data\sample_cities\_prior_format'
 
 make_yml_backup(directory)
+
+# old_string = '  short_title'
+# new_string = '  scenario_name'
+# find_and_replace(directory, old_string, new_string, False)
+#
+# old_string = '  version: 1\n'
+# new_string = ''
+# find_and_replace(directory, old_string, new_string, False)
+
+# old_string = '# Description of scenario'
+# new_string = '# Description of scenario\n# Options for publishing_target: [local, s3, both].'
+# find_and_replace(directory, old_string, new_string, False)
+#
+# old_string = '  version:'
+# new_string = '  infra_id: baseline\n  version:'
+# find_and_replace(directory, old_string, new_string, False)
+#
+# old_string = '# Processing Area of Interest used '
+# new_string = '  publishing_target: local\n# Processing Area of Interest used '
+# find_and_replace(directory, old_string, new_string, False)
 
 # old_string = '# Specify None for tile_side_meters'
 # new_string = '# Specify either city_id/aoi_id json, an aoi_bounds, or both for when city extent includes the aoi_bounds. Specify the\n# EPSG code for aoi_bounds coordinates. See ZZZ_template_city for example ciy specification.\n# Specify None for tile_side_meters'

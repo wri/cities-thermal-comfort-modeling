@@ -21,7 +21,6 @@ def test_tropical_full_cif_city():
     non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
-        remove_folder(non_tiled_city_data.target_city_parent_path)
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         mrt_file_name = 'Tmrt_2022_365_1200D.tif'
@@ -50,7 +49,6 @@ def test_tiled_cif_city():
     non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
-        remove_folder(non_tiled_city_data.target_city_parent_path)
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         mrt_file_name = 'Tmrt_2023_189_1200D.tif'
@@ -80,7 +78,6 @@ def test_tiled_buffered_cif_city_umep():
     non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
-        remove_folder(non_tiled_city_data.target_city_parent_path)
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         mrt_file_name = 'Tmrt_2019_206_1200D.tif'
@@ -109,7 +106,6 @@ def test_tiled_custom_city():
     non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
-        remove_folder(non_tiled_city_data.target_city_parent_path)
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         mrt_file_name = 'Tmrt_2023_189_1200D.tif'
@@ -138,7 +134,6 @@ def test_portland_swath_cif_umep():
     non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
-        remove_folder(non_tiled_city_data.target_city_parent_path)
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         mrt_file_name = 'Tmrt_2023_226_1200D.tif'
@@ -167,7 +162,6 @@ def test_USA_WashingtonDC_cif_umep():
     non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
-        remove_folder(non_tiled_city_data.target_city_parent_path)
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         mrt_file_name = 'Tmrt_2023_247_1200D.tif'
@@ -196,7 +190,6 @@ def test_download_only_cif_city():
     non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
-        remove_folder(non_tiled_city_data.target_city_parent_path)
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
@@ -216,7 +209,6 @@ def test_ZAF_Capetown_cif_local_era5_umep():
     non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
-        remove_folder(non_tiled_city_data.target_city_parent_path)
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         mrt_file_name = 'Tmrt_2023_1_1200D.tif'
@@ -246,7 +238,6 @@ def test_mixed_custom_city():
     non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
-        remove_folder(non_tiled_city_data.target_city_parent_path)
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         mrt_file_name = 'Tmrt_2023_1_1200D.tif'
@@ -275,7 +266,6 @@ def test_custom_city():
     non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
-        remove_folder(non_tiled_city_data.target_city_parent_path)
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         mrt_file_name = 'Tmrt_2023_1_1200D.tif'
@@ -304,7 +294,6 @@ def test_custom_city_with_full_intermediates():
     non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
-        remove_folder(non_tiled_city_data.target_city_parent_path)
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         mrt_file_name = 'Tmrt_2023_1_1200D.tif'
@@ -333,7 +322,6 @@ def test_custom_city_with_mixed_intermediates():
     non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     try:
-        remove_folder(non_tiled_city_data.target_city_parent_path)
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         mrt_file_name = 'Tmrt_2022_20_1200D.tif'
@@ -362,7 +350,6 @@ def test_USA_Philadelphia_downtown_cif_umep():
     source_city_folder_name = r'USA_Philadelphia_downtown_cif_umep'
     non_tiled_city_data = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
     try:
-        remove_folder(non_tiled_city_data.target_city_parent_path)
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         mrt_file_name = 'Tmrt_2023_250_1200D.tif'

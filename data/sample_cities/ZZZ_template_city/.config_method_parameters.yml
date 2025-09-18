@@ -1,7 +1,7 @@
 # Description of scenario
 # Options for publishing_target: [local, s3, both].
 - Scenario:
-  scenario_name: first scenario
+  scenario_id: first scenario
   infra_id: baseline
   description: Scenario that demonstrates blah.
   author: author@wri.org

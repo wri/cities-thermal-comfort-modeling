@@ -21,6 +21,7 @@ from src.workers.logger_tools import setup_logger, log_general_file_message
 from src.worker_manager.reporter import parse_row_results, report_results
 from src.workers.model_umep.worker_umep_met_processor import get_umep_met_data
 from src.workers.model_upenn.worker_upenn_met_processor import get_upenn_met_data
+from src.workers.worker_dao import cache_metadata_files
 from src.workers.worker_tools import create_folder
 
 warnings.filterwarnings('ignore')
@@ -87,11 +88,10 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
             print("Stopping. Identified invalid values in meteorological files(s)")
             exit(1)
 
-
     futures = []
     task_method = non_tiled_city_data.new_task_method
 
-    # Retrieve CIF data
+    # Retrieve missing CIF data
     if custom_primary_filenames:
         no_layer_atts = existing_tiles_metrics[['tile_name', 'boundary', 'avg_res', 'custom_tile_crs']]
         tile_unique_values = no_layer_atts.drop_duplicates().reset_index(drop=True)
@@ -101,6 +101,10 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
         custom_source_crs = tile_unique_values['custom_tile_crs'].values[0]
 
         write_tile_grid(tile_unique_values, non_tiled_city_data.target_qgis_data_path, 'tile_grid')
+
+        # Cache currently-available metadata to s3
+        if non_tiled_city_data.publishing_target in ('s3', 'both'):
+            cache_metadata_files(non_tiled_city_data)
 
         print(f'\nProcessing over {len(tile_unique_values)} existing tiles..')
         for index, tile_metrics in tile_unique_values.iterrows():
@@ -125,6 +129,10 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
         write_tile_grid(tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_TILE_GRID)
         if unbuffered_tile_grid is not None:
             write_tile_grid(unbuffered_tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_UNBUFFERED_TILE_GRID)
+
+        # Cache currently-available metadata to s3
+        if non_tiled_city_data.publishing_target in ('s3', 'both'):
+            cache_metadata_files(non_tiled_city_data)
 
         print(f'\nCreating data for {tile_grid.geometry.size} new tiles..')
         tile_grid.reset_index(drop=True, inplace=True)
@@ -157,6 +165,10 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     report_file_path = report_results(task_method, combined_results_df, non_tiled_city_data.target_log_path,
                                       city_folder_name)
     print(f'\nRun report written to {report_file_path}\n')
+
+    # Cache final metadata to s3
+    if non_tiled_city_data.publishing_target in ('s3', 'both'):
+        cache_metadata_files(non_tiled_city_data)
 
     return_code = 0 if all(combined_delays_passed) or delays_all_passed else 1
 

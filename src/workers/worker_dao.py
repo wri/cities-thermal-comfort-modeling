@@ -132,21 +132,18 @@ def _compute_vrt_size(geotiff_files):
     return total_raster_x_size, total_raster_y_size
 
 
-def cache_tile_files(tiled_city_data:CityData, publishing_target:str):
-    city = json.loads(tiled_city_data.city_json_str)
-    city_id = city["city_id"]
-    aoi_id = city["aoi_id"]
-
-    infra_id = tiled_city_data.infra_id
-    scenario_id = tiled_city_data.scenario_title
+def cache_tile_files(tiled_city_data:CityData):
+    """
+    param: publishing_target specifies the output location such as s3 or local
+    """
+    scenario_folder_key = _get_scenario_folder_key(tiled_city_data)
     tile_id = tiled_city_data.folder_name_tile_data
-
-    scenario_folder_key = f"city_projects/{city_id}/{aoi_id}/scenarios/{infra_id}/{scenario_id}"
     tile_folder_key = f"{scenario_folder_key}/{tile_id}"
     s3_folder_uri = f"{S3_PUBLICATION_BUCKET}/{tile_folder_key}"
     create_uri_target_folder(s3_folder_uri)
 
     bucket_name = get_bucket_name_from_s3_uri(S3_PUBLICATION_BUCKET)
+    publishing_target = tiled_city_data.publishing_target
 
     # Cache primary raster
     local_folder = tiled_city_data.target_raster_files_path
@@ -166,30 +163,48 @@ def cache_tile_files(tiled_city_data:CityData, publishing_target:str):
         s3_folder_uri = f"{tile_folder_key}/{FOLDER_NAME_UMEP_TCM_RESULTS}/{met_folder}"
         _process_tile_folder(local_folder, tile_id, bucket_name, s3_folder_uri, publishing_target, extension_filter='.tif')
 
+
+def cache_metadata_files(city_data: CityData):
+    """
+    param: publishing_target specifies the output location such as s3 or local
+    """
+    scenario_folder_key = _get_scenario_folder_key(city_data)
     s3_metadata_folder_uri = f"{scenario_folder_key}/metadata/"
-    has_metadata_folder = _does_s3_folder_exist(bucket_name, s3_metadata_folder_uri)
 
-    if not has_metadata_folder:
-        # attempt to populate the metadata folder one time, but this may happen with coincident uploads
+    bucket_name = get_bucket_name_from_s3_uri(S3_PUBLICATION_BUCKET)
+    publishing_target = city_data.publishing_target
 
-        # Create the folder by uploading an empty object
-        s3_client.put_object(Bucket=bucket_name, Key=s3_metadata_folder_uri)
+    # Create metadata folder by uploading an empty object
+    s3_client.put_object(Bucket=bucket_name, Key=s3_metadata_folder_uri)
 
-        # Cache admin
-        local_folder = tiled_city_data.target_log_path
-        s3_folder_uri = f"{s3_metadata_folder_uri}/{FOLDER_NAME_ADMIN_DATA}".replace('//','/')
-        _process_tile_folder(local_folder, None, bucket_name, s3_folder_uri, publishing_target)
+    # Cache admin
+    local_folder = city_data.target_log_path
+    s3_folder_uri = f"{s3_metadata_folder_uri}/{FOLDER_NAME_ADMIN_DATA}".replace('//','/')
+    _process_tile_folder(local_folder, None, bucket_name, s3_folder_uri, publishing_target)
 
-        # Cache qgis data for tile grids
-        local_folder = tiled_city_data.target_qgis_data_path
-        s3_folder_uri = f"{s3_metadata_folder_uri}/{FOLDER_NAME_QGIS_DATA}".replace('//','/')
-        file_list = [FILENAME_TILE_GRID, FILENAME_UNBUFFERED_TILE_GRID]
-        _process_tile_folder(local_folder, None, bucket_name, s3_folder_uri, publishing_target, file_list=file_list)
+    # Cache qgis data for tile grids
+    local_folder = city_data.target_qgis_data_path
+    s3_folder_uri = f"{s3_metadata_folder_uri}/{FOLDER_NAME_QGIS_DATA}".replace('//','/')
+    file_list = [FILENAME_TILE_GRID, FILENAME_UNBUFFERED_TILE_GRID]
+    _process_tile_folder(local_folder, None, bucket_name, s3_folder_uri, publishing_target, file_list=file_list)
 
-        # Cache yml file
-        local_folder = tiled_city_data.target_city_path
-        file_list = [FILENAME_METHOD_YML_CONFIG]
-        _process_tile_folder(local_folder, None, bucket_name, s3_metadata_folder_uri, publishing_target, file_list=file_list)
+    # Cache yml file
+    local_folder = city_data.target_city_path
+    file_list = [FILENAME_METHOD_YML_CONFIG]
+    _process_tile_folder(local_folder, None, bucket_name, s3_metadata_folder_uri, publishing_target, file_list=file_list)
+
+
+def _get_scenario_folder_key(city_data: CityData):
+    city = json.loads(city_data.city_json_str)
+    city_id = city["city_id"]
+    aoi_id = city["aoi_id"]
+
+    infra_id = city_data.infra_id
+    scenario_id = city_data.scenario_title
+
+    scenario_folder_key = f"city_projects/{city_id}/{aoi_id}/scenarios/{infra_id}/{scenario_id}"
+
+    return scenario_folder_key
 
 
 def _process_tile_folder(local_folder_root, tile_id, bucket_name, raster_folder_uri, publishing_target,

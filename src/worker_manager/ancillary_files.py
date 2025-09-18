@@ -287,7 +287,7 @@ def add_tile_name_column(tile_grid):
                               .apply(lambda x: f'tile_{str(x + 1).zfill(TILE_NUMBER_PADCOUNT)}'))
     return tile_grid
 
-def write_tile_grid(tile_grid, target_qgis_data_path, filename):
+def write_tile_grid(tile_grid, target_qgis_data_path, target_file_name):
     from shapely import wkt
     import geopandas as gpd
 
@@ -314,7 +314,6 @@ def write_tile_grid(tile_grid, target_qgis_data_path, filename):
 
     modified_tile_grid = add_tile_name_column(modified_tile_grid)
 
-    target_file_name = f'{filename}.geojson'
     target_path = target_qgis_data_path
     create_folder(target_path)
     file_path = os.path.join(target_path, target_file_name)

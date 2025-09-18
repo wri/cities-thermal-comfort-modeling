@@ -142,7 +142,7 @@ def process_tile(city_json_str, task_method, source_base_path, target_base_path,
 
     # Cache project files in S3
     if tiled_city_data.city_json_str is not None and tiled_city_data.publishing_target in ('s3', 'both'):
-        cache_tile_files(tiled_city_data, tiled_city_data.publishing_target)
+        cache_tile_files(tiled_city_data)
 
     # Construct json of combined return values
     result_str = ','.join(return_stdouts)

@@ -10,7 +10,7 @@ def parse_scenario_config(yml_values):
     try:
         scenario = yml_values[0]
         
-        scenario_name = str(unpack_quoted_value(scenario['scenario_name'])).lower()
+        scenario_id = str(unpack_quoted_value(scenario['scenario_id'])).lower()
         infra_id = str(unpack_quoted_value(scenario['infra_id'])).lower()
         description = unpack_quoted_value(scenario['description'])
         author = unpack_quoted_value(scenario['author'])
@@ -19,7 +19,7 @@ def parse_scenario_config(yml_values):
         raise Exception(
             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
 
-    return scenario_name, infra_id, description, author, publishing_target
+    return scenario_id, infra_id, description, author, publishing_target
 
 
 def parse_processing_areas_config(yml_values):

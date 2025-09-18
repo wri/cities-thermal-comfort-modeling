@@ -1,11 +1,11 @@
 # Description of scenario
 # Options for publishing_target: [local, s3, both].
 - Scenario:
-  scenario_name: first scenario
-  infra_id: baseline
+  scenario_id: first scenario
+  infra_id: test
   description: Scenario that demonstrates blah.
   author: author@wri.org
-  publishing_target: both
+  publishing_target: local
 # Processing Area of Interest used for tile construction and ERA5-data download. If any custom files are specified in
 # CustomTiffFilenames section, then the system will not construct a new tile grid and will instead use the existing one.
 # Specify the seasonal_utc_offset including DST offset for UPenn model if AOI follows this practice for the hottest season.
@@ -19,10 +19,10 @@
   city: {"city_id": "ZAF-Cape_Town", "aoi_id": "urban_extent"}
   aoi_bounds:
     epsg_code: 32734
-    west: 265731
-    south: 6238014
-    east: 267488
-    north: 6239360
+    west: 268981
+    south: 6232964
+    east: 269198
+    north: 6233137
   tile_side_meters: 1000
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: true
@@ -30,7 +30,7 @@
 # For custom files, specify the filename with either .csv extension for UPenn model or .txt extension for UMEP model
 # For era5 download, specify either "ERA5:<prior_5_years>" or two dates as "ERA5:<2023-01-01,2023-12-31>"
 - MetFiles:
-  - filename: ERA5:<prior_5_years>
+  - filename: met_era5_hottest_days.csv
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
 # All file mappings must be specified here. Specify None for filename where custom file is not available for processing.
 # Recommended filenames: albedo_cloud_masked.tif, dem.tif, dsm_ground_build.tif, lulc.tif, open_urban.tif, tree_canopy.tif

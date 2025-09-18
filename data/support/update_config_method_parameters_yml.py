@@ -49,7 +49,7 @@ make_yml_backup(directory)
 # find_and_replace(directory, old_string, new_string, False)
 #
 # old_string = '  short_title'
-# new_string = '  scenario_name'
+# new_string = '  scenario_id'
 # find_and_replace(directory, old_string, new_string, False)
 #
 # old_string = '  version:'

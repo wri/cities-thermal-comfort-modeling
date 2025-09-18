@@ -5,7 +5,11 @@ def evaluate_scenario(non_tiled_city_data):
     invalids = []
 
     if non_tiled_city_data.publishing_target is not None and non_tiled_city_data.publishing_target not in ('local', 's3', 'both'):
-        msg = f'publish_target option has invalid value in {FILENAME_METHOD_YML_CONFIG}'
+        msg = f'publishing_target option has invalid value in {FILENAME_METHOD_YML_CONFIG}'
         invalids.append((msg, True))
+
+    if non_tiled_city_data.publishing_target is not None and non_tiled_city_data.city_json_str is None:
+        msg = f'publishing_target option will not be used when city option is empty in {FILENAME_METHOD_YML_CONFIG}'
+        invalids.append((msg, False))
 
     return invalids

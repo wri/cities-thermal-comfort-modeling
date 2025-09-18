@@ -46,11 +46,10 @@ def test_Capetown_city_urbanextent_subarea_upenn():
 
     try:
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
-
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         assert return_code == 0
-        # assert vrt_count == 16
+        assert vrt_count == 16
     finally:
         if CLEANUP_RESULTS:
             remove_folder(non_tiled_city_data.target_city_parent_path)

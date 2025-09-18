@@ -28,7 +28,7 @@ class CityData:
 
         # parse config file
         yml_values = get_yml_content(source_base_path, folder_name_city_data)
-        (obj.scenario_scenario_name, obj.infra_id, obj.scenario_description, obj.scenario_author,
+        (obj.scenario_scenario_id, obj.infra_id, obj.scenario_description, obj.scenario_author,
          obj.publishing_target) = parse_scenario_config(yml_values)
 
         (obj.seasonal_utc_offset, obj.city_json_str, obj.source_aoi_crs, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat,
@@ -89,7 +89,7 @@ class CityData:
 
         if target_base_path:
             obj.target_base_path = target_base_path
-            obj.scenario_title = str(obj.scenario_scenario_name).strip().replace(" ", "_").replace(".","")
+            obj.scenario_title = str(obj.scenario_scenario_id).strip().replace(" ", "_").replace(".","")
 
             scenario_sub_folder =  f'{folder_name_city_data}_{obj.scenario_title}'
             obj.target_city_parent_path = str(os.path.join(target_base_path, folder_name_city_data))

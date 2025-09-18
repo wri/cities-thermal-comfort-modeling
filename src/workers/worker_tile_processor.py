@@ -8,7 +8,7 @@ from pathlib import Path
 from src.constants import FILENAME_ERA5_UMEP, METHOD_TRIGGER_ERA5_DOWNLOAD, FILENAME_ERA5_UPENN
 from src.workers.city_data import CityData
 from src.workers.model_upenn.upenn_module_processor import run_upenn_module
-from src.workers.worker_dao import _cache_tile_files
+from src.workers.worker_dao import cache_tile_files
 from src.workers.worker_tools import create_folder, unpack_quoted_value, save_tiff_file, remove_file, \
     ctcm_standardize_y_dimension_direction
 
@@ -142,7 +142,7 @@ def process_tile(city_json_str, task_method, source_base_path, target_base_path,
 
     # Cache project files in S3
     if tiled_city_data.city_json_str is not None and tiled_city_data.publishing_target in ('s3', 'both'):
-        _cache_tile_files(tiled_city_data, tiled_city_data.publishing_target)
+        cache_tile_files(tiled_city_data, tiled_city_data.publishing_target)
 
     # Construct json of combined return values
     result_str = ','.join(return_stdouts)

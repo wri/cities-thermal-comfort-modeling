@@ -1,6 +1,5 @@
 import json
 import os
-
 import rasterio
 import xml.etree.ElementTree as ET
 
@@ -10,9 +9,10 @@ from pyproj import CRS
 from osgeo import gdal
 
 from src.constants import S3_PUBLICATION_BUCKET, FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_INTERMEDIATE_DATA, \
-    FOLDER_NAME_UMEP_TCM_RESULTS
+    FOLDER_NAME_UMEP_TCM_RESULTS, FOLDER_NAME_ADMIN_DATA, FOLDER_NAME_QGIS_DATA, FILENAME_TILE_GRID, \
+    FILENAME_UNBUFFERED_TILE_GRID, FILENAME_METHOD_YML_CONFIG
 from src.workers.city_data import CityData
-from src.workers.worker_tools import remove_folder
+from src.workers.worker_tools import remove_folder, _does_s3_folder_exist
 
 
 def write_raster_vrt_gdal(output_file_path:str, raster_files):
@@ -132,7 +132,7 @@ def _compute_vrt_size(geotiff_files):
     return total_raster_x_size, total_raster_y_size
 
 
-def _cache_tile_files(tiled_city_data:CityData, publishing_target:str):
+def cache_tile_files(tiled_city_data:CityData, publishing_target:str):
     city = json.loads(tiled_city_data.city_json_str)
     city_id = city["city_id"]
     aoi_id = city["aoi_id"]
@@ -141,34 +141,61 @@ def _cache_tile_files(tiled_city_data:CityData, publishing_target:str):
     scenario_id = tiled_city_data.scenario_title
     tile_id = tiled_city_data.folder_name_tile_data
 
-    folder_key = f"city_projects/{city_id}/{aoi_id}/scenarios/{infra_id}/{scenario_id}/{tile_id}"
-    s3_folder_uri = f"{S3_PUBLICATION_BUCKET}/{folder_key}"
+    scenario_folder_key = f"city_projects/{city_id}/{aoi_id}/scenarios/{infra_id}/{scenario_id}"
+    tile_folder_key = f"{scenario_folder_key}/{tile_id}"
+    s3_folder_uri = f"{S3_PUBLICATION_BUCKET}/{tile_folder_key}"
     create_uri_target_folder(s3_folder_uri)
 
     bucket_name = get_bucket_name_from_s3_uri(S3_PUBLICATION_BUCKET)
 
     # Cache primary raster
     local_folder = tiled_city_data.target_raster_files_path
-    s3_folder_uri = f"{folder_key}/{FOLDER_NAME_PRIMARY_RASTER_FILES}"
-    _process_tile_folder(local_folder, tile_id, bucket_name, s3_folder_uri, publishing_target)
+    s3_folder_uri = f"{tile_folder_key}/{FOLDER_NAME_PRIMARY_RASTER_FILES}"
+    _process_tile_folder(local_folder, tile_id, bucket_name, s3_folder_uri, publishing_target, '.tif')
 
     # Cache intermediate files
     local_folder = tiled_city_data.target_intermediate_data_path
-    s3_folder_uri = f"{folder_key}/{FOLDER_NAME_INTERMEDIATE_DATA}"
-    _process_tile_folder(local_folder, tile_id, bucket_name, s3_folder_uri, publishing_target)
+    s3_folder_uri = f"{tile_folder_key}/{FOLDER_NAME_INTERMEDIATE_DATA}"
+    _process_tile_folder(local_folder, tile_id, bucket_name, s3_folder_uri, publishing_target, '.tif')
 
     # Cache tcm results
     tcm_path = tiled_city_data.target_tcm_results_path
     met_folders = [f for f in os.listdir(tcm_path) if os.path.isdir(os.path.join(tcm_path, f))]
     for met_folder in met_folders:
         local_folder = os.path.join(tiled_city_data.target_tcm_results_path, met_folder)
-        s3_folder_uri = f"{folder_key}/{FOLDER_NAME_UMEP_TCM_RESULTS}"
-        _process_tile_folder(local_folder, tile_id, bucket_name, s3_folder_uri, publishing_target)
+        s3_folder_uri = f"{tile_folder_key}/{FOLDER_NAME_UMEP_TCM_RESULTS}/{met_folder}"
+        _process_tile_folder(local_folder, tile_id, bucket_name, s3_folder_uri, publishing_target, extension_filter='.tif')
+
+    s3_metadata_folder_uri = f"{scenario_folder_key}/metadata/"
+    has_metadata_folder = _does_s3_folder_exist(bucket_name, s3_metadata_folder_uri)
+
+    if not has_metadata_folder:
+        # attempt to populate the metadata folder one time, but this may happen with coincident uploads
+
+        # Create the folder by uploading an empty object
+        s3_client.put_object(Bucket=bucket_name, Key=s3_metadata_folder_uri)
+
+        # Cache admin
+        local_folder = tiled_city_data.target_log_path
+        s3_folder_uri = f"{s3_metadata_folder_uri}/{FOLDER_NAME_ADMIN_DATA}".replace('//','/')
+        _process_tile_folder(local_folder, None, bucket_name, s3_folder_uri, publishing_target)
+
+        # Cache qgis data for tile grids
+        local_folder = tiled_city_data.target_qgis_data_path
+        s3_folder_uri = f"{s3_metadata_folder_uri}/{FOLDER_NAME_QGIS_DATA}".replace('//','/')
+        file_list = [FILENAME_TILE_GRID, FILENAME_UNBUFFERED_TILE_GRID]
+        _process_tile_folder(local_folder, None, bucket_name, s3_folder_uri, publishing_target, file_list=file_list)
+
+        # Cache yml file
+        local_folder = tiled_city_data.target_city_path
+        file_list = [FILENAME_METHOD_YML_CONFIG]
+        _process_tile_folder(local_folder, None, bucket_name, s3_metadata_folder_uri, publishing_target, file_list=file_list)
 
 
-def _process_tile_folder(local_folder_root, tile_id, bucket_name, raster_folder_uri, publishing_target):
-    local_tile_folder = str(os.path.join(local_folder_root, tile_id))
-    _upload_tiff_files_in_folder_to_s3(local_tile_folder, bucket_name, raster_folder_uri)
+def _process_tile_folder(local_folder_root, tile_id, bucket_name, raster_folder_uri, publishing_target,
+                         extension_filter=None, file_list=None):
+    local_tile_folder = local_folder_root if tile_id is None else str(os.path.join(local_folder_root, tile_id))
+    _upload_tiff_files_in_folder_to_s3(local_tile_folder, bucket_name, raster_folder_uri, extension_filter, file_list)
     if publishing_target == 's3':
         remove_folder(local_tile_folder)
         notice_file = os.path.join(local_folder_root, f"{tile_id}_contents_cached_to_s3.txt")
@@ -176,11 +203,17 @@ def _process_tile_folder(local_folder_root, tile_id, bucket_name, raster_folder_
             pass  # Creates an empty file
 
 
-def _upload_tiff_files_in_folder_to_s3(local_folder:str, bucket_name:str, s3_folder:str):
+def _upload_tiff_files_in_folder_to_s3(local_folder:str, bucket_name:str, s3_folder:str, extension_filter:str=None,
+                                       file_list=None):
     for root, dirs, files in os.walk(local_folder):
         for file_name in files:
-            if file_name.endswith(".tif"):
-                local_path = os.path.join(root, file_name)
-                relative_path = os.path.relpath(local_path, local_folder)
-                s3_path = os.path.join(s3_folder, relative_path).replace("\\", "/")  # Ensure S3 uses forward slashes
-                s3_client.upload_file(local_path, bucket_name, s3_path)
+            if extension_filter is not None and not file_name.endswith(extension_filter):
+                continue
+
+            if file_list is not None and file_name not in file_list:
+                continue
+
+            local_path = os.path.join(root, file_name)
+            relative_path = os.path.relpath(local_path, local_folder)
+            s3_path = os.path.join(s3_folder, relative_path).replace("\\", "/")  # Ensure S3 uses forward slashes
+            s3_client.upload_file(local_path, bucket_name, s3_path)

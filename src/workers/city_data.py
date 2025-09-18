@@ -5,7 +5,8 @@ from city_metrix.metrix_tools import get_utm_zone_from_latlon_point, get_project
 from shapely import Point
 
 from src.constants import FOLDER_NAME_PRIMARY_DATA, FOLDER_NAME_INTERMEDIATE_DATA, FOLDER_NAME_PRIMARY_MET_FILES, \
-    FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_UMEP_TCM_RESULTS, WGS_CRS
+    FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_UMEP_TCM_RESULTS, WGS_CRS, FOLDER_NAME_ADMIN_DATA, \
+    FOLDER_NAME_QGIS_DATA
 from src.workers.config_processor import *
 
 
@@ -97,11 +98,11 @@ class CityData:
             obj.target_city_primary_data_path = str(os.path.join(obj.target_city_path, FOLDER_NAME_PRIMARY_DATA))
             obj.target_met_files_path = os.path.join(obj.target_city_primary_data_path, FOLDER_NAME_PRIMARY_MET_FILES)
 
-            obj.target_log_path = os.path.join(obj.target_city_path, '.admin')
+            obj.target_log_path = os.path.join(obj.target_city_path, FOLDER_NAME_ADMIN_DATA)
             obj.target_manager_log_path = os.path.join(obj.target_log_path, 'log_worker_manager.log')
             obj.target_model_log_path = os.path.join(obj.target_log_path, 'log_model_execution.log')
 
-            obj.target_qgis_data_path = os.path.join(obj.target_city_path, '.qgis_data')
+            obj.target_qgis_data_path = os.path.join(obj.target_city_path, FOLDER_NAME_QGIS_DATA)
 
             obj.target_intermediate_data_path = os.path.join(obj.target_city_path, FOLDER_NAME_INTERMEDIATE_DATA)
 

@@ -12,7 +12,7 @@ from city_metrix.metrix_tools import is_date
 from shapely import wkt
 
 from src.constants import SRC_DIR, FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN, PRIOR_5_YEAR_KEYWORD, TILE_NUMBER_PADCOUNT, \
-    WGS_CRS
+    WGS_CRS, FILENAME_UNBUFFERED_TILE_GRID, FILENAME_TILE_GRID
 from src.data_validation.manager import print_invalids
 from src.data_validation.meteorological_data_validator import evaluate_meteorological_umep_data
 from src.worker_manager.ancillary_files import write_tile_grid, write_qgis_files
@@ -122,9 +122,9 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
             get_aoi_fishnet(aoi_boundary_polygon, tile_side_meters, tile_buffer_meters, source_aoi_crs, target_crs))
         number_of_tiles = tile_grid.shape[0]
 
-        write_tile_grid(tile_grid, non_tiled_city_data.target_qgis_data_path, 'tile_grid')
+        write_tile_grid(tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_TILE_GRID)
         if unbuffered_tile_grid is not None:
-            write_tile_grid(unbuffered_tile_grid, non_tiled_city_data.target_qgis_data_path, 'unbuffered_tile_grid')
+            write_tile_grid(unbuffered_tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_UNBUFFERED_TILE_GRID)
 
         print(f'\nCreating data for {tile_grid.geometry.size} new tiles..')
         tile_grid.reset_index(drop=True, inplace=True)

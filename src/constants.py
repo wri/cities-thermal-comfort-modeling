@@ -15,14 +15,17 @@ ROOT_DIR = str(Path(os.path.dirname(os.path.abspath(__file__))).parent)
 SRC_DIR = os.path.join(ROOT_DIR, 'src')
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
 
-FILENAME_METHOD_YML_CONFIG = '.config_method_parameters.yml'
-
+FOLDER_NAME_ADMIN_DATA = '.admin'
+FOLDER_NAME_QGIS_DATA = '.qgis_data'
 FOLDER_NAME_PRIMARY_DATA = 'primary_data'
 FOLDER_NAME_PRIMARY_RASTER_FILES = 'raster_files'
 FOLDER_NAME_PRIMARY_MET_FILES = 'met_files'
 FOLDER_NAME_INTERMEDIATE_DATA = 'processed_data'
 FOLDER_NAME_UMEP_TCM_RESULTS = 'tcm_results'
 
+FILENAME_METHOD_YML_CONFIG = '.config_method_parameters.yml'
+FILENAME_TILE_GRID = 'tile_grid.geojson'
+FILENAME_UNBUFFERED_TILE_GRID = 'unbuffered_tile_grid.geojson'
 FILENAME_WALL_HEIGHT = 'wallheight.tif'
 FILENAME_WALL_ASPECT = 'wallaspect.tif'
 FILENAME_SVFS_ZIP = 'svfs.zip'

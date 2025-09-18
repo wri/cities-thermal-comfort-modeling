@@ -2,12 +2,15 @@ import json
 import os
 import math
 
+from city_metrix.metrix_dao import get_bucket_name_from_s3_uri
+
+from src.constants import S3_PUBLICATION_BUCKET
 from src.data_validation.manager import validate_config
 from src.worker_manager.ancillary_files import write_config_files
 from src.worker_manager.job_manager import start_jobs
 from src.worker_manager.tools import get_existing_tile_metrics, get_aoi_area_in_square_meters
 from src.workers.city_data import CityData, get_yml_content
-from src.workers.worker_tools import remove_folder
+from src.workers.worker_tools import remove_folder, _does_s3_folder_exist
 from city_metrix import GeoZone
 from city_metrix.metrix_model import GeoExtent
 
@@ -24,6 +27,13 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
     city_geoextent = _get_city_geoextent(source_base_path, city_folder_name)
 
     non_tiled_city_data = CityData(city_geoextent, city_folder_name, None, abs_source_base_path, abs_target_base_path)
+    if non_tiled_city_data.publishing_target in ('s3', 'both'):
+        does_s3_target_scenario_exist, bucket_name, scenario_folder_key = _does_scenario_s3_folder_exist(non_tiled_city_data)
+        if does_s3_target_scenario_exist:
+            print(f"\n\n*** Aborting run since scenario folder ({scenario_folder_key}) already exists in S3 bucket: {bucket_name}.")
+            print("*** You must choose a different scenario name or as extreme solution, remove the existing data in S3.\n")
+            raise Exception('Collision with existing results in S3.')
+
     existing_tiles_metrics = _get_existing_tiles(non_tiled_city_data)
 
     updated_aoi, config_return_code = validate_config(non_tiled_city_data, existing_tiles_metrics, city_geoextent, processing_option)
@@ -60,6 +70,20 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
         else:
             _highlighted_yellow_print(return_str)
         return return_code
+
+def _does_scenario_s3_folder_exist(non_tiled_city_data):
+    city = json.loads(non_tiled_city_data.city_json_str)
+    city_id = city["city_id"]
+    aoi_id = city["aoi_id"]
+    infra_id = non_tiled_city_data.infra_id
+    scenario_id = non_tiled_city_data.scenario_title
+
+    bucket_name = get_bucket_name_from_s3_uri(S3_PUBLICATION_BUCKET)
+    scenario_folder_key = f"city_projects/{city_id}/{aoi_id}/scenarios/{infra_id}/{scenario_id}"
+
+    does_s3_target_scenario_exist = _does_s3_folder_exist(bucket_name, scenario_folder_key)
+
+    return does_s3_target_scenario_exist, bucket_name, scenario_folder_key
 
 def _get_city_geoextent(source_base_path, folder_name_city_data):
     yml_values = get_yml_content(source_base_path, folder_name_city_data)

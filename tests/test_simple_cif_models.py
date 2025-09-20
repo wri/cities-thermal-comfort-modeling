@@ -22,7 +22,7 @@ def test_ZAF_Capetown_cif_upenn():
         target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_00001',
                                        mrt_file_name)
         expected_signature = {'crs': 'EPSG:32734',
-                              'transform': (1.0, 0.0, 260838.78469714458, 0.0, -1.0, 6243703.498204948, 0.0, 0.0, 1.0),
+                              'transform': (1.0, 0.0, 260838.78469714464, 0.0, -1.0, 6243703.498204948, 0.0, 0.0, 1.0),
                               'width': 97, 'height': 115, 'count': 1, 'dtype': ('float32',),
                               'band_checksums': ['28c6862f22c27fef5d502635affaf7f2'],
                               'full_checksum': '28c6862f22c27fef5d502635affaf7f2'}

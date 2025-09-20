@@ -1,5 +1,10 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/09/20
+1. create separate environment.yml files for windows and linux
+1. commented out umep tests since they fail on linux
+1. add grid tile filtering to exclude tiles external to the aoi polygon
+
 ## 2025/09/15
 1. updated to match CIF interface
 1. added city option to yml file

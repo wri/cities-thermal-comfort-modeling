@@ -8,15 +8,18 @@ from datetime import datetime
 import pandas as pd
 import shapely
 import dask
-from city_metrix.metrix_tools import is_date
+from city_metrix import GeoExtent
+from city_metrix.constants import GEOJSON_FILE_EXTENSION
+from city_metrix.metrix_dao import get_city_boundaries, write_layer
+from latlontools.latLonFunctions import utm_north
 from shapely import wkt
 
 from src.constants import SRC_DIR, FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN, PRIOR_5_YEAR_KEYWORD, TILE_NUMBER_PADCOUNT, \
-    WGS_CRS, FILENAME_UNBUFFERED_TILE_GRID, FILENAME_TILE_GRID
+    WGS_CRS, FILENAME_UNBUFFERED_TILE_GRID, FILENAME_TILE_GRID, FILENAME_URBAN_EXTENT_BOUNDARY
 from src.data_validation.manager import print_invalids
 from src.data_validation.meteorological_data_validator import evaluate_meteorological_umep_data
 from src.worker_manager.ancillary_files import write_tile_grid, write_qgis_files
-from src.worker_manager.graph_builder import get_aoi_fishnet, get_aoi_from_config
+from src.worker_manager.graph_builder import get_aoi_fishnet, get_grid_dimensions
 from src.workers.logger_tools import setup_logger, log_general_file_message
 from src.worker_manager.reporter import parse_row_results, report_results
 from src.workers.model_umep.worker_umep_met_processor import get_umep_met_data
@@ -43,8 +46,8 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     logger = setup_logger(non_tiled_city_data.target_manager_log_path)
     log_general_file_message('Starting jobs', __file__, logger)
 
-    aoi_boundary_polygon, tile_side_meters, tile_buffer_meters, seasonal_utc_offset, source_aoi_crs, target_crs = (
-        get_aoi_from_config(non_tiled_city_data))
+    utm_grid_bbox, tile_side_meters, tile_buffer_meters, seasonal_utc_offset, utm_grid_crs = (
+        get_grid_dimensions(non_tiled_city_data))
 
     combined_results_df = pd.DataFrame(
         columns=['status', 'tile', 'step_index', 'step_method', 'met_filename', 'return_code',
@@ -54,13 +57,11 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     # meteorological data
     if non_tiled_city_data.has_era_met_download:
         import geopandas as gpd
-        if source_aoi_crs != WGS_CRS:
-            gdf = gpd.GeoDataFrame({'geometry': [aoi_boundary_polygon]}, crs=target_crs)
-            geog_gdf = gdf.to_crs(WGS_CRS)
-            geographic_aoi_boundary_polygon_wkt = geog_gdf.geometry[0].wkt
-            geographic_aoi_boundary_polygon = wkt.loads(geographic_aoi_boundary_polygon_wkt)
-        else:
-            geographic_aoi_boundary_polygon = aoi_boundary_polygon
+        # convert to geographic coordinates for call to ERA5
+        gdf = gpd.GeoDataFrame({'geometry': [utm_grid_bbox]}, crs=utm_grid_crs)
+        geog_gdf = gdf.to_crs(WGS_CRS)
+        geographic_grid_bbox_wkt = geog_gdf.geometry[0].wkt
+        geographic_grid_bbox = wkt.loads(geographic_grid_bbox_wkt)
 
         log_general_file_message('Retrieving ERA meteorological data', __file__, logger)
         sampling_local_hours = non_tiled_city_data.sampling_local_hours
@@ -69,10 +70,10 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
 
         target_met_files_path = non_tiled_city_data.target_met_files_path
         if non_tiled_city_data.new_task_method == 'umep_solweig':
-            return_code = get_umep_met_data(target_met_files_path, geographic_aoi_boundary_polygon,
+            return_code = get_umep_met_data(target_met_files_path, geographic_grid_bbox,
                                             start_date, end_date, seasonal_utc_offset, sampling_local_hours)
         else:
-            return_code = get_upenn_met_data(target_met_files_path, geographic_aoi_boundary_polygon,
+            return_code = get_upenn_met_data(target_met_files_path, geographic_grid_bbox,
                                              start_date, end_date, seasonal_utc_offset, sampling_local_hours)
         if return_code != 0:
             print("Stopping. Failed downloading ERA5 meteorological data")
@@ -103,7 +104,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
         write_tile_grid(tile_unique_values, non_tiled_city_data.target_qgis_data_path, 'tile_grid')
 
         # Cache currently-available metadata to s3
-        if non_tiled_city_data.publishing_target in ('s3', 'both'):
+        if non_tiled_city_data.city_json_str is not None and non_tiled_city_data.publishing_target in ('s3', 'both'):
             cache_metadata_files(non_tiled_city_data)
 
         print(f'\nProcessing over {len(tile_unique_values)} existing tiles..')
@@ -123,15 +124,19 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
             futures.append(delay_tile_array)
     else:
         tile_grid, unbuffered_tile_grid = (
-            get_aoi_fishnet(aoi_boundary_polygon, tile_side_meters, tile_buffer_meters, source_aoi_crs, target_crs))
+            get_aoi_fishnet(utm_grid_bbox, tile_side_meters, tile_buffer_meters, utm_grid_crs))
         number_of_tiles = tile_grid.shape[0]
 
         write_tile_grid(tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_TILE_GRID)
         if unbuffered_tile_grid is not None:
             write_tile_grid(unbuffered_tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_UNBUFFERED_TILE_GRID)
 
+        # Write urban_extent polygon to disk and thin tiles to internal and aoi-overlapping
+        if non_tiled_city_data.city_json_str is not None:
+            tile_grid = _write_and_thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid)
+
         # Cache currently-available metadata to s3
-        if non_tiled_city_data.publishing_target in ('s3', 'both'):
+        if non_tiled_city_data.city_json_str is not None and non_tiled_city_data.publishing_target in ('s3', 'both'):
             cache_metadata_files(non_tiled_city_data)
 
         print(f'\nCreating data for {tile_grid.geometry.size} new tiles..')
@@ -139,14 +144,12 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
         for tile_index, cell in tile_grid.iterrows():
             cell_bounds = cell.geometry.bounds
             tile_boundary = str(shapely.box(cell_bounds[0], cell_bounds[1], cell_bounds[2], cell_bounds[3]))
-
-            tile_id = str(tile_index + 1).zfill(TILE_NUMBER_PADCOUNT)
-            tile_folder_name = f'tile_{tile_id}'
+            tile_folder_name = cell.tile_name
 
             proc_array = _construct_tile_proc_array(city_json_str, task_method, source_base_path, target_base_path,
                                                     city_folder_name, tile_folder_name, cif_primary_features,
                                                     ctcm_intermediate_features, tile_boundary, None,
-                                                    seasonal_utc_offset, target_crs)
+                                                    seasonal_utc_offset, utm_grid_crs)
 
             log_general_file_message(f'Staging: {proc_array}', __file__, logger)
 
@@ -167,11 +170,12 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     print(f'\nRun report written to {report_file_path}\n')
 
     # Cache final metadata to s3
-    if non_tiled_city_data.publishing_target in ('s3', 'both'):
+    if non_tiled_city_data.city_json_str is not None and non_tiled_city_data.publishing_target in ('s3', 'both'):
         cache_metadata_files(non_tiled_city_data)
 
     return_code = 0 if all(combined_delays_passed) or delays_all_passed else 1
 
+    # Write qgis files
     if return_code == 0 and delays_all_passed:
         if non_tiled_city_data.publishing_target in ('local', 'both'):
             log_general_file_message('Building QGIS viewer objects', __file__, logger)
@@ -183,6 +187,34 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     log_general_file_message('Completing manager execution', __file__, logger)
 
     return return_code, return_str
+
+def _write_and_thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid):
+    import json
+    city = json.loads(non_tiled_city_data.city_json_str)
+    city_id = city['city_id']
+    aoi_id = city['aoi_id']
+    if aoi_id == 'urban_extent':
+        utm_crs = unbuffered_tile_grid.crs
+        urban_extent_gdf = get_city_boundaries(city_id, aoi_id).to_crs(utm_crs)
+
+        # Save the boundary to disk
+        urban_extent_file_path = os.path.join(non_tiled_city_data.target_qgis_data_path, FILENAME_URBAN_EXTENT_BOUNDARY)
+        write_layer(urban_extent_gdf, urban_extent_file_path, GEOJSON_FILE_EXTENSION)
+
+        # Thin to tiles that overlap the AOI
+        aoi_bounds = [non_tiled_city_data.min_lon, non_tiled_city_data.min_lat,
+                      non_tiled_city_data.max_lon, non_tiled_city_data.max_lat]
+        aoi_polygon = GeoExtent(aoi_bounds, non_tiled_city_data.source_aoi_crs).as_utm_bbox().polygon
+        aoi_overlapping_tiles = unbuffered_tile_grid[unbuffered_tile_grid.intersects(aoi_polygon)]
+
+        # Thin to tiles that are internal to the city polygon
+        urban_extent_polygon = (urban_extent_gdf['geometry']).to_crs(utm_crs)
+        tile_grid = aoi_overlapping_tiles[aoi_overlapping_tiles.intersects(urban_extent_polygon[0])]
+    else:
+        tile_grid = unbuffered_tile_grid
+
+    return tile_grid
+
 
 def _determine_era5_date_range(sampling_date_range:str):
     parsed_dates = sampling_date_range.split(',')
@@ -213,7 +245,7 @@ def _transfer_custom_met_files(non_tiled_city_data):
 
 def _construct_tile_proc_array(city_json_str, task_method, source_base_path, target_base_path, city_folder_name,
                                tile_folder_name, cif_primary_features, ctcm_intermediate_features,
-                               tile_boundary, tile_resolution, seasonal_utc_offset, target_crs):
+                               tile_boundary, tile_resolution, seasonal_utc_offset, grid_crs):
     if cif_primary_features:
         cif_features = ','.join(cif_primary_features)
     else:
@@ -236,7 +268,7 @@ def _construct_tile_proc_array(city_json_str, task_method, source_base_path, tar
                   f'--tile_boundary={tile_boundary}',
                   f'--tile_resolution={tile_resolution}',
                   f'--seasonal_utc_offset={seasonal_utc_offset}',
-                  f'--target_crs={target_crs}'
+                  f'--grid_crs={grid_crs}'
                   ]
     return proc_array
 

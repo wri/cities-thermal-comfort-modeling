@@ -32,7 +32,8 @@ def evaluate_aoi_primary_configs(non_tiled_city_data, city_geoextent, existing_t
     seasonal_utc_offset = non_tiled_city_data.seasonal_utc_offset
     source_aoi_crs = non_tiled_city_data.source_aoi_crs
     custom_tile_crs = existing_tiles_metrics['custom_tile_crs'] if existing_tiles_metrics is not None else None
-    aoi_min_lon, aoi_min_lat, aoi_max_lon, aoi_max_lat = _parse_aoi_dimensions(non_tiled_city_data)
+    aoi_min_lon, aoi_min_lat, aoi_max_lon, aoi_max_lat, utm_grid_west, utm_grid_south, utm_grid_east, utm_grid_north = (
+        _parse_aoi_dimensions(non_tiled_city_data))
 
     # Note: Valid range is between -12 and 14 based on internet search
     if not (-12 <= seasonal_utc_offset <= 14):
@@ -49,7 +50,7 @@ def evaluate_aoi_primary_configs(non_tiled_city_data, city_geoextent, existing_t
             invalids.append((msg, True))
 
     source_aoi_crs = non_tiled_city_data.source_aoi_crs
-    target_aoi_crs = non_tiled_city_data.target_crs
+    target_aoi_crs = non_tiled_city_data.grid_crs
     if target_aoi_crs is None:
         msg = f'Target CRS could not be determined from city or aoi_bounds in {FILENAME_METHOD_YML_CONFIG}'
         invalids.append((msg, True))
@@ -104,7 +105,7 @@ def evaluate_aoi_primary_configs(non_tiled_city_data, city_geoextent, existing_t
         city_max_lat = geo_bbox.max_y
         if not (city_min_lon <= aoi_min_lon and aoi_max_lon <= city_max_lon) \
                 or not (city_min_lat <= aoi_min_lat and aoi_max_lat <= city_max_lat):
-            msg = f'The city-based AOI does not spatiall overlap the aoi_bounds in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
+            msg = f'The city-based AOI does not spatially overlap the aoi_bounds in ProcessingAOI section of {FILENAME_METHOD_YML_CONFIG}'
             invalids.append((msg, True))
 
     # TODO Add test for UTM aoi overlap with city extent
@@ -144,7 +145,8 @@ def evaluate_aoi_configs_for_tiling(non_tiled_city_data, city_geoextent):
     tile_side_meters = non_tiled_city_data.tile_side_meters
     tile_buffer_meters = non_tiled_city_data.tile_buffer_meters
     remove_mrt_buffer_for_final_output = non_tiled_city_data.remove_mrt_buffer_for_final_output
-    aoi_min_lon, aoi_min_lat, aoi_max_lon, aoi_max_lat = _parse_aoi_dimensions(non_tiled_city_data)
+    aoi_min_lon, aoi_min_lat, aoi_max_lon, aoi_max_lat, utm_grid_west, utm_grid_south, utm_grid_east, utm_grid_north = (
+        _parse_aoi_dimensions(non_tiled_city_data))
 
     invalids = []
     if custom_primary_features:
@@ -165,8 +167,8 @@ def evaluate_aoi_configs_for_tiling(non_tiled_city_data, city_geoextent):
             invalids.append((msg, False))
     else:
         if tile_side_meters is not None:
-            is_tile_wider_than_half = _is_tile_wider_than_half_aoi_side(aoi_min_lat, aoi_min_lon, aoi_max_lat,
-                                                                        aoi_max_lon, tile_side_meters)
+            is_tile_wider_than_half = _is_tile_wider_than_half_aoi_side(utm_grid_west, utm_grid_south, utm_grid_east,
+                                                                        utm_grid_north, tile_side_meters)
             if is_tile_wider_than_half:
                 msg = (f"Requested tile_side_meters cannot be larger than half the AOI side length in {FILENAME_METHOD_YML_CONFIG}."
                        f" Specify None if you don't want to subdivide the aoi.")
@@ -201,7 +203,8 @@ def evaluate_aoi_discrepancy(non_tiled_city_data, existing_tiles_metrics, proces
 
     max_tolerance_meters = 100
 
-    aoi_min_lon, aoi_min_lat, aoi_max_lon, aoi_max_lat = _parse_aoi_dimensions(non_tiled_city_data)
+    aoi_min_lon, aoi_min_lat, aoi_max_lon, aoi_max_lat, utm_grid_west, utm_grid_south, utm_grid_east, utm_grid_north =\
+        _parse_aoi_dimensions(non_tiled_city_data)
 
     tile_grid_total_bounds = gpd.GeoSeries(box(*existing_tiles_metrics.total_bounds))
     tile_grid_min_lon = round(tile_grid_total_bounds.geometry.bounds.minx[0],7)
@@ -276,5 +279,10 @@ def _parse_aoi_dimensions(non_tiled_city_data):
     aoi_min_lat = non_tiled_city_data.min_lat
     aoi_max_lon = non_tiled_city_data.max_lon
     aoi_max_lat = non_tiled_city_data.max_lat
-    return aoi_min_lon, aoi_min_lat, aoi_max_lon, aoi_max_lat
+
+    utm_grid_west = non_tiled_city_data.utm_grid_west
+    utm_grid_south = non_tiled_city_data.utm_grid_south
+    utm_grid_east = non_tiled_city_data.utm_grid_east
+    utm_grid_north = non_tiled_city_data.utm_grid_north
+    return aoi_min_lon, aoi_min_lat, aoi_max_lon, aoi_max_lat, utm_grid_west, utm_grid_south, utm_grid_east, utm_grid_north
 

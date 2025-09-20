@@ -15,7 +15,7 @@ def write_qgis_files(city_data):
     from src.worker_manager.reporter import find_files_with_substring_in_name
 
     target_city_path = city_data.target_city_path
-    crs_str = city_data.target_crs
+    crs_str = city_data.grid_crs
     target_qgis_data_folder = city_data.target_qgis_data_path
     create_folder(target_qgis_data_folder)
 
@@ -47,19 +47,21 @@ def write_qgis_files(city_data):
     # Build VRTs for preprocessed results
     preprocessed_files = []
     target_preproc_folder = city_data.target_intermediate_data_path
-    target_preproc_first_tile_folder = os.path.join(target_preproc_folder, 'tile_00001')
-    if os.path.exists(target_preproc_first_tile_folder):
-        wall_aspect_file_stem = Path(city_data.wall_aspect_filename).stem
-        wall_aspect_file_names = find_files_with_substring_in_name(target_preproc_first_tile_folder, wall_aspect_file_stem, '.tif')
-        wall_aspect_files = _build_file_dict('preprocessed_data', 'preproc', 'wallaspect', 0, wall_aspect_file_names)
-        _write_raster_vrt_file_for_folder(target_preproc_folder, wall_aspect_files, target_qgis_data_folder)
-        preprocessed_files += wall_aspect_files
+    if os.path.isdir(target_preproc_folder):
+        first_tile_folder = next((f for f in os.listdir(target_preproc_folder) if os.path.isdir(os.path.join(target_preproc_folder, f))), None)
+        target_preproc_first_tile_folder = os.path.join(target_preproc_folder, first_tile_folder)
+        if os.path.exists(target_preproc_first_tile_folder):
+            wall_aspect_file_stem = Path(city_data.wall_aspect_filename).stem
+            wall_aspect_file_names = find_files_with_substring_in_name(target_preproc_first_tile_folder, wall_aspect_file_stem, '.tif')
+            wall_aspect_files = _build_file_dict('preprocessed_data', 'preproc', 'wallaspect', 0, wall_aspect_file_names)
+            _write_raster_vrt_file_for_folder(target_preproc_folder, wall_aspect_files, target_qgis_data_folder)
+            preprocessed_files += wall_aspect_files
 
-        wall_height_file_stem = Path(city_data.wall_height_filename).stem
-        wall_height_file_names = find_files_with_substring_in_name(target_preproc_first_tile_folder, wall_height_file_stem, '.tif')
-        wall_height_files = _build_file_dict('preprocessed_data', 'preproc', 'wallheight', 0, wall_height_file_names)
-        _write_raster_vrt_file_for_folder(target_preproc_folder, wall_height_files, target_qgis_data_folder)
-        preprocessed_files += wall_height_files
+            wall_height_file_stem = Path(city_data.wall_height_filename).stem
+            wall_height_file_names = find_files_with_substring_in_name(target_preproc_first_tile_folder, wall_height_file_stem, '.tif')
+            wall_height_files = _build_file_dict('preprocessed_data', 'preproc', 'wallheight', 0, wall_height_file_names)
+            _write_raster_vrt_file_for_folder(target_preproc_folder, wall_height_files, target_qgis_data_folder)
+            preprocessed_files += wall_height_files
 
 
     # Build VRTs for tcm results
@@ -73,9 +75,12 @@ def write_qgis_files(city_data):
 
         met_folder_name = Path(met_file_name).stem
         target_tcm_folder = str(os.path.join(city_data.target_tcm_results_path, met_folder_name))
-        target_tcm_first_tile_folder = os.path.join(target_tcm_folder, 'tile_00001')
+        if os.path.isdir(target_tcm_folder):
+            first_tile_folder = next(
+                (f for f in os.listdir(target_tcm_folder) if os.path.isdir(os.path.join(target_tcm_folder, f))),
+                None)
+            target_tcm_first_tile_folder = os.path.join(target_tcm_folder, first_tile_folder)
 
-        if os.path.exists(target_tcm_first_tile_folder):
             shadow_file_names = find_files_with_substring_in_name(target_tcm_first_tile_folder, 'Shadow_', '.tif')
             shadow_files = _build_file_dict(met_folder_name, 'tcm', 'shadow', set_id, shadow_file_names)
             _write_raster_vrt_file_for_folder(target_tcm_folder, shadow_files, target_qgis_data_folder)
@@ -134,10 +139,10 @@ def _modify_and_write_qgis_file(vrt_files, city_data, crs_str, target_city_path)
 
         # Reset the three forms of crs specifications in the qgis file
         template_crs = '32734'
-        target_crs = _get_substring_after_char(crs_str,':')
-        data = data.replace(f'["EPSG",{template_crs}]', f'["EPSG",{target_crs}]')
-        data = data.replace(f'<srid>{template_crs}</srid>', f'<srid>{target_crs}</srid>')
-        data = data.replace(f'EPSG:{template_crs}', f'EPSG:{target_crs}')
+        grid_crs = _get_substring_after_char(crs_str,':')
+        data = data.replace(f'["EPSG",{template_crs}]', f'["EPSG",{grid_crs}]')
+        data = data.replace(f'<srid>{template_crs}</srid>', f'<srid>{grid_crs}</srid>')
+        data = data.replace(f'EPSG:{template_crs}', f'EPSG:{grid_crs}')
 
         # Reset the default view extent
         source_line = _get_string_line_by_line(source_qgs_file, '<DefaultViewExtent')
@@ -146,7 +151,7 @@ def _modify_and_write_qgis_file(vrt_files, city_data, crs_str, target_city_path)
         min_lat = city_data.min_lat
         max_lon = city_data.max_lon
         max_lat = city_data.max_lat
-        reproj_bbox = _get_reprojected_bbox(min_lon, min_lat, max_lon, max_lat, target_crs)
+        reproj_bbox = _get_reprojected_bbox(min_lon, min_lat, max_lon, max_lat, grid_crs)
         target_minx, target_miny, target_maxx, target_maxy = reproj_bbox.squeeze().bounds
         target_line =f'    <DefaultViewExtent ymin="{target_miny}" xmin="{target_minx}" xmax="{target_maxx}" ymax="{target_maxy}">\n'
 

@@ -27,6 +27,8 @@ def test_teresina_subarea_upenn():
                               'band_checksums': ['1ae8ab9f85bb007838de148135f97c87'],
                               'full_checksum': '1ae8ab9f85bb007838de148135f97c87'}
         is_matched, actual_file_signature = does_file_signature_match(expected_signature, target_met_file)
+        # print(actual_file_signature)
+
         assert is_matched, f"Expected signature does not match actual: ({actual_file_signature})"
 
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
@@ -49,7 +51,7 @@ def test_Capetown_city_urbanextent_subarea_upenn():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         assert return_code == 0
-        assert vrt_count == 16
+        assert vrt_count == 17
     finally:
         if CLEANUP_RESULTS:
             remove_folder(non_tiled_city_data.target_city_parent_path)

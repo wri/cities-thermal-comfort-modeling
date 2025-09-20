@@ -11,7 +11,6 @@ import dask
 from city_metrix import GeoExtent
 from city_metrix.constants import GEOJSON_FILE_EXTENSION
 from city_metrix.metrix_dao import get_city_boundaries, write_layer
-from latlontools.latLonFunctions import utm_north
 from shapely import wkt
 
 from src.constants import SRC_DIR, FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN, PRIOR_5_YEAR_KEYWORD, TILE_NUMBER_PADCOUNT, \

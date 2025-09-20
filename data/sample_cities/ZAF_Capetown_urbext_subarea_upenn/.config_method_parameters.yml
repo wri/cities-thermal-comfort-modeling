@@ -2,7 +2,7 @@
 # Options for publishing_target: [local, s3, both].
 - Scenario:
   scenario_id: first scenario
-  infra_id: two_tile_demo
+  infra_id: test
   description: Scenario that demonstrates blah.
   author: author@wri.org
   publishing_target: local

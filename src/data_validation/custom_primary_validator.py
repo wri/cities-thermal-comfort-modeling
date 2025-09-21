@@ -140,7 +140,7 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
 
                     if verify_path(met_filepath) is False:
                         msg = (f'Required meteorological file: {met_filepath} not found for '
-                               f'method: {processing_method} in .config_method_parameters.yml.')
+                               f'method: {processing_method} in config_method_parameters.yml.')
                         invalids.append((msg, True))
 
             if len(tiled_city_data.met_filenames) > 2:

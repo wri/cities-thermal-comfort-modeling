@@ -27,12 +27,12 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
     city_geoextent = _get_city_geoextent(source_base_path, city_folder_name)
 
     non_tiled_city_data = CityData(city_geoextent, city_folder_name, None, abs_source_base_path, abs_target_base_path)
-    # if non_tiled_city_data.publishing_target in ('s3', 'both'):
-    #     does_s3_target_scenario_exist, bucket_name, scenario_folder_key = _does_scenario_s3_folder_exist(non_tiled_city_data)
-    #     if does_s3_target_scenario_exist:
-    #         print(f"\n\n*** Aborting run since scenario folder ({scenario_folder_key}) already exists in S3 bucket: {bucket_name}.")
-    #         print("*** You must choose a different scenario name or as extreme solution, remove the existing data in S3.\n")
-    #         raise Exception('Collision with existing results in S3.')
+    if non_tiled_city_data.publishing_target in ('s3', 'both'):
+        does_s3_target_scenario_exist, bucket_name, scenario_folder_key = _does_scenario_s3_folder_exist(non_tiled_city_data)
+        if does_s3_target_scenario_exist:
+            print(f"\n\n*** Aborting run since scenario folder ({scenario_folder_key}) already exists in S3 bucket: {bucket_name}.")
+            print("*** You must choose a different scenario name or as extreme solution, remove the existing data in S3.\n")
+            raise Exception('Collision with existing results in S3.')
 
     existing_tiles_metrics = _get_existing_tiles(non_tiled_city_data)
 

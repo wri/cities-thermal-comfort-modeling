@@ -3,7 +3,7 @@
 clear
 
 # Set user variable
-user="ubuntu"
+user="kennc"
 
 # Set paths using user variable
 path_to_main="/home/$user/github/cities-thermal-comfort-modeling/main.py"
@@ -13,7 +13,7 @@ target_base_path="/home/$user/CTCM_outcome"
 # Get current directory name (equivalent to Windows FOR loop)
 city_folder=$(basename "$PWD")
 
-processing_option="pre_check"
+processing_option="run_pipeline"
 
 echo
 echo "=================================================================================="

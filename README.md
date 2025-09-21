@@ -23,7 +23,7 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
 
 ### Configuration for a city
    #### In your city folder:
-   1. Modify the five sections of the .config_method_parameters.yml file to specify:
+   1. Modify the five sections of the config_method_parameters.yml file to specify:
       1. description of the scenario
          * The short tile is used to name the target folder
       1. Area-of-Interest parameters:

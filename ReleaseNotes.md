@@ -1,37 +1,49 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/09/21
+
+1. Renamed .config\_method\_parameters.yml to config\_method\_parameters.yml
+2. Added scripts for running CTCM in remote folder in linux. (run\_a\_CTCM\_pre\_check.sh and run\_b\_CTCM\_processing.sh)
+
 ## 2025/09/20
+
 1. create separate environment.yml files for windows and linux
-1. commented out umep tests since they fail on linux
-1. add grid tile filtering to exclude tiles external to the aoi polygon
+2. commented out umep tests since they fail on linux
+3. add grid tile filtering to exclude tiles external to the aoi polygon
 
 ## 2025/09/15
+
 1. updated to match CIF interface
-1. added city option to yml file
-1. added EPSG option to yml file
-1. renamed AOI bounds to west, south, east, north
+2. added city option to yml file
+3. added EPSG option to yml file
+4. renamed AOI bounds to west, south, east, north
 
 ## 2025/08/19
+
 1. Added retry loops for layer downloads with goal of improved robustness
 2. UPenn model now also outputs shadow raster files
 3. Updated generated QGIS viewer for higher transparency on shadow files.
 
 ## 2025/08/07
+
 1. Enable specification of date range for ERA5 retrieval
 2. Updated yml file to support specification of ERA5 date range
 
 ## 2025/08/05
-1. Renamed utc_offset as seasonal_utc_offset
-2. Now passes seasonal_utc_offset to Era5MetPreprocessing metrics
+
+1. Renamed utc\_offset as seasonal\_utc\_offset
+2. Now passes seasonal\_utc\_offset to Era5MetPreprocessing metrics
 
 ## 2025/07/30
-1. CDB-419. Added 'upenn_model' option to config yml file.
-2. CDB-419. Added albedo_cloud_masked_tif_filename option to config yml file.
+
+1. CDB-419. Added 'upenn\_model' option to config yml file.
+2. CDB-419. Added albedo\_cloud\_masked\_tif\_filename option to config yml file.
 3. CDB-419. Modified to use ERA5-UPenn data for UPenn model
 4. CDB-426. Modified UPenn code to output valid tree shadows.
 5. Note: UMEP met files have .txt extension, but UPenn met files have .csv extension
 
 ## 2025/06/05
+
 1. CDB-337. Fixed bug of not passing the configured values for transmissivity\_of\_light\_through\_vegetation and trunk\_tree\_height to skyview-factor UMEP plugin.
 
 ## 2025/05/29

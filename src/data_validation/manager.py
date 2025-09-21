@@ -39,7 +39,7 @@ def validate_config(non_tiled_city_data, existing_tiles_metrics, city_geoextent,
         met_invalids = evaluate_met_files(non_tiled_city_data)
         combined_invalids.extend(met_invalids)
 
-        if non_tiled_city_data.new_task_method != 'upenn_model':
+        if non_tiled_city_data.processing_method != 'upenn_model':
             met_invalids = evaluate_meteorological_umep_data(non_tiled_city_data, in_target_folder=False)
             combined_invalids.extend(met_invalids)
         else:

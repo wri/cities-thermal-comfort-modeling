@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 
 def make_yml_backup(directory):
-    yml_file_pattern = '.config_method_parameters.yml'
+    yml_file_pattern = 'config_method_parameters.yml'
     for root, dirs, files in os.walk(directory):
         for filename in fnmatch.filter(files, yml_file_pattern):
             file_path = os.path.join(root, filename)
@@ -16,7 +16,7 @@ def make_yml_backup(directory):
             shutil.copy(file_path, yml_backup)
 
 def find_and_replace(directory, old_string, new_string, use_start_string_match):
-    yml_file_pattern = '.config_method_parameters.yml'
+    yml_file_pattern = 'config_method_parameters.yml'
     for root, dirs, files in os.walk(directory):
         for filename in fnmatch.filter(files, yml_file_pattern):
             file_path = os.path.join(root, filename)

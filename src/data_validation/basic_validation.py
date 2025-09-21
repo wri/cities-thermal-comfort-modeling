@@ -43,11 +43,11 @@ def verify_fundamental_paths(non_tiled_city_data):
 
 
 def verify_other_settings(non_tiled_city_data):
-    task_method = non_tiled_city_data.new_task_method
+    processing_method = non_tiled_city_data.processing_method
 
     invalids = []
-    if task_method not in PROCESSING_METHODS:
-        msg = f"Invalid 'method' value ({task_method}) in {FILENAME_METHOD_YML_CONFIG} file. Valid values: {PROCESSING_METHODS}"
+    if processing_method not in PROCESSING_METHODS:
+        msg = f"Invalid 'method' value ({processing_method}) in {FILENAME_METHOD_YML_CONFIG} file. Valid values: {PROCESSING_METHODS}"
         invalids.append((msg, True))
 
     return invalids

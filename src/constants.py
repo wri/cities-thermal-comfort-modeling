@@ -23,7 +23,7 @@ FOLDER_NAME_PRIMARY_MET_FILES = 'met_files'
 FOLDER_NAME_INTERMEDIATE_DATA = 'processed_data'
 FOLDER_NAME_UMEP_TCM_RESULTS = 'tcm_results'
 
-FILENAME_METHOD_YML_CONFIG = '.config_method_parameters.yml'
+FILENAME_METHOD_YML_CONFIG = 'config_method_parameters.yml'
 FILENAME_TILE_GRID = 'tile_grid.geojson'
 FILENAME_UNBUFFERED_TILE_GRID = 'unbuffered_tile_grid.geojson'
 FILENAME_URBAN_EXTENT_BOUNDARY = 'urban_extent_boundary.geojson'

@@ -50,7 +50,7 @@ def parse_processing_areas_config(yml_values):
     return (seasonal_utc_offset, city_json_str, source_aoi_crs, min_lon, min_lat, max_lon, max_lat,
             tile_side_meters, tile_buffer_meters, remove_mrt_buffer_for_final_output)
 
-def parse_met_files_config(yml_values, new_task_method):
+def parse_met_files_config(yml_values, processing_method):
     import fnmatch
     try:
         met_filenames = yml_values[2].get('MetFiles')
@@ -63,7 +63,7 @@ def parse_met_files_config(yml_values, new_task_method):
             if fnmatch.fnmatch(filename, METHOD_TRIGGER_ERA5_DOWNLOAD):
                 has_era_met_download = True
                 era5_date_range = _extract_wildcard_match(filename, METHOD_TRIGGER_ERA5_DOWNLOAD)
-                if new_task_method == 'upenn_model':
+                if processing_method == 'upenn_model':
                     result_met_filenames.append(FILENAME_ERA5_UPENN)
                 else:
                     result_met_filenames.append(FILENAME_ERA5_UMEP)
@@ -206,7 +206,7 @@ def parse_method_attributes_config(yml_values):
     try:
         method_attributes = yml_values[5]
 
-        new_task_method = method_attributes['method']
+        processing_method = method_attributes['method']
         northern_leaf_start = method_attributes['solweig']['seasonal_leaf_coverage']['north_temperate_leaf_start']
         northern_leaf_end = method_attributes['solweig']['seasonal_leaf_coverage']['north_temperate_leaf_end']
         southern_leaf_start = method_attributes['solweig']['seasonal_leaf_coverage']['south_temperate_leaf_start']
@@ -228,6 +228,6 @@ def parse_method_attributes_config(yml_values):
         raise Exception(
             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
 
-    return (new_task_method, northern_leaf_start, northern_leaf_end, southern_leaf_start, southern_leaf_end, wall_lower_limit_height,
+    return (processing_method, northern_leaf_start, northern_leaf_end, southern_leaf_start, southern_leaf_end, wall_lower_limit_height,
             light_transmissivity, trunk_zone_height, conifer_trees, albedo_walls,
             albedo_ground, emis_walls, emis_ground, output_tmrt, output_sh, sampling_local_hours)

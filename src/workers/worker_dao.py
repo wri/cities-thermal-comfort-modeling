@@ -10,7 +10,7 @@ from osgeo import gdal
 
 from src.constants import S3_PUBLICATION_BUCKET, FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_INTERMEDIATE_DATA, \
     FOLDER_NAME_UMEP_TCM_RESULTS, FOLDER_NAME_ADMIN_DATA, FOLDER_NAME_QGIS_DATA, FILENAME_TILE_GRID, \
-    FILENAME_UNBUFFERED_TILE_GRID, FILENAME_METHOD_YML_CONFIG
+    FILENAME_UNBUFFERED_TILE_GRID, FILENAME_METHOD_YML_CONFIG, FILENAME_URBAN_EXTENT_BOUNDARY
 from src.workers.city_data import CityData
 from src.workers.worker_tools import remove_folder, _does_s3_folder_exist
 
@@ -185,7 +185,7 @@ def cache_metadata_files(city_data: CityData):
     # Cache qgis data for tile grids
     local_folder = city_data.target_qgis_data_path
     s3_folder_uri = f"{s3_metadata_folder_uri}/{FOLDER_NAME_QGIS_DATA}".replace('//','/')
-    file_list = [FILENAME_TILE_GRID, FILENAME_UNBUFFERED_TILE_GRID]
+    file_list = [FILENAME_TILE_GRID, FILENAME_UNBUFFERED_TILE_GRID, FILENAME_URBAN_EXTENT_BOUNDARY]
     _process_tile_folder(local_folder, None, bucket_name, s3_folder_uri, publishing_target, file_list=file_list)
 
     # Cache yml file

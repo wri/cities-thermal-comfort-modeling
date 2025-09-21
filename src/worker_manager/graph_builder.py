@@ -7,47 +7,30 @@ from src.constants import WGS_CRS
 from src.worker_manager.ancillary_files import add_tile_name_column
 from src.worker_manager.tools import construct_polygon_from_bounds, coordinates_to_bbox
 
-def get_aoi_from_config(non_tiled_city_data):
+def get_grid_dimensions(non_tiled_city_data):
     # AOI metrics
     seasonal_utc_offset = non_tiled_city_data.seasonal_utc_offset
-    min_lon = non_tiled_city_data.min_lon
-    min_lat = non_tiled_city_data.min_lat
-    max_lon = non_tiled_city_data.max_lon
-    max_lat = non_tiled_city_data.max_lat
+    utm_grid_west = non_tiled_city_data.utm_grid_west
+    utm_grid_south = non_tiled_city_data.utm_grid_south
+    utm_grid_east = non_tiled_city_data.utm_grid_east
+    utm_grid_north = non_tiled_city_data.utm_grid_north
     tile_side_meters = non_tiled_city_data.tile_side_meters
     tile_buffer_meters = non_tiled_city_data.tile_buffer_meters
-    source_aoi_crs = non_tiled_city_data.source_aoi_crs
-    target_crs = non_tiled_city_data.target_crs
+    grid_crs = non_tiled_city_data.grid_crs
 
-    aoi_boundary = coordinates_to_bbox(min_lon, min_lat, max_lon, max_lat)
+    aoi_boundary = coordinates_to_bbox(utm_grid_west, utm_grid_south, utm_grid_east, utm_grid_north)
 
-    return aoi_boundary, tile_side_meters, tile_buffer_meters, seasonal_utc_offset, source_aoi_crs, target_crs
+    return aoi_boundary, tile_side_meters, tile_buffer_meters, seasonal_utc_offset, grid_crs
 
 
-def get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters, source_aoi_crs, target_crs):
-    in_minx, in_miny, in_maxx, in_maxy = aoi_boundary.bounds
-
-    if source_aoi_crs == WGS_CRS:
-        from shapely.geometry import box, Polygon
-        from pyproj import Transformer
-
-        boundary_polygon = box(*aoi_boundary.bounds)
-        transformer = Transformer.from_crs(source_aoi_crs, target_crs, always_xy=True)
-        utm_coords = [transformer.transform(x, y) for x, y in boundary_polygon.exterior.coords]
-        utm_polygon = Polygon(utm_coords)
-
-        minx, miny, maxx, maxy = utm_polygon.bounds
-    else:
-        minx = in_minx
-        miny = in_miny
-        maxx = in_maxx
-        maxy = in_maxy
+def get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters, utm_grid_crs):
+    minx, miny, maxx, maxy = aoi_boundary.bounds
 
     if tile_side_meters is None:
         bbox_poly = construct_polygon_from_bounds(minx, miny, maxx, maxy)
-        unbuffered_tile_gpd = gpd.GeoDataFrame(index=[0], crs=target_crs, geometry=[bbox_poly])
+        unbuffered_tile_gpd = gpd.GeoDataFrame(index=[0], crs=utm_grid_crs, geometry=[bbox_poly])
     else:
-        bbox = GeoExtent((minx, miny, maxx, maxy), target_crs)
+        bbox = GeoExtent((minx, miny, maxx, maxy), utm_grid_crs)
         unbuffered_tile_gpd = create_fishnet_grid(bbox, tile_side_meters, 0, length_units="meters",
                                                   output_as=ProjectionType.UTM)
 
@@ -57,9 +40,9 @@ def get_aoi_fishnet(aoi_boundary, tile_side_meters, tile_buffer_meters, source_a
         buffered_maxx = maxx + tile_buffer_meters
         buffered_maxy = maxy + tile_buffer_meters
         bbox_poly = construct_polygon_from_bounds(buffered_minx, buffered_miny, buffered_maxx, buffered_maxy)
-        tile_gpd = gpd.GeoDataFrame(index=[0], crs=target_crs, geometry=[bbox_poly])
+        tile_gpd = gpd.GeoDataFrame(index=[0], crs=utm_grid_crs, geometry=[bbox_poly])
     else:
-        bbox = GeoExtent((minx, miny, maxx, maxy), target_crs)
+        bbox = GeoExtent((minx, miny, maxx, maxy), utm_grid_crs)
         tile_gpd = create_fishnet_grid(bbox, tile_side_meters, tile_buffer_meters, length_units="meters",
                                        output_as=ProjectionType.UTM)
 

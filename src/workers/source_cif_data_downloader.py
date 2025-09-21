@@ -38,7 +38,7 @@ MAX_RETRY_COUNT = 3
 # in the future, consider increasing these values or implementing exponential backoff.
 
 def get_cif_data(city_json_str, source_base_path, target_base_path, folder_name_city_data, tile_id, cif_primary_features,
-                 tile_boundary, tile_resolution, target_crs):
+                 tile_boundary, tile_resolution, grid_crs):
     start_time = datetime.now()
 
     tiled_city_data = CityData(None, folder_name_city_data, tile_id, source_base_path, target_base_path)
@@ -49,7 +49,7 @@ def get_cif_data(city_json_str, source_base_path, target_base_path, folder_name_
     tile_cif_data_path = tiled_city_data.target_primary_tile_data_path
 
     tile_boundary_df = {'geometry': [shapely.wkt.loads(tile_boundary)]}
-    tiled_aoi_gdf = gp.GeoDataFrame(tile_boundary_df, crs=target_crs)
+    tiled_aoi_gdf = gp.GeoDataFrame(tile_boundary_df, crs=grid_crs)
 
     if city_json_str == 'None' or city_json_str is None:
         city_geoextent = GeoExtent(tiled_aoi_gdf.total_bounds, tiled_aoi_gdf.crs.srs)

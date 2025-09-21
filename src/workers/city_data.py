@@ -1,5 +1,6 @@
 import os
 
+from city_metrix import GeoExtent
 from city_metrix.constants import ProjectionType, GeoType
 from city_metrix.metrix_tools import get_utm_zone_from_latlon_point, get_projection_type
 from shapely import Point
@@ -35,15 +36,34 @@ class CityData:
          obj.tile_side_meters, obj.tile_buffer_meters, obj.remove_mrt_buffer_for_final_output) = \
             parse_processing_areas_config(yml_values)
 
-        if obj.min_lon is None and city_geoextent is not None:
-            geo_bbox = city_geoextent.as_geographic_bbox()
-            obj.min_lon = geo_bbox.min_x
-            obj.min_lat = geo_bbox.min_y
-            obj.max_lon = geo_bbox.max_x
-            obj.max_lat = geo_bbox.max_y
-            obj.source_aoi_crs = WGS_CRS
-
-        obj.target_crs = _get_target_crs(city_geoextent, obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat, obj.source_aoi_crs)
+        if city_geoextent is not None:
+            geo_bbox = city_geoextent.as_utm_bbox()
+            obj.utm_grid_west = geo_bbox.min_x
+            obj.utm_grid_south = geo_bbox.min_y
+            obj.utm_grid_east = geo_bbox.max_x
+            obj.utm_grid_north = geo_bbox.max_y
+            obj.grid_crs = geo_bbox.crs
+            if obj.min_lon is None:
+                obj.min_lon = geo_bbox.min_x
+                obj.min_lat = geo_bbox.min_y
+                obj.max_lon = geo_bbox.max_x
+                obj.max_lat = geo_bbox.max_y
+                obj.source_aoi_crs = geo_bbox.crs
+        else:
+            if obj.min_lon is None:
+                obj.utm_grid_west = None
+                obj.utm_grid_south = None
+                obj.utm_grid_east = None
+                obj.utm_grid_north = None
+                obj.grid_crs = None
+            else:
+                bbox = [obj.min_lon, obj.min_lat, obj.max_lon, obj.max_lat]
+                geo_bbox = GeoExtent(bbox, obj.source_aoi_crs).as_utm_bbox()
+                obj.utm_grid_west = geo_bbox.min_x
+                obj.utm_grid_south = geo_bbox.min_y
+                obj.utm_grid_east = geo_bbox.max_x
+                obj.utm_grid_north = geo_bbox.max_y
+                obj.grid_crs = geo_bbox.crs
 
         (obj.dem_tif_filename, obj.dsm_tif_filename, obj.lulc_tif_filename, obj.open_urban_tif_filename, obj.tree_canopy_tif_filename,
          obj.albedo_cloud_masked_tif_filename, obj.custom_primary_feature_list, obj.custom_primary_filenames,
@@ -132,20 +152,20 @@ class CityData:
 
         return obj
 
-def _get_target_crs(city_geoextent, min_lon, min_lat, max_lon, max_lat, source_aoi_crs):
-    target_crs = None
+def _get_grid_crs(city_geoextent, min_lon, min_lat, max_lon, max_lat, source_aoi_crs):
+    grid_crs = None
     if city_geoextent is not None and city_geoextent.geo_type == GeoType.CITY:
-        target_crs = city_geoextent.crs
+        grid_crs = city_geoextent.crs
     elif min_lon is not None:
         if source_aoi_crs is not None and get_projection_type(source_aoi_crs) == ProjectionType.UTM:
-            target_crs = source_aoi_crs
+            grid_crs = source_aoi_crs
         elif source_aoi_crs is not None and min_lon is not None:
             center_lon = (min_lon + max_lon) / 2
             center_lat = (min_lat + max_lat) / 2
             centroid = Point(center_lon, center_lat)
-            target_crs = get_utm_zone_from_latlon_point(centroid)
+            grid_crs = get_utm_zone_from_latlon_point(centroid)
 
-    return target_crs
+    return grid_crs
 
 def get_yml_content(source_base_path, folder_name_city_data):
     source_city_path = str(os.path.join(source_base_path, folder_name_city_data))

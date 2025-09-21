@@ -3,7 +3,7 @@
 clear
 
 # Set user variable
-user="kennc"
+user="ubuntu"
 
 # Set paths using user variable
 path_to_main="/home/$user/github/cities-thermal-comfort-modeling/main.py"

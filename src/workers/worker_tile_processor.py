@@ -8,6 +8,7 @@ from pathlib import Path
 from src.constants import FILENAME_ERA5_UMEP, METHOD_TRIGGER_ERA5_DOWNLOAD, FILENAME_ERA5_UPENN
 from src.workers.city_data import CityData
 from src.workers.model_upenn.upenn_module_processor import run_upenn_module
+from src.workers.source_cif_data_downloader import get_cif_data
 from src.workers.worker_dao import cache_tile_files
 from src.workers.worker_tools import create_folder, unpack_quoted_value, save_tiff_file, remove_file, \
     ctcm_standardize_y_dimension_direction
@@ -27,7 +28,6 @@ def process_tile(city_json_str, task_method, source_base_path, target_base_path,
 
     def _execute_retrieve_cif_data(cif_city_json_str, source_path, target_path, folder_city, folder_tile, cif_features,
                                    boundary, resolution, grid_crs):
-        from source_cif_data_downloader import get_cif_data
         cif_stdout = \
             get_cif_data(cif_city_json_str, source_path, target_path, folder_city, folder_tile, cif_features, boundary,
                          resolution, grid_crs)

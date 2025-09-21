@@ -43,7 +43,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     cif_primary_features = non_tiled_city_data.cif_primary_feature_list
     ctcm_intermediate_features = non_tiled_city_data.ctcm_intermediate_list
 
-    new_task_method = non_tiled_city_data.new_task_method
+    processing_method = non_tiled_city_data.processing_method
 
     logger = setup_logger(non_tiled_city_data.target_manager_log_path)
     log_general_file_message('Starting jobs', __file__, logger)
@@ -71,7 +71,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
         start_date, end_date = _determine_era5_date_range(non_tiled_city_data.era5_date_range)
 
         target_met_files_path = non_tiled_city_data.target_met_files_path
-        if new_task_method == 'umep_solweig':
+        if processing_method == 'umep_solweig':
             return_code = get_umep_met_data(target_met_files_path, geographic_grid_bbox,
                                             start_date, end_date, seasonal_utc_offset, sampling_local_hours)
         else:
@@ -84,7 +84,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     # Transfer custom met files to target
     _transfer_custom_met_files(non_tiled_city_data)
 
-    if new_task_method != 'upenn_model':
+    if processing_method != 'upenn_model':
         invalids = evaluate_meteorological_umep_data(non_tiled_city_data, in_target_folder=True)
         if invalids:
             print_invalids(invalids)
@@ -114,14 +114,14 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
             tile_boundary = tile_metrics['boundary']
             tile_resolution = tile_metrics['avg_res']
 
-            proc_array = _construct_tile_proc_array(city_json_str, new_task_method, source_base_path, target_base_path,
+            proc_array = _construct_tile_proc_array(city_json_str, processing_method, source_base_path, target_base_path,
                                                     city_folder_name, tile_folder_name, cif_primary_features,
                                                     ctcm_intermediate_features, tile_boundary, tile_resolution,
                                                     seasonal_utc_offset, custom_source_crs)
 
             log_general_file_message(f'Staging: {proc_array}', __file__, logger)
 
-            if new_task_method == 'upenn_model':
+            if processing_method == 'upenn_model':
                 delay_tile_array = dask.delayed(process_tile)(*proc_array)
             else:
                 delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
@@ -150,14 +150,14 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
             tile_boundary = str(shapely.box(cell_bounds[0], cell_bounds[1], cell_bounds[2], cell_bounds[3]))
             tile_folder_name = cell.tile_name
 
-            proc_array = _construct_tile_proc_array(city_json_str, new_task_method, source_base_path, target_base_path,
+            proc_array = _construct_tile_proc_array(city_json_str, processing_method, source_base_path, target_base_path,
                                                     city_folder_name, tile_folder_name, cif_primary_features,
                                                     ctcm_intermediate_features, tile_boundary, None,
                                                     seasonal_utc_offset, utm_grid_crs)
 
             log_general_file_message(f'Staging: {proc_array}', __file__, logger)
 
-            if new_task_method == 'upenn_model':
+            if processing_method == 'upenn_model':
                 delay_tile_array = dask.delayed(process_tile)(*proc_array)
             else:
                 delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
@@ -173,7 +173,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     combined_delays_passed.append(delays_all_passed)
 
     # Write run_report
-    report_file_path = report_results(new_task_method, combined_results_df, non_tiled_city_data.target_log_path,
+    report_file_path = report_results(processing_method, combined_results_df, non_tiled_city_data.target_log_path,
                                       city_folder_name)
     print(f'\nRun report written to {report_file_path}\n')
 
@@ -251,7 +251,7 @@ def _transfer_custom_met_files(non_tiled_city_data):
             shutil.copyfile(source_path, target_path)
 
 
-def _construct_tile_proc_array(city_json_str, task_method, source_base_path, target_base_path, city_folder_name,
+def _construct_tile_proc_array(city_json_str, processing_method, source_base_path, target_base_path, city_folder_name,
                                tile_folder_name, cif_primary_features, ctcm_intermediate_features,
                                tile_boundary, tile_resolution, seasonal_utc_offset, grid_crs):
     if cif_primary_features:
@@ -264,13 +264,13 @@ def _construct_tile_proc_array(city_json_str, task_method, source_base_path, tar
     else:
         ctcm_features = None
 
-    if task_method == 'upenn_model':
-        proc_array = [city_json_str, task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
+    if processing_method == 'upenn_model':
+        proc_array = [city_json_str, processing_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
                 cif_features, ctcm_features,  tile_boundary, tile_resolution, seasonal_utc_offset, grid_crs]
     else:
         proc_array = ['python', TILE_PROCESSING_MODULE_PATH,
                       f'--city_json_str={city_json_str}',
-                      f'--task_method={task_method}',
+                      f'--processing_method={processing_method}',
                       f'--source_base_path={source_base_path}',
                       f'--target_base_path={target_base_path}',
                       f'--city_folder_name={city_folder_name}',

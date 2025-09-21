@@ -69,7 +69,7 @@ def write_qgis_files(city_data):
     set_id = 0
     for met_filename in city_data.met_filenames:
         if met_filename == METHOD_TRIGGER_ERA5_DOWNLOAD:
-            met_file_name = FILENAME_ERA5_UPENN if city_data.new_task_method == 'upenn_model' else FILENAME_ERA5_UMEP
+            met_file_name = FILENAME_ERA5_UPENN if city_data.processing_method == 'upenn_model' else FILENAME_ERA5_UMEP
         else:
             met_file_name = met_filename
 
@@ -268,7 +268,7 @@ def _update_custom_yml_parameters(non_tiled_city_data, updated_aoi):
     if has_era_met_download:
         for item in met_filenames:
             if item["filename"] == METHOD_TRIGGER_ERA5_DOWNLOAD:
-                item["filename"] = FILENAME_ERA5_UPENN if non_tiled_city_data.new_task_method == 'upenn_model' else FILENAME_ERA5_UMEP
+                item["filename"] = FILENAME_ERA5_UPENN if non_tiled_city_data.processing_method == 'upenn_model' else FILENAME_ERA5_UMEP
 
     custom_primary_filenames = list_doc[3]
     custom_primary_filenames['dem_tif_filename'] = non_tiled_city_data.dem_tif_filename

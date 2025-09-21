@@ -30,7 +30,7 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
 
     cif_features = non_tiled_city_data.cif_primary_feature_list
     custom_features = non_tiled_city_data.custom_primary_feature_list
-    task_method = non_tiled_city_data.new_task_method
+    processing_method = non_tiled_city_data.processing_method
 
     if tile_side_meters:
         msg = f"tile_side_meters are ignored for dataset with custom primary raster files."
@@ -116,21 +116,21 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
             msg = f'Specified custom source file: {prior_albedo_cloud_masked} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
             invalids.append((msg, True))
 
-        if task_method in PROCESSING_METHODS:
+        if processing_method in PROCESSING_METHODS:
             prior_tree_canopy = tiled_city_data.source_tree_canopy_path
             if cif_features is not None and 'tree_canopy' not in cif_features and verify_path(prior_tree_canopy) is False:
-                msg = f'Required source file: {prior_tree_canopy} not found as needed for method: {task_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
+                msg = f'Required source file: {prior_tree_canopy} not found as needed for method: {processing_method} as specified in {FILENAME_METHOD_YML_CONFIG} file.'
                 invalids.append((msg, True))
 
-        if task_method in ['umep_solweig']:
+        if processing_method in ['umep_solweig']:
             prior_lulc = tiled_city_data.source_lulc_path
             prior_dem = tiled_city_data.source_dem_path
             if cif_features is not None and 'lulc' not in cif_features and verify_path(prior_lulc) is False:
-                msg = (f'Required source file: {prior_lulc} not found for method: {task_method} as '
+                msg = (f'Required source file: {prior_lulc} not found for method: {processing_method} as '
                        f'specified in {FILENAME_METHOD_YML_CONFIG} file.')
                 invalids.append((msg, True))
             if cif_features is not None and 'dem' not in cif_features and verify_path(prior_dem) is False:
-                msg = (f'Required source file: {prior_dem} not found for method: {task_method} as '
+                msg = (f'Required source file: {prior_dem} not found for method: {processing_method} as '
                        f'specified in {FILENAME_METHOD_YML_CONFIG} file.')
                 invalids.append((msg, True))
             for met_filename in tiled_city_data.met_filenames:
@@ -140,27 +140,27 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
 
                     if verify_path(met_filepath) is False:
                         msg = (f'Required meteorological file: {met_filepath} not found for '
-                               f'method: {task_method} in .config_method_parameters.yml.')
+                               f'method: {processing_method} in .config_method_parameters.yml.')
                         invalids.append((msg, True))
 
             if len(tiled_city_data.met_filenames) > 2:
                 msg = 'A maximum of 2 meteorological files can be specified.'
                 invalids.append((msg, True))
 
-            if task_method in ['umep_solweig_only']:
+            if processing_method in ['umep_solweig_only']:
                 prior_svfszip = tiled_city_data.target_svfszip_path
                 prior_wallheight = tiled_city_data.target_wallheight_path
                 prior_wallaspect = tiled_city_data.target_wallaspect_path
                 if verify_path(prior_svfszip) is False:
-                    msg = (f'Required source file: {prior_svfszip} currently not found for method: {task_method} '
+                    msg = (f'Required source file: {prior_svfszip} currently not found for method: {processing_method} '
                            f'as specified in {FILENAME_METHOD_YML_CONFIG} file.')
                     invalids.append((msg, True))
                 if verify_path(prior_wallheight) is False:
-                    msg = (f'Required source file: {prior_wallheight} currently not found for method: {task_method} '
+                    msg = (f'Required source file: {prior_wallheight} currently not found for method: {processing_method} '
                            f'as specified in {FILENAME_METHOD_YML_CONFIG} file.')
                     invalids.append((msg, True))
                 if verify_path(prior_wallaspect) is False:
-                    msg = (f'Required source file: {prior_wallaspect} currently not found for method: {task_method} '
+                    msg = (f'Required source file: {prior_wallaspect} currently not found for method: {processing_method} '
                            f'as specified in {FILENAME_METHOD_YML_CONFIG} file.')
                     invalids.append((msg, True))
 

@@ -61,12 +61,12 @@ def _get_inclusive_between_string(text, start_substring, end_substring):
     except ValueError:
         return None
 
-def report_results(task_method, results_df, target_log_path, city_folder_name):
+def report_results(processing_method, results_df, target_log_path, city_folder_name):
     results_df.sort_values(['tile', 'step_index', 'met_filename'], inplace=True)
 
     results_df['run_status'] = results_df['return_code'].apply(_evaluate_return_code)
     results_df['city_folder_name'] = city_folder_name
-    results_df['method'] = task_method
+    results_df['method'] = processing_method
 
     reporting_df = results_df.loc[:,
                    ['run_status', 'city_folder_name', 'tile', 'method', 'step_index',

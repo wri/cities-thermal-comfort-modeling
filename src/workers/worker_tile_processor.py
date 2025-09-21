@@ -15,7 +15,7 @@ from src.workers.worker_tools import create_folder, unpack_quoted_value, save_ti
 
 PROCESSING_PAUSE_TIME_SEC = 10
 
-def process_tile(city_json_str, task_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
+def process_tile(city_json_str, processing_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
                  cif_primary_features, ctcm_intermediate_features, tile_boundary, tile_resolution, seasonal_utc_offset, grid_crs):
     tiled_city_data = CityData(None, city_folder_name, tile_folder_name, source_base_path, target_base_path)
     cif_primary_features = unpack_quoted_value(cif_primary_features)
@@ -33,21 +33,21 @@ def process_tile(city_json_str, task_method, source_base_path, target_base_path,
                          resolution, grid_crs)
         return cif_stdout
 
-    def _execute_mrt_method(step_index, task_method, folder_city, folder_tile, source_path, target_path, met_names, offset_utc):
+    def _execute_mrt_method(step_index, processing_method, folder_city, folder_tile, source_path, target_path, met_names, offset_utc):
         from src.workers.model_umep.umep_plugin_processor import run_umep_plugin
 
         out_list = []
         for met_filename in met_names:
             if met_filename == METHOD_TRIGGER_ERA5_DOWNLOAD:
-                met_filename = FILENAME_ERA5_UPENN if task_method == 'upenn_model' else FILENAME_ERA5_UMEP
+                met_filename = FILENAME_ERA5_UPENN if processing_method == 'upenn_model' else FILENAME_ERA5_UMEP
             else:
                 met_filename = met_filename
 
-            if task_method == 'umep_solweig':
-                stdout = run_umep_plugin(step_index, task_method, folder_city, folder_tile, source_path, target_path,
+            if processing_method == 'umep_solweig':
+                stdout = run_umep_plugin(step_index, processing_method, folder_city, folder_tile, source_path, target_path,
                                          met_filename, offset_utc)
             else:
-                stdout = run_upenn_module(step_index, task_method, folder_city, folder_tile, source_path, target_path,
+                stdout = run_upenn_module(step_index, processing_method, folder_city, folder_tile, source_path, target_path,
                                          met_filename, offset_utc)
 
             out_list.append(stdout)
@@ -112,24 +112,24 @@ def process_tile(city_json_str, task_method, source_base_path, target_base_path,
         return_stdouts.append(return_val)
         time.sleep(PROCESSING_PAUSE_TIME_SEC)
 
-    if task_method != 'download_only':
+    if processing_method != 'download_only':
         # ensure all source TIFF files have negative NS y-direction
         # TODO Commenting out for now until we have a better solution. See https://gfw.atlassian.net/browse/CDB-274
         # ensure_y_dimension_direction(tiled_city_data)
 
-        if task_method == 'umep_solweig':
+        if processing_method == 'umep_solweig':
             return_vals = _execute_umep_solweig_plugin_steps(city_folder_name, tile_folder_name,
                                                              source_base_path, target_base_path, met_filenames,
                                                              ctcm_intermediate_features, seasonal_utc_offset)
             return_stdouts.extend(return_vals)
-        elif task_method == 'upenn_model':
+        elif processing_method == 'upenn_model':
             return_vals = _execute_upenn_model_steps(city_folder_name, tile_folder_name,
                                                      source_base_path, target_base_path, met_filenames,
                                                      ctcm_intermediate_features, seasonal_utc_offset)
             return_stdouts.extend(return_vals)
-        elif task_method in 'PROCESSING_METHODS':
+        elif processing_method in 'PROCESSING_METHODS':
             from src.workers.model_umep.umep_plugin_processor import run_umep_plugin
-            return_val = run_umep_plugin(1, task_method, city_folder_name, tile_folder_name,
+            return_val = run_umep_plugin(1, processing_method, city_folder_name, tile_folder_name,
                                          source_base_path, target_base_path, None, None)
             return_stdouts.append(return_val)
         else:
@@ -217,7 +217,7 @@ def _transfer_custom_files(tiled_city_data, custom_feature_list):
         elif feature == 'wallheight':
             source_paths.append((tiled_city_data.source_wallheight_path, tiled_city_data.target_wallheight_path, 'file'))
         elif feature == 'skyview_factor':
-            obj_type = 'folder' if tiled_city_data.new_task_method == 'upenn_model' else 'file'
+            obj_type = 'folder' if tiled_city_data.processing_method == 'upenn_model' else 'file'
             source_paths.append((tiled_city_data.source_svfszip_path, tiled_city_data.target_svfszip_path, obj_type))
 
     for file_paths in source_paths:
@@ -256,7 +256,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Process tile.')
     parser.add_argument('--city_json_str', metavar='str', required=True, help='city to be processed')
-    parser.add_argument('--task_method', metavar='str', required=True, help='method to run')
+    parser.add_argument('--processing_method', metavar='str', required=True, help='method to run')
     parser.add_argument('--source_base_path', metavar='path', required=True, help='folder for source data')
     parser.add_argument('--target_base_path', metavar='path', required=True, help='folder for writing data')
     parser.add_argument('--city_folder_name', metavar='str', required=True, help='name of city folder')
@@ -270,7 +270,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    return_stdout =process_tile(args.city_json_str, args.task_method, args.source_base_path, args.target_base_path,
+    return_stdout =process_tile(args.city_json_str, args.processing_method, args.source_base_path, args.target_base_path,
                                 args.city_folder_name, args.tile_folder_name,
                                 args.cif_primary_features, args.ctcm_intermediate_features,
                                 args.tile_boundary, args.tile_resolution, args.seasonal_utc_offset, args.grid_crs)

@@ -415,9 +415,6 @@ def run_skyview_calculations(method_params, tile_name):
 
             index += 1
 
-    gc.collect()
-
-
     svfS = svfS + 3.0459e-004
     svfW = svfW + 3.0459e-004
     # % Last azimuth is 90. Hence, manual add of last annuli for svfS and SVFW
@@ -465,3 +462,5 @@ def run_skyview_calculations(method_params, tile_name):
         svffile = os.path.join(svffolder, svf + '.tif')
         saverasternd(gdal_dsm, svffile, svfresult[svf])
         #os.remove(svffile)
+
+    gc.collect()

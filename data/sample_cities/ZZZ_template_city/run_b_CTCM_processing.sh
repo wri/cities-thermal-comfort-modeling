@@ -2,6 +2,9 @@
 
 clear
 
+# Start timer
+SECONDS=0
+
 # Set user variable
 user="ubuntu"
 
@@ -24,13 +27,19 @@ echo "==========================================================================
 eval "$(conda shell.bash hook)"
 conda activate cities-thermal
 
-echo "Starting validation: $(date)"
+echo "Starting run: $(date)"
 
 python "$path_to_main" --source_base_path="$source_base_path" --target_base_path="$target_base_path" --city_folder_name="$city_folder" --processing_option="$processing_option"
 
 echo
-echo "Finished validation: $(date)"
+echo "Finished run: $(date)"
 echo "=================================================================================="
+
+# Calculate and print runtime
+runtime=$SECONDS
+hours=$((runtime / 3600))
+minutes=$(((runtime % 3600) / 60))
+echo "Total runtime: ${hours} hour(s) and ${minutes} minute(s)"
 echo
 
 # Equivalent to pause - wait for user input

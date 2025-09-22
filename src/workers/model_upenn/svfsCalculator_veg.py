@@ -415,7 +415,7 @@ def run_skyview_calculations(method_params, tile_name):
 
             index += 1
 
-        gc.collect()
+    gc.collect()
 
 
     svfS = svfS + 3.0459e-004

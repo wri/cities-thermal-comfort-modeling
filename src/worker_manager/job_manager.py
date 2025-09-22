@@ -137,7 +137,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
 
         # Write urban_extent polygon to disk and thin tiles to internal and aoi-overlapping
         if non_tiled_city_data.city_json_str is not None:
-            tile_grid = _write_and_thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid)
+            tile_grid = _write_and_thin_city_tile_grid(non_tiled_city_data, tile_grid)
 
         # Cache currently-available metadata to s3
         if non_tiled_city_data.city_json_str is not None and non_tiled_city_data.publishing_target in ('s3', 'both'):

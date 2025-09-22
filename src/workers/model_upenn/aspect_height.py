@@ -1,4 +1,6 @@
 ## This code is used to calculate the height and aspect and saved as new file
+import gc
+
 from osgeo import gdal
 from osgeo.gdalconst import *
 import os, os.path
@@ -205,8 +207,10 @@ def run_wall_calculations(method_params):
     # calculate the wall height and save to file
     walls = findwalls(dsm, walllimit)
     saverasternd(gdal_dsm, wallheightFile, walls)
+    gc.collect()
 
     # calculate the aspect and save to a file
     wallresult = aspect(dsm, walls, scale)
     dirwalls = wallresult["dirwalls"]
     saverasternd(gdal_dsm, aspectFile, dirwalls)
+    gc.collect()

@@ -294,7 +294,7 @@ def _process_rows(processing_method, futures, number_of_units, logger):
         num_workers = number_of_units + 1 if number_of_units < available_cpu_count else available_cpu_count
 
         # Note: the upenn memory size is based on testing of a 1.2 km tile (including buffer) to avoid thrashing
-        memory_limit = '12GB' if processing_method == 'upenn_model' else '2GB'
+        memory_limit = '15GB' if processing_method == 'upenn_model' else '2GB'
         from dask.distributed import Client
         with Client(n_workers=num_workers,
                     threads_per_worker=1,

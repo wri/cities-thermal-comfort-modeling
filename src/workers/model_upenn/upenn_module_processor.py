@@ -45,9 +45,11 @@ def run_upenn_module(step_index, step_method, folder_name_city_data, folder_name
         while retry_count < MAX_RETRY_COUNT and return_code != 0:
             try:
                 if step_method == 'wall_height_aspect':
+                    print(f"tile: {folder_name_tile_data} - building wall height/aspect files..")
                     run_wall_calculations(method_params)
                 elif step_method == 'skyview_factor':
-                    run_skyview_calculations(method_params)
+                    print(f"tile: {folder_name_tile_data} - building skyview-factor files..")
+                    run_skyview_calculations(method_params, folder_name_tile_data)
                 else:
                     from datetime import date
                     sampling_hours = tiled_city_data.sampling_local_hours

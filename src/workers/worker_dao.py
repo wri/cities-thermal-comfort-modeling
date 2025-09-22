@@ -211,7 +211,9 @@ def _process_tile_folder(local_folder_root, tile_id, bucket_name, raster_folder_
                          extension_filter=None, file_list=None):
     local_tile_folder = local_folder_root if tile_id is None else str(os.path.join(local_folder_root, tile_id))
     _upload_tiff_files_in_folder_to_s3(local_tile_folder, bucket_name, raster_folder_uri, extension_filter, file_list)
-    if publishing_target == 's3':
+
+    # for s3 option, clean up files on local OS
+    if publishing_target == 's3' and tile_id is not None:
         remove_folder(local_tile_folder)
         notice_file = os.path.join(local_folder_root, f"{tile_id}_contents_cached_to_s3.txt")
         with open(notice_file, "w") as file:

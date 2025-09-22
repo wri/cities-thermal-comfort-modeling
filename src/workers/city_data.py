@@ -79,7 +79,7 @@ class CityData:
 
         # set leave start/end for latitude
         if obj.min_lat is not None:
-            center_lat = (obj.min_lat + obj.max_lat)/2
+            center_lat = (float(obj.min_lat) + float(obj.max_lat))/2
         else:
             center_lat = 45 # dummy value to avoid failure at this point
         obj.leaf_start, obj.leaf_end =_get_latitude_based_leaf_start_end(center_lat,

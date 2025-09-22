@@ -248,7 +248,7 @@ def shadowingfunction_20(a, vegdem, vegdem2, azimuth, altitude, scale, amaxvalue
     return shadowresult
 
 
-def run_skyview_calculations(method_params):
+def run_skyview_calculations(method_params, tile_name):
     # Expand parameters into local variables
     INPUT_DSM = method_params['INPUT_DSM']
     INPUT_CDSM = method_params['INPUT_CDSM']
@@ -318,7 +318,6 @@ def run_skyview_calculations(method_params):
     amaxvalue = dsmimg.max()
     amaxvalue = np.maximum(amaxvalue, vegmax)
 
-
     # % Elevation vegdems if buildingDEM inclused ground heights
     vegdem = vegdem + dsmimg
     vegdem[vegdem == dsmimg] = 0
@@ -328,10 +327,8 @@ def run_skyview_calculations(method_params):
     # % Bush separation
     bush = np.logical_not((vegdem2 * vegdem)) * vegdem
 
-
     shmat = np.zeros((rows, cols, 145))
     vegshmat = np.zeros((rows, cols, 145))
-
 
     index = int(0)
     iangle = np.array([6, 18, 30, 42, 54, 66, 78, 90])
@@ -359,7 +356,9 @@ def run_skyview_calculations(method_params):
             altitude = iangle[int(i)]
             azimuth = iazimuth[int(index)-1]
 
-            print(f"step: {index+1}/{len(iazimuth)}, altitude: {altitude}/{iangle.max()}, azimuth: {azimuth}")
+            # print status for azimuth 0
+            if azimuth == 0:
+                print(f"tile: {tile_name}, skyview-step: {index+1}/{len(iazimuth)}, altitude: {altitude}/{iangle.max()}, azimuth: {azimuth}")
 
             # Casting shadow, when the vegetation dsm is considered
             # if self.usevegdem == 1:

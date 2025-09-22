@@ -1,14 +1,15 @@
 ## This script is used to calculate different types of SVFs based on DSM
 ## modified based on UMEP without GUI
 ## Last modified May 9, 2020, by Xiaojiang Li, Temple University, Glenside, PA
-
-from osgeo import gdal
-from osgeo.gdalconst import *
+import gc
 import os, os.path
 import numpy as np
 import rasterio
 import zipfile
 import shutil
+
+from osgeo import gdal
+from osgeo.gdalconst import *
 
 def annulus_weight(altitude, aziinterval):
     '''assign different weight to different annulus'''
@@ -357,7 +358,7 @@ def run_skyview_calculations(method_params, tile_name):
             azimuth = iazimuth[int(index)-1]
 
             # print status for azimuth 0
-            if azimuth == 0:
+            if (index+1)%20 == 0:
                 print(f"tile: {tile_name}, skyview-step: {index+1}/{len(iazimuth)}, altitude: {altitude}/{iangle.max()}, azimuth: {azimuth}")
 
             # Casting shadow, when the vegetation dsm is considered
@@ -413,6 +414,8 @@ def run_skyview_calculations(method_params, tile_name):
                     svfNaveg = svfNaveg + weight * vbshvegsh
 
             index += 1
+
+        gc.collect()
 
 
     svfS = svfS + 3.0459e-004

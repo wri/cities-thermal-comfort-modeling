@@ -5,7 +5,7 @@
   infra_id: baseline
   description: Scenario that demonstrates blah.
   author: author@wri.org
-  publishing_target: local
+  publishing_target: both
 # Processing Area of Interest used for tile construction and ERA5-data download. If any custom files are specified in
 # CustomTiffFilenames section, then the system will not construct a new tile grid and will instead use the existing one.
 # Specify the seasonal_utc_offset including DST offset for UPenn model if AOI follows this practice for the hottest season.
@@ -19,12 +19,12 @@
   city: {"city_id": "BRA-Teresina", "aoi_id": "urban_extent"}
   aoi_bounds:
     epsg_code: 32723
-    west: 740135
-    south: 9426480
-    east: 740591
-    north: 9426791
+    west: 738887
+    south: 9435465
+    east: 739350
+    north: 9436589
   tile_side_meters: 1000
-  tile_buffer_meters: 100
+  tile_buffer_meters: 400
   remove_mrt_buffer_for_final_output: True
 # Names of custom meteorological file(s) or ERA5 data range. Maximum of two filenames can be specified.
 # For custom files, specify the filename with either .csv extension for UPenn model or .txt extension for UMEP model

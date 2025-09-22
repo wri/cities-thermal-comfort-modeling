@@ -207,10 +207,10 @@ def run_wall_calculations(method_params):
     # calculate the wall height and save to file
     walls = findwalls(dsm, walllimit)
     saverasternd(gdal_dsm, wallheightFile, walls)
-    gc.collect()
 
     # calculate the aspect and save to a file
     wallresult = aspect(dsm, walls, scale)
     dirwalls = wallresult["dirwalls"]
     saverasternd(gdal_dsm, aspectFile, dirwalls)
+
     gc.collect()

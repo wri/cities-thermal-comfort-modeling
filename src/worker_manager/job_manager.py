@@ -166,7 +166,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
 
     log_general_file_message('Starting model processing', __file__, logger)
     number_number_of_tiles = number_of_tiles
-    delays_all_passed, results_df = _process_rows(futures, number_number_of_tiles, logger)
+    delays_all_passed, results_df = _process_rows(processing_method, futures, number_number_of_tiles, logger)
 
     # Combine processing return values
     combined_results_df = pd.concat([combined_results_df, results_df])
@@ -286,18 +286,19 @@ def _construct_tile_proc_array(city_json_str, processing_method, source_base_pat
     return proc_array
 
 
-def _process_rows(futures, number_of_units, logger):
+def _process_rows(processing_method, futures, number_of_units, logger):
     # See https://docs.dask.org/en/stable/deploying-python.html
     # https://blog.dask.org/2021/11/02/choosing-dask-chunk-sizes#what-to-watch-for-on-the-dashboard
     if futures:
         available_cpu_count = int(mp.cpu_count() - 1)
         num_workers = number_of_units + 1 if number_of_units < available_cpu_count else available_cpu_count
 
+        memory_limit = '6GB' if processing_method == 'upenn_model' else '2GB'
         from dask.distributed import Client
         with Client(n_workers=num_workers,
                     threads_per_worker=1,
                     processes=False,
-                    memory_limit='2GB',
+                    memory_limit=memory_limit,
                     asynchronous=False
                     ) as client:
 

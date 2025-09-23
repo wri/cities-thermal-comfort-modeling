@@ -57,7 +57,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     combined_delays_passed = []
 
     # meteorological data
-    if non_tiled_city_data.has_era_met_download:
+    if processing_method != 'grid_only' and non_tiled_city_data.has_era_met_download:
         import geopandas as gpd
         # convert to geographic coordinates for call to ERA5
         gdf = gpd.GeoDataFrame({'geometry': [utm_grid_bbox]}, crs=utm_grid_crs)
@@ -82,9 +82,10 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
             exit(1)
 
     # Transfer custom met files to target
-    _transfer_custom_met_files(non_tiled_city_data)
+    if processing_method != 'grid_only':
+        _transfer_custom_met_files(non_tiled_city_data)
 
-    if processing_method != 'upenn_model':
+    if processing_method == 'umep_solweig':
         invalids = evaluate_meteorological_umep_data(non_tiled_city_data, in_target_folder=True)
         if invalids:
             print_invalids(invalids)
@@ -103,6 +104,10 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
         custom_source_crs = tile_unique_values['custom_tile_crs'].values[0]
 
         write_tile_grid(tile_unique_values, non_tiled_city_data.target_qgis_data_path, 'tile_grid')
+
+        if processing_method == 'grid_only':
+            print(f'Stopping execution after locally writing grid files to {non_tiled_city_data.target_qgis_data_path}.')
+            return 0, ''
 
         # Cache currently-available metadata to s3
         if non_tiled_city_data.city_json_str is not None and non_tiled_city_data.publishing_target in ('s3', 'both'):
@@ -134,6 +139,10 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
         write_tile_grid(tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_TILE_GRID)
         if unbuffered_tile_grid is not None:
             write_tile_grid(unbuffered_tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_UNBUFFERED_TILE_GRID)
+
+        if processing_method == 'grid_only':
+            print(f'Stopping execution after locally writing grid files to {non_tiled_city_data.target_qgis_data_path}.')
+            return 0, ''
 
         # Write urban_extent polygon to disk and thin tiles to internal and aoi-overlapping
         if non_tiled_city_data.city_json_str is not None:

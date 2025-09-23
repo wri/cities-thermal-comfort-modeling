@@ -36,7 +36,7 @@ FILENAME_ERA5_UPENN = 'met_era5_hottest_days.csv'
 METHOD_TRIGGER_ERA5_DOWNLOAD = 'ERA5:<*>'
 PRIOR_5_YEAR_KEYWORD = "prior_5_years"
 
-PROCESSING_METHODS = ['download_only', 'umep_solweig', 'upenn_model']
+PROCESSING_METHODS = ['upenn_model', 'umep_solweig', 'download_only', 'grid_only']
 
 MET_HEADER_UMEP = ['%iy', 'id', 'it', 'imin', 'qn', 'qh', 'qe', 'qs', 'qf', 'U', 'RH', 'Tair', 'press', 'rain', 'kdown', 'snow', 'ldown', 'fcld', 'wuh', 'xsmd', 'lai', 'kdiff', 'kdir', 'wdir']
 MET_HEADER_0_UPENN = ['', 'Source', 'Latitude', 'Longitude', 'Local Time Zone', 'Clearsky DHI Units', 'Clearsky DNI Units', 'Clearsky GHI Units', 'DHI Units', 'DNI Units', 'GHI Units', 'Temperature Units', 'Pressure Units', 'Relative Humidity Units', 'Wind Speed Units']

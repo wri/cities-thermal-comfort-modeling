@@ -1,5 +1,8 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/09/23
+1. Added "grid_only" processing method to stop execution after writing out the tile grid.
+
 ## 2025/09/21
 
 1. Renamed .config\_method\_parameters.yml to config\_method\_parameters.yml

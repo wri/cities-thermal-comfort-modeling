@@ -44,6 +44,11 @@ directory = r'C:\Users\kenn.cartier\Documents\github\cities-thermal-comfort-mode
 
 make_yml_backup(directory)
 
+
+# old_string = '# Valid methods are [download_only, umep_solweig, upenn_model]'
+# new_string = '# Valid methods are [upenn_model, umep_solweig, download_only, grid_only]'
+# find_and_replace(directory, old_string, new_string, False)
+
 # old_string = '# Description of scenario'
 # new_string = '# Description of scenario\n# Options for publishing_target: [local, s3, both].'
 # find_and_replace(directory, old_string, new_string, False)

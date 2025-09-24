@@ -1,3 +1,4 @@
+import json
 import geopandas as gpd
 import shapely
 import numbers
@@ -7,7 +8,8 @@ from city_metrix.constants import CTCM_MAX_TILE_BUFFER_M, ProjectionType
 from city_metrix.metrix_tools import reproject_units, get_projection_type
 from city_metrix.metrix_model import get_haversine_distance
 from shapely.geometry import box
-from src.constants import FILENAME_METHOD_YML_CONFIG, WGS_CRS, PRIOR_5_YEAR_KEYWORD
+from src.constants import FILENAME_METHOD_YML_CONFIG, WGS_CRS, PRIOR_5_YEAR_KEYWORD, TILE_METHODS
+from src.worker_manager.tools import extract_function_and_params
 
 
 def evaluate_aoi(non_tiled_city_data, existing_tiles_metrics, city_geoextent, processing_option):
@@ -34,6 +36,12 @@ def evaluate_aoi_primary_configs(non_tiled_city_data, city_geoextent, existing_t
     custom_tile_crs = existing_tiles_metrics['custom_tile_crs'] if existing_tiles_metrics is not None else None
     aoi_min_lon, aoi_min_lat, aoi_max_lon, aoi_max_lat, utm_grid_west, utm_grid_south, utm_grid_east, utm_grid_north = (
         _parse_aoi_dimensions(non_tiled_city_data))
+
+    if non_tiled_city_data.city_json_str is not None:
+        city = json.loads(non_tiled_city_data.city_json_str)
+        tile_method = city['tile_method']
+    else:
+        tile_method = None
 
     # Note: Valid range is between -12 and 14 based on internet search
     if not (-12 <= seasonal_utc_offset <= 14):
@@ -66,6 +74,24 @@ def evaluate_aoi_primary_configs(non_tiled_city_data, city_geoextent, existing_t
     if get_projection_type(source_aoi_crs) == ProjectionType.UTM and non_tiled_city_data.city_json_str is None:
         msg = f'WARNING: Result bounds will be imprecise since city option is not configured in {FILENAME_METHOD_YML_CONFIG}'
         invalids.append((msg, False))
+
+    if tile_method is not None:
+        tile_function, tile_function_params = extract_function_and_params(tile_method)
+        if tile_function not in TILE_METHODS:
+            msg = f'Invalid tile_method ({tile_function}) in city option in {FILENAME_METHOD_YML_CONFIG}. Method should be one of {TILE_METHODS}.'
+            invalids.append((msg, True))
+
+        if tile_function == 'resume()' and tile_function_params is not None:
+            msg = f'The resume() method in city option cannot have a value in the parentheses in {FILENAME_METHOD_YML_CONFIG}..'
+            invalids.append((msg, True))
+
+        if tile_function == 'tile_names()' and tile_function_params is None:
+            msg = f'The tile_names() method in city option must have a set of unquoted, comma-delimited tile names in the parentheses in {FILENAME_METHOD_YML_CONFIG}..'
+            invalids.append((msg, True))
+
+        if tile_function == 'tile_names()' and aoi_min_lon is not None:
+            msg = f'The tile_names() method in city option ignores the specified AOI in {FILENAME_METHOD_YML_CONFIG}..'
+            invalids.append((msg, False))
 
     # Evaluate bounds
     if aoi_min_lon is not None:

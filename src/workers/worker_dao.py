@@ -10,9 +10,10 @@ from osgeo import gdal
 
 from src.constants import S3_PUBLICATION_BUCKET, FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_INTERMEDIATE_DATA, \
     FOLDER_NAME_UMEP_TCM_RESULTS, FOLDER_NAME_ADMIN_DATA, FOLDER_NAME_QGIS_DATA, FILENAME_TILE_GRID, \
-    FILENAME_UNBUFFERED_TILE_GRID, FILENAME_METHOD_YML_CONFIG, FILENAME_URBAN_EXTENT_BOUNDARY
+    FILENAME_UNBUFFERED_TILE_GRID, FILENAME_METHOD_YML_CONFIG, FILENAME_URBAN_EXTENT_BOUNDARY, \
+    FOLDER_NAME_PRIMARY_MET_FILES
 from src.workers.city_data import CityData
-from src.workers.worker_tools import remove_folder, _does_s3_folder_exist
+from src.workers.worker_tools import remove_folder, does_s3_folder_exist
 
 
 def write_raster_vrt_gdal(output_file_path:str, raster_files):
@@ -136,7 +137,7 @@ def cache_tile_files(tiled_city_data:CityData):
     """
     param: publishing_target specifies the output location such as s3 or local
     """
-    scenario_folder_key = _get_scenario_folder_key(tiled_city_data)
+    scenario_folder_key = get_scenario_folder_key(tiled_city_data)
     tile_id = tiled_city_data.folder_name_tile_data
     tile_folder_key = f"{scenario_folder_key}/{tile_id}"
     s3_folder_uri = f"{S3_PUBLICATION_BUCKET}/{tile_folder_key}"
@@ -168,7 +169,7 @@ def cache_metadata_files(city_data: CityData):
     """
     param: publishing_target specifies the output location such as s3 or local
     """
-    scenario_folder_key = _get_scenario_folder_key(city_data)
+    scenario_folder_key = get_scenario_folder_key(city_data)
     s3_metadata_folder_uri = f"{scenario_folder_key}/metadata/"
 
     bucket_name = get_bucket_name_from_s3_uri(S3_PUBLICATION_BUCKET)
@@ -180,6 +181,11 @@ def cache_metadata_files(city_data: CityData):
     # Cache admin
     local_folder = city_data.target_log_path
     s3_folder_uri = f"{s3_metadata_folder_uri}/{FOLDER_NAME_ADMIN_DATA}".replace('//','/')
+    _process_tile_folder(local_folder, None, bucket_name, s3_folder_uri, publishing_target)
+
+    # Cache met files
+    local_folder = city_data.target_met_files_path
+    s3_folder_uri = f"{s3_metadata_folder_uri}/{FOLDER_NAME_PRIMARY_MET_FILES}".replace('//','/')
     _process_tile_folder(local_folder, None, bucket_name, s3_folder_uri, publishing_target)
 
     # Cache qgis data for tile grids
@@ -194,7 +200,7 @@ def cache_metadata_files(city_data: CityData):
     _process_tile_folder(local_folder, None, bucket_name, s3_metadata_folder_uri, publishing_target, file_list=file_list)
 
 
-def _get_scenario_folder_key(city_data: CityData):
+def get_scenario_folder_key(city_data: CityData):
     city = json.loads(city_data.city_json_str)
     city_id = city["city_id"]
     aoi_id = city["aoi_id"]

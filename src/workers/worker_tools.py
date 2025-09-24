@@ -159,7 +159,7 @@ def ctcm_standardize_y_dimension_direction(data_array):
     return was_reversed, data_array
 
 
-def _does_s3_folder_exist(bucket_name, folder_name):
+def does_s3_folder_exist(bucket_name, folder_name):
     if not folder_name.endswith('/'):
         folder_name += '/'
     response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=folder_name)

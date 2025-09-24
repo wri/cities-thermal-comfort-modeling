@@ -13,8 +13,8 @@ from shapely.geometry import Polygon
 from pyproj import Geod
 from pathlib import Path
 
-from src.constants import FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_PRIMARY_DATA, WGS_CRS, S3_PUBLICATION_BUCKET
-from src.workers.worker_tools import does_s3_folder_exist, create_folder
+from src.constants import FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_PRIMARY_DATA, S3_PUBLICATION_BUCKET
+from src.workers.worker_tools import create_folder
 
 
 def get_existing_tile_metrics(source_city_path, custom_file_names, include_extended_metrics = False):

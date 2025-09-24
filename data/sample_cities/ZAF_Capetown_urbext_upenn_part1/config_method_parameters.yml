@@ -2,10 +2,10 @@
 # Options for publishing_target: [local, s3, both].
 - Scenario:
   scenario_id: first scenario
-  infra_id: test_capetown_subarea
+  infra_id: test_resume_operation
   description: Scenario that demonstrates blah.
   author: author@wri.org
-  publishing_target: local
+  publishing_target: both
 # Processing Area of Interest used for tile construction and ERA5-data download. If any custom files are specified in
 # CustomTiffFilenames section, then the system will not construct a new tile grid and will instead use the existing one.
 # Specify the seasonal_utc_offset including DST offset for UPenn model if AOI follows this practice for the hottest season.
@@ -19,22 +19,12 @@
   city: {"city_id": "ZAF-Cape_Town", "aoi_id": "urban_extent", "tile_method": None }
   aoi_bounds:
     epsg_code: 32734
-    # aoi extends over two tiles with both being internal to the city grid
-    west: 272160
-    south: 6232186
-    east: 272336
-    north: 6232376
-#    # aoi extends over two tiles with one being internal to the city grid
-#    west: 272334
-#    south: 6232317
-#    east: 272988
-#    north: 6232971
-#    # full urban_extent
-#    west: None
-#    south: None
-#    east: None
-#    north: None
-  tile_side_meters: 1000
+    # aoi extends over two tiles with both being internal to the city grid (tile_02015, tile_01941)
+    west: 265337
+    south: 6236145
+    east: 265486
+    north: 6236336
+  tile_side_meters: 500
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: true
 # Names of custom meteorological file(s) or ERA5 data range. Maximum of two filenames can be specified.

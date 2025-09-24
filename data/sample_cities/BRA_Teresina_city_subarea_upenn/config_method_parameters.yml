@@ -2,7 +2,7 @@
 # Options for publishing_target: [local, s3, both].
 - Scenario:
   scenario_id: first scenario
-  infra_id: kenn_test2
+  infra_id: test_teresina_tile_methods
   description: Scenario that demonstrates blah.
   author: author@wri.org
   publishing_target: both

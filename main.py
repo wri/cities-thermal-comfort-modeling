@@ -26,6 +26,13 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
 
     non_tiled_city_data = CityData(city_geoextent, city_folder_name, None, abs_source_base_path, abs_target_base_path)
 
+    existing_tiles_metrics = _get_existing_tiles(non_tiled_city_data)
+
+    updated_aoi, config_return_code = validate_config(non_tiled_city_data, existing_tiles_metrics, city_geoextent, processing_option)
+
+    if config_return_code != 0:
+        raise ValueError('Invalid configuration(s). Stopping.')
+
     has_appendable_cache = False
     if non_tiled_city_data.publishing_target in ('s3', 'both'):
         bucket_name, scenario_folder_key = get_s3_scenario_location(non_tiled_city_data)
@@ -35,17 +42,10 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
         tile_function, _ = extract_function_and_params(tile_method)
         if does_s3_target_scenario_exist and tile_function is None:
             print(f"\n\n*** Aborting run since scenario folder ({scenario_folder_key}) already exists in S3 bucket: {bucket_name}.")
-            print("*** You must choose a different scenario name or as extreme solution, remove the existing data in S3.\n")
+            print("*** You must choose a different scenario name, use a tile_method, or as extreme solution, remove the existing data in S3.\n")
             raise Exception('Collision with existing results in S3.')
         if does_s3_target_scenario_exist and tile_function is not None:
             has_appendable_cache = True
-
-    existing_tiles_metrics = _get_existing_tiles(non_tiled_city_data)
-
-    updated_aoi, config_return_code = validate_config(non_tiled_city_data, existing_tiles_metrics, city_geoextent, processing_option)
-
-    if config_return_code != 0:
-        raise ValueError('Invalid configuration(s). Stopping.')
 
     # Print runtime estimate
     umep_solweig_raster_cell_count = _get_tile_raster_cell_count(non_tiled_city_data, existing_tiles_metrics)

@@ -8,7 +8,6 @@ from datetime import datetime
 import pandas as pd
 import shapely
 import dask
-from city_metrix import GeoExtent
 from city_metrix.constants import GEOJSON_FILE_EXTENSION
 from city_metrix.metrix_dao import get_city_boundaries, write_layer, get_bucket_name_from_s3_uri, \
     read_geojson_from_cache
@@ -102,15 +101,15 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
     futures = []
 
     # Retrieve missing CIF data
+    tile_count = 0
     if custom_primary_filenames:
         no_layer_atts = existing_tiles_metrics[['tile_name', 'boundary', 'avg_res', 'custom_tile_crs']]
         tile_unique_values = no_layer_atts.drop_duplicates().reset_index(drop=True)
-        number_of_tiles = len(tile_unique_values)
 
         # TODO  Assume custom files are always in UTM and all tiles have the same UTM
         custom_source_crs = tile_unique_values['custom_tile_crs'].values[0]
 
-        write_tile_grid(tile_unique_values, non_tiled_city_data.target_qgis_data_path, 'tile_grid')
+        write_tile_grid(tile_unique_values, non_tiled_city_data.target_qgis_data_path, FILENAME_TILE_GRID)
 
         if processing_method == 'grid_only':
             print(f'Stopping execution after locally writing grid files to {non_tiled_city_data.target_qgis_data_path}.')
@@ -120,6 +119,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
         if non_tiled_city_data.city_json_str is not None and non_tiled_city_data.publishing_target in ('s3', 'both'):
             cache_metadata_files(non_tiled_city_data)
 
+        tile_count = tile_unique_values.shape[0]
         print(f'\nProcessing over {len(tile_unique_values)} existing tiles..')
         for index, tile_metrics in tile_unique_values.iterrows():
             tile_folder_name = tile_metrics['tile_name']
@@ -153,8 +153,6 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
             print(f'Stopping execution after locally writing grid files to {non_tiled_city_data.target_qgis_data_path}.')
             return 0, ''
 
-        number_of_tiles = tile_grid.shape[0]
-
         # Write urban_extent polygon to disk and thin tiles to internal and aoi-overlapping
         if non_tiled_city_data.city_json_str is not None:
             tile_grid = _write_and_thin_city_tile_grid(non_tiled_city_data, tile_grid)
@@ -168,6 +166,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
                 non_tiled_city_data.publishing_target in ('s3', 'both')):
             cache_metadata_files(non_tiled_city_data)
 
+        tile_count = tile_grid.shape[0]
         print(f'\nCreating data for {tile_grid.geometry.size} new tiles..')
         tile_grid.reset_index(drop=True, inplace=True)
         for tile_index, cell in tile_grid.iterrows():
@@ -190,7 +189,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
             futures.append(delay_tile_array)
 
     log_general_file_message('Starting model processing', __file__, logger)
-    delays_all_passed, results_df = _process_rows(processing_method, futures, number_of_tiles, logger)
+    delays_all_passed, results_df = _process_rows(processing_method, futures, tile_count, logger)
 
     # Combine processing return values
     combined_results_df = pd.concat([combined_results_df, results_df])
@@ -220,7 +219,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
 
     return return_code, return_str
 
-def _write_and_thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid):
+def _write_and_thin_city_tile_grid(non_tiled_city_data, tile_grid):
     import json
     city = json.loads(non_tiled_city_data.city_json_str)
     city_id = city['city_id']
@@ -229,7 +228,7 @@ def _write_and_thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid):
     tile_function, tile_function_params = extract_function_and_params(tile_method)
 
     if aoi_id == 'urban_extent':
-        utm_crs = unbuffered_tile_grid.crs
+        utm_crs = tile_grid.crs
         urban_extent_gdf = get_city_boundaries(city_id, aoi_id).to_crs(utm_crs)
 
         # Save the boundary to disk
@@ -238,13 +237,19 @@ def _write_and_thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid):
 
         # Thin to tiles that are internal to the city polygon
         urban_extent_polygon = (urban_extent_gdf['geometry']).to_crs(utm_crs)
-        tile_grid = unbuffered_tile_grid[unbuffered_tile_grid.intersects(urban_extent_polygon[0])]
+        tile_grid = tile_grid[tile_grid.intersects(urban_extent_polygon[0])]
 
         # Thin to tiles that overlap the AOI
-        if tile_function is None or tile_function != 'tile_names()':
-            aoi_bounds = (non_tiled_city_data.min_lon, non_tiled_city_data.min_lat,
+        if tile_function is None or tile_function == 'resume()':
+            aoi_polygon = shapely.box(non_tiled_city_data.min_lon, non_tiled_city_data.min_lat,
                           non_tiled_city_data.max_lon, non_tiled_city_data.max_lat)
-            aoi_polygon = GeoExtent(aoi_bounds, non_tiled_city_data.source_aoi_crs).as_utm_bbox().polygon
+
+            if non_tiled_city_data.source_aoi_crs != utm_crs:
+                import geopandas as gpd
+                gdf = gpd.GeoDataFrame({'geometry': [aoi_polygon]}, crs=non_tiled_city_data.source_aoi_crs)
+                gdf_projected = gdf.to_crs(epsg=utm_crs)
+                aoi_polygon = gdf_projected.geometry.iloc[0]
+
             tile_grid = tile_grid[tile_grid.intersects(aoi_polygon)]
 
         if tile_function is not None:
@@ -261,7 +266,7 @@ def _write_and_thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid):
                 tile_grid = tile_grid[tile_grid['tile_name'].isin(tile_names)]
 
     else:
-        tile_grid = unbuffered_tile_grid
+        tile_grid = tile_grid
 
     return tile_grid
 
@@ -356,6 +361,7 @@ def _construct_tile_proc_array(city_json_str, processing_method, source_base_pat
 
 
 def _process_rows(processing_method, futures, number_of_units, logger):
+    import platform
     # See https://docs.dask.org/en/stable/deploying-python.html
     # https://blog.dask.org/2021/11/02/choosing-dask-chunk-sizes#what-to-watch-for-on-the-dashboard
     if futures:
@@ -363,7 +369,12 @@ def _process_rows(processing_method, futures, number_of_units, logger):
         num_workers = number_of_units + 1 if number_of_units < available_cpu_count else available_cpu_count
 
         # Note: the upenn memory size is based on testing of a 1.2 km tile (including buffer) to avoid thrashing
-        memory_limit = '15GB' if processing_method == 'upenn_model' else '2GB'
+        os_name = platform.system()
+        if os_name == 'Linux':
+            memory_limit = '16GB'
+        else:
+            memory_limit = '2GB'
+
         from dask.distributed import Client
         with Client(n_workers=num_workers,
                     threads_per_worker=1,

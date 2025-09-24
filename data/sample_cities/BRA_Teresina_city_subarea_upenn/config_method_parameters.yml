@@ -2,7 +2,7 @@
 # Options for publishing_target: [local, s3, both].
 - Scenario:
   scenario_id: first scenario
-  infra_id: baseline
+  infra_id: test_teresina_tile_methods
   description: Scenario that demonstrates blah.
   author: author@wri.org
   publishing_target: both
@@ -16,18 +16,31 @@
 # Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
   seasonal_utc_offset: -3 # year-round
-  city: {"city_id": "BRA-Teresina", "aoi_id": "urban_extent"}
+  city: { "city_id": "BRA-Teresina", "aoi_id": "urban_extent", "tile_method": None }
+#  city: {"city_id": "BRA-Teresina", "aoi_id": "urban_extent", "tile_method": "resume()"}
+#  city: {"city_id": "BRA-Teresina", "aoi_id": "urban_extent", "tile_method": "tile_names(tile_00001,tile_00012,tile_00202)"}
   aoi_bounds:
     epsg_code: 32723
+#    # one tile (tile_00202)
     west: 739357
     south: 9434850
     east: 739792
     north: 9435276
-  # original 6 tile
+#    # two tile (tile_00202, tile_00203)
+#    west: 739560
+#    south: 9434841
+#    east: 740697
+#    north: 9435289
+#    # original 6 tiles
 #    west: 738887
 #    south: 9435465
 #    east: 739350
 #    north: 9436589
+#    # full city aoi
+#    west: None
+#    south: None
+#    east: None
+#    north: None
   tile_side_meters: 1000
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: True

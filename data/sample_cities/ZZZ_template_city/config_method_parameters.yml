@@ -16,7 +16,9 @@
 # Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
   seasonal_utc_offset: <> # annotate as 'year-round', 'ST offset', or 'DST offset'
-  city: {"city_id": "ZZZ-Cityname", "aoi_id": "urban_extent"}
+  city: { "city_id": "ZZZ-Cityname", "aoi_id": "urban_extent", "tile_method": None }
+  #  city: { "city_id": "ZZZ-Cityname", "aoi_id": "urban_extent", "tile_method": "resume()" }
+  #  city: {"city_id": "ZZZ-Cityname", "aoi_id": "urban_extent", "tile_method": "tile_names(tile_00001,tile_00012,tile_00202)"}
   aoi_bounds:
     epsg_code: None
     west: None

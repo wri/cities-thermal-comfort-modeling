@@ -8,22 +8,25 @@ from datetime import datetime
 import pandas as pd
 import shapely
 import dask
-from city_metrix import GeoExtent
 from city_metrix.constants import GEOJSON_FILE_EXTENSION
-from city_metrix.metrix_dao import get_city_boundaries, write_layer
+from city_metrix.metrix_dao import get_city_boundaries, write_layer, get_bucket_name_from_s3_uri, \
+    read_geojson_from_cache
 from shapely import wkt
 
-from src.constants import SRC_DIR, FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN, PRIOR_5_YEAR_KEYWORD, TILE_NUMBER_PADCOUNT, \
-    WGS_CRS, FILENAME_UNBUFFERED_TILE_GRID, FILENAME_TILE_GRID, FILENAME_URBAN_EXTENT_BOUNDARY
+from src.constants import SRC_DIR, FILENAME_ERA5_UMEP, FILENAME_ERA5_UPENN, PRIOR_5_YEAR_KEYWORD, WGS_CRS, \
+    FILENAME_UNBUFFERED_TILE_GRID, FILENAME_TILE_GRID, FILENAME_URBAN_EXTENT_BOUNDARY, S3_PUBLICATION_BUCKET, \
+    FOLDER_NAME_PRIMARY_MET_FILES, FOLDER_NAME_QGIS_DATA
 from src.data_validation.manager import print_invalids
 from src.data_validation.meteorological_data_validator import evaluate_meteorological_umep_data
 from src.worker_manager.ancillary_files import write_tile_grid, write_qgis_files
 from src.worker_manager.graph_builder import get_aoi_fishnet, get_grid_dimensions
+from src.worker_manager.tools import extract_function_and_params, get_s3_scenario_location, list_s3_subfolders, \
+    download_s3_files
 from src.workers.logger_tools import setup_logger, log_general_file_message
 from src.worker_manager.reporter import parse_row_results, report_results
 from src.workers.model_umep.worker_umep_met_processor import get_umep_met_data
 from src.workers.model_upenn.worker_upenn_met_processor import get_upenn_met_data
-from src.workers.worker_dao import cache_metadata_files
+from src.workers.worker_dao import cache_metadata_files, get_scenario_folder_key
 from src.workers.worker_tile_processor import process_tile
 from src.workers.worker_tools import create_folder
 
@@ -33,7 +36,7 @@ dask.config.set({'logging.distributed': 'warning'})
 TILE_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(SRC_DIR, 'workers', 'worker_tile_processor.py'))
 
 
-def start_jobs(non_tiled_city_data, existing_tiles_metrics):
+def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache):
     city_json_str = non_tiled_city_data.city_json_str
     source_base_path = non_tiled_city_data.source_base_path
     target_base_path = non_tiled_city_data.target_base_path
@@ -57,7 +60,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     combined_delays_passed = []
 
     # meteorological data
-    if processing_method != 'grid_only' and non_tiled_city_data.has_era_met_download:
+    if processing_method != 'grid_only' and has_appendable_cache is False and non_tiled_city_data.has_era_met_download:
         import geopandas as gpd
         # convert to geographic coordinates for call to ERA5
         gdf = gpd.GeoDataFrame({'geometry': [utm_grid_bbox]}, crs=utm_grid_crs)
@@ -82,8 +85,11 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
             exit(1)
 
     # Transfer custom met files to target
-    if processing_method != 'grid_only':
-        _transfer_custom_met_files(non_tiled_city_data)
+    if has_appendable_cache:
+        _transfer_cached_met_files(non_tiled_city_data)
+    else:
+        if processing_method != 'grid_only':
+            _transfer_custom_met_files(non_tiled_city_data)
 
     if processing_method == 'umep_solweig':
         invalids = evaluate_meteorological_umep_data(non_tiled_city_data, in_target_folder=True)
@@ -95,15 +101,15 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
     futures = []
 
     # Retrieve missing CIF data
+    tile_count = 0
     if custom_primary_filenames:
         no_layer_atts = existing_tiles_metrics[['tile_name', 'boundary', 'avg_res', 'custom_tile_crs']]
         tile_unique_values = no_layer_atts.drop_duplicates().reset_index(drop=True)
-        number_of_tiles = len(tile_unique_values.tile_name)
 
         # TODO  Assume custom files are always in UTM and all tiles have the same UTM
         custom_source_crs = tile_unique_values['custom_tile_crs'].values[0]
 
-        write_tile_grid(tile_unique_values, non_tiled_city_data.target_qgis_data_path, 'tile_grid')
+        write_tile_grid(tile_unique_values, non_tiled_city_data.target_qgis_data_path, FILENAME_TILE_GRID)
 
         if processing_method == 'grid_only':
             print(f'Stopping execution after locally writing grid files to {non_tiled_city_data.target_qgis_data_path}.')
@@ -113,6 +119,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
         if non_tiled_city_data.city_json_str is not None and non_tiled_city_data.publishing_target in ('s3', 'both'):
             cache_metadata_files(non_tiled_city_data)
 
+        tile_count = tile_unique_values.shape[0]
         print(f'\nProcessing over {len(tile_unique_values)} existing tiles..')
         for index, tile_metrics in tile_unique_values.iterrows():
             tile_folder_name = tile_metrics['tile_name']
@@ -132,13 +139,15 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
                 delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
             futures.append(delay_tile_array)
     else:
-        tile_grid, unbuffered_tile_grid = (
-            get_aoi_fishnet(utm_grid_bbox, tile_side_meters, tile_buffer_meters, utm_grid_crs))
-        number_of_tiles = tile_grid.shape[0]
+        if has_appendable_cache:
+            tile_grid, unbuffered_tile_grid = _transfer_and_read_cached_qgis_files(non_tiled_city_data)
+        else:
+            tile_grid, unbuffered_tile_grid = (
+                get_aoi_fishnet(utm_grid_bbox, tile_side_meters, tile_buffer_meters, utm_grid_crs))
 
-        write_tile_grid(tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_TILE_GRID)
-        if unbuffered_tile_grid is not None:
-            write_tile_grid(unbuffered_tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_UNBUFFERED_TILE_GRID)
+            write_tile_grid(tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_TILE_GRID)
+            if unbuffered_tile_grid is not None:
+                write_tile_grid(unbuffered_tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_UNBUFFERED_TILE_GRID)
 
         if processing_method == 'grid_only':
             print(f'Stopping execution after locally writing grid files to {non_tiled_city_data.target_qgis_data_path}.')
@@ -148,10 +157,16 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
         if non_tiled_city_data.city_json_str is not None:
             tile_grid = _write_and_thin_city_tile_grid(non_tiled_city_data, tile_grid)
 
+            if len(tile_grid) == 0:
+                print(f'Stopping execution since there are no tiles to further process.')
+                return 0, ''
+
         # Cache currently-available metadata to s3
-        if non_tiled_city_data.city_json_str is not None and non_tiled_city_data.publishing_target in ('s3', 'both'):
+        if (has_appendable_cache is False and non_tiled_city_data.city_json_str is not None and
+                non_tiled_city_data.publishing_target in ('s3', 'both')):
             cache_metadata_files(non_tiled_city_data)
 
+        tile_count = tile_grid.shape[0]
         print(f'\nCreating data for {tile_grid.geometry.size} new tiles..')
         tile_grid.reset_index(drop=True, inplace=True)
         for tile_index, cell in tile_grid.iterrows():
@@ -174,8 +189,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
             futures.append(delay_tile_array)
 
     log_general_file_message('Starting model processing', __file__, logger)
-    number_number_of_tiles = number_of_tiles
-    delays_all_passed, results_df = _process_rows(processing_method, futures, number_number_of_tiles, logger)
+    delays_all_passed, results_df = _process_rows(processing_method, futures, tile_count, logger)
 
     # Combine processing return values
     combined_results_df = pd.concat([combined_results_df, results_df])
@@ -205,30 +219,54 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics):
 
     return return_code, return_str
 
-def _write_and_thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid):
+def _write_and_thin_city_tile_grid(non_tiled_city_data, tile_grid):
     import json
     city = json.loads(non_tiled_city_data.city_json_str)
     city_id = city['city_id']
     aoi_id = city['aoi_id']
+    tile_method = city['tile_method']
+    tile_function, tile_function_params = extract_function_and_params(tile_method)
+
     if aoi_id == 'urban_extent':
-        utm_crs = unbuffered_tile_grid.crs
+        utm_crs = tile_grid.crs
         urban_extent_gdf = get_city_boundaries(city_id, aoi_id).to_crs(utm_crs)
 
         # Save the boundary to disk
         urban_extent_file_path = os.path.join(non_tiled_city_data.target_qgis_data_path, FILENAME_URBAN_EXTENT_BOUNDARY)
         write_layer(urban_extent_gdf, urban_extent_file_path, GEOJSON_FILE_EXTENSION)
 
-        # Thin to tiles that overlap the AOI
-        aoi_bounds = [non_tiled_city_data.min_lon, non_tiled_city_data.min_lat,
-                      non_tiled_city_data.max_lon, non_tiled_city_data.max_lat]
-        aoi_polygon = GeoExtent(aoi_bounds, non_tiled_city_data.source_aoi_crs).as_utm_bbox().polygon
-        aoi_overlapping_tiles = unbuffered_tile_grid[unbuffered_tile_grid.intersects(aoi_polygon)]
-
         # Thin to tiles that are internal to the city polygon
         urban_extent_polygon = (urban_extent_gdf['geometry']).to_crs(utm_crs)
-        tile_grid = aoi_overlapping_tiles[aoi_overlapping_tiles.intersects(urban_extent_polygon[0])]
+        tile_grid = tile_grid[tile_grid.intersects(urban_extent_polygon[0])]
+
+        # Thin to tiles that overlap the AOI
+        if tile_function is None or tile_function == 'resume()':
+            aoi_polygon = shapely.box(non_tiled_city_data.min_lon, non_tiled_city_data.min_lat,
+                          non_tiled_city_data.max_lon, non_tiled_city_data.max_lat)
+
+            if non_tiled_city_data.source_aoi_crs != utm_crs:
+                import geopandas as gpd
+                gdf = gpd.GeoDataFrame({'geometry': [aoi_polygon]}, crs=non_tiled_city_data.source_aoi_crs)
+                gdf_projected = gdf.to_crs(epsg=utm_crs)
+                aoi_polygon = gdf_projected.geometry.iloc[0]
+
+            tile_grid = tile_grid[tile_grid.intersects(aoi_polygon)]
+
+        if tile_function is not None:
+            # Thin to tiles not already in S3.
+            bucket_name = get_bucket_name_from_s3_uri(S3_PUBLICATION_BUCKET)
+            scenario_folder_key = get_scenario_folder_key(non_tiled_city_data)
+            existing_folders = list_s3_subfolders(bucket_name, scenario_folder_key)
+            existing_tiles = [s.replace(scenario_folder_key, "").replace('/','') for s in existing_folders]
+
+            tile_grid = tile_grid[~tile_grid['tile_name'].isin(existing_tiles)]
+
+            if tile_function == 'tile_names()':
+                tile_names = tile_function_params.split(",")
+                tile_grid = tile_grid[tile_grid['tile_name'].isin(tile_names)]
+
     else:
-        tile_grid = unbuffered_tile_grid
+        tile_grid = tile_grid
 
     return tile_grid
 
@@ -258,6 +296,33 @@ def _transfer_custom_met_files(non_tiled_city_data):
             source_path = os.path.join(non_tiled_city_data.source_met_files_path, met_filename)
             target_path = os.path.join(non_tiled_city_data.target_met_files_path, met_filename)
             shutil.copyfile(source_path, target_path)
+
+def _transfer_cached_met_files(non_tiled_city_data):
+    target_met_path = non_tiled_city_data.target_met_files_path
+    bucket_name, scenario_folder_key = get_s3_scenario_location(non_tiled_city_data)
+    met_files_folder_key = f"{scenario_folder_key}/metadata/{FOLDER_NAME_PRIMARY_MET_FILES}"
+
+    download_s3_files(bucket_name, met_files_folder_key, target_met_path)
+
+def _transfer_and_read_cached_qgis_files(non_tiled_city_data):
+    target_qgis_path = non_tiled_city_data.target_qgis_data_path
+    bucket_name, scenario_folder_key = get_s3_scenario_location(non_tiled_city_data)
+    qgis_files_folder_key = f"{scenario_folder_key}/metadata/{FOLDER_NAME_QGIS_DATA}"
+
+    download_s3_files(bucket_name, qgis_files_folder_key, target_qgis_path)
+
+    tile_grid_uri = f"file://{target_qgis_path}/{FILENAME_TILE_GRID}"
+    tile_grid = read_geojson_from_cache(tile_grid_uri)
+
+    try:
+        unbuffered_tile_grid_uri = f"file://{target_qgis_path}/{FILENAME_UNBUFFERED_TILE_GRID}"
+        unbuffered_tile_grid = read_geojson_from_cache(unbuffered_tile_grid_uri)
+    except:
+        unbuffered_tile_grid = None
+
+    return tile_grid, unbuffered_tile_grid
+
+
 
 
 def _construct_tile_proc_array(city_json_str, processing_method, source_base_path, target_base_path, city_folder_name,
@@ -296,6 +361,7 @@ def _construct_tile_proc_array(city_json_str, processing_method, source_base_pat
 
 
 def _process_rows(processing_method, futures, number_of_units, logger):
+    import platform
     # See https://docs.dask.org/en/stable/deploying-python.html
     # https://blog.dask.org/2021/11/02/choosing-dask-chunk-sizes#what-to-watch-for-on-the-dashboard
     if futures:
@@ -303,7 +369,12 @@ def _process_rows(processing_method, futures, number_of_units, logger):
         num_workers = number_of_units + 1 if number_of_units < available_cpu_count else available_cpu_count
 
         # Note: the upenn memory size is based on testing of a 1.2 km tile (including buffer) to avoid thrashing
-        memory_limit = '15GB' if processing_method == 'upenn_model' else '2GB'
+        os_name = platform.system()
+        if os_name == 'Linux':
+            memory_limit = '16GB'
+        else:
+            memory_limit = '2GB'
+
         from dask.distributed import Client
         with Client(n_workers=num_workers,
                     threads_per_worker=1,

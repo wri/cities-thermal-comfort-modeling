@@ -1,16 +1,20 @@
+import json
 import os
 import shutil
 import rasterio
 import shapely
 import hashlib
 import pandas as pd
+from city_metrix import s3_client
+from city_metrix.metrix_dao import get_bucket_name_from_s3_uri
 
 from pyproj import CRS
 from shapely.geometry import Polygon
 from pyproj import Geod
 from pathlib import Path
 
-from src.constants import FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_PRIMARY_DATA, WGS_CRS
+from src.constants import FOLDER_NAME_PRIMARY_RASTER_FILES, FOLDER_NAME_PRIMARY_DATA, S3_PUBLICATION_BUCKET
+from src.workers.worker_tools import create_folder
 
 
 def get_existing_tile_metrics(source_city_path, custom_file_names, include_extended_metrics = False):
@@ -133,3 +137,100 @@ def calculate_checksum(file_path):
         for byte_block in iter(lambda: f.read(4096), b""):
             sha256_hash.update(byte_block)
     return sha256_hash.hexdigest()
+
+
+def extract_function_and_params(func_string):
+    """
+    Extracts the function name (with empty parentheses) and the parameters from a string.
+
+    Parameters:
+        func_string (str): A string representing a function call, e.g., "my_function(1, 'a')"
+
+    Returns:
+        tuple: (function_name_with_parentheses, parameters)
+            - function_name_with_parentheses: str, e.g., "my_function()"
+            - parameters: str, e.g., "1, 'a'"
+    """
+    import re
+
+    func_string = func_string.strip()  # Remove leading/trailing spaces
+    # Regular expression to match function name and parameters
+    match = re.match(r'^([a-zA-Z_][a-zA-Z0-9_]*)\s*\((.*)\)$', func_string)
+    if match:
+        func_name = match.group(1)
+        parameters_stripped = match.group(2).strip()  # Parameters inside parentheses
+        parameters = None if parameters_stripped == '' else parameters_stripped
+        return f"{func_name}()", parameters  # Return function name with parentheses and the parameter string
+    else:
+        return None, None  # In case the string doesn't match a function call
+
+
+def get_s3_scenario_location(city_data):
+    city = json.loads(city_data.city_json_str)
+    city_id = city["city_id"]
+    aoi_id = city["aoi_id"]
+    infra_id = city_data.infra_id
+    scenario_id = city_data.scenario_title
+
+    scenario_folder_key = f"city_projects/{city_id}/{aoi_id}/scenarios/{infra_id}/{scenario_id}"
+
+    bucket_name = get_bucket_name_from_s3_uri(S3_PUBLICATION_BUCKET)
+
+    return bucket_name, scenario_folder_key
+
+
+def list_s3_subfolders(bucket_name, folder_prefix):
+    # Ensure prefix ends with '/'
+    if not folder_prefix.endswith('/'):
+        folder_prefix += '/'
+
+    response = s3_client.list_objects_v2(
+        Bucket=bucket_name,
+        Prefix=folder_prefix,
+        Delimiter='/'
+    )
+
+    subfolders = []
+    if 'CommonPrefixes' in response:
+        subfolders = [prefix['Prefix'] for prefix in response['CommonPrefixes']]
+
+    return subfolders
+
+
+def list_files_in_s3_folder(bucket_name, folder_prefix):
+    # Ensure prefix ends with '/'
+    if not folder_prefix.endswith('/'):
+        folder_prefix += '/'
+
+    paginator = s3_client.get_paginator('list_objects_v2')
+    page_iterator = paginator.paginate(Bucket=bucket_name, Prefix=folder_prefix)
+
+    file_list = []
+    for page in page_iterator:
+        if 'Contents' in page:
+            for obj in page['Contents']:
+                key = obj['Key']
+                # Exclude the folder itself (e.g., 'your/folder/path/')
+                if key != folder_prefix and not key.endswith('/'):
+                    file_list.append(key)
+
+    return file_list
+
+
+def download_s3_files(bucket_name, folder_prefix, local_dir):
+    files = list_files_in_s3_folder(bucket_name, folder_prefix)
+
+    # Create local directory if it doesn't exist
+    create_folder(local_dir)
+
+    local_path = os.path.join(local_dir, '_note_files_downloaded_from_s3.txt')
+    with open(local_path, 'w') as file:
+        pass  # This creates an empty file
+
+    for key in files:
+        file_name = os.path.basename(key)
+        local_path = os.path.join(local_dir, file_name)
+
+        s3_client.download_file(bucket_name, key, local_path)
+
+

@@ -2,15 +2,13 @@ import json
 import os
 import math
 
-from city_metrix.metrix_dao import get_bucket_name_from_s3_uri
-
-from src.constants import S3_PUBLICATION_BUCKET
 from src.data_validation.manager import validate_config
 from src.worker_manager.ancillary_files import write_config_files
 from src.worker_manager.job_manager import start_jobs
-from src.worker_manager.tools import get_existing_tile_metrics, get_aoi_area_in_square_meters
+from src.worker_manager.tools import get_existing_tile_metrics, get_aoi_area_in_square_meters, \
+    extract_function_and_params, get_s3_scenario_location
 from src.workers.city_data import CityData, get_yml_content
-from src.workers.worker_tools import remove_folder, _does_s3_folder_exist
+from src.workers.worker_tools import remove_folder, does_s3_folder_exist
 from city_metrix import GeoZone
 from city_metrix.metrix_model import GeoExtent
 
@@ -27,12 +25,6 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
     city_geoextent = _get_city_geoextent(source_base_path, city_folder_name)
 
     non_tiled_city_data = CityData(city_geoextent, city_folder_name, None, abs_source_base_path, abs_target_base_path)
-    if non_tiled_city_data.publishing_target in ('s3', 'both'):
-        does_s3_target_scenario_exist, bucket_name, scenario_folder_key = _does_scenario_s3_folder_exist(non_tiled_city_data)
-        if does_s3_target_scenario_exist:
-            print(f"\n\n*** Aborting run since scenario folder ({scenario_folder_key}) already exists in S3 bucket: {bucket_name}.")
-            print("*** You must choose a different scenario name or as extreme solution, remove the existing data in S3.\n")
-            raise Exception('Collision with existing results in S3.')
 
     existing_tiles_metrics = _get_existing_tiles(non_tiled_city_data)
 
@@ -40,6 +32,20 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
 
     if config_return_code != 0:
         raise ValueError('Invalid configuration(s). Stopping.')
+
+    has_appendable_cache = False
+    if non_tiled_city_data.publishing_target in ('s3', 'both'):
+        bucket_name, scenario_folder_key = get_s3_scenario_location(non_tiled_city_data)
+        does_s3_target_scenario_exist = does_s3_folder_exist(bucket_name, scenario_folder_key)
+        city = json.loads(non_tiled_city_data.city_json_str)
+        tile_method = city['tile_method']
+        tile_function, _ = extract_function_and_params(tile_method)
+        if does_s3_target_scenario_exist and tile_function is None:
+            print(f"\n\n*** Aborting run since scenario folder ({scenario_folder_key}) already exists in S3 bucket: {bucket_name}.")
+            print("*** You must choose a different scenario name, use a tile_method, or as extreme solution, remove the existing data in S3.\n")
+            raise Exception('Collision with existing results in S3.')
+        if does_s3_target_scenario_exist and tile_function is not None:
+            has_appendable_cache = True
 
     # Print runtime estimate
     umep_solweig_raster_cell_count = _get_tile_raster_cell_count(non_tiled_city_data, existing_tiles_metrics)
@@ -63,27 +69,13 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
         write_config_files(non_tiled_city_data, updated_aoi)
 
         # Process data
-        return_code, return_str = start_jobs(non_tiled_city_data, existing_tiles_metrics)
+        return_code, return_str = start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache)
 
         if return_code == 0:
             print(return_str)
         else:
             _highlighted_yellow_print(return_str)
         return return_code
-
-def _does_scenario_s3_folder_exist(non_tiled_city_data):
-    city = json.loads(non_tiled_city_data.city_json_str)
-    city_id = city["city_id"]
-    aoi_id = city["aoi_id"]
-    infra_id = non_tiled_city_data.infra_id
-    scenario_id = non_tiled_city_data.scenario_title
-
-    bucket_name = get_bucket_name_from_s3_uri(S3_PUBLICATION_BUCKET)
-    scenario_folder_key = f"city_projects/{city_id}/{aoi_id}/scenarios/{infra_id}/{scenario_id}"
-
-    does_s3_target_scenario_exist = _does_s3_folder_exist(bucket_name, scenario_folder_key)
-
-    return does_s3_target_scenario_exist, bucket_name, scenario_folder_key
 
 def _get_city_geoextent(source_base_path, folder_name_city_data):
     yml_values = get_yml_content(source_base_path, folder_name_city_data)

@@ -20,12 +20,13 @@ def test_teresina_subarea_upenn():
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
         mrt_file_name = 'Tmrt_2023_301_1200D.tif'
-        target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_00001',
+        target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_00202',
                                        mrt_file_name)
-        expected_signature = {'crs': 'EPSG:32723', 'transform': (1.0, 0.0, 740135.0, 0.0, -1.0, 9426791.0, 0.0, 0.0, 1.0),
-                              'width': 456, 'height': 311, 'count': 1, 'dtype': ('float32',),
-                              'band_checksums': ['1ae8ab9f85bb007838de148135f97c87'],
-                              'full_checksum': '1ae8ab9f85bb007838de148135f97c87'}
+        expected_signature = {'crs': 'EPSG:32723',
+                              'transform': (1.0, 0.0, 739098.0, 0.0, -1.0, 9435557.0, 0.0, 0.0, 1.0),
+                              'width': 1000, 'height': 1000, 'count': 1, 'dtype': ('float32',),
+                              'band_checksums': ['cebc5f143e6448204cb9c2b99b532b84'],
+                              'full_checksum': 'cebc5f143e6448204cb9c2b99b532b84'}
         is_matched, actual_file_signature = does_file_signature_match(expected_signature, target_met_file)
         # print(actual_file_signature)
 
@@ -34,7 +35,7 @@ def test_teresina_subarea_upenn():
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
         assert return_code == 0
-        assert vrt_count == 16
+        assert vrt_count == 17
     finally:
         pass
         if CLEANUP_RESULTS:

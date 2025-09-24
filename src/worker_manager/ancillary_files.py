@@ -287,9 +287,10 @@ def _update_custom_yml_parameters(non_tiled_city_data, updated_aoi):
 
 
 def add_tile_name_column(tile_grid):
-    tile_grid['tile_name'] = (tile_grid.index
-                              .to_series()
-                              .apply(lambda x: f'tile_{str(x + 1).zfill(TILE_NUMBER_PADCOUNT)}'))
+    if 'tile_name' not in tile_grid:
+        tile_grid['tile_name'] = (tile_grid.index
+                                  .to_series()
+                                  .apply(lambda x: f'tile_{str(x + 1).zfill(TILE_NUMBER_PADCOUNT)}'))
     return tile_grid
 
 def write_tile_grid(tile_grid, target_qgis_data_path, target_file_name):

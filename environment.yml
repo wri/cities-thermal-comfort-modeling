@@ -24,6 +24,4 @@ dependencies:
   - pydantic=2.11.7
   - pip=25.0.1
   - pip:
-    - git+https://github.com/wri/cities-cif@main
     - git+https://github.com/wri/cities-cif-portal@main
-  #   - git+https://github.com/wri/cities-cif@v0.1.2

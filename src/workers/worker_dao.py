@@ -175,18 +175,16 @@ def identify_tiles_with_partial_file_set(non_tiled_city_data: CityData):
     folder_keys = list_s3_subfolders(bucket_name, scenario_folder_key)
     clean_paths = [path.rstrip("/") for path in folder_keys]
     tile_keys = [path for path in clean_paths if os.path.basename(path).startswith("tile_")]
-    metadata_key = [path for path in clean_paths if os.path.basename(path) == 'metadata']
+    metadata_key = [path for path in clean_paths if os.path.basename(path) == 'metadata'][0]
 
     # Determine met counts specifiec in the config yml file
-    # config_file = f"{metadata_key}/{FILENAME_METHOD_YML_CONFIG}"
-    # yamal_data = _read_yml_file_in_s3(bucket_name, config_file)
-    # method_attributes = yamal_data[5]
-    # sampling_local_hours = method_attributes['solweig']['sampling_local_hours']
-    # met_hour_count = len(sampling_local_hours.split(","))
-    # met_filenames = yamal_data[2].get('MetFiles')
-    # met_file_count = len(met_filenames)
-    met_hour_count =3
-    met_file_count = 1
+    config_file = f"{metadata_key}/{FILENAME_METHOD_YML_CONFIG}"
+    yamal_data = _read_yml_file_in_s3(bucket_name, config_file)
+    method_attributes = yamal_data[5]
+    sampling_local_hours = method_attributes['solweig']['sampling_local_hours']
+    met_hour_count = len(sampling_local_hours.split(","))
+    met_filenames = yamal_data[2].get('MetFiles')
+    met_file_count = len(met_filenames)
 
     partial_tiles = []
     expected_raster_count = 6
@@ -330,3 +328,7 @@ def _upload_tiff_files_in_folder_to_s3(local_folder:str, bucket_name:str, s3_fol
             relative_path = os.path.relpath(local_path, local_folder)
             s3_path = os.path.join(s3_folder, relative_path).replace("\\", "/")  # Ensure S3 uses forward slashes
             s3_client.upload_file(local_path, bucket_name, s3_path)
+
+def check_s3_folder_exists(bucket_name, folder_name):
+    response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=folder_name, MaxKeys=1)
+    return 'Contents' in response

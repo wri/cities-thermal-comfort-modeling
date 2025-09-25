@@ -217,6 +217,18 @@ def list_files_in_s3_folder(bucket_name, folder_prefix):
     return file_list
 
 
+def count_files_in_s3_folder(bucket_name, folder_prefix):
+    paginator = s3_client.get_paginator('list_objects_v2')
+    page_iterator = paginator.paginate(Bucket=bucket_name, Prefix=folder_prefix)
+
+    file_count = 0
+    for page in page_iterator:
+        if 'Contents' in page:
+            file_count += len(page['Contents'])
+
+    return file_count
+
+
 def download_s3_files(bucket_name, folder_prefix, local_dir):
     files = list_files_in_s3_folder(bucket_name, folder_prefix)
 

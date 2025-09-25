@@ -107,9 +107,9 @@ class CityData:
             obj.source_svfszip_path = os.path.join(source_intermediate_tile_data_path, obj.skyview_factor_filename)
 
 
+        obj.scenario_title = str(obj.scenario_scenario_id).strip().replace(" ", "_").replace(".","")
         if target_base_path:
             obj.target_base_path = target_base_path
-            obj.scenario_title = str(obj.scenario_scenario_id).strip().replace(" ", "_").replace(".","")
 
             scenario_sub_folder =  f'{folder_name_city_data}_{obj.scenario_title}_{obj.infra_id}'
             obj.target_city_parent_path = str(os.path.join(target_base_path, folder_name_city_data))

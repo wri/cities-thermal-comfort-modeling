@@ -7,9 +7,10 @@ from city_metrix.metrix_dao import get_bucket_name_from_s3_uri
 from src.constants import S3_PUBLICATION_BUCKET
 from src.worker_manager.tools import list_files_in_s3_folder
 from src.workers.worker_dao import get_ctcm_data_folder_key
+from src.workers.city_data import CityData
 
 
-def check_ctcm_staging(non_tiled_city_data, fail_on_error:bool=True):
+def check_ctcm_staging(non_tiled_city_data: CityData, fail_on_error:bool=True):
     # evaluate CTCM staging availability
     try:
         acm_return_code, acm_data_file_count = _evaluate_ctcm_staging(non_tiled_city_data, feature_name='AlbedoCloudMasked')
@@ -63,7 +64,7 @@ def check_ctcm_staging(non_tiled_city_data, fail_on_error:bool=True):
         print(f"\nCTCM staging folders appear to be complete for city: {city_id} and aoi: {aoi_id}.")
         return 0
 
-def publish_ctcm_staging_files(non_tiled_city_data):
+def publish_ctcm_staging_files(non_tiled_city_data: CityData):
     return_code = check_ctcm_staging(non_tiled_city_data, fail_on_error=False)
 
     if return_code == 0:

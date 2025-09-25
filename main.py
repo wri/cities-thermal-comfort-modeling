@@ -4,6 +4,7 @@ import math
 
 from src.data_validation.manager import validate_config
 from src.worker_manager.ancillary_files import write_config_files
+from src.worker_manager.ctcm_layer_staging import check_ctcm_staging
 from src.worker_manager.job_manager import start_jobs
 from src.worker_manager.tools import get_existing_tile_metrics, get_aoi_area_in_square_meters, \
     extract_function_and_params, get_s3_scenario_location
@@ -19,6 +20,13 @@ https://medium.com/@giovannigallon/how-i-automate-qgis-tasks-using-python-54df35
 
 def start_processing(source_base_path, target_base_path, city_folder_name, processing_option):
     abs_source_base_path = os.path.abspath(source_base_path)
+
+    if processing_option == 'prep_check_ctcm_staging':
+        non_tiled_city_data = CityData(None, city_folder_name, None, abs_source_base_path,
+                                       None)
+        return_code = check_ctcm_staging(non_tiled_city_data)
+        return return_code
+
     abs_target_base_path = os.path.abspath(target_base_path)
 
     # get city extent this one time since retrieval is slow
@@ -27,7 +35,6 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
     non_tiled_city_data = CityData(city_geoextent, city_folder_name, None, abs_source_base_path, abs_target_base_path)
 
     existing_tiles_metrics = _get_existing_tiles(non_tiled_city_data)
-
     updated_aoi, config_return_code = validate_config(non_tiled_city_data, existing_tiles_metrics, city_geoextent, processing_option)
 
     if config_return_code != 0:
@@ -131,7 +138,7 @@ if __name__ == "__main__":
                         help='the path to city-based target data')
     parser.add_argument('--city_folder_name', metavar='str', required=True,
                         help='name of source city_folder')
-    valid_methods = ['run_pipeline', 'pre_check']
+    valid_methods = ['run_pipeline', 'pre_check', 'prep_check_ctcm_staging']
     parser.add_argument('--processing_option', metavar='str', choices=valid_methods, required=True,
                         help=f'specifies type of configuration pre-check. Options are: {valid_methods}')
     args = parser.parse_args()

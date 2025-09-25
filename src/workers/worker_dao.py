@@ -4,6 +4,7 @@ import rasterio
 import xml.etree.ElementTree as ET
 
 from city_metrix import s3_client
+from city_metrix.constants import CTCM_PADDED_AOI_BUFFER
 from city_metrix.metrix_dao import create_uri_target_folder, get_bucket_name_from_s3_uri
 from pyproj import CRS
 from osgeo import gdal
@@ -211,6 +212,33 @@ def get_scenario_folder_key(city_data: CityData):
     scenario_folder_key = f"city_projects/{city_id}/{aoi_id}/scenarios/{infra_id}/{scenario_id}"
 
     return scenario_folder_key
+
+def get_ctcm_data_folder_key(city_data: CityData, feature_name):
+    city = json.loads(city_data.city_json_str)
+    city_id = city["city_id"]
+    aoi_id = city["aoi_id"]
+
+    layer_name = None
+    file_name = None
+    if feature_name == 'AlbedoCloudMasked':
+        layer_name = 'AlbedoCloudMasked__ZonalStats_median'
+        file_name = f"{city_id}__{aoi_id}__{layer_name}__StartYear_None_EndYear_None__bufferm_{CTCM_PADDED_AOI_BUFFER}.tif"
+    elif feature_name == 'FabDEM':
+        layer_name = 'FabDEM'
+        file_name = f"{city_id}__{aoi_id}__{layer_name}__bufferm_{CTCM_PADDED_AOI_BUFFER}.tif"
+    elif feature_name == 'OpenUrban':
+        layer_name = 'OpenUrban'
+        file_name = f"{city_id}__{aoi_id}__{layer_name}__bufferm_{CTCM_PADDED_AOI_BUFFER}.tif"
+    elif feature_name == 'OvertureBuildingsDSM':
+        layer_name = 'OvertureBuildingsDSM'
+        file_name = f"{city_id}__{aoi_id}__{layer_name}__bufferm_{CTCM_PADDED_AOI_BUFFER}.tif"
+    elif feature_name == 'TreeCanopyHeightCTCM':
+        layer_name = 'TreeCanopyHeightCTCM'
+        file_name = f"{city_id}__{aoi_id}__{layer_name}__bufferm_{CTCM_PADDED_AOI_BUFFER}.tif"
+
+    data_folder_key = f"data/pre-release/layers/{layer_name}/tif/{file_name}"
+
+    return data_folder_key
 
 
 def _process_tile_folder(local_folder_root, tile_id, bucket_name, raster_folder_uri, publishing_target,

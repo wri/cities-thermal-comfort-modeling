@@ -3,6 +3,7 @@ import os
 import rasterio
 import xml.etree.ElementTree as ET
 
+import yaml
 from city_metrix import s3_client
 from city_metrix.constants import CTCM_PADDED_AOI_BUFFER
 from city_metrix.metrix_dao import create_uri_target_folder, get_bucket_name_from_s3_uri
@@ -13,6 +14,7 @@ from src.constants import S3_PUBLICATION_BUCKET, FOLDER_NAME_PRIMARY_RASTER_FILE
     FOLDER_NAME_UMEP_TCM_RESULTS, FOLDER_NAME_ADMIN_DATA, FOLDER_NAME_QGIS_DATA, FILENAME_TILE_GRID, \
     FILENAME_UNBUFFERED_TILE_GRID, FILENAME_METHOD_YML_CONFIG, FILENAME_URBAN_EXTENT_BOUNDARY, \
     FOLDER_NAME_PRIMARY_MET_FILES
+from src.worker_manager.tools import list_s3_subfolders, list_files_in_s3_folder, count_files_in_s3_folder
 from src.workers.city_data import CityData
 from src.workers.worker_tools import remove_folder, does_s3_folder_exist
 
@@ -164,6 +166,66 @@ def cache_tile_files(tiled_city_data:CityData):
         local_folder = os.path.join(tiled_city_data.target_tcm_results_path, met_folder)
         s3_folder_uri = f"{tile_folder_key}/{FOLDER_NAME_UMEP_TCM_RESULTS}/{met_folder}"
         _process_tile_folder(local_folder, tile_id, bucket_name, s3_folder_uri, publishing_target, extension_filter='.tif')
+
+
+def identify_tiles_with_partial_file_set(non_tiled_city_data: CityData):
+    bucket_name = get_bucket_name_from_s3_uri(S3_PUBLICATION_BUCKET)
+    scenario_folder_key = get_scenario_folder_key(non_tiled_city_data)
+
+    folder_keys = list_s3_subfolders(bucket_name, scenario_folder_key)
+    clean_paths = [path.rstrip("/") for path in folder_keys]
+    tile_keys = [path for path in clean_paths if os.path.basename(path).startswith("tile_")]
+    metadata_key = [path for path in clean_paths if os.path.basename(path) == 'metadata']
+
+    # Determine met counts specifiec in the config yml file
+    # config_file = f"{metadata_key}/{FILENAME_METHOD_YML_CONFIG}"
+    # yamal_data = _read_yml_file_in_s3(bucket_name, config_file)
+    # method_attributes = yamal_data[5]
+    # sampling_local_hours = method_attributes['solweig']['sampling_local_hours']
+    # met_hour_count = len(sampling_local_hours.split(","))
+    # met_filenames = yamal_data[2].get('MetFiles')
+    # met_file_count = len(met_filenames)
+    met_hour_count =3
+    met_file_count = 1
+
+    partial_tiles = []
+    expected_raster_count = 6
+    expected_processed_file_count = 2 + 15 # 2 wall files and 15 svfs files
+    expected_tcm_file_count = 2 * met_file_count * met_hour_count
+    for tile_key in tile_keys:
+        tile_id = os.path.basename(tile_key)
+        # raster files
+        tile_raster_key = f"{tile_key}/raster_files"
+        raster_file_count = count_files_in_s3_folder(bucket_name, tile_raster_key)
+        if raster_file_count != expected_raster_count:
+            partial_tiles.append(tile_id)
+            continue
+        # processed files
+        tile_processed_key = f"{tile_key}/processed_data"
+        wall_file_count = count_files_in_s3_folder(bucket_name, tile_processed_key)
+        if wall_file_count != expected_processed_file_count:
+            partial_tiles.append(tile_id)
+            continue
+        # tcm result files
+        tile_tcm_key = f"{tile_key}/tcm_results"
+        tcm_file_count = count_files_in_s3_folder(bucket_name, tile_tcm_key)
+        if tcm_file_count != expected_tcm_file_count:
+            partial_tiles.append(tile_id)
+            continue
+
+    return partial_tiles
+
+
+def _read_yml_file_in_s3(bucket_name, file_key):
+    response = s3_client.get_object(Bucket=bucket_name, Key=file_key)
+
+    # Read the file content
+    file_content = response['Body'].read().decode('utf-8')
+
+    # Parse the YAML content
+    yaml_data = yaml.safe_load(file_content)
+
+    return yaml_data
 
 
 def cache_metadata_files(city_data: CityData):

@@ -38,7 +38,7 @@ def check_ctcm_staging(non_tiled_city_data, fail_on_error:bool=True):
             raise Exception(e_msg)
         else:
             return -2
-    elif (acm_return_code != 0 or dem_return_code != 0 or dsm_return_code != 0 or tch_return_code != 0
+    elif (acm_return_code != 0 or dem_return_code != 0 or ou_return_code != 0 or dsm_return_code != 0
             or tch_return_code!= 0):
         e_msg = _build_exception_message("CTCM staging folders not available or partially available",
                                          acm_data_file_count, dem_data_file_count, ou_data_file_count,
@@ -47,7 +47,8 @@ def check_ctcm_staging(non_tiled_city_data, fail_on_error:bool=True):
             raise Exception(e_msg)
         else:
             return -3
-    elif acm_data_file_count != dem_data_file_count != ou_data_file_count != dsm_data_file_count != tch_data_file_count:
+    elif (acm_data_file_count != dem_data_file_count or acm_data_file_count != ou_data_file_count
+          or acm_data_file_count != dsm_data_file_count or acm_data_file_count != tch_data_file_count):
         e_msg = _build_exception_message("Inconsistent tile counts in CTCM staging folders",
                                          acm_data_file_count, dem_data_file_count, ou_data_file_count,
                                          dsm_data_file_count,tch_data_file_count)
@@ -62,7 +63,7 @@ def check_ctcm_staging(non_tiled_city_data, fail_on_error:bool=True):
         print(f"\nCTCM staging folders appear to be complete for city: {city_id} and aoi: {aoi_id}.")
         return 0
 
-def publish_ctmc_staging_files(non_tiled_city_data):
+def publish_ctcm_staging_files(non_tiled_city_data):
     return_code = check_ctcm_staging(non_tiled_city_data, fail_on_error=False)
 
     if return_code == 0:
@@ -115,7 +116,8 @@ def _evaluate_ctcm_staging(non_tiled_city_data, feature_name):
     return return_code, data_file_count
 
 
-def _build_exception_message(header_msg, acm_data_file_count, dem_data_file_count, ou_data_file_count, dsm_data_file_count,tch_data_file_count):
+def _build_exception_message(header_msg, acm_data_file_count, dem_data_file_count, ou_data_file_count,
+                             dsm_data_file_count, tch_data_file_count):
     e_msg = (f"\n{header_msg}:"+
              "\nFile counts in layer folder," +
              f"\n   AlbedoCloudMasked: {acm_data_file_count}, " +

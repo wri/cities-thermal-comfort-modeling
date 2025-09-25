@@ -27,3 +27,10 @@ def test_stage_ushuaia():
     return_code = run_main('', source_city_folder_name, 'stage_ctcm_data')
 
     assert return_code == 0
+
+
+def test_validate_result_tiles_teresina():
+    source_city_folder_name = 'BRA_Teresina_city_subarea_upenn'
+    return_code = run_main('', source_city_folder_name, 'validate_ctcm_result_data')
+
+    assert return_code == 0

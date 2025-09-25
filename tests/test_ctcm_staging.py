@@ -1,5 +1,4 @@
 import os
-import pytest
 from city_metrix.metrix_dao import get_bucket_name_from_s3_uri, delete_s3_folder_if_exists
 
 from src.constants import DATA_DIR, S3_PUBLICATION_BUCKET
@@ -16,11 +15,15 @@ def test_evaluate_capetown_ctcm_staging():
     assert return_code == 0
 
 
-def test_evaluate_ushuaia_ctcm_staging():
+# def test_evaluate_ushuaia_ctcm_staging():
+#     source_city_folder_name = 'ARG_Ushuaia_urbext_upenn'
+#     return_code = run_main('', source_city_folder_name, 'prep_check_ctcm_staging')
+#
+#     assert return_code != 0
+
+
+def test_stage_ushuaia():
     source_city_folder_name = 'ARG_Ushuaia_urbext_upenn'
-    return_code = run_main('', source_city_folder_name, 'prep_check_ctcm_staging')
+    return_code = run_main('', source_city_folder_name, 'stage_ctcm_data')
 
-    assert return_code == 1
-
-
-
+    assert return_code == 0

@@ -42,7 +42,6 @@ def saverasternd(gdal_data, filename, raster):
 
 # def shadowingfunctionglobalradiation(a, azimuth, altitude, scale, dlg, forsvf):
 def shadowingfunctionglobalradiation(a, azimuth, altitude, scale, forsvf):
-    import numpy as np
     
     #%This m.file calculates shadows on a DEM
     #% conversion
@@ -115,6 +114,9 @@ def shadowingfunctionglobalradiation(a, azimuth, altitude, scale, forsvf):
     f = f-a
     f = np.logical_not(f)
     sh = np.double(f)
+
+    del f
+    del a
     
     return sh
     
@@ -123,8 +125,6 @@ def shadowingfunctionglobalradiation(a, azimuth, altitude, scale, forsvf):
 def shadowingfunction_20(a, vegdem, vegdem2, azimuth, altitude, scale, amaxvalue, bush, forsvf):
     #% This function casts shadows on buildings and vegetation units
     #% conversion
-    
-    import numpy as np
     
     degrees = np.pi/180.
     if azimuth == 0.0:
@@ -245,7 +245,22 @@ def shadowingfunction_20(a, vegdem, vegdem2, azimuth, altitude, scale, amaxvalue
     vbshvegsh = 1.-vbshvegsh
     
     shadowresult = {'sh': sh, 'vegsh': vegsh, 'vbshvegsh': vbshvegsh}
-    
+
+    del bushplant
+    del f
+    del fabovea
+    del firstvegdem
+    del g
+    del gabovea
+    del sh
+    del temp
+    del tempbush
+    del tempvegdem
+    del tempvegdem2
+    del vbshvegsh
+    del vegsh
+    del vegsh2
+
     return shadowresult
 
 
@@ -375,7 +390,9 @@ def run_skyview_calculations(method_params, tile_name):
 
 
             # Calculate svfs
-            for k in np.arange(annulino[int(i)]+1, (annulino[int(i+1.)])+1):
+            k_start = annulino[int(i)]+1
+            k_end = (annulino[int(i+1.)])+1
+            for k in np.arange(k_start, k_end):
                 weight = annulus_weight(k, aziinterval[i])*sh
                 svf = svf + weight
                 weight = annulus_weight(k, aziintervalaniso[i]) * sh
@@ -393,25 +410,33 @@ def run_skyview_calculations(method_params, tile_name):
                     svfN = svfN + weight
 
 
+            # WRI Note: Switch to inline variable assignment to reduce memory requirements
             # if self.usevegdem == 1:
-            for k in np.arange(annulino[int(i)] + 1, (annulino[int(i + 1.)]) + 1):
+            for k in np.arange(k_start, k_end):
                 # % changed to include 90
                 weight = annulus_weight(k, aziinterval[i])
-                svfveg = svfveg + weight * vegsh
-                svfaveg = svfaveg + weight * vbshvegsh
+                svfveg += weight * vegsh
+                svfaveg += weight * vbshvegsh
                 weight = annulus_weight(k, aziintervalaniso[i])
                 if (azimuth >= 0) and (azimuth < 180):
-                    svfEveg = svfEveg + weight * vegsh
-                    svfEaveg = svfEaveg + weight * vbshvegsh
+                    svfEveg += weight * vegsh
+                    svfEaveg += weight * vbshvegsh
                 if (azimuth >= 90) and (azimuth < 270):
-                    svfSveg = svfSveg + weight * vegsh
-                    svfSaveg = svfSaveg + weight * vbshvegsh
+                    svfSveg += weight * vegsh
+                    svfSaveg += weight * vbshvegsh
                 if (azimuth >= 180) and (azimuth < 360):
-                    svfWveg = svfWveg + weight * vegsh
-                    svfWaveg = svfWaveg + weight * vbshvegsh
+                    svfWveg += weight * vegsh
+                    svfWaveg += weight * vbshvegsh
                 if (azimuth >= 270) or (azimuth < 90):
-                    svfNveg = svfNveg + weight * vegsh
-                    svfNaveg = svfNaveg + weight * vbshvegsh
+                    svfNveg += weight * vegsh
+                    svfNaveg += weight * vbshvegsh
+
+            # WRI Note: Added deletion of unneeded objects to reduce memory pressure
+            del altitude
+            del azimuth
+            del vegsh
+            del vbshvegsh
+            del sh
 
             index += 1
 
@@ -462,5 +487,21 @@ def run_skyview_calculations(method_params, tile_name):
         svffile = os.path.join(svffolder, svf + '.tif')
         saverasternd(gdal_dsm, svffile, svfresult[svf])
         #os.remove(svffile)
+
+    del svf
+    del svfaveg
+    del svfE
+    del svfEaveg
+    del svfEveg
+    del svfN
+    del svfNaveg
+    del svfNveg
+    del svfS
+    del svfSaveg
+    del svfSveg
+    del svfveg
+    del svfW
+    del svfWaveg
+    del svfWveg
 
     gc.collect()

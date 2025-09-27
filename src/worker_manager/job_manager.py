@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import subprocess
@@ -155,7 +156,8 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
 
         # Write urban_extent polygon to disk and thin tiles to internal and aoi-overlapping
         if non_tiled_city_data.city_json_str is not None:
-            tile_grid = _write_and_thin_city_tile_grid(non_tiled_city_data, tile_grid)
+            urban_extent_polygon = _get_and_write_city_boundary(non_tiled_city_data, unbuffered_tile_grid)
+            tile_grid = _thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid, tile_grid, urban_extent_polygon)
 
             if len(tile_grid) == 0:
                 print(f'Stopping execution since there are no tiles to further process.')
@@ -219,25 +221,35 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
 
     return return_code, return_str
 
-def _write_and_thin_city_tile_grid(non_tiled_city_data, tile_grid):
-    import json
+def _get_and_write_city_boundary(non_tiled_city_data, unbuffered_tile_grid):
     city = json.loads(non_tiled_city_data.city_json_str)
     city_id = city['city_id']
     aoi_id = city['aoi_id']
-    tile_method = city['tile_method']
-    tile_function, tile_function_params = extract_function_and_params(tile_method)
 
     if aoi_id == 'urban_extent':
-        utm_crs = tile_grid.crs
+        utm_crs = unbuffered_tile_grid.crs
         urban_extent_gdf = get_city_boundaries(city_id, aoi_id).to_crs(utm_crs)
 
         # Save the boundary to disk
         urban_extent_file_path = os.path.join(non_tiled_city_data.target_qgis_data_path, FILENAME_URBAN_EXTENT_BOUNDARY)
         write_layer(urban_extent_gdf, urban_extent_file_path, GEOJSON_FILE_EXTENSION)
 
-        # Thin to tiles that are internal to the city polygon
         urban_extent_polygon = (urban_extent_gdf['geometry']).to_crs(utm_crs)
-        tile_grid = tile_grid[tile_grid.intersects(urban_extent_polygon[0])]
+
+        return urban_extent_polygon
+    else:
+        return None
+
+def _thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid, tile_grid, urban_extent_polygon):
+    city = json.loads(non_tiled_city_data.city_json_str)
+    tile_method = city['tile_method']
+    tile_function, tile_function_params = extract_function_and_params(tile_method)
+
+    if urban_extent_polygon is not None:
+        utm_crs = unbuffered_tile_grid.crs
+
+        # Thin to tiles that are internal to the city polygon
+        thinned_unbuffered_tile_grid = unbuffered_tile_grid[unbuffered_tile_grid.intersects(urban_extent_polygon[0])]
 
         # Thin to tiles that overlap the AOI
         if tile_function is None or tile_function == 'resume()':
@@ -250,7 +262,7 @@ def _write_and_thin_city_tile_grid(non_tiled_city_data, tile_grid):
                 gdf_projected = gdf.to_crs(epsg=utm_crs)
                 aoi_polygon = gdf_projected.geometry.iloc[0]
 
-            tile_grid = tile_grid[tile_grid.intersects(aoi_polygon)]
+            thinned_unbuffered_tile_grid = thinned_unbuffered_tile_grid[thinned_unbuffered_tile_grid.intersects(aoi_polygon)]
 
         if tile_function is not None:
             # Thin to tiles not already in S3.
@@ -259,16 +271,20 @@ def _write_and_thin_city_tile_grid(non_tiled_city_data, tile_grid):
             existing_folders = list_s3_subfolders(bucket_name, scenario_folder_key)
             existing_tiles = [s.replace(scenario_folder_key, "").replace('/','') for s in existing_folders]
 
-            tile_grid = tile_grid[~tile_grid['tile_name'].isin(existing_tiles)]
+            thinned_unbuffered_tile_grid = (
+                thinned_unbuffered_tile_grid)[~thinned_unbuffered_tile_grid['tile_name'].isin(existing_tiles)]
 
             if tile_function == 'tile_names()':
                 tile_names = tile_function_params.split(",")
-                tile_grid = tile_grid[tile_grid['tile_name'].isin(tile_names)]
+                thinned_unbuffered_tile_grid = (
+                    thinned_unbuffered_tile_grid)[thinned_unbuffered_tile_grid['tile_name'].isin(tile_names)]
 
+        # Also thin the tile_grid to the thinned unbuffered_tile_grid
+        result_tile_grid = tile_grid[tile_grid['tile_name'].isin(thinned_unbuffered_tile_grid['tile_name'])]
     else:
-        tile_grid = tile_grid
+        result_tile_grid = tile_grid
 
-    return tile_grid
+    return result_tile_grid
 
 
 def _determine_era5_date_range(sampling_date_range:str):
@@ -368,7 +384,6 @@ def _process_rows(processing_method, futures, number_of_units, logger):
         available_cpu_count = int(mp.cpu_count() - 1)
         num_workers = number_of_units + 1 if number_of_units < available_cpu_count else available_cpu_count
 
-        # Note: the upenn memory size is based on testing of a 1.2 km tile (including buffer) to avoid thrashing
         os_name = platform.system()
         if os_name == 'Linux':
             memory_limit = '16GB'

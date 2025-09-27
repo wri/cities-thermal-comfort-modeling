@@ -379,7 +379,7 @@ def run_skyview_calculations(method_params, tile_name):
             azimuth = iazimuth[int(index)-1]
 
             # print status for azimuth 0
-            if (index+1)%20 == 0:
+            if (index+1)%2 == 0:
                 print(f"tile: {tile_name}, skyview-step: {index+1}/{len(iazimuth)}, altitude: {altitude}/{iangle.max()}, azimuth: {azimuth}")
 
             # Casting shadow, when the vegetation dsm is considered

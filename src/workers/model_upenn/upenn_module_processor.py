@@ -24,7 +24,7 @@ warnings.filterwarnings("ignore")
 MAX_RETRY_COUNT = 10
 RETRY_PAUSE_TIME_SEC = 1
 
-MAX_TILE_PAUSE_MINS = 3
+MAX_TILE_PAUSE_MINS = 5
 
 
 def run_upenn_module(step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path,

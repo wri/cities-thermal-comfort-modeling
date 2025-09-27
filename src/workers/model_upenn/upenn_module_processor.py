@@ -29,11 +29,12 @@ MAX_TILE_PAUSE_MINS = 7
 
 def run_upenn_module(step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path,
                      target_base_path, met_filename, seasonal_utc_offset):
-    # Pause for a random time interval to offset retrievals between tiles
-    # For small box, use smaller delay
-    max_tile_pause_mins = 1 if mp.cpu_count() <= 8 else MAX_TILE_PAUSE_MINS
-    wait_secs = int(random.uniform(0, max_tile_pause_mins * 60))
-    time.sleep(wait_secs)
+    if step_method in ('wall_height_aspect', 'skyview_factor'):
+        # For computationally intensive methods, pause for a random time interval to offset retrievals between tiles
+        # For small machine, use smaller delay
+        max_tile_pause_mins = 1 if mp.cpu_count() <= 8 else MAX_TILE_PAUSE_MINS
+        wait_secs = int(random.uniform(0, max_tile_pause_mins * 60))
+        time.sleep(wait_secs)
 
     start_time = datetime.now()
 

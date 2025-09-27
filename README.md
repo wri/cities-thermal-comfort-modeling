@@ -12,9 +12,9 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
    1. Open Windows File Explorer and go to the C:\CTCM_data_setup folder
    1. Copy the ZZZ_template_city folder and rename to the country and city for your dataset, such as "USA_WashingtonDC". (This is **"your city folder"** in below instructions.)
    1. If you will be processing your own "custom" source TIFF files, then follow below steps, skip this step if you instead want the system to automatically retrieve the base TIFF files.
-      1. Copy TIFF files for your city into subfoqlders under .\primary_data\raster_files underneath your city folder.
+      1. Copy TIFF files for your city into subfolders under .\primary_data\raster_files underneath your city folder.
          * **Note**: You can provide up to four source files for DSM, DEM, LULC, OpenUrban, and TreeCanopy, but you can also have a partial set of these files.
-         1. The subfolders must be named 'tile_00001', 'tile_00002', and so on.
+         1. The subfolders must be named similar to: 'tile_00001', 'tile_00002', and so on.
             1. See the ZAF_Capetown_small_tile\primary_data\raster_files folder for an example setup.
             1. **Tip**: You can use the "aws s3" command to download files from S3.
                * For example, to download a zip file for a sample tile, run "aws.exe s3 cp s3://wri-cities-heat/demo/kenn_transfer/tile_00001.zip ." 
@@ -47,16 +47,24 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
 ### Running the system
    1. Open a Windows command prompt
       1. Enter and run the "gotcm" command to take you to the C:\CTCM_data_setup folder and activate the cities-thermal conda environment. 
-      1. To run a pre-check of the configurations in your city folder:
-         1. Execute the a_run_CTCM_pre_check.bat script by simply entering the script name and hitting Enter.
-         1. Confirm that it returns "Passed all validation checks"
-         1. The a_run_CTCM_pre_check.bat script validates your configuration files and source data files (if any).
-      1. Finally, to run the method you specified in the .config_umep_city_processing.csv file: 
-         1. Execute the b_run_CTCM_processing.bat script by simply entering the script name and hitting Enter.
-            * **Tip**: It his highly recommended that you hit the Enter key a couple of time after launch the run to force Windows to properly indicate when the job has completed.
-            * **Note**: processing may take an extended period of time even up to 2+ hours per tile depending on the size of your dataset.
-         1. Upon completion of the run, confirm that "Processing encountered no errors."
-         1. Review the "results_data" folder looking for the run results as described below in Post-Execution section.
+      2. on Windows:
+         1. To run a pre-check of the configurations in your city folder:
+            1. Execute the a_run_CTCM_pre_check.bat script by simply entering the script name and hitting Enter.
+            1. Confirm that it returns "Passed all validation checks"
+            1. The a_run_CTCM_pre_check.bat script validates your configuration files and source data files (if any).
+         1. Finally, to run the method you specified in the .config_umep_city_processing.csv file: 
+            1. Execute the b_run_CTCM_processing.bat script by simply entering the script name and hitting Enter.
+               * **Tip**: It his highly recommended that you hit the Enter key a couple of time after launch the run to force Windows to properly indicate when the job has completed.
+               * **Note**: processing may take an extended period of time even up to 2+ hours per tile depending on the size of your dataset.
+            1. Upon completion of the run, confirm that "Processing encountered no errors."
+            1. Review the "results_data" folder looking for the run results as described below in Post-Execution section.
+      1. on Linux:
+         1. There are 5 linux scripts:
+            1. prep_a_check_CTCM_staging_status.sh - Checks whether CTCM "staging" files are available for the city and valid
+            2. prep_b_cache_CTCM_staging_files.sh - Generates the CTCM "staging" files and saves to s3://wri-cities-tcm/data/
+            3. run_a_CTCM_pre_check.sh - Validates the configuration yml file
+            4. run_b_CTCM_processing.sh - Generates the TCM results and optionally outputs to s3://wri-cities-tcm/city_projects/ the city
+            5. run_c_post_processing_results_validation.sh - Validates TCM results in s3://wri-cities-tcm/city_projects/ for the city
 
 ### Post-Execution Evaluation of Results
    1. Results of your run are written to the C:\CTCM_outcome folder under your city folder specified in the batch script with a sub-folder for the scenario.

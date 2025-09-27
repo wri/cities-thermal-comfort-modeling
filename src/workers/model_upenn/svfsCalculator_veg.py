@@ -1,7 +1,6 @@
 ## This script is used to calculate different types of SVFs based on DSM
 ## modified based on UMEP without GUI
 ## Last modified May 9, 2020, by Xiaojiang Li, Temple University, Glenside, PA
-import gc
 import os, os.path
 import numpy as np
 import rasterio
@@ -122,7 +121,8 @@ def shadowingfunctionglobalradiation(a, azimuth, altitude, scale, forsvf):
     
 
 # def shadowingfunction_20(a, vegdem, vegdem2, azimuth, altitude, scale, amaxvalue, bush, dlg, forsvf):
-def shadowingfunction_20(a, vegdem, vegdem2, azimuth, altitude, scale, amaxvalue, bush, forsvf):
+def shadowingfunction_20(a, vegdem, vegdem2, azimuth, altitude, scale, amaxvalue, bush, forsvf,
+                         temp, tempvegdem, tempvegdem2, tempbush):
     #% This function casts shadows on buildings and vegetation units
     #% conversion
     
@@ -141,13 +141,16 @@ def shadowingfunction_20(a, vegdem, vegdem2, azimuth, altitude, scale, amaxvalue
     dx = 0.
     dy = 0.
     dz = 0.
-    temp = np.zeros((sizex, sizey))
-    tempvegdem = np.zeros((sizex, sizey))
-    tempvegdem2 = np.zeros((sizex, sizey))
+    
+    # WRI Note: zero out arrays passed by reference
+    temp[:] = 0
+    tempvegdem[:] = 0
+    tempvegdem2[:] = 0
+    tempbush[:] = 0
+
     sh = np.zeros((sizex, sizey))
     vbshvegsh = np.zeros((sizex, sizey))
     vegsh = np.zeros((sizex, sizey))
-    tempbush = np.zeros((sizex, sizey))
     f = a
     g = np.zeros((sizex, sizey))
     bushplant = bush > 1.
@@ -248,15 +251,10 @@ def shadowingfunction_20(a, vegdem, vegdem2, azimuth, altitude, scale, amaxvalue
 
     del bushplant
     del f
-    del fabovea
-    del firstvegdem
     del g
+    del fabovea
     del gabovea
     del sh
-    del temp
-    del tempbush
-    del tempvegdem
-    del tempvegdem2
     del vbshvegsh
     del vegsh
     del vegsh2
@@ -366,6 +364,14 @@ def run_skyview_calculations(method_params, tile_name):
     aziintervalaniso = np.ceil(aziinterval / 2.0)
     index = int(0)
 
+    # WRI Note Initialize arrays that are passed to a function by reference, in order to reduce memory usage
+    sizex = dsmimg.shape[0]
+    sizey = dsmimg.shape[1]
+    temp = np.zeros((sizex, sizey))
+    tempvegdem = np.zeros((sizex, sizey))
+    tempvegdem2 = np.zeros((sizex, sizey))
+    tempbush = np.zeros((sizex, sizey))
+
     #for i in np.arange(0, iangle.shape[0]-1):
     for i in range(0, skyvaultaltint.shape[0]):
         for j in np.arange(0, (aziinterval[int(i)])):
@@ -379,7 +385,8 @@ def run_skyview_calculations(method_params, tile_name):
             # Casting shadow, when the vegetation dsm is considered
             # if self.usevegdem == 1:
             shadowresult = shadowingfunction_20(dsmimg, vegdem, vegdem2, azimuth, altitude,
-                                                       scale, amaxvalue, bush, 1)
+                                                scale, amaxvalue, bush, 1,
+                                                temp, tempvegdem, tempvegdem2, tempbush)
 
             vegsh = shadowresult["vegsh"]
             vbshvegsh = shadowresult["vbshvegsh"]
@@ -432,8 +439,6 @@ def run_skyview_calculations(method_params, tile_name):
                     svfNaveg += weight * vbshvegsh
 
             # WRI Note: Added deletion of unneeded objects to reduce memory pressure
-            del altitude
-            del azimuth
             del vegsh
             del vbshvegsh
             del sh
@@ -487,21 +492,3 @@ def run_skyview_calculations(method_params, tile_name):
         svffile = os.path.join(svffolder, svf + '.tif')
         saverasternd(gdal_dsm, svffile, svfresult[svf])
         #os.remove(svffile)
-
-    del svf
-    del svfaveg
-    del svfE
-    del svfEaveg
-    del svfEveg
-    del svfN
-    del svfNaveg
-    del svfNveg
-    del svfS
-    del svfSaveg
-    del svfSveg
-    del svfveg
-    del svfW
-    del svfWaveg
-    del svfWveg
-
-    gc.collect()

@@ -9,6 +9,8 @@ from datetime import datetime
 import pandas as pd
 import shapely
 import dask
+from math import floor
+
 from city_metrix.constants import GEOJSON_FILE_EXTENSION
 from city_metrix.metrix_dao import get_city_boundaries, write_layer, get_bucket_name_from_s3_uri, \
     read_geojson_from_cache
@@ -380,21 +382,26 @@ def _process_rows(processing_method, futures, number_of_units, logger):
     import platform
     # See https://docs.dask.org/en/stable/deploying-python.html
     # https://blog.dask.org/2021/11/02/choosing-dask-chunk-sizes#what-to-watch-for-on-the-dashboard
-    if futures:
-        available_cpu_count = int(mp.cpu_count() - 1)
-        num_workers = number_of_units + 1 if number_of_units < available_cpu_count else available_cpu_count
 
-        os_name = platform.system()
-        if os_name == 'Linux':
-            memory_limit = '16GB'
-        else:
-            memory_limit = '2GB'
+    os.environ["MALLOC_TRIM_THRESHOLD_"] = "0"
+    if futures:
+        # reduced_cpu_count = int(mp.cpu_count() - 1)
+        # num_workers = number_of_units + 1 if number_of_units < reduced_cpu_count else reduced_cpu_count
+        num_workers = floor(0.6 * mp.cpu_count() )
+
+        # os_name = platform.system()
+        # if os_name == 'Linux':
+        #     # This is sized for a 600m tile width with 600m buffer
+        #     memory_limit = '25GB'
+        # else:
+        #     memory_limit = '2GB'
 
         from dask.distributed import Client
         with Client(n_workers=num_workers,
                     threads_per_worker=1,
                     processes=False,
-                    memory_limit=memory_limit,
+                    memory_limit='auto',
+                    memory_target_fraction=0.95,
                     asynchronous=False
                     ) as client:
 

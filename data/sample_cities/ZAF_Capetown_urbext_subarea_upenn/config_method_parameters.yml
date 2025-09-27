@@ -19,23 +19,18 @@
   city: {"city_id": "ZAF-Cape_Town", "aoi_id": "urban_extent", "tile_method": None }
   aoi_bounds:
     epsg_code: 32734
-    # aoi extends over two tiles with both being internal to the city grid
-    west: 272160
-    south: 6232186
-    east: 272336
-    north: 6232376
-#    # aoi extends over two tiles with one being internal to the city grid
-#    west: 272334
-#    south: 6232317
-#    east: 272988
-#    north: 6232971
-#    # full urban_extent
-#    west: None
-#    south: None
-#    east: None
-#    north: None
-  tile_side_meters: 1000
-  tile_buffer_meters: 100
+    # 6-tile aoi given 600 m tile with 600 m buffer
+    west: 264035
+    south: 6236158
+    east: 264821
+    north: 6237470
+    # 16-tile aoi given 600 m tile with 600 m buffer
+#    west: 264035
+#    south: 6236158
+#    east: 265899
+#    north: 6238099
+  tile_side_meters: 600
+  tile_buffer_meters: 600
   remove_mrt_buffer_for_final_output: true
 # Names of custom meteorological file(s) or ERA5 data range. Maximum of two filenames can be specified.
 # For custom files, specify the filename with either .csv extension for UPenn model or .txt extension for UMEP model

@@ -1,6 +1,7 @@
 ## This script is used to calculate different types of SVFs based on DSM
 ## modified based on UMEP without GUI
 ## Last modified May 9, 2020, by Xiaojiang Li, Temple University, Glenside, PA
+import gc
 import os, os.path
 import numpy as np
 import rasterio
@@ -443,6 +444,8 @@ def run_skyview_calculations(method_params, tile_name):
             del vbshvegsh
             del sh
 
+            gc.collect()
+
             index += 1
 
     svfS = svfS + 3.0459e-004
@@ -492,3 +495,5 @@ def run_skyview_calculations(method_params, tile_name):
         svffile = os.path.join(svffolder, svf + '.tif')
         saverasternd(gdal_dsm, svffile, svfresult[svf])
         #os.remove(svffile)
+
+    gc.collect()

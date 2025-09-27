@@ -3,6 +3,7 @@ import os
 import shutil
 import subprocess
 import multiprocessing as mp
+import psutil
 import warnings
 from datetime import datetime
 
@@ -147,7 +148,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
         else:
             tile_grid, unbuffered_tile_grid = (
                 get_aoi_fishnet(utm_grid_bbox, tile_side_meters, tile_buffer_meters, utm_grid_crs))
-
+            # save the newly-created fishnet grid
             write_tile_grid(tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_TILE_GRID)
             if unbuffered_tile_grid is not None:
                 write_tile_grid(unbuffered_tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_UNBUFFERED_TILE_GRID)
@@ -389,18 +390,27 @@ def _process_rows(processing_method, futures, number_of_units, logger):
         # num_workers = number_of_units + 1 if number_of_units < reduced_cpu_count else reduced_cpu_count
         num_workers = floor(0.6 * mp.cpu_count() )
 
-        # os_name = platform.system()
-        # if os_name == 'Linux':
-        #     # This is sized for a 600m tile width with 600m buffer
-        #     memory_limit = '25GB'
-        # else:
-        #     memory_limit = '2GB'
+        os_name = platform.system()
+        if os_name == 'Linux':
+            # This is sized for a 600m tile width with 600m buffer
+            sized_limit_val = 25
+            # Setting above the physical RAM limit of the box will for Dask to use swap as needed
+            total_memory_bytes = psutil.virtual_memory().total
+            total_memory_gb = total_memory_bytes / (1024 ** 3)
+            # reduce to fraction of available memory
+            fraction_limit_val = int(total_memory_gb * 0.7)
+            if sized_limit_val < fraction_limit_val:
+                memory_limit = f"{sized_limit_val}GB"
+            else:
+                memory_limit = f"{fraction_limit_val}GB"
+        else:
+            memory_limit = '2GB'
 
         from dask.distributed import Client
         with Client(n_workers=num_workers,
                     threads_per_worker=1,
                     processes=False,
-                    memory_limit='auto',
+                    memory_limit=memory_limit,
                     memory_target_fraction=0.95,
                     asynchronous=False
                     ) as client:

@@ -24,13 +24,13 @@ warnings.filterwarnings("ignore")
 MAX_RETRY_COUNT = 10
 RETRY_PAUSE_TIME_SEC = 1
 
-MAX_TILE_PAUSE_MINS = 7
+MAX_TILE_PAUSE_MINS = 3
 
 
 def run_upenn_module(step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path,
                      target_base_path, met_filename, seasonal_utc_offset):
     if step_method in ('wall_height_aspect', 'skyview_factor'):
-        # For computationally intensive methods, pause for a random time interval to offset retrievals between tiles
+        # For computationally intensive methods, pause for a random time interval to offset operations between tiles
         # For small machine, use smaller delay
         max_tile_pause_mins = 1 if mp.cpu_count() <= 8 else MAX_TILE_PAUSE_MINS
         wait_secs = int(random.uniform(0, max_tile_pause_mins * 60))

@@ -388,7 +388,7 @@ def _process_rows(processing_method, futures, number_of_units, logger):
     if futures:
         # reduced_cpu_count = int(mp.cpu_count() - 1)
         # num_workers = number_of_units + 1 if number_of_units < reduced_cpu_count else reduced_cpu_count
-        num_workers = floor(0.6 * mp.cpu_count() )
+        num_workers = floor(0.7 * mp.cpu_count() )
 
         os_name = platform.system()
         if os_name == 'Linux':

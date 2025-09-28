@@ -375,13 +375,14 @@ def run_skyview_calculations(method_params, tile_name):
     ref_rad_temp = np.zeros((sizex, sizey))
 
     #for i in np.arange(0, iangle.shape[0]-1):
-    for i in range(0, skyvaultaltint.shape[0]):
+    max_range = skyvaultaltint.shape[0]
+    for i in range(0, max_range):
         for j in np.arange(0, (aziinterval[int(i)])):
             altitude = iangle[int(i)]
             azimuth = iazimuth[int(index)-1]
 
-            # print status for azimuth 0
-            if (index+1)%2 == 0:
+            # print status
+            if index in (0,max_range) or (index+1)%20 == 0:
                 print(f"tile: {tile_name}, skyview-step: {index+1}/{len(iazimuth)}, altitude: {altitude}/{iangle.max()}, azimuth: {azimuth}")
 
             # Casting shadow, when the vegetation dsm is considered

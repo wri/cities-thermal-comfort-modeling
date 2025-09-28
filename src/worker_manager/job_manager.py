@@ -6,10 +6,11 @@ import multiprocessing as mp
 import psutil
 import warnings
 from datetime import datetime
-
+import asyncio
 import pandas as pd
 import shapely
 import dask
+from dask.distributed import Client, LocalCluster
 from math import floor
 
 from city_metrix.constants import GEOJSON_FILE_EXTENSION
@@ -102,10 +103,9 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
             print("Stopping. Identified invalid values in meteorological files(s)")
             exit(1)
 
-    futures = []
-
     # Retrieve missing CIF data
     tile_count = 0
+    tasks = []
     if custom_primary_filenames:
         no_layer_atts = existing_tiles_metrics[['tile_name', 'boundary', 'avg_res', 'custom_tile_crs']]
         tile_unique_values = no_layer_atts.drop_duplicates().reset_index(drop=True)
@@ -138,10 +138,10 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
             log_general_file_message(f'Staging: {proc_array}', __file__, logger)
 
             if processing_method == 'upenn_model':
-                delay_tile_array = dask.delayed(process_tile)(*proc_array)
+                tasks.append((process_tile, proc_array))
             else:
-                delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
-            futures.append(delay_tile_array)
+                tasks.append((subprocess.run, proc_array))
+                # delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
     else:
         if has_appendable_cache:
             tile_grid, unbuffered_tile_grid = _transfer_and_read_cached_qgis_files(non_tiled_city_data)
@@ -174,6 +174,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
         tile_count = tile_grid.shape[0]
         print(f'\nCreating data for {tile_grid.geometry.size} new tiles..')
         tile_grid.reset_index(drop=True, inplace=True)
+
         for tile_index, cell in tile_grid.iterrows():
             cell_bounds = cell.geometry.bounds
             tile_boundary = str(shapely.box(cell_bounds[0], cell_bounds[1], cell_bounds[2], cell_bounds[3]))
@@ -187,42 +188,77 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
             log_general_file_message(f'Staging: {proc_array}', __file__, logger)
 
             if processing_method == 'upenn_model':
-                delay_tile_array = dask.delayed(process_tile)(*proc_array)
+                tasks.append((process_tile, proc_array))
             else:
-                delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
-
-            futures.append(delay_tile_array)
+                tasks.append((subprocess.run, proc_array))
+                # delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
 
     log_general_file_message('Starting model processing', __file__, logger)
-    delays_all_passed, results_df = _process_rows(processing_method, futures, tile_count, logger)
+    return_code = asyncio.run(_process_rows(tasks))
 
-    # Combine processing return values
-    combined_results_df = pd.concat([combined_results_df, results_df])
-    combined_delays_passed.append(delays_all_passed)
-
-    # Write run_report
-    report_file_path = report_results(processing_method, combined_results_df, non_tiled_city_data.target_log_path,
-                                      city_folder_name)
-    print(f'\nRun report written to {report_file_path}\n')
-
-    # Cache final metadata to s3
-    if non_tiled_city_data.city_json_str is not None and non_tiled_city_data.publishing_target in ('s3', 'both'):
-        cache_metadata_files(non_tiled_city_data)
-
-    return_code = 0 if all(combined_delays_passed) or delays_all_passed else 1
-
-    # Write qgis files
-    if return_code == 0 and delays_all_passed:
-        if non_tiled_city_data.publishing_target in ('local', 'both'):
-            log_general_file_message('Building QGIS viewer objects', __file__, logger)
-            write_qgis_files(non_tiled_city_data)
-        return_str = "Processing encountered no errors."
-    else:
-        return_str = 'Processing encountered errors. See log file.'
-
-    log_general_file_message('Completing manager execution', __file__, logger)
-
+    return_str=None # no longer used for UPenn
     return return_code, return_str
+
+
+async def _process_rows(tasks):
+    import platform
+    # See https://docs.dask.org/en/stable/deploying-python.html
+    # https://blog.dask.org/2021/11/02/choosing-dask-chunk-sizes#what-to-watch-for-on-the-dashboard
+
+    usable_cpu_fraction = 0.7
+    if tasks:
+        num_workers = floor(usable_cpu_fraction * mp.cpu_count() )
+
+        os_name = platform.system()
+        if os_name == 'Linux':
+            # Ensure that memory is trimmed automatically. See https://distributed.dask.org/en/stable/worker-memory.html
+            os.environ["MALLOC_TRIM_THRESHOLD_"] = "0"
+
+            # This is sized for a 600m tile width with 600m buffer
+            sized_limit_val = 25
+            # Setting above the physical RAM limit of the box will for Dask to use swap as needed
+            total_memory_bytes = psutil.virtual_memory().total
+            total_memory_gb = total_memory_bytes / (1024 ** 3)
+            # reduce to a fraction of available memory
+            fraction_limit_val = int(total_memory_gb * 0.7)
+            if sized_limit_val < fraction_limit_val:
+                memory_limit = f"{sized_limit_val}GB"
+            else:
+                memory_limit = f"{fraction_limit_val}GB"
+        else:
+            memory_limit = '2GB'
+
+        cluster = None
+        client = None
+        try:
+            cluster = LocalCluster(n_workers=num_workers,
+                                   threads_per_worker=1,
+                                   memory_limit=memory_limit,
+                                   asynchronous=True)
+            client = await Client(cluster, asynchronous=True)
+
+            # Submit all tasks concurrently
+            futures = await asyncio.gather(*[
+                client.submit(func, *args) for func, args in tasks
+            ])
+
+            # Gather results concurrently
+            results = await asyncio.gather(*[f.result() for f in futures])
+
+            await client.close()
+            await cluster.close()
+            return results
+
+        except Exception as e:
+            print(f"Error during task execution: {e}")
+            return None
+
+        finally:
+            if client:
+                await client.close()
+            if cluster:
+                await cluster.close()
+
 
 def _get_and_write_city_boundary(non_tiled_city_data, unbuffered_tile_grid):
     city = json.loads(non_tiled_city_data.city_json_str)
@@ -242,6 +278,7 @@ def _get_and_write_city_boundary(non_tiled_city_data, unbuffered_tile_grid):
         return urban_extent_polygon
     else:
         return None
+
 
 def _thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid, tile_grid, urban_extent_polygon):
     city = json.loads(non_tiled_city_data.city_json_str)
@@ -341,9 +378,6 @@ def _transfer_and_read_cached_qgis_files(non_tiled_city_data):
 
     return tile_grid, unbuffered_tile_grid
 
-
-
-
 def _construct_tile_proc_array(city_json_str, processing_method, source_base_path, target_base_path, city_folder_name,
                                tile_folder_name, cif_primary_features, ctcm_intermediate_features,
                                tile_boundary, tile_resolution, seasonal_utc_offset, grid_crs):
@@ -377,66 +411,3 @@ def _construct_tile_proc_array(city_json_str, processing_method, source_base_pat
                       ]
 
     return proc_array
-
-
-def _process_rows(processing_method, futures, number_of_units, logger):
-    import platform
-    # See https://docs.dask.org/en/stable/deploying-python.html
-    # https://blog.dask.org/2021/11/02/choosing-dask-chunk-sizes#what-to-watch-for-on-the-dashboard
-
-    os.environ["MALLOC_TRIM_THRESHOLD_"] = "0"
-    if futures:
-        # reduced_cpu_count = int(mp.cpu_count() - 1)
-        # num_workers = number_of_units + 1 if number_of_units < reduced_cpu_count else reduced_cpu_count
-        num_workers = floor(0.7 * mp.cpu_count() )
-
-        os_name = platform.system()
-        if os_name == 'Linux':
-            # This is sized for a 600m tile width with 600m buffer
-            sized_limit_val = 25
-            # Setting above the physical RAM limit of the box will for Dask to use swap as needed
-            total_memory_bytes = psutil.virtual_memory().total
-            total_memory_gb = total_memory_bytes / (1024 ** 3)
-            # reduce to fraction of available memory
-            fraction_limit_val = int(total_memory_gb * 0.7)
-            if sized_limit_val < fraction_limit_val:
-                memory_limit = f"{sized_limit_val}GB"
-            else:
-                memory_limit = f"{fraction_limit_val}GB"
-        else:
-            memory_limit = '2GB'
-
-        from dask.distributed import Client
-        with Client(n_workers=num_workers,
-                    threads_per_worker=1,
-                    processes=False,
-                    memory_limit=memory_limit,
-                    memory_target_fraction=0.95,
-                    asynchronous=False
-                    ) as client:
-
-            msg = f'See processing dashboard at {client.dashboard_link}'
-            log_general_file_message(msg, __file__, logger)
-
-            # TODO implement progress bar
-            try:
-                dc = dask.compute(*futures)
-            except Exception as e_msg:
-                print(f'Dask failure for {futures}')
-
-        all_passed, results_df, failed_task_ids, failed_task_details = parse_row_results(dc)
-
-        if not all_passed:
-            task_str = ','.join(map(str, failed_task_ids))
-            count = len(failed_task_ids)
-            msg = f'FAILURE: There were {count} processing failures for tasks indices: ({task_str})'
-            log_general_file_message(msg, __file__, logger)
-            print(msg)
-
-            for failed_run in failed_task_details:
-                log_general_file_message(failed_run, __file__, logger)
-
-        return all_passed, results_df
-    else:
-        return True, None
-

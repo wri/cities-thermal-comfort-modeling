@@ -41,7 +41,7 @@ def saverasternd(gdal_data, filename, raster):
 
 
 # def shadowingfunctionglobalradiation(a, azimuth, altitude, scale, dlg, forsvf):
-def shadowingfunctionglobalradiation(a, azimuth, altitude, scale, forsvf):
+def shadowingfunctionglobalradiation(a, azimuth, altitude, scale, forsvf, temp):
     
     #%This m.file calculates shadows on a DEM
     #% conversion
@@ -61,7 +61,7 @@ def shadowingfunctionglobalradiation(a, azimuth, altitude, scale, forsvf):
     dx = 0.
     dy = 0.
     dz = 0.
-    temp = np.zeros((sizex, sizey))
+    temp[:] = 0
     index = 1.
     #% other loop parameters
     amaxvalue = a.max()
@@ -123,7 +123,7 @@ def shadowingfunctionglobalradiation(a, azimuth, altitude, scale, forsvf):
 
 # def shadowingfunction_20(a, vegdem, vegdem2, azimuth, altitude, scale, amaxvalue, bush, dlg, forsvf):
 def shadowingfunction_20(a, vegdem, vegdem2, azimuth, altitude, scale, amaxvalue, bush, forsvf,
-                         temp, tempvegdem, tempvegdem2, tempbush):
+                         temp, tempvegdem, tempvegdem2, tempbush, sh, vbshvegsh, vegsh, g):
     #% This function casts shadows on buildings and vegetation units
     #% conversion
     
@@ -142,18 +142,18 @@ def shadowingfunction_20(a, vegdem, vegdem2, azimuth, altitude, scale, amaxvalue
     dx = 0.
     dy = 0.
     dz = 0.
-    
+
+
     # WRI Note: zero out arrays passed by reference
     temp[:] = 0
     tempvegdem[:] = 0
     tempvegdem2[:] = 0
     tempbush[:] = 0
-
-    sh = np.zeros((sizex, sizey))
-    vbshvegsh = np.zeros((sizex, sizey))
-    vegsh = np.zeros((sizex, sizey))
+    sh[:] = 0
+    vbshvegsh[:] = 0
+    vegsh[:] = 0
     f = a
-    g = np.zeros((sizex, sizey))
+    g[:] = 0
     bushplant = bush > 1.
     pibyfour = np.pi/4.
     threetimespibyfour = 3.*pibyfour
@@ -252,12 +252,8 @@ def shadowingfunction_20(a, vegdem, vegdem2, azimuth, altitude, scale, amaxvalue
 
     del bushplant
     del f
-    del g
     del fabovea
     del gabovea
-    del sh
-    del vbshvegsh
-    del vegsh
     del vegsh2
 
     return shadowresult
@@ -368,10 +364,15 @@ def run_skyview_calculations(method_params, tile_name):
     # WRI Note Initialize arrays that are passed to a function by reference, in order to reduce memory usage
     sizex = dsmimg.shape[0]
     sizey = dsmimg.shape[1]
-    temp = np.zeros((sizex, sizey))
-    tempvegdem = np.zeros((sizex, sizey))
-    tempvegdem2 = np.zeros((sizex, sizey))
-    tempbush = np.zeros((sizex, sizey))
+    ref_temp = np.zeros((sizex, sizey))
+    ref_tempvegdem = np.zeros((sizex, sizey))
+    ref_tempvegdem2 = np.zeros((sizex, sizey))
+    ref_tempbush = np.zeros((sizex, sizey))
+    ref_sh = np.zeros((sizex, sizey))
+    ref_vbshvegsh = np.zeros((sizex, sizey))
+    ref_vegsh = np.zeros((sizex, sizey))
+    ref_g = np.zeros((sizex, sizey))
+    ref_rad_temp = np.zeros((sizex, sizey))
 
     #for i in np.arange(0, iangle.shape[0]-1):
     for i in range(0, skyvaultaltint.shape[0]):
@@ -387,13 +388,15 @@ def run_skyview_calculations(method_params, tile_name):
             # if self.usevegdem == 1:
             shadowresult = shadowingfunction_20(dsmimg, vegdem, vegdem2, azimuth, altitude,
                                                 scale, amaxvalue, bush, 1,
-                                                temp, tempvegdem, tempvegdem2, tempbush)
+                                                ref_temp, ref_tempvegdem, ref_tempvegdem2, ref_tempbush,
+                                                ref_sh, ref_vbshvegsh, ref_vegsh, ref_g
+                                                )
 
             vegsh = shadowresult["vegsh"]
             vbshvegsh = shadowresult["vbshvegsh"]
             vegshmat[:, :, index] = vegsh
 
-            sh = shadowingfunctionglobalradiation(dsmimg, azimuth, altitude, scale, 1)
+            sh = shadowingfunctionglobalradiation(dsmimg, azimuth, altitude, scale, 1, ref_rad_temp)
             shmat[:, :, index] = sh
 
 

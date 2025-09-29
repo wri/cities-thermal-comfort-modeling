@@ -116,14 +116,15 @@ def _get_existing_tiles(non_tiled_city_data):
     return existing_tiles_metrics
 
 
-def _get_tile_raster_cell_count(non_tiled_city_data, existing_tiles_metrics):
+def _get_tile_raster_cell_count(non_tiled_city_data:CityData, existing_tiles_metrics):
     tile_side_meters = non_tiled_city_data.tile_side_meters
+    tile_buffer = 0 if non_tiled_city_data.tile_buffer_meters is None else non_tiled_city_data.tile_buffer_meters
     if non_tiled_city_data.custom_primary_feature_list:
         # Get representative cell count
         cell_count = existing_tiles_metrics['cell_count'][0]
     elif tile_side_meters is not None:
         # Assume 1-m resolution
-        cell_count = tile_side_meters * tile_side_meters
+        cell_count = (tile_side_meters + (2*tile_buffer)) ** 2
     else:
         # Infer raster cell count from aoi
         square_meters = get_aoi_area_in_square_meters(non_tiled_city_data.min_lon, non_tiled_city_data.min_lat,

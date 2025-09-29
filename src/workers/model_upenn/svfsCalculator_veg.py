@@ -1,7 +1,6 @@
 ## This script is used to calculate different types of SVFs based on DSM
 ## modified based on UMEP without GUI
 ## Last modified May 9, 2020, by Xiaojiang Li, Temple University, Glenside, PA
-import gc
 import os, os.path
 import numpy as np
 import rasterio
@@ -115,9 +114,6 @@ def shadowingfunctionglobalradiation(a, azimuth, altitude, scale, forsvf, temp):
     f = np.logical_not(f)
     sh = np.double(f)
 
-    del f
-    del a
-    
     return sh
     
 
@@ -249,12 +245,6 @@ def shadowingfunction_20(a, vegdem, vegdem2, azimuth, altitude, scale, amaxvalue
     vbshvegsh = 1.-vbshvegsh
     
     shadowresult = {'sh': sh, 'vegsh': vegsh, 'vbshvegsh': vbshvegsh}
-
-    del bushplant
-    del f
-    del fabovea
-    del gabovea
-    del vegsh2
 
     return shadowresult
 
@@ -443,13 +433,6 @@ def run_skyview_calculations(method_params, tile_name):
                     svfNveg += weight * vegsh
                     svfNaveg += weight * vbshvegsh
 
-            # WRI Note: Added deletion of unneeded objects to reduce memory pressure
-            del vegsh
-            del vbshvegsh
-            del sh
-
-            gc.collect()
-
             index += 1
 
     svfS = svfS + 3.0459e-004
@@ -500,4 +483,3 @@ def run_skyview_calculations(method_params, tile_name):
         saverasternd(gdal_dsm, svffile, svfresult[svf])
         #os.remove(svffile)
 
-    gc.collect()

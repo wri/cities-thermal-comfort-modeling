@@ -158,9 +158,11 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
             return 0, ''
 
         # Write urban_extent polygon to disk and thin tiles to internal and aoi-overlapping
+        internal_tile_count = None
+        internal_aoi_tile_count = None
         if non_tiled_city_data.city_json_str is not None:
             urban_extent_polygon = _get_and_write_city_boundary(non_tiled_city_data, unbuffered_tile_grid)
-            tile_grid = _thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid, tile_grid, urban_extent_polygon)
+            tile_grid, internal_tile_count, internal_aoi_tile_count = _thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid, tile_grid, urban_extent_polygon)
 
             if len(tile_grid) == 0:
                 print(f'Stopping execution since there are no tiles to further process.')
@@ -172,7 +174,16 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
             cache_metadata_files(non_tiled_city_data)
 
         tile_count = tile_grid.shape[0]
-        print(f'\nCreating data for {tile_grid.geometry.size} new tiles..')
+        city_extent_count = unbuffered_tile_grid.shape[0]
+        msg_str = f'\nCreating data for {tile_count} new tiles'
+        if internal_aoi_tile_count is not None:
+            msg_str += f", out of {internal_aoi_tile_count} within the sub-area"
+        if internal_tile_count is not None:
+            msg_str += f", out of {internal_tile_count} tiles internal to the city polygon"
+        msg_str += f", out of {city_extent_count} within the full city grid."
+
+
+        print(f'\nCreating data for {tile_count} new tiles..')
         tile_grid.reset_index(drop=True, inplace=True)
 
         for tile_index, cell in tile_grid.iterrows():
@@ -321,13 +332,16 @@ def _thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid, tile_grid, u
     tile_method = city['tile_method']
     tile_function, tile_function_params = extract_function_and_params(tile_method)
 
+    internal_tile_count = None
+    internal_aoi_tile_count = None
     if urban_extent_polygon is not None:
         utm_crs = unbuffered_tile_grid.crs
 
         # Thin to tiles that are internal to the city polygon
         thinned_unbuffered_tile_grid = unbuffered_tile_grid[unbuffered_tile_grid.intersects(urban_extent_polygon[0])]
+        internal_tile_count = len(thinned_unbuffered_tile_grid)
 
-        # Thin to tiles that overlap the AOI
+        # Thin to tiles that overlap the sub-area AOI
         if tile_function is None or tile_function == 'resume()':
             aoi_polygon = shapely.box(non_tiled_city_data.min_lon, non_tiled_city_data.min_lat,
                           non_tiled_city_data.max_lon, non_tiled_city_data.max_lat)
@@ -339,6 +353,7 @@ def _thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid, tile_grid, u
                 aoi_polygon = gdf_projected.geometry.iloc[0]
 
             thinned_unbuffered_tile_grid = thinned_unbuffered_tile_grid[thinned_unbuffered_tile_grid.intersects(aoi_polygon)]
+            internal_aoi_tile_count= len(thinned_unbuffered_tile_grid)
 
         if tile_function is not None:
             # Thin to tiles not already in S3.
@@ -360,7 +375,7 @@ def _thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid, tile_grid, u
     else:
         result_tile_grid = tile_grid
 
-    return result_tile_grid
+    return result_tile_grid, internal_tile_count, internal_aoi_tile_count
 
 
 def _determine_era5_date_range(sampling_date_range:str):

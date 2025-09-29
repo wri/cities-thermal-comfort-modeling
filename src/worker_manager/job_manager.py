@@ -230,7 +230,7 @@ def _process_tasks(tasks, logger):
     # See https://docs.dask.org/en/stable/deploying-python.html
     # https://blog.dask.org/2021/11/02/choosing-dask-chunk-sizes#what-to-watch-for-on-the-dashboard
 
-    usable_cpu_fraction = 0.75
+    usable_cpu_fraction = 0.85
     if tasks:
         num_workers = floor(usable_cpu_fraction * mp.cpu_count() )
 

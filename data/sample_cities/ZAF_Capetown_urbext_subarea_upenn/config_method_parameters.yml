@@ -19,11 +19,16 @@
   city: {"city_id": "ZAF-Cape_Town", "aoi_id": "urban_extent", "tile_method": None }
   aoi_bounds:
     epsg_code: 32734
-    # 6-tile aoi given 600 m tile
-    west: 264035
-    south: 6236158
-    east: 264821
-    north: 6237470
+    # 1-tile aoi given 600 m tile
+    west: 263972
+    south: 6236149
+    east: 264293
+    north: 6236437
+#    # 6-tile aoi given 600 m tile
+#    west: 264035
+#    south: 6236158
+#    east: 264821
+#    north: 6237470
 ##     16-tile aoi given 600 m tile
 #    west: 264035
 #    south: 6236158

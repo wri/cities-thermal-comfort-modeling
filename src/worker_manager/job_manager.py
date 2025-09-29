@@ -194,18 +194,43 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
                 # delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
 
     log_general_file_message('Starting model processing', __file__, logger)
-    return_code = asyncio.run(_process_rows(tasks))
+    delays_all_passed, results_df = _process_tasks(tasks, logger)
 
-    return_str=None # no longer used for UPenn
+    # Combine processing return values
+    combined_results_df = pd.concat([combined_results_df, results_df])
+    combined_delays_passed.append(delays_all_passed)
+
+    # Write run_report
+    report_file_path = report_results(processing_method, combined_results_df, non_tiled_city_data.target_log_path,
+                                      city_folder_name)
+    print(f'\nRun report written to {report_file_path}\n')
+
+    # Cache final metadata to s3
+    if non_tiled_city_data.city_json_str is not None and non_tiled_city_data.publishing_target in ('s3', 'both'):
+        cache_metadata_files(non_tiled_city_data)
+
+    return_code = 0 if all(combined_delays_passed) or delays_all_passed else 1
+
+    # Write qgis files
+    if return_code == 0:
+        if non_tiled_city_data.publishing_target in ('local', 'both'):
+            log_general_file_message('Building QGIS viewer objects', __file__, logger)
+            write_qgis_files(non_tiled_city_data)
+        return_str = "Processing encountered no errors."
+    else:
+        return_str = 'Processing encountered errors. See log file.'
+
+    log_general_file_message('Completing manager execution', __file__, logger)
+
     return return_code, return_str
 
 
-async def _process_rows(tasks):
+def _process_tasks(tasks, logger):
     import platform
     # See https://docs.dask.org/en/stable/deploying-python.html
     # https://blog.dask.org/2021/11/02/choosing-dask-chunk-sizes#what-to-watch-for-on-the-dashboard
 
-    usable_cpu_fraction = 0.7
+    usable_cpu_fraction = 0.75
     if tasks:
         num_workers = floor(usable_cpu_fraction * mp.cpu_count() )
 
@@ -228,36 +253,47 @@ async def _process_rows(tasks):
         else:
             memory_limit = '2GB'
 
-        cluster = None
-        client = None
-        try:
-            cluster = LocalCluster(n_workers=num_workers,
-                                   threads_per_worker=1,
-                                   memory_limit=memory_limit,
-                                   asynchronous=True)
-            client = await Client(cluster, asynchronous=True)
+        # run dask cluster
+        results = asyncio.run(
+            run_dask_tasks(
+                tasks=tasks,
+                memory_limit=memory_limit,
+                n_workers=num_workers,
+                threads_per_worker=1
+            )
+        )
+        all_passed, results_df, failed_task_ids, failed_task_details = parse_row_results(results)
 
-            # Submit all tasks concurrently
-            futures = await asyncio.gather(*[
-                client.submit(func, *args) for func, args in tasks
-            ])
+        if not all_passed:
+            task_str = ','.join(map(str, failed_task_ids))
+            count = len(failed_task_ids)
+            msg = f'FAILURE: There were {count} processing failures for tasks indices: ({task_str})'
+            log_general_file_message(msg, __file__, logger)
+            print(msg)
 
-            # Gather results concurrently
-            results = await asyncio.gather(*[f.result() for f in futures])
+            for failed_run in failed_task_details:
+                log_general_file_message(failed_run, __file__, logger)
 
-            await client.close()
-            await cluster.close()
-            return results
+        return all_passed, results_df
 
-        except Exception as e:
-            print(f"Error during task execution: {e}")
-            return None
+    else:
+        return True, None
 
-        finally:
-            if client:
-                await client.close()
-            if cluster:
-                await cluster.close()
+async def run_dask_tasks(tasks, memory_limit='2GB', n_workers=2, threads_per_worker=1):
+    try:
+        async with LocalCluster(n_workers=n_workers,
+                                threads_per_worker=threads_per_worker,
+                                memory_limit=memory_limit,
+                                processes=True,  # Explicitly use multiprocessing
+                                asynchronous=True) as cluster:
+            async with Client(cluster, asynchronous=True) as client:
+                futures = [client.submit(func, *args) for func, args in tasks]
+                results = await asyncio.gather(*futures)
+                return results
+    except Exception as e:
+        # Log, re-raise, or handle gracefully
+        print(f"Error during Dask execution: {e}")
+        return None
 
 
 def _get_and_write_city_boundary(non_tiled_city_data, unbuffered_tile_grid):

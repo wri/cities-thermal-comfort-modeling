@@ -3,12 +3,16 @@ import os
 import shutil
 import subprocess
 import multiprocessing as mp
+import psutil
 import warnings
 from datetime import datetime
-
+import asyncio
 import pandas as pd
 import shapely
 import dask
+from dask.distributed import Client, LocalCluster
+from math import floor
+
 from city_metrix.constants import GEOJSON_FILE_EXTENSION
 from city_metrix.metrix_dao import get_city_boundaries, write_layer, get_bucket_name_from_s3_uri, \
     read_geojson_from_cache
@@ -99,10 +103,9 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
             print("Stopping. Identified invalid values in meteorological files(s)")
             exit(1)
 
-    futures = []
-
     # Retrieve missing CIF data
     tile_count = 0
+    tasks = []
     if custom_primary_filenames:
         no_layer_atts = existing_tiles_metrics[['tile_name', 'boundary', 'avg_res', 'custom_tile_crs']]
         tile_unique_values = no_layer_atts.drop_duplicates().reset_index(drop=True)
@@ -135,17 +138,17 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
             log_general_file_message(f'Staging: {proc_array}', __file__, logger)
 
             if processing_method == 'upenn_model':
-                delay_tile_array = dask.delayed(process_tile)(*proc_array)
+                tasks.append((process_tile, proc_array))
             else:
-                delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
-            futures.append(delay_tile_array)
+                tasks.append((subprocess.run, proc_array))
+                # delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
     else:
         if has_appendable_cache:
             tile_grid, unbuffered_tile_grid = _transfer_and_read_cached_qgis_files(non_tiled_city_data)
         else:
             tile_grid, unbuffered_tile_grid = (
                 get_aoi_fishnet(utm_grid_bbox, tile_side_meters, tile_buffer_meters, utm_grid_crs))
-
+            # save the newly-created fishnet grid
             write_tile_grid(tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_TILE_GRID)
             if unbuffered_tile_grid is not None:
                 write_tile_grid(unbuffered_tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_UNBUFFERED_TILE_GRID)
@@ -155,9 +158,11 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
             return 0, ''
 
         # Write urban_extent polygon to disk and thin tiles to internal and aoi-overlapping
+        internal_tile_count = None
+        internal_aoi_tile_count = None
         if non_tiled_city_data.city_json_str is not None:
             urban_extent_polygon = _get_and_write_city_boundary(non_tiled_city_data, unbuffered_tile_grid)
-            tile_grid = _thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid, tile_grid, urban_extent_polygon)
+            tile_grid, internal_tile_count, internal_aoi_tile_count = _thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid, tile_grid, urban_extent_polygon)
 
             if len(tile_grid) == 0:
                 print(f'Stopping execution since there are no tiles to further process.')
@@ -169,8 +174,18 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
             cache_metadata_files(non_tiled_city_data)
 
         tile_count = tile_grid.shape[0]
-        print(f'\nCreating data for {tile_grid.geometry.size} new tiles..')
+        city_extent_count = unbuffered_tile_grid.shape[0]
+        msg_str = f'\nCreating data for {tile_count} new tiles'
+        if internal_aoi_tile_count is not None:
+            msg_str += f", out of {internal_aoi_tile_count} within the sub-area"
+        if internal_tile_count is not None:
+            msg_str += f", out of {internal_tile_count} tiles internal to the city polygon"
+        msg_str += f", out of {city_extent_count} within the full city grid."
+
+
+        print(f'\nCreating data for {tile_count} new tiles..')
         tile_grid.reset_index(drop=True, inplace=True)
+
         for tile_index, cell in tile_grid.iterrows():
             cell_bounds = cell.geometry.bounds
             tile_boundary = str(shapely.box(cell_bounds[0], cell_bounds[1], cell_bounds[2], cell_bounds[3]))
@@ -184,14 +199,13 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
             log_general_file_message(f'Staging: {proc_array}', __file__, logger)
 
             if processing_method == 'upenn_model':
-                delay_tile_array = dask.delayed(process_tile)(*proc_array)
+                tasks.append((process_tile, proc_array))
             else:
-                delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
-
-            futures.append(delay_tile_array)
+                tasks.append((subprocess.run, proc_array))
+                # delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
 
     log_general_file_message('Starting model processing', __file__, logger)
-    delays_all_passed, results_df = _process_rows(processing_method, futures, tile_count, logger)
+    delays_all_passed, results_df = _process_tasks(tasks, logger)
 
     # Combine processing return values
     combined_results_df = pd.concat([combined_results_df, results_df])
@@ -209,7 +223,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
     return_code = 0 if all(combined_delays_passed) or delays_all_passed else 1
 
     # Write qgis files
-    if return_code == 0 and delays_all_passed:
+    if return_code == 0:
         if non_tiled_city_data.publishing_target in ('local', 'both'):
             log_general_file_message('Building QGIS viewer objects', __file__, logger)
             write_qgis_files(non_tiled_city_data)
@@ -220,6 +234,78 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
     log_general_file_message('Completing manager execution', __file__, logger)
 
     return return_code, return_str
+
+
+def _process_tasks(tasks, logger):
+    import platform
+    # See https://docs.dask.org/en/stable/deploying-python.html
+    # https://blog.dask.org/2021/11/02/choosing-dask-chunk-sizes#what-to-watch-for-on-the-dashboard
+
+    usable_cpu_fraction = 0.85
+    if tasks:
+        num_workers = floor(usable_cpu_fraction * mp.cpu_count() )
+
+        os_name = platform.system()
+        if os_name == 'Linux':
+            # Ensure that memory is trimmed automatically. See https://distributed.dask.org/en/stable/worker-memory.html
+            os.environ["MALLOC_TRIM_THRESHOLD_"] = "0"
+
+            # This is sized for a 600m tile width with 600m buffer
+            sized_limit_val = 25
+            # Setting above the physical RAM limit of the box will for Dask to use swap as needed
+            total_memory_bytes = psutil.virtual_memory().total
+            total_memory_gb = total_memory_bytes / (1024 ** 3)
+            # reduce to a fraction of available memory
+            fraction_limit_val = int(total_memory_gb * 0.7)
+            if sized_limit_val < fraction_limit_val:
+                memory_limit = f"{sized_limit_val}GB"
+            else:
+                memory_limit = f"{fraction_limit_val}GB"
+        else:
+            memory_limit = '2GB'
+
+        # run dask cluster
+        results = asyncio.run(
+            run_dask_tasks(
+                tasks=tasks,
+                memory_limit=memory_limit,
+                n_workers=num_workers,
+                threads_per_worker=1
+            )
+        )
+        all_passed, results_df, failed_task_ids, failed_task_details = parse_row_results(results)
+
+        if not all_passed:
+            task_str = ','.join(map(str, failed_task_ids))
+            count = len(failed_task_ids)
+            msg = f'FAILURE: There were {count} processing failures for tasks indices: ({task_str})'
+            log_general_file_message(msg, __file__, logger)
+            print(msg)
+
+            for failed_run in failed_task_details:
+                log_general_file_message(failed_run, __file__, logger)
+
+        return all_passed, results_df
+
+    else:
+        return True, None
+
+async def run_dask_tasks(tasks, memory_limit='2GB', n_workers=2, threads_per_worker=1):
+    try:
+        async with LocalCluster(n_workers=n_workers,
+                                threads_per_worker=threads_per_worker,
+                                memory_limit=memory_limit,
+                                processes=True,  # Explicitly use multiprocessing
+                                asynchronous=True) as cluster:
+            async with Client(cluster, asynchronous=True) as client:
+                futures = [client.submit(func, *args) for func, args in tasks]
+                results = await asyncio.gather(*futures)
+                return results
+    except Exception as e:
+        # Log, re-raise, or handle gracefully
+        print(f"Error during Dask execution: {e}")
+        return None
+
 
 def _get_and_write_city_boundary(non_tiled_city_data, unbuffered_tile_grid):
     city = json.loads(non_tiled_city_data.city_json_str)
@@ -240,18 +326,22 @@ def _get_and_write_city_boundary(non_tiled_city_data, unbuffered_tile_grid):
     else:
         return None
 
+
 def _thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid, tile_grid, urban_extent_polygon):
     city = json.loads(non_tiled_city_data.city_json_str)
     tile_method = city['tile_method']
     tile_function, tile_function_params = extract_function_and_params(tile_method)
 
+    internal_tile_count = None
+    internal_aoi_tile_count = None
     if urban_extent_polygon is not None:
         utm_crs = unbuffered_tile_grid.crs
 
         # Thin to tiles that are internal to the city polygon
         thinned_unbuffered_tile_grid = unbuffered_tile_grid[unbuffered_tile_grid.intersects(urban_extent_polygon[0])]
+        internal_tile_count = len(thinned_unbuffered_tile_grid)
 
-        # Thin to tiles that overlap the AOI
+        # Thin to tiles that overlap the sub-area AOI
         if tile_function is None or tile_function == 'resume()':
             aoi_polygon = shapely.box(non_tiled_city_data.min_lon, non_tiled_city_data.min_lat,
                           non_tiled_city_data.max_lon, non_tiled_city_data.max_lat)
@@ -263,6 +353,7 @@ def _thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid, tile_grid, u
                 aoi_polygon = gdf_projected.geometry.iloc[0]
 
             thinned_unbuffered_tile_grid = thinned_unbuffered_tile_grid[thinned_unbuffered_tile_grid.intersects(aoi_polygon)]
+            internal_aoi_tile_count= len(thinned_unbuffered_tile_grid)
 
         if tile_function is not None:
             # Thin to tiles not already in S3.
@@ -284,7 +375,7 @@ def _thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid, tile_grid, u
     else:
         result_tile_grid = tile_grid
 
-    return result_tile_grid
+    return result_tile_grid, internal_tile_count, internal_aoi_tile_count
 
 
 def _determine_era5_date_range(sampling_date_range:str):
@@ -338,9 +429,6 @@ def _transfer_and_read_cached_qgis_files(non_tiled_city_data):
 
     return tile_grid, unbuffered_tile_grid
 
-
-
-
 def _construct_tile_proc_array(city_json_str, processing_method, source_base_path, target_base_path, city_folder_name,
                                tile_folder_name, cif_primary_features, ctcm_intermediate_features,
                                tile_boundary, tile_resolution, seasonal_utc_offset, grid_crs):
@@ -374,52 +462,3 @@ def _construct_tile_proc_array(city_json_str, processing_method, source_base_pat
                       ]
 
     return proc_array
-
-
-def _process_rows(processing_method, futures, number_of_units, logger):
-    import platform
-    # See https://docs.dask.org/en/stable/deploying-python.html
-    # https://blog.dask.org/2021/11/02/choosing-dask-chunk-sizes#what-to-watch-for-on-the-dashboard
-    if futures:
-        available_cpu_count = int(mp.cpu_count() - 1)
-        num_workers = number_of_units + 1 if number_of_units < available_cpu_count else available_cpu_count
-
-        os_name = platform.system()
-        if os_name == 'Linux':
-            memory_limit = '16GB'
-        else:
-            memory_limit = '2GB'
-
-        from dask.distributed import Client
-        with Client(n_workers=num_workers,
-                    threads_per_worker=1,
-                    processes=False,
-                    memory_limit=memory_limit,
-                    asynchronous=False
-                    ) as client:
-
-            msg = f'See processing dashboard at {client.dashboard_link}'
-            log_general_file_message(msg, __file__, logger)
-
-            # TODO implement progress bar
-            try:
-                dc = dask.compute(*futures)
-            except Exception as e_msg:
-                print(f'Dask failure for {futures}')
-
-        all_passed, results_df, failed_task_ids, failed_task_details = parse_row_results(dc)
-
-        if not all_passed:
-            task_str = ','.join(map(str, failed_task_ids))
-            count = len(failed_task_ids)
-            msg = f'FAILURE: There were {count} processing failures for tasks indices: ({task_str})'
-            log_general_file_message(msg, __file__, logger)
-            print(msg)
-
-            for failed_run in failed_task_details:
-                log_general_file_message(failed_run, __file__, logger)
-
-        return all_passed, results_df
-    else:
-        return True, None
-

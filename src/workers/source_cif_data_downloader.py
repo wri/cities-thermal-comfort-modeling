@@ -7,6 +7,7 @@ import geopandas as gp
 import numpy as np
 import random
 import time
+import multiprocessing as mp
 
 from city_metrix.constants import CTCM_PADDED_AOI_BUFFER
 from osgeo import gdal
@@ -27,8 +28,8 @@ DEFAULT_LULC_RESOLUTION = 1
 MINIMUM_QUERY_WAIT_SEC = 5
 MAXIMUM_QUERY_WAIT_SEC = 10
 
-MIN_LAYER_RETRY_MINS = 2
-MAX_LAYER_RETRY_MINS = 5
+MIN_TILE_PAUSE_MINS = 2
+MAX_TILE_PAUSE_MINS = 5
 MAX_RETRY_COUNT = 3
 
 # The wait time constants below were reduced from 10-30 seconds to 5-10 seconds.
@@ -143,7 +144,7 @@ def _get_lulc(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
                     print(f"LULC download failed. Retrying...")
-                    wait_secs = int(random.uniform(MIN_LAYER_RETRY_MINS * 60, MAX_LAYER_RETRY_MINS * 60))
+                    wait_secs = int(random.uniform(MIN_TILE_PAUSE_MINS * 60, MAX_TILE_PAUSE_MINS * 60))
                     time.sleep(wait_secs)
                 else:
                     raise Exception(f"Layer LULC download failed due to error: {e_msg}")
@@ -202,7 +203,7 @@ def _get_open_urban(city_geoextent, city_aoi, tiled_city_data, tile_data_path, a
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
                     print(f"OpenUrban download failed. Retrying...")
-                    wait_secs = int(random.uniform(MIN_LAYER_RETRY_MINS * 60, MAX_LAYER_RETRY_MINS * 60))
+                    wait_secs = int(random.uniform(MIN_TILE_PAUSE_MINS * 60, MAX_TILE_PAUSE_MINS * 60))
                     time.sleep(wait_secs)
                 else:
                     raise Exception(f"Layer OpenUrban download failed due to error: {e_msg}")
@@ -246,7 +247,7 @@ def _get_tree_canopy_height(city_geoextent, city_aoi, tiled_city_data, tile_data
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
                     print(f"TreeCanopyHeight download failed. Retrying...")
-                    wait_secs = int(random.uniform(MIN_LAYER_RETRY_MINS * 60, MAX_LAYER_RETRY_MINS * 60))
+                    wait_secs = int(random.uniform(MIN_TILE_PAUSE_MINS * 60, MAX_TILE_PAUSE_MINS * 60))
                     time.sleep(wait_secs)
                 else:
                     raise Exception(f"Layer TreeCanopyHeight download failed due to error: {e_msg}")
@@ -287,7 +288,7 @@ def _get_albedo_cloud_masked(city_geoextent, city_aoi, tiled_city_data, tile_dat
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
                     print(f"AlbedoCloudMasked download failed. Retrying...")
-                    wait_secs = int(random.uniform(MIN_LAYER_RETRY_MINS * 60, MAX_LAYER_RETRY_MINS * 60))
+                    wait_secs = int(random.uniform(MIN_TILE_PAUSE_MINS * 60, MAX_TILE_PAUSE_MINS * 60))
                     time.sleep(wait_secs)
                 else:
                     raise Exception(f"Layer AlbedoCloudMasked download failed due to error: {e_msg}")
@@ -352,7 +353,7 @@ def _get_dem(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf,
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
                     print(f"FabDEM download failed. Retrying...")
-                    wait_secs = int(random.uniform(MIN_LAYER_RETRY_MINS * 60, MAX_LAYER_RETRY_MINS * 60))
+                    wait_secs = int(random.uniform(MIN_TILE_PAUSE_MINS * 60, MAX_TILE_PAUSE_MINS * 60))
                     time.sleep(wait_secs)
                 else:
                     raise Exception(f"Layer FabDEM download failed due to error: {e_msg}")
@@ -390,7 +391,7 @@ def _get_building_height_dsm(city_geoextent, city_aoi, tiled_city_data, tile_dat
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
                     print(f"OvertureBuildingsDSM download failed. Retrying...")
-                    wait_secs = int(random.uniform(MIN_LAYER_RETRY_MINS * 60, MAX_LAYER_RETRY_MINS * 60))
+                    wait_secs = int(random.uniform(MIN_TILE_PAUSE_MINS * 60, MAX_TILE_PAUSE_MINS * 60))
                     time.sleep(wait_secs)
                 else:
                     raise Exception(f"Layer OvertureBuildingsDSM download failed due to error: {e_msg}")

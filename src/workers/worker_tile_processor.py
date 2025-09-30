@@ -110,6 +110,7 @@ def process_tile(city_json_str, processing_method, source_base_path, target_base
                                                 tile_folder_name, cif_primary_features, tile_boundary,
                                                 tile_resolution, grid_crs)
         return_stdouts.append(return_val)
+        # Pause to allow all writes to complete
         time.sleep(PROCESSING_PAUSE_TIME_SEC)
 
     if processing_method != 'download_only':
@@ -132,8 +133,6 @@ def process_tile(city_json_str, processing_method, source_base_path, target_base
             return_val = run_umep_plugin(1, processing_method, city_folder_name, tile_folder_name,
                                          source_base_path, target_base_path, None, None)
             return_stdouts.append(return_val)
-        else:
-            return ''
 
         # Remove buffered area from mrt results
         buffer_meters = tiled_city_data.tile_buffer_meters

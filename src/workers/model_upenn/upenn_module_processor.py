@@ -3,8 +3,9 @@ import tempfile
 import time
 import shutil
 import warnings
-import sys
-
+import random
+import multiprocessing as mp
+from math import floor
 
 from pathlib import Path
 from datetime import datetime
@@ -12,7 +13,7 @@ from datetime import datetime
 from src.constants import FILENAME_SVFS_ZIP
 from src.workers.model_upenn.svfsCalculator_veg import run_skyview_calculations
 from src.workers.model_upenn.weather_meanRadiantT import run_mrt_calculations
-from src.workers.worker_tools import remove_file, remove_folder, compute_time_diff_mins, create_folder, get_configurations
+from src.workers.worker_tools import remove_file, remove_folder, compute_time_diff_mins, create_folder
 from src.workers.city_data import CityData
 from src.workers.logger_tools import setup_logger, log_method_start, log_method_failure, log_method_completion, \
     log_model_metadata_message, setup_metadata_logger
@@ -22,6 +23,8 @@ warnings.filterwarnings("ignore")
 
 MAX_RETRY_COUNT = 10
 RETRY_PAUSE_TIME_SEC = 1
+
+MAX_TILE_PAUSE_MINS = 5
 
 
 def run_upenn_module(step_index, step_method, folder_name_city_data, folder_name_tile_data, source_base_path,

@@ -52,7 +52,7 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
         raise ValueError('Invalid configuration(s). Stopping.')
 
     has_appendable_cache = False
-    if non_tiled_city_data.publishing_target in ('s3', 'both'):
+    if processing_option == 'run_pipeline' and non_tiled_city_data.publishing_target in ('s3', 'both'):
         bucket_name, scenario_folder_key = get_s3_scenario_location(non_tiled_city_data)
         does_s3_target_scenario_exist = does_s3_folder_exist(bucket_name, scenario_folder_key)
         city = json.loads(non_tiled_city_data.city_json_str)
@@ -86,14 +86,17 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
         # write configs and last run metrics
         write_config_files(non_tiled_city_data, updated_aoi)
 
-        # Process data
-        return_code, return_str = start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache)
+    # Process data
+    return_code, return_str = start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache, processing_option)
 
+    if processing_option == 'run_pipeline':
         if return_code == 0:
             print(return_str)
         else:
             _highlighted_yellow_print(return_str)
         return return_code
+    else:
+        return 0
 
 def _get_city_geoextent(source_base_path, folder_name_city_data):
     yml_values = get_yml_content(source_base_path, folder_name_city_data)

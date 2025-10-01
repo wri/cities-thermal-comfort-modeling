@@ -56,7 +56,7 @@ def run_upenn_module(step_index, step_method, folder_name_city_data, folder_name
                 else:
                     from datetime import date
                     sampling_hours = tiled_city_data.sampling_local_hours
-                    run_mrt_calculations(method_params, sampling_hours)
+                    run_mrt_calculations(method_params, sampling_hours, folder_name_tile_data)
 
                 # Prepare target folder and transfer over the temporary results
                 try:

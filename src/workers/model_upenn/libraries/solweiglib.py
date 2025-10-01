@@ -2874,7 +2874,7 @@ def prepareData(mrtfolder, svffolder, dsmfile, demfile, chmfile, wallfile, aspec
     miny = geotransform[3] + width * geotransform[4] + height * geotransform[5]
     lonlat = transform.TransformPoint(minx, miny)
 
-    print('The lon lat are:', lonlat)
+    # print('The lon lat are:', lonlat)
 
     gdalver = float(gdal.__version__[0])
     if gdalver == 3.:

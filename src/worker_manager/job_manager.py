@@ -131,21 +131,25 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
             if len(tile_grid) == 0 and processing_method != 'grid_only':
                 print(f'Stopping execution since there are no tiles to further process.')
                 return 0, ''
+        else:
+            urban_extent_polygon = None
 
         tile_count = tile_grid.shape[0]
         city_extent_count = unbuffered_tile_grid.shape[0]
-        msg_str = f'\nProcessing will/would create data for {tile_count} new tiles'
+        msg_str = f'\nProcessing will/would create {tile_count} new tiles'
         if internal_aoi_tile_count is not None:
-            msg_str += f", out of {internal_aoi_tile_count} within the sub-area"
+            msg_str += f", of {internal_aoi_tile_count} tiles within the sub-area"
         if internal_tile_count is not None:
-            msg_str += f", out of {internal_tile_count} tiles internal to the city polygon"
-        msg_str += f", out of {city_extent_count} within the full city grid."
+            msg_str += f", of {internal_tile_count} tiles internal to the city polygon"
+        msg_str += f", of {city_extent_count} tiles within the full city grid."
         print(msg_str)
 
-        if processing_method == 'grid_only':
-            print(f'Stopping execution after locally writing grid files to {non_tiled_city_data.target_qgis_data_path}.')
-            return 0, ''
-        if processing_option != 'run_pipeline':
+        if processing_method == 'grid_only' or processing_option == 'pre_check':
+            if processing_method == 'grid_only':
+                print(f'Stopping execution after locally writing grid files to {non_tiled_city_data.target_qgis_data_path}.')
+
+            if non_tiled_city_data.city_json_str is not None:
+                _print_unprocessed_internal_tile_names(non_tiled_city_data, unbuffered_tile_grid, urban_extent_polygon)
             return 0, ''
 
         # Cache currently-available metadata to s3
@@ -243,6 +247,9 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
 
     log_general_file_message('Completing manager execution', __file__, logger)
 
+    if non_tiled_city_data.city_json_str is not None:
+        _print_unprocessed_internal_tile_names(non_tiled_city_data, unbuffered_tile_grid, urban_extent_polygon)
+
     return return_code, return_str
 
 
@@ -335,6 +342,26 @@ def _get_and_write_city_boundary(non_tiled_city_data, unbuffered_tile_grid):
         return urban_extent_polygon
     else:
         return None
+
+def _print_unprocessed_internal_tile_names(non_tiled_city_data, unbuffered_tile_grid, urban_extent_polygon):
+    city = json.loads(non_tiled_city_data.city_json_str)
+
+    if urban_extent_polygon is not None:
+        # Thin to tiles that are internal to the city polygon
+        thinned_unbuffered_tile_grid = unbuffered_tile_grid[unbuffered_tile_grid.intersects(urban_extent_polygon[0])]
+
+        # Thin to tiles not already in S3.
+        bucket_name = get_bucket_name_from_s3_uri(S3_PUBLICATION_BUCKET)
+        scenario_folder_key = get_scenario_folder_key(non_tiled_city_data)
+        existing_folders = list_s3_subfolders(bucket_name, scenario_folder_key)
+        existing_tiles = [s.replace(scenario_folder_key, "").replace('/', '') for s in existing_folders]
+
+        thinned_unbuffered_tile_grid = (
+            thinned_unbuffered_tile_grid)[~thinned_unbuffered_tile_grid['tile_name'].isin(existing_tiles)]
+
+        unprocessed_tile_names = ', '.join(thinned_unbuffered_tile_grid['tile_name'])
+
+        print(f'\nFYI - Set of unprocessed tiles in city grid which intersect city polygon:\n{unprocessed_tile_names}')
 
 
 def _thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid, tile_grid, urban_extent_polygon):

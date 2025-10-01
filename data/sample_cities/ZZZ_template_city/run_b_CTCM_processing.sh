@@ -18,6 +18,10 @@ city_folder=$(basename "$PWD")
 
 processing_option="run_pipeline"
 
+log_file="run_b_CTCM_processing.log"
+exec > >(tee -a "$log_file")
+exec 2>&1
+
 echo
 echo "=================================================================================="
 echo "=== Pre-checking data source in: $city_folder"
@@ -41,6 +45,15 @@ hours=$((runtime / 3600))
 minutes=$(((runtime % 3600) / 60))
 echo "Total runtime: ${hours} hour(s) and ${minutes} minute(s)"
 echo
+
+# Send Slack notification (if webhook URL is set)
+slack_mention="<@U031HB1JNRZ>"  # Replace with the Slack user. Default is Chris
+
+message="$slack_mention CTCM processing for $city_folder completed in ${hours} hour(s) and ${minutes} minute(s)."
+curl -X POST -H 'Content-type: application/json' --data "{\"text\": \"$message\"}" https://hooks.slack.com/services/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
+
+# Shut down ec2 instance (uncomment the next line to enable)
+# sudo shutdown -h now
 
 # Equivalent to pause - wait for user input
 read -p "Press any key to continue..."

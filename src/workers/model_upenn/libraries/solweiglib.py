@@ -2874,7 +2874,7 @@ def prepareData(mrtfolder, svffolder, dsmfile, demfile, chmfile, wallfile, aspec
     miny = geotransform[3] + width * geotransform[4] + height * geotransform[5]
     lonlat = transform.TransformPoint(minx, miny)
 
-    print('The lon lat are:', lonlat)
+    # print('The lon lat are:', lonlat)
 
     gdalver = float(gdal.__version__[0])
     if gdalver == 3.:
@@ -2978,7 +2978,7 @@ def metdataParse(row):
     doy = day_of_year(year, month, day)
     
     # meteorological data
-    print('The year, month, day, hour, minute are:', year, month, day, hour, minu)
+    # print('The year, month, day, hour, minute are:', year, month, day, hour, minu)
     Ta = float(row['Temperature']) # air temperature
     RH = float(row['Relative Humidity']) # relative humidity
     # radG = float(row['GHI']) # global radiation

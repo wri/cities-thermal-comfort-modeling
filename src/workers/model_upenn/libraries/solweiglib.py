@@ -2978,7 +2978,7 @@ def metdataParse(row):
     doy = day_of_year(year, month, day)
     
     # meteorological data
-    print('The year, month, day, hour, minute are:', year, month, day, hour, minu)
+    # print('The year, month, day, hour, minute are:', year, month, day, hour, minu)
     Ta = float(row['Temperature']) # air temperature
     RH = float(row['Relative Humidity']) # relative humidity
     # radG = float(row['GHI']) # global radiation

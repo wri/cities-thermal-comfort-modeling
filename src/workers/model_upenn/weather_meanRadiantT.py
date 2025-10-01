@@ -367,7 +367,7 @@ def run_mrt_calculations(method_params, sampling_hours: str, tile_name):
 
             # print('The number of elements in Ta is:', Ta.__len__())
             tmrtplot = tmrtplot / Ta.__len__()
-            print(tmrtplot.shape)
+            # print(tmrtplot.shape)
 
             mrtFile = f"Tmrt_{sampling_date.year}_{sampling_date.timetuple().tm_yday}_{hour}00D.tif"
             # print('The output MRT file name is:', mrtFile)

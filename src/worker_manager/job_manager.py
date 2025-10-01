@@ -40,6 +40,8 @@ dask.config.set({'logging.distributed': 'warning'})
 
 TILE_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(SRC_DIR, 'workers', 'worker_tile_processor.py'))
 
+USABLE_CPU_FRACTION = 0.85 # Values was selected to keep memory below 90%, assuming 600m-width, 600m-buffer tiles
+
 
 def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache, processing_option):
     city_json_str = non_tiled_city_data.city_json_str
@@ -65,6 +67,8 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
         logger = setup_logger(non_tiled_city_data.target_manager_log_path)
         log_general_file_message('Starting jobs', __file__, logger)
 
+    num_workers = floor(USABLE_CPU_FRACTION * mp.cpu_count())
+    print(f"\nNumber of processing workers to be launched in Dask: {num_workers}")
 
     # Retrieve missing CIF data
     tile_count = 0
@@ -258,9 +262,8 @@ def _process_tasks(tasks, logger):
     # See https://docs.dask.org/en/stable/deploying-python.html
     # https://blog.dask.org/2021/11/02/choosing-dask-chunk-sizes#what-to-watch-for-on-the-dashboard
 
-    usable_cpu_fraction = 0.85
     if tasks:
-        num_workers = floor(usable_cpu_fraction * mp.cpu_count() )
+        num_workers = floor(USABLE_CPU_FRACTION * mp.cpu_count() )
 
         os_name = platform.system()
         if os_name == 'Linux':

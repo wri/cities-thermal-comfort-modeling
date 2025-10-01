@@ -97,7 +97,9 @@ def _get_epsg_code(raster_path):
         epsg_code = int(spatial_ref.GetAttrValue("AUTHORITY", 1))
     return epsg_code
 
-def run_mrt_calculations(method_params, sampling_hours: str):
+def run_mrt_calculations(method_params, sampling_hours: str, tile_name):
+    print(f'tile: {tile_name}, Running MRT calculations..')
+
     # Expand parameters into local variables
     INPUT_DSM = method_params['INPUT_DSM']
     INPUT_SVF = method_params['INPUT_SVF']
@@ -363,16 +365,16 @@ def run_mrt_calculations(method_params, sampling_hours: str):
                 else:
                     w = 'N'
 
-            print('The number of elements in Ta is:', Ta.__len__())
+            # print('The number of elements in Ta is:', Ta.__len__())
             tmrtplot = tmrtplot / Ta.__len__()
-            print(tmrtplot.shape)
+            # print(tmrtplot.shape)
 
             mrtFile = f"Tmrt_{sampling_date.year}_{sampling_date.timetuple().tm_yday}_{hour}00D.tif"
-            print('The output MRT file name is:', mrtFile)
+            # print('The output MRT file name is:', mrtFile)
             solweiglib.saverasternd(gdal_dsm, os.path.join(mrtfolder, mrtFile), tmrtplot)
             
             shadowFile = f"Shadow_{sampling_date.year}_{sampling_date.timetuple().tm_yday}_{hour}00D.tif"
-            print('The output shadow file name is:', shadowFile)
+            # print('The output shadow file name is:', shadowFile)
             solweiglib.saverasternd(gdal_dsm, os.path.join(mrtfolder, shadowFile), shadowplot)
 
 

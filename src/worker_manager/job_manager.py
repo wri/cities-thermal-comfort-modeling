@@ -40,8 +40,10 @@ dask.config.set({'logging.distributed': 'warning'})
 
 TILE_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(SRC_DIR, 'workers', 'worker_tile_processor.py'))
 
+USABLE_CPU_FRACTION = 0.85 # Values was selected to keep memory below 90%, assuming 600m-width, 600m-buffer tiles
 
-def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache):
+
+def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache, processing_option):
     city_json_str = non_tiled_city_data.city_json_str
     source_base_path = non_tiled_city_data.source_base_path
     target_base_path = non_tiled_city_data.target_base_path
@@ -53,9 +55,6 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
 
     processing_method = non_tiled_city_data.processing_method
 
-    logger = setup_logger(non_tiled_city_data.target_manager_log_path)
-    log_general_file_message('Starting jobs', __file__, logger)
-
     utm_grid_bbox, tile_side_meters, tile_buffer_meters, seasonal_utc_offset, utm_grid_crs = (
         get_grid_dimensions(non_tiled_city_data))
 
@@ -64,49 +63,21 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
                  'start_time', 'run_duration_min'])
     combined_delays_passed = []
 
-    # meteorological data
-    if processing_method != 'grid_only' and has_appendable_cache is False and non_tiled_city_data.has_era_met_download:
-        import geopandas as gpd
-        # convert to geographic coordinates for call to ERA5
-        gdf = gpd.GeoDataFrame({'geometry': [utm_grid_bbox]}, crs=utm_grid_crs)
-        geog_gdf = gdf.to_crs(WGS_CRS)
-        geographic_grid_bbox_wkt = geog_gdf.geometry[0].wkt
-        geographic_grid_bbox = wkt.loads(geographic_grid_bbox_wkt)
+    if processing_option == 'run_pipeline':
+        logger = setup_logger(non_tiled_city_data.target_manager_log_path)
+        log_general_file_message('Starting jobs', __file__, logger)
 
-        log_general_file_message('Retrieving ERA meteorological data', __file__, logger)
-        sampling_local_hours = non_tiled_city_data.sampling_local_hours
-
-        start_date, end_date = _determine_era5_date_range(non_tiled_city_data.era5_date_range)
-
-        target_met_files_path = non_tiled_city_data.target_met_files_path
-        if processing_method == 'umep_solweig':
-            return_code = get_umep_met_data(target_met_files_path, geographic_grid_bbox,
-                                            start_date, end_date, seasonal_utc_offset, sampling_local_hours)
-        else:
-            return_code = get_upenn_met_data(target_met_files_path, geographic_grid_bbox,
-                                             start_date, end_date, seasonal_utc_offset, sampling_local_hours)
-        if return_code != 0:
-            print("Stopping. Failed downloading ERA5 meteorological data")
-            exit(1)
-
-    # Transfer custom met files to target
-    if has_appendable_cache:
-        _transfer_cached_met_files(non_tiled_city_data)
-    else:
-        if processing_method != 'grid_only':
-            _transfer_custom_met_files(non_tiled_city_data)
-
-    if processing_method == 'umep_solweig':
-        invalids = evaluate_meteorological_umep_data(non_tiled_city_data, in_target_folder=True)
-        if invalids:
-            print_invalids(invalids)
-            print("Stopping. Identified invalid values in meteorological files(s)")
-            exit(1)
+    num_workers = floor(USABLE_CPU_FRACTION * mp.cpu_count())
+    print(f"\nNumber of processing workers to be launched in Dask: {num_workers}")
 
     # Retrieve missing CIF data
     tile_count = 0
     tasks = []
     if custom_primary_filenames:
+        # TODO Inactivating this first option except for run_pipeline while team focuses on baseline demo
+        if processing_option != 'run_pipeline':
+            return 0, ''
+
         no_layer_atts = existing_tiles_metrics[['tile_name', 'boundary', 'avg_res', 'custom_tile_crs']]
         tile_unique_values = no_layer_atts.drop_duplicates().reset_index(drop=True)
 
@@ -148,14 +119,11 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
         else:
             tile_grid, unbuffered_tile_grid = (
                 get_aoi_fishnet(utm_grid_bbox, tile_side_meters, tile_buffer_meters, utm_grid_crs))
-            # save the newly-created fishnet grid
-            write_tile_grid(tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_TILE_GRID)
-            if unbuffered_tile_grid is not None:
-                write_tile_grid(unbuffered_tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_UNBUFFERED_TILE_GRID)
-
-        if processing_method == 'grid_only':
-            print(f'Stopping execution after locally writing grid files to {non_tiled_city_data.target_qgis_data_path}.')
-            return 0, ''
+            if processing_option == 'run_pipeline':
+                # save the newly-created fishnet grid
+                write_tile_grid(tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_TILE_GRID)
+                if unbuffered_tile_grid is not None:
+                    write_tile_grid(unbuffered_tile_grid, non_tiled_city_data.target_qgis_data_path, FILENAME_UNBUFFERED_TILE_GRID)
 
         # Write urban_extent polygon to disk and thin tiles to internal and aoi-overlapping
         internal_tile_count = None
@@ -164,26 +132,35 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
             urban_extent_polygon = _get_and_write_city_boundary(non_tiled_city_data, unbuffered_tile_grid)
             tile_grid, internal_tile_count, internal_aoi_tile_count = _thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid, tile_grid, urban_extent_polygon)
 
-            if len(tile_grid) == 0:
+            if len(tile_grid) == 0 and processing_method != 'grid_only':
                 print(f'Stopping execution since there are no tiles to further process.')
                 return 0, ''
+        else:
+            urban_extent_polygon = None
+
+        tile_count = tile_grid.shape[0]
+        city_extent_count = unbuffered_tile_grid.shape[0]
+        msg_str = f'\nProcessing will/would create {tile_count} new tiles'
+        if internal_aoi_tile_count is not None:
+            msg_str += f", of {internal_aoi_tile_count} tiles within the sub-area"
+        if internal_tile_count is not None:
+            msg_str += f", of {internal_tile_count} tiles internal to the city polygon"
+        msg_str += f", of {city_extent_count} tiles within the full city grid."
+        print(msg_str)
+
+        if processing_method == 'grid_only' or processing_option == 'pre_check':
+            if processing_method == 'grid_only':
+                print(f'Stopping execution after locally writing grid files to {non_tiled_city_data.target_qgis_data_path}.')
+
+            if non_tiled_city_data.city_json_str is not None:
+                _print_unprocessed_internal_tile_names(non_tiled_city_data, unbuffered_tile_grid, urban_extent_polygon)
+            return 0, ''
 
         # Cache currently-available metadata to s3
         if (has_appendable_cache is False and non_tiled_city_data.city_json_str is not None and
                 non_tiled_city_data.publishing_target in ('s3', 'both')):
             cache_metadata_files(non_tiled_city_data)
 
-        tile_count = tile_grid.shape[0]
-        city_extent_count = unbuffered_tile_grid.shape[0]
-        msg_str = f'\nCreating data for {tile_count} new tiles'
-        if internal_aoi_tile_count is not None:
-            msg_str += f", out of {internal_aoi_tile_count} within the sub-area"
-        if internal_tile_count is not None:
-            msg_str += f", out of {internal_tile_count} tiles internal to the city polygon"
-        msg_str += f", out of {city_extent_count} within the full city grid."
-
-
-        print(f'\nCreating data for {tile_count} new tiles..')
         tile_grid.reset_index(drop=True, inplace=True)
 
         for tile_index, cell in tile_grid.iterrows():
@@ -204,6 +181,47 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
                 tasks.append((subprocess.run, proc_array))
                 # delay_tile_array = dask.delayed(subprocess.run)(proc_array, capture_output=True, text=True)
 
+    # meteorological data
+    if processing_option == 'run_pipeline' and has_appendable_cache is False and non_tiled_city_data.has_era_met_download:
+        import geopandas as gpd
+        # convert to geographic coordinates for call to ERA5
+        gdf = gpd.GeoDataFrame({'geometry': [utm_grid_bbox]}, crs=utm_grid_crs)
+        geog_gdf = gdf.to_crs(WGS_CRS)
+        geographic_grid_bbox_wkt = geog_gdf.geometry[0].wkt
+        geographic_grid_bbox = wkt.loads(geographic_grid_bbox_wkt)
+
+        log_general_file_message('Retrieving ERA meteorological data', __file__, logger)
+        sampling_local_hours = non_tiled_city_data.sampling_local_hours
+
+        start_date, end_date = _determine_era5_date_range(non_tiled_city_data.era5_date_range)
+
+        target_met_files_path = non_tiled_city_data.target_met_files_path
+        if processing_method == 'umep_solweig':
+            return_code = get_umep_met_data(target_met_files_path, geographic_grid_bbox,
+                                            start_date, end_date, seasonal_utc_offset, sampling_local_hours)
+        else:
+            return_code = get_upenn_met_data(target_met_files_path, geographic_grid_bbox,
+                                             start_date, end_date, seasonal_utc_offset, sampling_local_hours)
+        if return_code != 0:
+            print("Stopping. Failed downloading ERA5 meteorological data")
+            exit(1)
+
+    # Transfer custom met files to target
+    if processing_option == 'run_pipeline':
+        if has_appendable_cache:
+            _transfer_cached_met_files(non_tiled_city_data)
+        else:
+            if processing_method != 'grid_only':
+                _transfer_custom_met_files(non_tiled_city_data)
+
+        if processing_method == 'umep_solweig':
+            invalids = evaluate_meteorological_umep_data(non_tiled_city_data, in_target_folder=True)
+            if invalids:
+                print_invalids(invalids)
+                print("Stopping. Identified invalid values in meteorological files(s)")
+                exit(1)
+
+    print(f'\nCreating data for {tile_count} new tiles..')
     log_general_file_message('Starting model processing', __file__, logger)
     delays_all_passed, results_df = _process_tasks(tasks, logger)
 
@@ -233,6 +251,9 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
 
     log_general_file_message('Completing manager execution', __file__, logger)
 
+    if non_tiled_city_data.city_json_str is not None:
+        _print_unprocessed_internal_tile_names(non_tiled_city_data, unbuffered_tile_grid, urban_extent_polygon)
+
     return return_code, return_str
 
 
@@ -241,9 +262,8 @@ def _process_tasks(tasks, logger):
     # See https://docs.dask.org/en/stable/deploying-python.html
     # https://blog.dask.org/2021/11/02/choosing-dask-chunk-sizes#what-to-watch-for-on-the-dashboard
 
-    usable_cpu_fraction = 0.85
     if tasks:
-        num_workers = floor(usable_cpu_fraction * mp.cpu_count() )
+        num_workers = floor(USABLE_CPU_FRACTION * mp.cpu_count() )
 
         os_name = platform.system()
         if os_name == 'Linux':
@@ -325,6 +345,26 @@ def _get_and_write_city_boundary(non_tiled_city_data, unbuffered_tile_grid):
         return urban_extent_polygon
     else:
         return None
+
+def _print_unprocessed_internal_tile_names(non_tiled_city_data, unbuffered_tile_grid, urban_extent_polygon):
+    city = json.loads(non_tiled_city_data.city_json_str)
+
+    if urban_extent_polygon is not None:
+        # Thin to tiles that are internal to the city polygon
+        thinned_unbuffered_tile_grid = unbuffered_tile_grid[unbuffered_tile_grid.intersects(urban_extent_polygon[0])]
+
+        # Thin to tiles not already in S3.
+        bucket_name = get_bucket_name_from_s3_uri(S3_PUBLICATION_BUCKET)
+        scenario_folder_key = get_scenario_folder_key(non_tiled_city_data)
+        existing_folders = list_s3_subfolders(bucket_name, scenario_folder_key)
+        existing_tiles = [s.replace(scenario_folder_key, "").replace('/', '') for s in existing_folders]
+
+        thinned_unbuffered_tile_grid = (
+            thinned_unbuffered_tile_grid)[~thinned_unbuffered_tile_grid['tile_name'].isin(existing_tiles)]
+
+        unprocessed_tile_names = ', '.join(thinned_unbuffered_tile_grid['tile_name'])
+
+        print(f'\nFYI - Set of unprocessed tiles in city grid which intersect city polygon:\n{unprocessed_tile_names}')
 
 
 def _thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid, tile_grid, urban_extent_polygon):

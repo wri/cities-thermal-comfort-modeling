@@ -245,7 +245,7 @@ def _filter_list_by_another_list(main_list, filter_list):
 def _get_list_of_existing_tifs_to_be_processed(city_data, cif_feature_list):
     filter_list = []
     if 'dem' not in cif_feature_list:
-        filter_list.append(city_data.dem_tif_filename)
+        filter_list.append(city_data.dem_tif_file)
     if 'dsm' not in cif_feature_list:
         filter_list.append(city_data.dsm_tif_filename)
     if 'tree_canopy' not in cif_feature_list:

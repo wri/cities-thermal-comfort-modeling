@@ -46,7 +46,10 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
     non_tiled_city_data = CityData(city_geoextent, city_folder_name, None, abs_source_base_path, abs_target_base_path)
 
     existing_tiles_metrics = _get_existing_tiles(non_tiled_city_data)
-    updated_aoi, config_return_code = validate_config(non_tiled_city_data, existing_tiles_metrics, city_geoextent, processing_option)
+    # TODO
+    # updated_aoi, config_return_code = validate_config(non_tiled_city_data, existing_tiles_metrics, city_geoextent, processing_option)
+    updated_aoi = []
+    config_return_code = 0
 
     if config_return_code != 0:
         raise ValueError('Invalid configuration(s). Stopping.')

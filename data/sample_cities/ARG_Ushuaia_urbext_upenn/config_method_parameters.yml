@@ -2,10 +2,10 @@
 # Options for publishing_target: [local, s3, both].
 - Scenario:
   scenario_id: first scenario
-  infra_id: test_capetown_subarea
+  infra_id: test_subarea
   description: Scenario that demonstrates blah.
   author: author@wri.org
-  publishing_target: local
+  publishing_target: both
 # Processing Area of Interest used for tile construction and ERA5-data download. If any custom files are specified in
 # CustomTiffFilenames section, then the system will not construct a new tile grid and will instead use the existing one.
 # Specify the seasonal_utc_offset including DST offset for UPenn model if AOI follows this practice for the hottest season.
@@ -18,11 +18,18 @@
   seasonal_utc_offset: 2 # year-round
   city: {"city_id": "ARG-Ushuaia", "aoi_id": "urban_extent", "tile_method": None }
   aoi_bounds:
-    epsg_code: None
-    west: None
-    south: None
-    east: None
-    north: None
+# # 1 tile
+    epsg_code: 32719
+    west: 542703
+    south: 3925005
+    east: 542989
+    north: 3925331
+# 2 tile
+    # epsg_code: 32719
+    # west: 542703
+    # south: 3925005
+    # east: 542991
+    # north: 3925768
   tile_side_meters: 500
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: true
@@ -37,7 +44,7 @@
 # Auto-generated CIF filenames: cif_albedo_cloud_masked.tif, cif_dem.tif, cif_dsm_ground_build.tif, cif_lulc.tif, cif_open_urban.tif, cif_tree_canopy.tif
 - CustomTiffFilenames:
   albedo_cloud_masked_tif_filename: None
-  dem_tif_filename: None
+  dem_tif_file: None
   dsm_tif_filename: None
   lulc_tif_filename: None
   open_urban_tif_filename: None

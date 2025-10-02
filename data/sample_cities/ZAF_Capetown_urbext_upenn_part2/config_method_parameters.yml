@@ -38,7 +38,7 @@
 # Auto-generated CIF filenames: cif_albedo_cloud_masked.tif, cif_dem.tif, cif_dsm_ground_build.tif, cif_lulc.tif, cif_open_urban.tif, cif_tree_canopy.tif
 - CustomTiffFilenames:
   albedo_cloud_masked_tif_filename: None
-  dem_tif_filename: None
+  dem_tif_file: None
   dsm_tif_filename: None
   lulc_tif_filename: None
   open_urban_tif_filename: None

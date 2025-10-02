@@ -55,7 +55,7 @@ def start_processing(source_base_path, target_base_path, city_folder_name, proce
         raise ValueError('Invalid configuration(s). Stopping.')
 
     has_appendable_cache = False
-    if processing_option == 'run_pipeline' and non_tiled_city_data.publishing_target in ('s3', 'both'):
+    if non_tiled_city_data.publishing_target in ('s3', 'both'):
         bucket_name, scenario_folder_key = get_s3_scenario_location(non_tiled_city_data)
         does_s3_target_scenario_exist = does_s3_folder_exist(bucket_name, scenario_folder_key)
         city = json.loads(non_tiled_city_data.city_json_str)

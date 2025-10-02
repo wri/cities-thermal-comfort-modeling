@@ -17,8 +17,16 @@
 - ProcessingAOI:
   seasonal_utc_offset: 2 # year-round
   city: {"city_id": "ARG-Ushuaia", "aoi_id": "urban_extent", "tile_method": None }
+#  city: {"city_id": "ARG-Ushuaia", "aoi_id": "urban_extent", "tile_method": "resume()" }
+#  city: {"city_id": "ARG-Ushuaia", "aoi_id": "urban_extent", "tile_method": "tile_names(tile_00001,tile_00081)" }
   aoi_bounds:
-# # 1 tile
+    # No tile
+#    epsg_code: None
+#    west: None
+#    south: None
+#    east: None
+#    north: None
+ # 1 tile
     epsg_code: 32719
     west: 542703
     south: 3925005

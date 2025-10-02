@@ -148,12 +148,12 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
         msg_str += f", of {city_extent_count} tiles within the full city grid."
         print(msg_str)
 
+        if non_tiled_city_data.city_json_str is not None:
+            _print_unprocessed_internal_tile_names(non_tiled_city_data, unbuffered_tile_grid, urban_extent_polygon)
+
         if processing_method == 'grid_only' or processing_option == 'pre_check':
             if processing_method == 'grid_only':
                 print(f'Stopping execution after locally writing grid files to {non_tiled_city_data.target_qgis_data_path}.')
-
-            if non_tiled_city_data.city_json_str is not None:
-                _print_unprocessed_internal_tile_names(non_tiled_city_data, unbuffered_tile_grid, urban_extent_polygon)
             return 0, ''
 
         # Cache currently-available metadata to s3

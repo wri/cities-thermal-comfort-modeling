@@ -148,6 +148,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
         msg_str += f", of {city_extent_count} tiles within the full city grid."
         print(msg_str)
 
+        # Do not list unprocessed tiles at this point and instead report at completion of processing
         if processing_method == 'grid_only' or processing_option == 'pre_check':
             if processing_method == 'grid_only':
                 print(f'Stopping execution after locally writing grid files to {non_tiled_city_data.target_qgis_data_path}.')

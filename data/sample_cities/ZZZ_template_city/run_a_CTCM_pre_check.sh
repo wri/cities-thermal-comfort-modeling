@@ -15,6 +15,15 @@ city_folder=$(basename "$PWD")
 
 processing_option="pre_check"
 
+# Ensure the 'logs' subdirectory exists
+mkdir -p logs
+
+# Write to log file
+timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
+log_file="run_a_CTCM_pre_check_$timestamp.log"
+exec > >(tee -a "logs/$log_file")
+exec 2>&1
+
 echo
 echo "=================================================================================="
 echo "=== Pre-checking data source in: $city_folder"
@@ -26,7 +35,7 @@ conda activate cities-thermal
 
 echo "Starting validation: $(date)"
 
-python "$path_to_main" --source_base_path="$source_base_path" --target_base_path="$target_base_path" --city_folder_name="$city_folder" --processing_option="$processing_option"
+PYTHONUNBUFFERED=1 python "$path_to_main" --source_base_path="$source_base_path" --target_base_path="$target_base_path" --city_folder_name="$city_folder" --processing_option="$processing_option"
 
 echo
 echo "Finished validation: $(date)"

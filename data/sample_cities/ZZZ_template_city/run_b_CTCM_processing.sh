@@ -18,8 +18,13 @@ city_folder=$(basename "$PWD")
 
 processing_option="run_pipeline"
 
-log_file="run_b_CTCM_processing.log"
-exec > >(tee -a "$log_file")
+# Ensure the 'logs' subdirectory exists
+mkdir -p logs
+
+# Write to log file
+timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
+log_file="run_b_CTCM_processing_$timestamp.log"
+exec > >(tee -a "logs/$log_file")
 exec 2>&1
 
 echo
@@ -32,8 +37,7 @@ eval "$(conda shell.bash hook)"
 conda activate cities-thermal
 
 echo "Starting run: $(date)"
-
-python "$path_to_main" --source_base_path="$source_base_path" --target_base_path="$target_base_path" --city_folder_name="$city_folder" --processing_option="$processing_option"
+PYTHONUNBUFFERED=1 python "$path_to_main" --source_base_path="$source_base_path" --target_base_path="$target_base_path" --city_folder_name="$city_folder" --processing_option="$processing_option"
 
 echo
 echo "Finished run: $(date)"

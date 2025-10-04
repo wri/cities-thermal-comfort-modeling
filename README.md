@@ -64,6 +64,7 @@ Below steps are executed on one of the "Windows QGIS" EC2 instances maintained b
             2. prep_b_cache_CTCM_staging_files.sh - Generates the CTCM "staging" files and saves to s3://wri-cities-tcm/data/
             3. run_a_CTCM_pre_check.sh - Validates the configuration yml file
             4. run_b_CTCM_processing.sh - Generates the TCM results and optionally outputs to s3://wri-cities-tcm/city_projects/ the city
+               1. Can be run specifying the optional argument of "shutdown_on_completion". When set to shutdown_on_completion=true, the machine will be shut down at end of the run.
             5. run_c_post_processing_results_validation.sh - Validates TCM results in s3://wri-cities-tcm/city_projects/ for the city
 
 ### Post-Execution Evaluation of Results

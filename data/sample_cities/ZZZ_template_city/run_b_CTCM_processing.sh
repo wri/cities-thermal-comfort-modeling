@@ -65,7 +65,8 @@ echo
 
 # Shut down ec2 instance (uncomment the next line to enable)
 if [ "$shutdown_on_completion" = true ] ; then
-    sudo shutdown -h now
+  echo "Shutting down machine."
+  sudo shutdown -h now
 fi
 
 # Equivalent to pause - wait for user input

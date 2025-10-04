@@ -9,10 +9,6 @@ for arg in "$@"; do
    esac
 done
 
-These examples demonstrate how to handle Boolean-like arguments in shell scripts. You can adapt them based on your specific needs!
-
-echo "value: $shutdown_on_completion"
-
 # Start timer
 SECONDS=0
 

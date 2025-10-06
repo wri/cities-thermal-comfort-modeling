@@ -63,7 +63,7 @@ echo
 # message="$slack_mention CTCM processing for $city_folder completed in ${hours} hour(s) and ${minutes} minute(s)."
 # curl -X POST -H 'Content-type: application/json' --data "{\"text\": \"$message\"}" https://hooks.slack.com/services/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
 
-# Shut down ec2 instance (uncomment the next line to enable)
+# Shut down ec2 instance
 if [ "$shutdown_on_completion" = true ] ; then
   echo "Shutting down machine."
   sudo shutdown -h now

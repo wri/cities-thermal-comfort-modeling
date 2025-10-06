@@ -184,15 +184,14 @@ def list_s3_subfolders(bucket_name, folder_prefix):
     if not folder_prefix.endswith('/'):
         folder_prefix += '/'
 
-    response = s3_client.list_objects_v2(
-        Bucket=bucket_name,
-        Prefix=folder_prefix,
-        Delimiter='/'
-    )
-
+    paginator = s3_client.get_paginator('list_objects_v2')
     subfolders = []
-    if 'CommonPrefixes' in response:
-        subfolders = [prefix['Prefix'] for prefix in response['CommonPrefixes']]
+
+    # Use Delimiter to get 'folders' instead of all objects
+    for page in paginator.paginate(Bucket=bucket_name, Prefix=folder_prefix, Delimiter='/'):
+        if 'CommonPrefixes' in page:
+            for prefix in page['CommonPrefixes']:
+                subfolders.append(prefix['Prefix'])
 
     return subfolders
 

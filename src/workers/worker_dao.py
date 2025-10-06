@@ -191,14 +191,16 @@ def identify_tiles_with_partial_file_set(non_tiled_city_data: CityData):
     expected_processed_file_count = 2 + 15 # 2 wall files and 15 svfs files
     expected_tcm_file_count = 2 * met_file_count * met_hour_count
 
-    print("\WARNING: This analysis may take an extended period of time, depending on the current number of cached tiles.")
+    print("\nWARNING: This analysis may take an extended period of time, depending on the current number of cached tiles.")
     tile_count = len(tile_keys)
     print(f"There are {tile_count} tiles to be analyzed.")
     i = 0
     reporting_batch_size = 100
     for tile_key in tile_keys:
         if i == 0 or i%reporting_batch_size == 0:
-            print(f"Processing batch {i} of {reporting_batch_size} tiles.")
+            batch_id = (i // reporting_batch_size) + 1
+            full_batch_count = (tile_count // reporting_batch_size) + 1
+            print(f"Processing batch {batch_id} of {reporting_batch_size} tiles out of {full_batch_count} batches.")
 
         i += 1
 

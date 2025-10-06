@@ -36,6 +36,11 @@ class CityData:
          obj.tile_side_meters, obj.tile_buffer_meters, obj.remove_mrt_buffer_for_final_output) = \
             parse_processing_areas_config(yml_values)
 
+        if obj.min_lon is None or obj.min_lat is None or obj.max_lon is None or obj.max_lat is None:
+            obj.has_sub_area = False
+        else:
+            obj.has_sub_area = True
+
         if city_geoextent is not None:
             geo_bbox = city_geoextent.as_utm_bbox()
             obj.utm_grid_west = geo_bbox.min_x

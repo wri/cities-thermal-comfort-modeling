@@ -359,10 +359,13 @@ def run_skyview_calculations(method_params, tile_name):
             altitude = iangle[int(i)]
             azimuth = iazimuth[int(index) - 1]
 
-            # print status
-            if index in (0, 145) or (index + 1) % 20 == 0:
-                print(
-                    f"tile: {tile_name}, skyview-step: {index + 1}/{len(iazimuth)}, altitude: {altitude}/{iangle.max()}, azimuth: {azimuth}")
+            # print status at select steps
+            if (index in (0, 145) or
+                (index + 1 <= 10 and (index + 1) % 5 == 0) or
+                (index + 1 >= 20 and (index + 1) % 20 == 0)
+            ):
+                stage_msg = f"tile: {tile_name}, - skyview-step: {index + 1}/{len(iazimuth)}, altitude: {altitude}/{iangle.max()}, azimuth: {azimuth}"
+                print(stage_msg)
 
             # Casting shadow, when the vegetation dsm is considered
             # if self.usevegdem == 1:

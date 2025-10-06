@@ -2,6 +2,13 @@
 
 clear
 
+# Default value for the boolean parameter
+for arg in "$@"; do
+   case "$arg" in
+      shutdown_on_completion=*) shutdown_on_completion="${arg#*=}" ;;
+   esac
+done
+
 # Start timer
 SECONDS=0
 
@@ -50,14 +57,17 @@ minutes=$(((runtime % 3600) / 60))
 echo "Total runtime: ${hours} hour(s) and ${minutes} minute(s)"
 echo
 
-# Send Slack notification (if webhook URL is set)
-slack_mention="<@U031HB1JNRZ>"  # Replace with the Slack user. Default is Chris
+# # Send Slack notification (if webhook URL is set)
+# slack_mention="<@U031HB1JNRZ>"  # Replace with the Slack user. Default is Chris
 
-message="$slack_mention CTCM processing for $city_folder completed in ${hours} hour(s) and ${minutes} minute(s)."
-curl -X POST -H 'Content-type: application/json' --data "{\"text\": \"$message\"}" https://hooks.slack.com/services/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
+# message="$slack_mention CTCM processing for $city_folder completed in ${hours} hour(s) and ${minutes} minute(s)."
+# curl -X POST -H 'Content-type: application/json' --data "{\"text\": \"$message\"}" https://hooks.slack.com/services/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
 
-# Shut down ec2 instance (uncomment the next line to enable)
-# sudo shutdown -h now
+# Shut down ec2 instance
+if [ "$shutdown_on_completion" = true ] ; then
+  echo "Shutting down machine."
+  sudo shutdown -h now
+fi
 
 # Equivalent to pause - wait for user input
 read -p "Press any key to continue..."

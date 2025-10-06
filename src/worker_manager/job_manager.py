@@ -349,6 +349,8 @@ def _get_and_write_city_boundary(non_tiled_city_data, unbuffered_tile_grid):
 
 def _print_unprocessed_internal_tile_names(non_tiled_city_data, unbuffered_tile_grid, urban_extent_polygon):
     city = json.loads(non_tiled_city_data.city_json_str)
+    tile_method = city['tile_method']
+    tile_function, tile_function_params = extract_function_and_params(tile_method)
 
     if urban_extent_polygon is not None:
         # Thin to tiles that are internal to the city polygon
@@ -363,9 +365,29 @@ def _print_unprocessed_internal_tile_names(non_tiled_city_data, unbuffered_tile_
         thinned_unbuffered_tile_grid = (
             thinned_unbuffered_tile_grid)[~thinned_unbuffered_tile_grid['tile_name'].isin(existing_tiles)]
 
-        unprocessed_tile_names = ', '.join(thinned_unbuffered_tile_grid['tile_name'])
+        if tile_function is None or tile_function == 'resume()':
+            utm_crs = unbuffered_tile_grid.crs
+            aoi_polygon = shapely.box(non_tiled_city_data.min_lon, non_tiled_city_data.min_lat,
+                          non_tiled_city_data.max_lon, non_tiled_city_data.max_lat)
 
-        print(f'\nFYI - Set of unprocessed tiles in city grid which intersect city polygon:\n{unprocessed_tile_names}')
+            if non_tiled_city_data.source_aoi_crs != utm_crs:
+                import geopandas as gpd
+                gdf = gpd.GeoDataFrame({'geometry': [aoi_polygon]}, crs=non_tiled_city_data.source_aoi_crs)
+                gdf_projected = gdf.to_crs(epsg=utm_crs)
+                aoi_polygon = gdf_projected.geometry.iloc[0]
+
+            thinned_unbuffered_aoi_tile_grid = thinned_unbuffered_tile_grid[thinned_unbuffered_tile_grid.intersects(aoi_polygon)]
+            if not thinned_unbuffered_aoi_tile_grid.empty:
+                unprocessed_aoi_tile_names = ','.join(thinned_unbuffered_aoi_tile_grid['tile_name'])
+                tile_count = len(unprocessed_aoi_tile_names)
+                print(f'\nFYI - Set of {tile_count} unprocessed tiles in the AOI:\n{unprocessed_aoi_tile_names}')
+
+        if thinned_unbuffered_tile_grid.empty:
+            print("FYI - No unprocessed tiles which are internal to the city polygon.")
+        else:
+            unprocessed_tile_names = ','.join(thinned_unbuffered_tile_grid['tile_name'])
+            tile_count = len(thinned_unbuffered_tile_grid)
+            print(f'\nFYI - Set of {tile_count} unprocessed tiles which are internal to the city polygon:\n{unprocessed_tile_names}')
 
 
 def _thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid, tile_grid, urban_extent_polygon):

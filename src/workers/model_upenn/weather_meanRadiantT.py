@@ -98,7 +98,7 @@ def _get_epsg_code(raster_path):
     return epsg_code
 
 def run_mrt_calculations(method_params, sampling_hours: str, tile_name):
-    print(f'tile: {tile_name}, Running MRT calculations..')
+    print(f'tile: {tile_name}, running MRT calculations..')
 
     # Expand parameters into local variables
     INPUT_DSM = method_params['INPUT_DSM']

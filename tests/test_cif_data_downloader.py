@@ -55,7 +55,7 @@ def test_get_cif_terrain_data():
 
 
     if 'dem' in cif_feature_list:
-        expected_file =  os.path.join(tile_data_path, city_data.dem_tif_filename)
+        expected_file =  os.path.join(tile_data_path, city_data.dem_tif_file)
         print(expected_file)
         assert is_valid_output_file(expected_file)
 

@@ -364,11 +364,11 @@ def _get_dem(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf,
         try:
             # first attempt to save the file in the preferred NS direction
             was_reversed, standardized_nasa_dem = ctcm_standardize_y_dimension_direction(dem)
-            save_tiff_file(standardized_nasa_dem, tile_data_path, tiled_city_data.dem_tif_filename)
+            save_tiff_file(standardized_nasa_dem, tile_data_path, tiled_city_data.dem_tif_file)
             return True
         except:
             # otherwise save without flipping direction
-            save_tiff_file(dem, tile_data_path, tiled_city_data.dem_tif_filename)
+            save_tiff_file(dem, tile_data_path, tiled_city_data.dem_tif_file)
             return True
 
     except Exception as e_msg:

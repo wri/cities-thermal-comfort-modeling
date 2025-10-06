@@ -16,8 +16,16 @@ SCRATCH_TARGET_DIR = os.path.join(DATA_DIR, 'scratch_target')
 create_folder(SCRATCH_TARGET_DIR)
 bucket_name = get_bucket_name_from_s3_uri(S3_PUBLICATION_BUCKET)
 
+# @pytest.mark.skipif(RUN_COMPLEX_MODEL_SUITE is False, reason=f"Skipping since RUN_FULL_TEST_SUITE set to {RUN_COMPLEX_MODEL_SUITE}")
+def test_stage_ushuaia_scenario():
+    source_city_folder_name = 'ARG_Ushuaia_urbext_upenn_new_scenario'
+    return_code = run_main('', source_city_folder_name, 'run_pipeline')
+
+    assert return_code == 0
+
+
 @pytest.mark.skipif(RUN_COMPLEX_MODEL_SUITE is False, reason=f"Skipping since RUN_FULL_TEST_SUITE set to {RUN_COMPLEX_MODEL_SUITE}")
-def test_capetown_two_part():
+def test_capetown_two_part_resume():
     global scenario_uri, non_tiled_city_data_1, non_tiled_city_data_2
     try:
         source_city_folder_name = 'ZAF_Capetown_urbext_upenn_part1'

@@ -52,7 +52,7 @@ VALID_PRIMARY_TYPES = [
     },
     {
         "short_name": "dem",
-        "yml_tag": "dem_tif_filename",
+        "yml_tag": "dem_tif_file",
         "cif_template_name": 'cif_dem.tif',
     },
     {

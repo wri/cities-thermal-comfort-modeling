@@ -30,8 +30,9 @@ def validate_config(non_tiled_city_data, existing_tiles_metrics, city_geoextent,
         scenario_invalids = evaluate_scenario(non_tiled_city_data)
         combined_invalids.extend(scenario_invalids)
 
-        custom_primary_invalids = evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics)
-        combined_invalids.extend(custom_primary_invalids)
+        # TODO
+        # custom_primary_invalids = evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics)
+        # combined_invalids.extend(custom_primary_invalids)
 
         aoi_invalids, updated_aoi = evaluate_aoi(non_tiled_city_data, existing_tiles_metrics, city_geoextent, processing_option)
         combined_invalids.extend(aoi_invalids)

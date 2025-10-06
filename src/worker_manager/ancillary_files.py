@@ -21,7 +21,7 @@ def write_qgis_files(city_data):
 
     # Build VRTs for base layers
     target_folder = city_data.target_city_primary_data_path
-    dem_file_name = city_data.dem_tif_filename
+    dem_file = city_data.dem_tif_file
     dsm_file_name = city_data.dsm_tif_filename
     lulc_file_name = city_data.lulc_tif_filename
     open_urban_file_name = city_data.open_urban_tif_filename
@@ -30,7 +30,7 @@ def write_qgis_files(city_data):
 
     target_raster_files = []
     target_bucket = Path(target_folder).stem
-    dem = _build_file_dict(target_bucket, 'base', 'dem', 0, [dem_file_name])
+    dem = _build_file_dict(target_bucket, 'base', 'dem', 0, [dem_file])
     target_raster_files += dem
     dsm = _build_file_dict(target_bucket, 'base','dsm', 0, [dsm_file_name])
     target_raster_files += dsm
@@ -271,7 +271,7 @@ def _update_custom_yml_parameters(non_tiled_city_data, updated_aoi):
                 item["filename"] = FILENAME_ERA5_UPENN if non_tiled_city_data.processing_method == 'upenn_model' else FILENAME_ERA5_UMEP
 
     custom_primary_filenames = list_doc[3]
-    custom_primary_filenames['dem_tif_filename'] = non_tiled_city_data.dem_tif_filename
+    custom_primary_filenames['dem_tif_file'] = non_tiled_city_data.dem_tif_file
     custom_primary_filenames['dsm_tif_filename'] = non_tiled_city_data.dsm_tif_filename
     custom_primary_filenames['lulc_tif_filename'] = non_tiled_city_data.lulc_tif_filename
     custom_primary_filenames['open_urban_tif_filename'] = non_tiled_city_data.open_urban_tif_filename

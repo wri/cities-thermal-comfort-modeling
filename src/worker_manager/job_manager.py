@@ -27,6 +27,7 @@ from src.worker_manager.ancillary_files import write_tile_grid, write_qgis_files
 from src.worker_manager.graph_builder import get_aoi_fishnet, get_grid_dimensions
 from src.worker_manager.tools import extract_function_and_params, get_s3_scenario_location, list_s3_subfolders, \
     download_s3_files
+from src.workers.city_data import CityData
 from src.workers.logger_tools import setup_logger, log_general_file_message
 from src.worker_manager.reporter import parse_row_results, report_results
 from src.workers.model_umep.worker_umep_met_processor import get_umep_met_data
@@ -141,8 +142,8 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
         tile_count = tile_grid.shape[0]
         city_extent_count = unbuffered_tile_grid.shape[0]
         msg_str = f'\nProcessing will/would create {tile_count} new tiles'
-        if internal_aoi_tile_count is not None:
-            msg_str += f", of {internal_aoi_tile_count} tiles within the sub-area"
+        if internal_aoi_tile_count is not None and internal_aoi_tile_count > 0:
+            msg_str += f", of {internal_aoi_tile_count} tiles within the specified sub-area"
         if internal_tile_count is not None:
             msg_str += f", of {internal_tile_count} tiles internal to the city polygon"
         msg_str += f", of {city_extent_count} tiles within the full city grid."
@@ -347,7 +348,7 @@ def _get_and_write_city_boundary(non_tiled_city_data, unbuffered_tile_grid):
     else:
         return None
 
-def _print_unprocessed_internal_tile_names(non_tiled_city_data, unbuffered_tile_grid, urban_extent_polygon):
+def _print_unprocessed_internal_tile_names(non_tiled_city_data: CityData, unbuffered_tile_grid, urban_extent_polygon):
     city = json.loads(non_tiled_city_data.city_json_str)
     tile_method = city['tile_method']
     tile_function, tile_function_params = extract_function_and_params(tile_method)
@@ -376,11 +377,12 @@ def _print_unprocessed_internal_tile_names(non_tiled_city_data, unbuffered_tile_
                 gdf_projected = gdf.to_crs(epsg=utm_crs)
                 aoi_polygon = gdf_projected.geometry.iloc[0]
 
-            thinned_unbuffered_aoi_tile_grid = thinned_unbuffered_tile_grid[thinned_unbuffered_tile_grid.intersects(aoi_polygon)]
-            if not thinned_unbuffered_aoi_tile_grid.empty:
-                unprocessed_aoi_tile_names = ','.join(thinned_unbuffered_aoi_tile_grid['tile_name'])
-                tile_count = len(unprocessed_aoi_tile_names)
-                print(f'\nFYI - Set of {tile_count} unprocessed tiles in the AOI:\n{unprocessed_aoi_tile_names}')
+            if non_tiled_city_data.has_sub_area:
+                thinned_unbuffered_aoi_tile_grid = thinned_unbuffered_tile_grid[thinned_unbuffered_tile_grid.intersects(aoi_polygon)]
+                if not thinned_unbuffered_aoi_tile_grid.empty:
+                    unprocessed_aoi_tile_names = ','.join(thinned_unbuffered_aoi_tile_grid['tile_name'])
+                    tile_count = len(unprocessed_aoi_tile_names)
+                    print(f'\nFYI - Set of {tile_count} unprocessed tiles in the AOI:\n{unprocessed_aoi_tile_names}')
 
         if thinned_unbuffered_tile_grid.empty:
             print("FYI - No unprocessed tiles which are internal to the city polygon.")
@@ -390,7 +392,7 @@ def _print_unprocessed_internal_tile_names(non_tiled_city_data, unbuffered_tile_
             print(f'\nFYI - Set of {tile_count} unprocessed tiles which are internal to the city polygon:\n{unprocessed_tile_names}')
 
 
-def _thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid, tile_grid, urban_extent_polygon):
+def _thin_city_tile_grid(non_tiled_city_data: CityData, unbuffered_tile_grid, tile_grid, urban_extent_polygon):
     city = json.loads(non_tiled_city_data.city_json_str)
     tile_method = city['tile_method']
     tile_function, tile_function_params = extract_function_and_params(tile_method)
@@ -415,8 +417,11 @@ def _thin_city_tile_grid(non_tiled_city_data, unbuffered_tile_grid, tile_grid, u
                 gdf_projected = gdf.to_crs(epsg=utm_crs)
                 aoi_polygon = gdf_projected.geometry.iloc[0]
 
-            thinned_unbuffered_tile_grid = thinned_unbuffered_tile_grid[thinned_unbuffered_tile_grid.intersects(aoi_polygon)]
-            internal_aoi_tile_count= len(thinned_unbuffered_tile_grid)
+            if non_tiled_city_data.has_sub_area:
+                thinned_unbuffered_tile_grid = thinned_unbuffered_tile_grid[thinned_unbuffered_tile_grid.intersects(aoi_polygon)]
+                internal_aoi_tile_count= len(thinned_unbuffered_tile_grid)
+            else:
+                internal_aoi_tile_count = 0
 
         if tile_function is not None:
             # Thin to tiles not already in S3.

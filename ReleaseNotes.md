@@ -1,5 +1,9 @@
 # Release notes for cities-thermal-comfort-modeling (CTCM) processing framework
 
+## 2025/10/21
+1. Improved skyview-factor by switching select arrays from float-64 to float-32
+2. Increased CPU utilization since above change decreased memory consumption
+
 ## 2025/09/23
 1. Added "grid_only" processing method to stop execution after writing out the tile grid.
 

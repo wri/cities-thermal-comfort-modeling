@@ -6,7 +6,7 @@ from src.workers.city_data import CityData
 
 
 def test_vrt_writer():
-    city_folder_name = 'ZAF_Capetown_small_tile'
+    city_folder_name = 'ZAF_Capetown_small_tile_umep'
     non_tiled_city_data = CityData(None, city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     # Hack the paths to point to the source data rather than target data
@@ -26,7 +26,7 @@ def test_vrt_writer():
 
 
 def test_vrt_writer_amsterdam():
-    city_folder_name = 'NLD_Amsterdam_custom_tiled'
+    city_folder_name = 'NLD_Amsterdam_custom_tiled_umep'
     non_tiled_city_data = CityData(None, city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR, SCRATCH_TARGET_DIR)
 
     # Hack the paths to point to the source data rather than target data

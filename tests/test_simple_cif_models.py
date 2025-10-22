@@ -18,21 +18,20 @@ def test_ZAF_Capetown_cif_upenn():
     try:
         return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'run_pipeline')
 
-        mrt_file_name = 'Tmrt_2023_1_1200D.tif'
+        mrt_file_name = 'Tmrt_2023_75_1200D.tif'
         target_met_file = os.path.join(non_tiled_city_data.target_tcm_results_path, 'met_era5_hottest_days', 'tile_00001',
                                        mrt_file_name)
         expected_signature = {'crs': 'EPSG:32734',
                               'transform': (1.0, 0.0, 260838.78469714464, 0.0, -1.0, 6243703.498204948, 0.0, 0.0, 1.0),
                               'width': 97, 'height': 115, 'count': 1, 'dtype': ('float32',),
-                              'band_checksums': ['28c6862f22c27fef5d502635affaf7f2'],
-                              'full_checksum': '28c6862f22c27fef5d502635affaf7f2'}
+                              'band_checksums': ['9f1b35b2a91cb9641c7738063d859317'],
+                              'full_checksum': '9f1b35b2a91cb9641c7738063d859317'}
         is_matched, actual_file_signature = does_file_signature_match(expected_signature, target_met_file)
-        # print(actual_file_signature)
         assert is_matched, f"Expected signature does not match actual: ({actual_file_signature})"
 
         vrt_count = file_count_in_vrt_directory(non_tiled_city_data)
 
-        # assert return_code == 0
+        assert return_code == 0
         assert vrt_count == 16
 
     finally:

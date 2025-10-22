@@ -20,7 +20,7 @@ bucket_name = get_bucket_name_from_s3_uri(S3_PUBLICATION_BUCKET)
 def test_capetown_two_part():
     global scenario_uri, non_tiled_city_data_1, non_tiled_city_data_2
     try:
-        source_city_folder_name = 'ZAF_Capetown_urbext_upenn_part1'
+        source_city_folder_name = 'ZAF_Capetown_urbext_part1_upenn'
         non_tiled_city_data_1 = CityData(None, source_city_folder_name, None, SAMPLE_CITIES_SOURCE_DIR,
                                          SCRATCH_TARGET_DIR)
 
@@ -40,7 +40,7 @@ def test_capetown_two_part():
         assert folder_count == 3 # metadata plus 2 tiles
 
         # run and test part 2
-        source_city_folder_name2 = 'ZAF_Capetown_urbext_upenn_part2'
+        source_city_folder_name2 = 'ZAF_Capetown_urbext_part2_upenn'
         non_tiled_city_data_2 = CityData(None, source_city_folder_name2, None, SAMPLE_CITIES_SOURCE_DIR,
                                        SCRATCH_TARGET_DIR)
         return_code_2 = run_main(SCRATCH_TARGET_DIR, source_city_folder_name2, 'run_pipeline')

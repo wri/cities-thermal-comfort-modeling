@@ -41,7 +41,7 @@ dask.config.set({'logging.distributed': 'warning'})
 
 TILE_PROCESSING_MODULE_PATH = os.path.abspath(os.path.join(SRC_DIR, 'workers', 'worker_tile_processor.py'))
 
-USABLE_CPU_FRACTION = 0.85 # Values was selected to keep memory below 90%, assuming 600m-width, 600m-buffer tiles
+USABLE_CPU_FRACTION = 0.90 # Values was selected to keep memory below 90%, assuming 600m-width, 600m-buffer tiles
 
 
 def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache, processing_option):

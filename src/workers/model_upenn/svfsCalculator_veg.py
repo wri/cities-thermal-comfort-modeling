@@ -139,14 +139,17 @@ def shadowingfunction_20(a, vegdem, vegdem2, azimuth, altitude, scale, amaxvalue
     dy = 0.
     dz = 0.
 
-    # WRI Note: zero out arrays passed by reference
-    temp = np.zeros((sizex, sizey))
-    tempvegdem = np.zeros((sizex, sizey))
-    tempvegdem2 = np.zeros((sizex, sizey))
-    tempbush = np.zeros((sizex, sizey))
+    # WRI Note: Specification of float32 does not alter svfveg results, based on testing, but does decrease memory usage
+    temp = np.zeros((sizex, sizey), dtype=np.float32)
+    tempvegdem = np.zeros((sizex, sizey), dtype=np.float32)
+    tempvegdem2 = np.zeros((sizex, sizey), dtype=np.float32)
+    tempbush = np.zeros((sizex, sizey), dtype=np.float32)
+    vbshvegsh = np.zeros((sizex, sizey), dtype=np.float32)
+    vegsh = np.zeros((sizex, sizey), dtype=np.float32)
+
+    # WRI Note: This array must remain as float64 to avoid altering svfveg results
     sh = np.zeros((sizex, sizey))
-    vbshvegsh = np.zeros((sizex, sizey))
-    vegsh = np.zeros((sizex, sizey))
+
     f = a
     g = np.zeros((sizex, sizey))
     bushplant = bush > 1.

@@ -49,7 +49,8 @@ def get_cif_data(city_json_str, source_base_path, target_base_path, folder_name_
 
     tile_cif_data_path = tiled_city_data.target_primary_tile_data_path
 
-    tile_boundary_df = {'geometry': [shapely.wkt.loads(tile_boundary)]}
+    geom = shapely.wkt.loads(tile_boundary) if isinstance(tile_boundary, str) else tile_boundary
+    tile_boundary_df = {'geometry': [geom]}
     tiled_aoi_gdf = gp.GeoDataFrame(tile_boundary_df, crs=grid_crs)
 
     if city_json_str == 'None' or city_json_str is None:

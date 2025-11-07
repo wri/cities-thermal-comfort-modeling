@@ -26,11 +26,16 @@
   tile_side_meters: None
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: true
-# Names of custom meteorological file(s) or ERA5 data range. Maximum of two filenames can be specified.
+# Names of custom meteorological file(s) or ERA5 data range. 
 # For custom files, specify the filename with either .csv extension for UPenn model or .txt extension for UMEP model
+# For custom files, if use _airt_file is True and air_temperature_tif_filename is None, the date of the ERA5 data need to be specified as "2023-03-16".
 # For era5 download, specify either "ERA5:<prior_5_years>" or two dates as "ERA5:<2023-01-01,2023-12-31>"
+# air_temperature_tif_filename is only used for UPenn model when use_airt_file is True, and its usage follow the rules of items in CustomTiffFilenames.
 - MetFiles:
-  - filename: ERA5:<2023-01-01,2023-12-31>
+  - files:
+      era5_filename: ERA5:<2023-01-01,2023-12-31>
+      era5_date: None
+      air_temperature_tif_filename: None
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
 # All file mappings must be specified here. Specify None for filename where custom file is not available for processing.
 # Recommended filenames: albedo_cloud_masked.tif, dem.tif, dsm_ground_build.tif, lulc.tif, open_urban.tif, tree_canopy.tif
@@ -48,7 +53,8 @@
   wall_height_filename: None
 # Configurable attribute values for method processing
 # Valid methods are [upenn_model, umep_solweig, download_only, grid_only]
-# sampling_local_hours specifies hours for ERA5 download.
+# sampling_local_hours specifies hours for ERA5 download and air temperature tiff download (if used).
+# use_airt_file specifies whether to use air temperature tiff file for UPenn model.
 - MethodAttributes:
   method: upenn_model
   wall_height_aspect:
@@ -70,3 +76,4 @@
     output_tmrt: true
     output_sh: true
     sampling_local_hours: 12,15,18
+    use_airt_file: true

@@ -39,7 +39,7 @@ MAX_RETRY_COUNT = 3
 # in the future, consider increasing these values or implementing exponential backoff.
 
 def get_cif_data(city_json_str, source_base_path, target_base_path, folder_name_city_data, tile_id, cif_primary_features,
-                 tile_boundary, tile_resolution, grid_crs):
+                 tile_boundary, tile_resolution, grid_crs, start_date, end_date, single_date):
     start_time = datetime.now()
 
     tiled_city_data = CityData(None, folder_name_city_data, tile_id, source_base_path, target_base_path)
@@ -49,7 +49,8 @@ def get_cif_data(city_json_str, source_base_path, target_base_path, folder_name_
 
     tile_cif_data_path = tiled_city_data.target_primary_tile_data_path
 
-    tile_boundary_df = {'geometry': [shapely.wkt.loads(tile_boundary)]}
+    geom = shapely.wkt.loads(tile_boundary) if isinstance(tile_boundary, str) else tile_boundary
+    tile_boundary_df = {'geometry': [geom]}
     tiled_aoi_gdf = gp.GeoDataFrame(tile_boundary_df, crs=grid_crs)
 
     if city_json_str == 'None' or city_json_str is None:
@@ -106,6 +107,13 @@ def get_cif_data(city_json_str, source_base_path, target_base_path, folder_name_
                 this_success = _get_tree_canopy_height(city_geoextent, city_aoi, tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger)
                 result_flags.append(this_success)
                 log_method_completion(start_time,f'CIF-Tree_canopy download for {tile_id}', None, '', logger)
+        elif feature_sequence_id == 6:
+            if 'air_temperature' in feature_list:
+                time.sleep(wait_time_sec)
+                log_method_start(f'CIF-air_temperature download for {tile_id}', None, '', logger)
+                this_success = _get_air_temperature(city_geoextent, city_aoi, tiled_city_data, tile_cif_data_path, tiled_aoi_gdf, output_resolution, logger, start_date, end_date, single_date)
+                result_flags.append(this_success)
+                log_method_completion(start_time,f'CIF-air_temperature download for {tile_id}', None, '', logger)
 
     # Execute Albedo last since it must be aligned with other layers
     if 'albedo_cloud_masked' in feature_list:
@@ -414,6 +422,46 @@ def _get_building_height_dsm(city_geoextent, city_aoi, tiled_city_data, tile_dat
         log_method_failure(datetime.now(), 'DEM', tiled_city_data.source_base_path, msg, logger)
         return False
 
+def _get_air_temperature(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger, start_date, end_date, single_date):
+    try:
+        from city_metrix.layers import AirTemperature
+
+        seasonal_utc_offset = tiled_city_data.seasonal_utc_offset
+        sampling_local_hours = tiled_city_data.sampling_local_hours
+
+        air_temperature = None
+        for i in range(MAX_RETRY_COUNT):
+            try:
+                air_temperature = (AirTemperature(start_date, end_date, single_date, seasonal_utc_offset, sampling_local_hours)
+                                   .retrieve_data(city_geoextent, s3_bucket=S3_PUBLICATION_BUCKET, s3_env=S3_PUBLICATION_ENV,
+                                             aoi_buffer_m=CTCM_PADDED_AOI_BUFFER, city_aoi_subarea=city_aoi,
+                                             spatial_resolution=output_resolution))
+                break
+            except Exception as e_msg:
+                if i < MAX_RETRY_COUNT - 1:
+                    print(f"AirTemperature download failed. Retrying...")
+                    wait_secs = int(random.uniform(MIN_TILE_PAUSE_MINS * 60, MAX_TILE_PAUSE_MINS * 60))
+                    time.sleep(wait_secs)
+                else:
+                    raise Exception(f"Layer AirTemperature download failed due to error: {e_msg}")
+
+        if air_temperature is None:
+            return False
+
+        try:
+            # first attempt to save the file in the preferred NS direction
+            was_reversed, standardized_air_temperature = ctcm_standardize_y_dimension_direction(air_temperature)
+            save_tiff_file(standardized_air_temperature, tile_data_path, tiled_city_data.air_temperature_tif_filename)
+            return True
+        except:
+            # otherwise save without flipping direction
+            save_tiff_file(air_temperature, tile_data_path, tiled_city_data.air_temperature_tif_filename)
+            return True
+
+    except Exception as e_msg:
+        msg = f'AirTemperature processing cancelled due to failure {e_msg}.'
+        log_method_failure(datetime.now(), 'AirTemperature', tiled_city_data.source_base_path, msg, logger)
+        return False
 
 def _resample_categorical_raster(xarray, resolution_m):
     resampled_array = xarray.rio.reproject(

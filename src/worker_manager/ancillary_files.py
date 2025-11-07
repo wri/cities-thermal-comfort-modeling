@@ -27,6 +27,8 @@ def write_qgis_files(city_data):
     open_urban_file_name = city_data.open_urban_tif_filename
     tree_canopy_file_name = city_data.tree_canopy_tif_filename
     albedo_cloud_masked_file_name = city_data.albedo_cloud_masked_tif_filename
+    if city_data.use_airt_file:
+        air_temperature_file_name = city_data.air_temperature_tif_filename
 
     target_raster_files = []
     target_bucket = Path(target_folder).stem
@@ -42,6 +44,9 @@ def write_qgis_files(city_data):
     target_raster_files += tree_canopy
     albedo_cloud_masked = _build_file_dict(target_bucket, 'base','albedo_cloud_masked', 0, [albedo_cloud_masked_file_name])
     target_raster_files += albedo_cloud_masked
+    if city_data.use_airt_file:
+        air_temperature = _build_file_dict(target_bucket, 'base', 'air_temperature', 0, [air_temperature_file_name])
+        target_raster_files += air_temperature
     _write_raster_vrt_file_for_folder(target_folder, target_raster_files, target_qgis_data_folder)
 
     # Build VRTs for preprocessed results
@@ -267,8 +272,11 @@ def _update_custom_yml_parameters(non_tiled_city_data, updated_aoi):
     # Replace era_download keyword with standard name for era data file
     if has_era_met_download:
         for item in met_filenames:
-            if item["filename"] == METHOD_TRIGGER_ERA5_DOWNLOAD:
-                item["filename"] = FILENAME_ERA5_UPENN if non_tiled_city_data.processing_method == 'upenn_model' else FILENAME_ERA5_UMEP
+            if item['files']["era5_filename"] == METHOD_TRIGGER_ERA5_DOWNLOAD:
+                item['files']["era5_filename"] = FILENAME_ERA5_UPENN if non_tiled_city_data.processing_method == 'upenn_model' else FILENAME_ERA5_UMEP
+
+    for item in met_filenames:
+        item['files']['air_temperature_tif_filename'] = non_tiled_city_data.air_temperature_tif_filename
 
     custom_primary_filenames = list_doc[3]
     custom_primary_filenames['dem_tif_filename'] = non_tiled_city_data.dem_tif_filename
@@ -325,5 +333,3 @@ def write_tile_grid(tile_grid, target_qgis_data_path, target_file_name):
     file_path = os.path.join(target_path, target_file_name)
 
     modified_tile_grid.to_file(file_path, driver='GeoJSON')
-
-

@@ -116,6 +116,12 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
             msg = f'Specified custom source file: {prior_albedo_cloud_masked} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
             invalids.append((msg, True))
 
+        if tiled_city_data.use_airt_file:
+            prior_air_temperature = tiled_city_data.source_air_temperature_path
+            if cif_features is not None and 'air_temperature' not in cif_features and verify_path(prior_air_temperature) is False:
+                msg = f'Specified custom source file: {prior_air_temperature} not found as specified in {FILENAME_METHOD_YML_CONFIG} file.'
+                invalids.append((msg, True))
+
         if processing_method in PROCESSING_METHODS:
             prior_tree_canopy = tiled_city_data.source_tree_canopy_path
             if cif_features is not None and 'tree_canopy' not in cif_features and verify_path(prior_tree_canopy) is False:
@@ -189,7 +195,7 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
                        f'inconsistent parameters with {unique_consistency_metrics_df.shape[0]} unique parameter variants.')
                 invalids.append((msg, True))
 
-                msg = f'TIF parameters: {named_consistency_metrics_df.to_json(orient='records')}'
+                msg = f'TIF parameters: {named_consistency_metrics_df.to_json(orient="records")}'
                 invalids.append((msg, True))
 
                 msg = 'Stopping analysis at first set of inconsistent TIF files.'
@@ -254,5 +260,7 @@ def _get_list_of_existing_tifs_to_be_processed(city_data, cif_feature_list):
         filter_list.append(city_data.lulc_tif_filename)
     if 'open_urban' not in cif_feature_list:
         filter_list.append(city_data.open_urban_tif_filename)
+    if 'air_temperature' not in cif_feature_list and city_data.use_airt_file:
+        filter_list.append(city_data.air_temperature_tif_filename)
 
     return filter_list

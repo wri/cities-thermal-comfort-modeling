@@ -308,6 +308,9 @@ def get_ctcm_data_folder_key(city_data: CityData, feature_name):
     elif feature_name == 'TreeCanopyHeightCTCM':
         layer_name = 'TreeCanopyHeightCTCM'
         file_name = f"{city_id}__{aoi_id}__{layer_name}__bufferm_{CTCM_PADDED_AOI_BUFFER}.tif"
+    elif feature_name == 'AirTemperature':
+        layer_name = 'AirTemperature'
+        file_name = f"{city_id}__{aoi_id}__{layer_name}__bufferm_{CTCM_PADDED_AOI_BUFFER}.tif"
 
     data_folder_key = f"data/pre-release/layers/{layer_name}/tif/{file_name}"
 

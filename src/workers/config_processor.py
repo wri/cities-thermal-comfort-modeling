@@ -58,23 +58,26 @@ def parse_met_files_config(yml_values, processing_method):
         result_met_filenames = []
         has_era_met_download = False
         era5_date_range = None
+        era5_single_date = None
         for item in met_filenames:
-            filename = list(item.values())[0]
-            if fnmatch.fnmatch(filename, METHOD_TRIGGER_ERA5_DOWNLOAD):
+            era5_filename = list(item.get('files').values())[0]
+            if fnmatch.fnmatch(era5_filename, METHOD_TRIGGER_ERA5_DOWNLOAD):
                 has_era_met_download = True
-                era5_date_range = _extract_wildcard_match(filename, METHOD_TRIGGER_ERA5_DOWNLOAD)
+                era5_date_range = _extract_wildcard_match(era5_filename, METHOD_TRIGGER_ERA5_DOWNLOAD)
                 if processing_method == 'upenn_model':
                     result_met_filenames.append(FILENAME_ERA5_UPENN)
                 else:
                     result_met_filenames.append(FILENAME_ERA5_UMEP)
             else:
-                result_met_filenames.append(filename)
+                result_met_filenames.append(era5_filename)
+                if to_bool(yml_values[5]['solweig']['use_airt_file']) and processing_method == 'upenn_model':
+                    era5_single_date = str(list(item.get('files').values())[1])
 
     except Exception as e_msg:
         raise Exception(
             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
 
-    return result_met_filenames, has_era_met_download, era5_date_range
+    return result_met_filenames, has_era_met_download, era5_date_range, era5_single_date
 
 def _extract_wildcard_match(text, pattern):
     import re
@@ -127,12 +130,21 @@ def parse_primary_filenames_config(yml_values):
         custom_features.extend(this_custom_feature_list)
         custom_primary_filenames.extend(this_custom_primary_filenames)
 
+        if to_bool(yml_values[5]['solweig']['use_airt_file']):
+            air_temperature_tif_filename, this_cif_feature_list, this_custom_feature_list, this_custom_primary_filenames =\
+                _assign_primary_type_variables('air_temperature', yml_values)
+            cif_features.extend(this_cif_feature_list)
+            custom_features.extend(this_custom_feature_list)
+            custom_primary_filenames.extend(this_custom_primary_filenames)
+        else:
+            air_temperature_tif_filename = None
+
     except Exception as e_msg:
         raise Exception(
             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
 
     return (dem_tif_filename, dsm_tif_filename, lulc_tif_filename, open_urban_tif_filename, tree_canopy_tif_filename,
-            albedo_cloud_masked_tif_filename, custom_features, custom_primary_filenames, cif_features)
+            albedo_cloud_masked_tif_filename, air_temperature_tif_filename, custom_features, custom_primary_filenames, cif_features)
 
 
 def _assign_primary_type_variables(primary_type_short_name, yml_values):
@@ -140,6 +152,8 @@ def _assign_primary_type_variables(primary_type_short_name, yml_values):
     this_custom_primary_filenames = []
     this_cif_features = []
     filenames = yml_values[3]
+    if to_bool(yml_values[5]['solweig']['use_airt_file']):
+        filenames['air_temperature_tif_filename'] = yml_values[2].get('MetFiles')[0].get('files')['air_temperature_tif_filename']
 
     type_dict = _find_dict_in_list(VALID_PRIMARY_TYPES, 'short_name', primary_type_short_name)
     yml_tif_filename = unpack_quoted_value(filenames[type_dict['yml_tag']])
@@ -223,6 +237,7 @@ def parse_method_attributes_config(yml_values):
         output_tmrt = to_bool(method_attributes['solweig']['output_tmrt'])
         output_sh = to_bool(method_attributes['solweig']['output_sh'])
         sampling_local_hours = method_attributes['solweig']['sampling_local_hours']
+        use_airt_file = to_bool(method_attributes['solweig']['use_airt_file'])
 
     except Exception as e_msg:
         raise Exception(
@@ -230,4 +245,21 @@ def parse_method_attributes_config(yml_values):
 
     return (processing_method, northern_leaf_start, northern_leaf_end, southern_leaf_start, southern_leaf_end, wall_lower_limit_height,
             light_transmissivity, trunk_zone_height, conifer_trees, albedo_walls,
-            albedo_ground, emis_walls, emis_ground, output_tmrt, output_sh, sampling_local_hours)
+            albedo_ground, emis_walls, emis_ground, output_tmrt, output_sh, sampling_local_hours, use_airt_file)
+
+
+# def parse_tair_files_config(yml_values):
+#     try:
+#         tair_filenames = yml_values[6].get('TairFiles')
+
+#         result_tair_filenames = []
+#         for item in tair_filenames:
+#             filename = list(item.values())[0]
+#             result_tair_filenames.append(filename)
+#             # result_tair_filenames.append(list(filename.split(',')))
+
+#     except Exception as e_msg:
+#         raise Exception(
+#             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
+
+#     return result_tair_filenames

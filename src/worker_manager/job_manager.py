@@ -71,6 +71,15 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
     num_workers = floor(USABLE_CPU_FRACTION * mp.cpu_count())
     print(f"\nNumber of processing workers to be launched in Dask: {num_workers}")
 
+    start_date, end_date, single_date = None, None, None
+    if processing_option == 'run_pipeline' and has_appendable_cache is False and non_tiled_city_data.has_era_met_download:
+        start_date, end_date = _determine_era5_date_range(non_tiled_city_data.era5_date_range)
+        single_date = None
+    elif processing_option == 'run_pipeline':
+        start_date = None
+        end_date = None
+        single_date = non_tiled_city_data.era5_single_date
+
     # Retrieve missing CIF data
     tile_count = 0
     tasks = []
@@ -99,13 +108,14 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
         print(f'\nProcessing over {len(tile_unique_values)} existing tiles..')
         for index, tile_metrics in tile_unique_values.iterrows():
             tile_folder_name = tile_metrics['tile_name']
-            tile_boundary = tile_metrics['boundary']
+            tile_bounds = tile_metrics['boundary'].bounds
+            tile_boundary = str(shapely.box(tile_bounds[0], tile_bounds[1], tile_bounds[2], tile_bounds[3]))
             tile_resolution = tile_metrics['avg_res']
 
             proc_array = _construct_tile_proc_array(city_json_str, processing_method, source_base_path, target_base_path,
                                                     city_folder_name, tile_folder_name, cif_primary_features,
                                                     ctcm_intermediate_features, tile_boundary, tile_resolution,
-                                                    seasonal_utc_offset, custom_source_crs)
+                                                    seasonal_utc_offset, custom_source_crs, start_date, end_date, single_date)
 
             log_general_file_message(f'Staging: {proc_array}', __file__, logger)
 
@@ -173,7 +183,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
             proc_array = _construct_tile_proc_array(city_json_str, processing_method, source_base_path, target_base_path,
                                                     city_folder_name, tile_folder_name, cif_primary_features,
                                                     ctcm_intermediate_features, tile_boundary, None,
-                                                    seasonal_utc_offset, utm_grid_crs)
+                                                    seasonal_utc_offset, utm_grid_crs, start_date, end_date, single_date)
 
             log_general_file_message(f'Staging: {proc_array}', __file__, logger)
 
@@ -195,7 +205,7 @@ def start_jobs(non_tiled_city_data, existing_tiles_metrics, has_appendable_cache
         log_general_file_message('Retrieving ERA meteorological data', __file__, logger)
         sampling_local_hours = non_tiled_city_data.sampling_local_hours
 
-        start_date, end_date = _determine_era5_date_range(non_tiled_city_data.era5_date_range)
+        # start_date, end_date = _determine_era5_date_range(non_tiled_city_data.era5_date_range)
 
         target_met_files_path = non_tiled_city_data.target_met_files_path
         if processing_method == 'umep_solweig':
@@ -499,7 +509,7 @@ def _transfer_and_read_cached_qgis_files(non_tiled_city_data):
 
 def _construct_tile_proc_array(city_json_str, processing_method, source_base_path, target_base_path, city_folder_name,
                                tile_folder_name, cif_primary_features, ctcm_intermediate_features,
-                               tile_boundary, tile_resolution, seasonal_utc_offset, grid_crs):
+                               tile_boundary, tile_resolution, seasonal_utc_offset, grid_crs, start_date, end_date, single_date):
     if cif_primary_features:
         cif_features = ','.join(cif_primary_features)
     else:
@@ -512,7 +522,7 @@ def _construct_tile_proc_array(city_json_str, processing_method, source_base_pat
 
     if processing_method == 'upenn_model':
         proc_array = [city_json_str, processing_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
-                cif_features, ctcm_features,  tile_boundary, tile_resolution, seasonal_utc_offset, grid_crs]
+                cif_features, ctcm_features,  tile_boundary, tile_resolution, seasonal_utc_offset, grid_crs, start_date, end_date, single_date]
     else:
         proc_array = ['python', TILE_PROCESSING_MODULE_PATH,
                       f'--city_json_str={city_json_str}',

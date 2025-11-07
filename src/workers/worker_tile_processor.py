@@ -16,7 +16,7 @@ from src.workers.worker_tools import create_folder, unpack_quoted_value, save_ti
 PROCESSING_PAUSE_TIME_SEC = 10
 
 def process_tile(city_json_str, processing_method, source_base_path, target_base_path, city_folder_name, tile_folder_name,
-                 cif_primary_features, ctcm_intermediate_features, tile_boundary, tile_resolution, seasonal_utc_offset, grid_crs):
+                 cif_primary_features, ctcm_intermediate_features, tile_boundary, tile_resolution, seasonal_utc_offset, grid_crs, start_date, end_date, single_date):
     tiled_city_data = CityData(None, city_folder_name, tile_folder_name, source_base_path, target_base_path)
     cif_primary_features = unpack_quoted_value(cif_primary_features)
     custom_primary_features = tiled_city_data.custom_primary_feature_list
@@ -27,10 +27,10 @@ def process_tile(city_json_str, processing_method, source_base_path, target_base
     met_filenames = tiled_city_data.met_filenames
 
     def _execute_retrieve_cif_data(cif_city_json_str, source_path, target_path, folder_city, folder_tile, cif_features,
-                                   boundary, resolution, grid_crs):
+                                   boundary, resolution, grid_crs, start_date, end_date, single_date):
         cif_stdout = \
             get_cif_data(cif_city_json_str, source_path, target_path, folder_city, folder_tile, cif_features, boundary,
-                         resolution, grid_crs)
+                         resolution, grid_crs, start_date, end_date, single_date)
         return cif_stdout
 
     def _execute_mrt_method(step_index, processing_method, folder_city, folder_tile, source_path, target_path, met_names, offset_utc):
@@ -108,7 +108,7 @@ def process_tile(city_json_str, processing_method, source_base_path, target_base
     if cif_primary_features is not None:
         return_val = _execute_retrieve_cif_data(city_json_str, source_base_path, target_base_path, city_folder_name,
                                                 tile_folder_name, cif_primary_features, tile_boundary,
-                                                tile_resolution, grid_crs)
+                                                tile_resolution, grid_crs, start_date, end_date, single_date)
         return_stdouts.append(return_val)
         # Pause to allow all writes to complete
         time.sleep(PROCESSING_PAUSE_TIME_SEC)
@@ -211,6 +211,8 @@ def _transfer_custom_files(tiled_city_data, custom_feature_list):
             source_paths.append((tiled_city_data.source_open_urban_path, tiled_city_data.target_open_urban_path, 'file'))
         elif feature == 'tree_canopy':
             source_paths.append((tiled_city_data.source_tree_canopy_path, tiled_city_data.target_tree_canopy_path, 'file'))
+        elif feature == 'air_temperature':
+            source_paths.append((tiled_city_data.source_air_temperature_path, tiled_city_data.target_air_temperature_path, 'file'))
         elif feature == 'wallaspect':
             source_paths.append((tiled_city_data.source_wallaspect_path, tiled_city_data.target_wallaspect_path, 'file'))
         elif feature == 'wallheight':

@@ -75,5 +75,10 @@ VALID_PRIMARY_TYPES = [
         "yml_tag": "tree_canopy_tif_filename",
         "cif_template_name": 'cif_tree_canopy.tif'
     },
+    {
+        "short_name": "air_temperature",
+        "yml_tag": "air_temperature_tif_filename",
+        "cif_template_name": 'cif_air_temperature.tif'
+    },
 ]
 

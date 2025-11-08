@@ -1,0 +1,14 @@
+<VRTDataset rasterXSize="296" rasterYSize="315">
+  <SRS dataAxisToSRSAxisMapping="1,2">PROJCS["WGS 84 / UTM zone 34S",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",21],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",10000000],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH],AUTHORITY["EPSG","32734"]]</SRS>
+  <GeoTransform>  2.6073878469714464e+05,  1.0000000000000000e+00,  0.0000000000000000e+00,  6.2438034982049484e+06,  0.0000000000000000e+00, -1.0000000000000000e+00</GeoTransform>
+  <VRTRasterBand dataType="Float32" band="1">
+    <ColorInterp>Gray</ColorInterp>
+    <SimpleSource resampling="nearest">
+      <SourceFilename relativeToVRT="1">../primary_data/raster_files/tile_00001/cif_albedo_cloud_masked.tif</SourceFilename>
+      <SourceBand>1</SourceBand>
+      <SourceProperties RasterXSize="296" RasterYSize="315" DataType="Float32" BlockXSize="296" BlockYSize="6" />
+      <SrcRect xOff="0" yOff="0" xSize="296" ySize="315" />
+      <DstRect xOff="0" yOff="0" xSize="296" ySize="315" />
+    </SimpleSource>
+  </VRTRasterBand>
+</VRTDataset>

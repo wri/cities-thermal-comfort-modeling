@@ -272,8 +272,8 @@ def _update_custom_yml_parameters(non_tiled_city_data, updated_aoi):
     # Replace era_download keyword with standard name for era data file
     if has_era_met_download:
         for item in met_filenames:
-            if item['files']["era5_filename"] == METHOD_TRIGGER_ERA5_DOWNLOAD:
-                item['files']["era5_filename"] = FILENAME_ERA5_UPENN if non_tiled_city_data.processing_method == 'upenn_model' else FILENAME_ERA5_UMEP
+            if item['files']["era5_file"]["filename"] == METHOD_TRIGGER_ERA5_DOWNLOAD:
+                item['files']["era5_file"]["filename"] = FILENAME_ERA5_UPENN if non_tiled_city_data.processing_method == 'upenn_model' else FILENAME_ERA5_UMEP
 
     for item in met_filenames:
         item['files']['air_temperature_tif_filename'] = non_tiled_city_data.air_temperature_tif_filename

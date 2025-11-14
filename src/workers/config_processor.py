@@ -60,7 +60,7 @@ def parse_met_files_config(yml_values, processing_method):
         era5_date_range = None
         era5_single_date = None
         for item in met_filenames:
-            era5_filename = list(item.get('files').values())[0]
+            era5_filename = list(item.get('files').values())[0]['filename']
             if fnmatch.fnmatch(era5_filename, METHOD_TRIGGER_ERA5_DOWNLOAD):
                 has_era_met_download = True
                 era5_date_range = _extract_wildcard_match(era5_filename, METHOD_TRIGGER_ERA5_DOWNLOAD)
@@ -70,8 +70,8 @@ def parse_met_files_config(yml_values, processing_method):
                     result_met_filenames.append(FILENAME_ERA5_UMEP)
             else:
                 result_met_filenames.append(era5_filename)
-                if to_bool(yml_values[5]['solweig']['use_airt_file']) and processing_method == 'upenn_model':
-                    era5_single_date = str(list(item.get('files').values())[1])
+                if to_bool(yml_values[5]['solweig']['use_airt_raster']) and processing_method == 'upenn_model':
+                    era5_single_date = str(list(item.get('files').values())[0]['date'])
 
     except Exception as e_msg:
         raise Exception(
@@ -130,7 +130,7 @@ def parse_primary_filenames_config(yml_values):
         custom_features.extend(this_custom_feature_list)
         custom_primary_filenames.extend(this_custom_primary_filenames)
 
-        if to_bool(yml_values[5]['solweig']['use_airt_file']):
+        if to_bool(yml_values[5]['solweig']['use_airt_raster']):
             air_temperature_tif_filename, this_cif_feature_list, this_custom_feature_list, this_custom_primary_filenames =\
                 _assign_primary_type_variables('air_temperature', yml_values)
             cif_features.extend(this_cif_feature_list)
@@ -152,7 +152,7 @@ def _assign_primary_type_variables(primary_type_short_name, yml_values):
     this_custom_primary_filenames = []
     this_cif_features = []
     filenames = yml_values[3]
-    if to_bool(yml_values[5]['solweig']['use_airt_file']):
+    if to_bool(yml_values[5]['solweig']['use_airt_raster']):
         filenames['air_temperature_tif_filename'] = yml_values[2].get('MetFiles')[0].get('files')['air_temperature_tif_filename']
 
     type_dict = _find_dict_in_list(VALID_PRIMARY_TYPES, 'short_name', primary_type_short_name)
@@ -237,7 +237,7 @@ def parse_method_attributes_config(yml_values):
         output_tmrt = to_bool(method_attributes['solweig']['output_tmrt'])
         output_sh = to_bool(method_attributes['solweig']['output_sh'])
         sampling_local_hours = method_attributes['solweig']['sampling_local_hours']
-        use_airt_file = to_bool(method_attributes['solweig']['use_airt_file'])
+        use_airt_file = to_bool(method_attributes['solweig']['use_airt_raster'])
 
     except Exception as e_msg:
         raise Exception(

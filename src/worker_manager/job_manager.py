@@ -424,7 +424,7 @@ def _thin_city_tile_grid(non_tiled_city_data: CityData, unbuffered_tile_grid, ti
             if non_tiled_city_data.source_aoi_crs != utm_crs:
                 import geopandas as gpd
                 gdf = gpd.GeoDataFrame({'geometry': [aoi_polygon]}, crs=non_tiled_city_data.source_aoi_crs)
-                gdf_projected = gdf.to_crs(epsg=utm_crs)
+                gdf_projected = gdf.to_crs(utm_crs)
                 aoi_polygon = gdf_projected.geometry.iloc[0]
 
             if non_tiled_city_data.has_sub_area:

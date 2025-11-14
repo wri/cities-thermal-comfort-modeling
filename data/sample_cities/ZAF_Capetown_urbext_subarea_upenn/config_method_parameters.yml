@@ -16,7 +16,7 @@
 # Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
   seasonal_utc_offset: 2 # year-round
-  city: None #{"city_id": "ZAF-Cape_Town", "aoi_id": "urban_extent", "tile_method": None }
+  city: None # {"city_id": "ZAF-Cape_Town", "aoi_id": "urban_extent", "tile_method": None }
   aoi_bounds:
     epsg_code: 32734
     # 1-tile aoi given 600 m tile
@@ -42,8 +42,7 @@
 # For era5 download, specify either "ERA5:<prior_5_years>" or two dates as "ERA5:<2023-01-01,2023-12-31>"
 - MetFiles:
   - files:
-      era5_filename: met_era5_hottest_days.csv
-      era5_date: 2023-03-16
+      era5_file: {"filename": "met_era5_hottest_days.csv", "date": 2023-03-16}
       air_temperature_tif_filename: None
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
 # All file mappings must be specified here. Specify None for filename where custom file is not available for processing.
@@ -84,4 +83,4 @@
     output_tmrt: true
     output_sh: true
     sampling_local_hours: 12,15,18
-    use_airt_file: true
+    use_airt_raster: true

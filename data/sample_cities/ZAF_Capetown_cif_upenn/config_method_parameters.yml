@@ -16,7 +16,7 @@
 # Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
   seasonal_utc_offset: 2 # year-round
-  city: None
+  city: None # {"city_id": "ZAF-Cape_Town", "aoi_id": "urban_extent", "tile_method": None }
   aoi_bounds:
     epsg_code: 4326
     west: 18.41294
@@ -33,8 +33,7 @@
 # air_temperature_tif_filename is only used for UPenn model when use_airt_file is True, and its usage follow the rules of items in CustomTiffFilenames.
 - MetFiles:
   - files:
-      era5_filename: ERA5:<2023-01-01,2023-12-31>
-      era5_date: None
+      era5_file: {"filename": "ERA5:<2023-01-01,2023-12-31>", "date": None}
       air_temperature_tif_filename: None
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
 # All file mappings must be specified here. Specify None for filename where custom file is not available for processing.
@@ -76,4 +75,4 @@
     output_tmrt: true
     output_sh: true
     sampling_local_hours: 12,15,18
-    use_airt_file: true
+    use_airt_raster: true

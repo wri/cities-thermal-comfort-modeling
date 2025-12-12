@@ -21,8 +21,7 @@ from osgeo import gdal
 from osgeo.gdalconst import *
 
 from src.workers.model_upenn.libraries import solweiglib
-from src.workers.model_upenn.worker_utci_processor import run_utci_calculations
-
+from src.workers.model_upenn.worker_utci_processor import run_utci_calculations, run_utci_cat_calculations
 
 
 def preprocessMeteorolgoicalData(csvfile, month='8', day='1', hour='12'):
@@ -382,6 +381,11 @@ def run_mrt_calculations(method_params, sampling_hours: str, tile_name):
             utciFile = f"UTCI_{sampling_date.year}_{sampling_date.timetuple().tm_yday}_{hour}00D.tif"
             # print('The output UTCI file name is:', utciFile)
             solweiglib.saverasternd(gdal_dsm, os.path.join(mrtfolder, utciFile), utciplot)
+
+            utcicatplot = run_utci_cat_calculations(utciplot)
+            utcicatFile = f"UTCIcat_{sampling_date.year}_{sampling_date.timetuple().tm_yday}_{hour}00D.tif"
+            # print('The output UTCI file name is:', utciFile)
+            solweiglib.saverasternd(gdal_dsm, os.path.join(mrtfolder, utcicatFile), utcicatplot)
 
     # tmrt_mean = tmrt_mean / float(num_hour)
 

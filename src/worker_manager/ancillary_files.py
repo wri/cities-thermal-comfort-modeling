@@ -1,8 +1,8 @@
 import os
 import shutil
 import pandas as pd
-
 from pathlib import Path
+
 from src.constants import DATA_DIR, FILENAME_METHOD_YML_CONFIG, FILENAME_ERA5_UMEP, METHOD_TRIGGER_ERA5_DOWNLOAD, \
     FILENAME_ERA5_UPENN, TILE_NUMBER_PADCOUNT
 from src.worker_manager.reporter import _find_files_with_name
@@ -32,15 +32,15 @@ def write_qgis_files(city_data):
     target_bucket = Path(target_folder).stem
     dem = _build_file_dict(target_bucket, 'base', 'dem', 0, [dem_file_name])
     target_raster_files += dem
-    dsm = _build_file_dict(target_bucket, 'base','dsm', 0, [dsm_file_name])
+    dsm = _build_file_dict(target_bucket, 'base', 'dsm', 0, [dsm_file_name])
     target_raster_files += dsm
-    lulc = _build_file_dict(target_bucket, 'base','lulc', 0, [lulc_file_name])
+    lulc = _build_file_dict(target_bucket, 'base', 'lulc', 0, [lulc_file_name])
     target_raster_files += lulc
-    open_urban = _build_file_dict(target_bucket, 'base','open_urban', 0, [open_urban_file_name])
+    open_urban = _build_file_dict(target_bucket, 'base', 'open_urban', 0, [open_urban_file_name])
     target_raster_files += open_urban
-    tree_canopy = _build_file_dict(target_bucket, 'base','tree_canopy', 0, [tree_canopy_file_name])
+    tree_canopy = _build_file_dict(target_bucket, 'base', 'tree_canopy', 0, [tree_canopy_file_name])
     target_raster_files += tree_canopy
-    albedo_cloud_masked = _build_file_dict(target_bucket, 'base','albedo_cloud_masked', 0, [albedo_cloud_masked_file_name])
+    albedo_cloud_masked = _build_file_dict(target_bucket, 'base', 'albedo_cloud_masked', 0, [albedo_cloud_masked_file_name])
     target_raster_files += albedo_cloud_masked
     _write_raster_vrt_file_for_folder(target_folder, target_raster_files, target_qgis_data_folder)
 
@@ -62,7 +62,6 @@ def write_qgis_files(city_data):
             wall_height_files = _build_file_dict('preprocessed_data', 'preproc', 'wallheight', 0, wall_height_file_names)
             _write_raster_vrt_file_for_folder(target_preproc_folder, wall_height_files, target_qgis_data_folder)
             preprocessed_files += wall_height_files
-
 
     # Build VRTs for tcm results
     met_filenames = []
@@ -96,6 +95,11 @@ def write_qgis_files(city_data):
             _write_raster_vrt_file_for_folder(target_tcm_folder, utci_files, target_qgis_data_folder)
             met_filenames += utci_files
 
+            utci_cat_file_names = find_files_with_substring_in_name(target_tcm_first_tile_folder, 'UTCIcat_', '.tif')
+            utci_cat_files = _build_file_dict(met_folder_name, 'tcm', 'utci_cat', set_id, utci_cat_file_names)
+            _write_raster_vrt_file_for_folder(target_tcm_folder, utci_cat_files, target_qgis_data_folder)
+            met_filenames += utci_cat_files
+
             set_id += 1
 
     # write the QGIS viewer file
@@ -107,7 +111,8 @@ def write_qgis_files(city_data):
 
     _convert_vrts_to_relative_path(target_qgis_data_folder, target_city_path)
 
-def _convert_vrts_to_relative_path(target_vrt_folder:str, target_city_path):
+
+def _convert_vrts_to_relative_path(target_vrt_folder: str, target_city_path):
     target_vrt_directory = Path(target_vrt_folder)
     for file_path in target_vrt_directory.iterdir():
         if file_path.is_file() and Path(file_path).suffix == '.vrt':
@@ -144,7 +149,7 @@ def _modify_and_write_qgis_file(vrt_files, city_data, crs_str, target_city_path)
 
         # Reset the three forms of crs specifications in the qgis file
         template_crs = '32734'
-        grid_crs = _get_substring_after_char(crs_str,':')
+        grid_crs = _get_substring_after_char(crs_str, ':')
         data = data.replace(f'["EPSG",{template_crs}]', f'["EPSG",{grid_crs}]')
         data = data.replace(f'<srid>{template_crs}</srid>', f'<srid>{grid_crs}</srid>')
         data = data.replace(f'EPSG:{template_crs}', f'EPSG:{grid_crs}')
@@ -158,7 +163,7 @@ def _modify_and_write_qgis_file(vrt_files, city_data, crs_str, target_city_path)
         max_lat = city_data.max_lat
         reproj_bbox = _get_reprojected_bbox(min_lon, min_lat, max_lon, max_lat, grid_crs)
         target_minx, target_miny, target_maxx, target_maxy = reproj_bbox.squeeze().bounds
-        target_line =f'    <DefaultViewExtent ymin="{target_miny}" xmin="{target_minx}" xmax="{target_maxx}" ymax="{target_maxy}">\n'
+        target_line = f'    <DefaultViewExtent ymin="{target_miny}" xmin="{target_minx}" xmax="{target_maxx}" ymax="{target_maxy}">\n'
 
         data = data.replace(source_line, target_line)
 
@@ -232,7 +237,6 @@ def _write_raster_vrt_file_for_folder(source_folder, files, target_viewer_folder
                 print(f"Failed to create VRT for {output_file_path}")
 
 
-
 def write_config_files(non_tiled_city_data, updated_aoi):
     # write updated config files to target
     source_yml_config_path = non_tiled_city_data.city_method_config_path
@@ -298,11 +302,12 @@ def add_tile_name_column(tile_grid):
                                   .apply(lambda x: f'tile_{str(x + 1).zfill(TILE_NUMBER_PADCOUNT)}'))
     return tile_grid
 
+
 def write_tile_grid(tile_grid, target_qgis_data_path, target_file_name):
     from shapely import wkt
     import geopandas as gpd
 
-    if isinstance(tile_grid,dict):
+    if isinstance(tile_grid, dict):
         modified_tile_grid = pd.DataFrame(columns=['id', 'geometry'])
         for key, value in tile_grid.items():
             poly = wkt.loads(str(value[0]))

@@ -32,6 +32,37 @@ def run_utci_calculations(mrt_rast, row):
     return utci_values
 
 
+def run_utci_cat_calculations(utci_rast):
+    """
+    Categorize UTCI values into thermal stress categories.
+    Categories:
+    <= -40: Extreme Cold Stress (1)
+    -40 to -27: Very Strong Cold Stress (2)
+    -27 to -13: Strong Cold Stress (3)
+    -13 to 0: Moderate Cold Stress (4)
+    0 to 9: Slight Cold Stress (5)
+    9 to 26: No Thermal Stress (6)
+    26 to 32: Moderate Heat Stress (7)
+    32 to 38: Strong Heat Stress (8)
+    38 to 46: Very Strong Heat Stress (9)
+    > 46: Extreme Heat Stress (10)
+    """
+    utci_cat = np.full(utci_rast.shape, np.nan)
+
+    utci_cat[utci_rast < -40] = 1
+    utci_cat[(utci_rast >= -40) & (utci_rast < -27)] = 2
+    utci_cat[(utci_rast >= -27) & (utci_rast < -13)] = 3
+    utci_cat[(utci_rast >= -13) & (utci_rast < 0)] = 4
+    utci_cat[(utci_rast >= 0) & (utci_rast < 9)] = 5
+    utci_cat[(utci_rast >= 9) & (utci_rast < 26)] = 6
+    utci_cat[(utci_rast >= 26) & (utci_rast < 32)] = 7
+    utci_cat[(utci_rast >= 32) & (utci_rast < 38)] = 8
+    utci_cat[(utci_rast >= 38) & (utci_rast < 46)] = 9
+    utci_cat[utci_rast >= 46] = 10
+
+    return utci_cat
+
+
 def _validate_met_and_mrt(at, wind, vpd, tmrt):
     if not (-50 <= at <= 50):
         raise ValueError("Temperature must be between -50 and 50 C!")
@@ -59,7 +90,7 @@ def _calculate_utci(at, ehpa, va, tmrt):
     """
     # Convert Tmrt to ndarray (keeps scalar behavior too)
     tmrt_arr = np.asarray(tmrt, dtype=float)
-    
+
     # Check if inputs are numeric and non-null
     if np.isnan(at) or np.isnan(ehpa) or np.isnan(va) or np.all(np.isnan(tmrt_arr)):
         raise ValueError("All input parameters must be non-NA values.")

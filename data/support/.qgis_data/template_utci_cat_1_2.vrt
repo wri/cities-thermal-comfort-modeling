@@ -1,0 +1,14 @@
+<VRTDataset rasterXSize="97" rasterYSize="115">
+  <SRS dataAxisToSRSAxisMapping="1,2">PROJCS["WGS 84 / UTM zone 34S",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",21],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",10000000],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH],AUTHORITY["EPSG","32734"]]</SRS>
+  <GeoTransform>  2.6083878469714464e+05,  1.0000000000000000e+00,  0.0000000000000000e+00,  6.2437034982049484e+06,  0.0000000000000000e+00, -1.0000000000000000e+00</GeoTransform>
+  <VRTRasterBand dataType="Float32" band="1">
+    <ColorInterp>Gray</ColorInterp>
+    <SimpleSource resampling="nearest">
+      <SourceFilename relativeToVRT="1">../tcm_results/met_era5_hottest_days/tile_00001/UTCIcat_2023_75_1200D.tif</SourceFilename>
+      <SourceBand>1</SourceBand>
+      <SourceProperties RasterXSize="97" RasterYSize="115" DataType="Float32" BlockXSize="512" BlockYSize="512" />
+      <SrcRect xOff="0" yOff="0" xSize="97" ySize="115" />
+      <DstRect xOff="0" yOff="0" xSize="97" ySize="115" />
+    </SimpleSource>
+  </VRTRasterBand>
+</VRTDataset>

@@ -91,6 +91,11 @@ def write_qgis_files(city_data):
             _write_raster_vrt_file_for_folder(target_tcm_folder, tmrt_files, target_qgis_data_folder)
             met_filenames += tmrt_files
 
+            utci_file_names = find_files_with_substring_in_name(target_tcm_first_tile_folder, 'UTCI_', '.tif')
+            utci_files = _build_file_dict(met_folder_name, 'tcm', 'utci', set_id, utci_file_names)
+            _write_raster_vrt_file_for_folder(target_tcm_folder, utci_files, target_qgis_data_folder)
+            met_filenames += utci_files
+
             set_id += 1
 
     # write the QGIS viewer file
@@ -325,5 +330,3 @@ def write_tile_grid(tile_grid, target_qgis_data_path, target_file_name):
     file_path = os.path.join(target_path, target_file_name)
 
     modified_tile_grid.to_file(file_path, driver='GeoJSON')
-
-

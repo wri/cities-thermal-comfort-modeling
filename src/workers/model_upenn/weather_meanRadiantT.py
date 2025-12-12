@@ -13,14 +13,15 @@ import shutil
 
 # last updated by Xiaojiang Li, June 1st, 2025
 
-import numpy as np
 import os, os.path
-from osgeo import gdal
-from osgeo.gdalconst import *
+import numpy as np
 import pandas as pd
 from datetime import date, time
+from osgeo import gdal
+from osgeo.gdalconst import *
 
 from src.workers.model_upenn.libraries import solweiglib
+from src.workers.model_upenn.worker_utci_processor import run_utci_calculations
 
 
 
@@ -377,7 +378,10 @@ def run_mrt_calculations(method_params, sampling_hours: str, tile_name):
             # print('The output shadow file name is:', shadowFile)
             solweiglib.saverasternd(gdal_dsm, os.path.join(mrtfolder, shadowFile), shadowplot)
 
-
+            utciplot = run_utci_calculations(tmrtplot, row)
+            utciFile = f"UTCI_{sampling_date.year}_{sampling_date.timetuple().tm_yday}_{hour}00D.tif"
+            # print('The output UTCI file name is:', utciFile)
+            solweiglib.saverasternd(gdal_dsm, os.path.join(mrtfolder, utciFile), utciplot)
 
     # tmrt_mean = tmrt_mean / float(num_hour)
 

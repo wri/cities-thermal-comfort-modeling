@@ -189,7 +189,7 @@ def evaluate_custom_primary_config(non_tiled_city_data, existing_tiles_metrics):
                        f'inconsistent parameters with {unique_consistency_metrics_df.shape[0]} unique parameter variants.')
                 invalids.append((msg, True))
 
-                msg = f'TIF parameters: {named_consistency_metrics_df.to_json(orient='records')}'
+                msg = f'TIF parameters: {named_consistency_metrics_df.to_json(orient="records")}'
                 invalids.append((msg, True))
 
                 msg = 'Stopping analysis at first set of inconsistent TIF files.'

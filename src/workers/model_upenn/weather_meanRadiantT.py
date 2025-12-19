@@ -24,7 +24,7 @@ from src.workers.model_upenn.libraries import solweiglib
 from src.workers.model_upenn.worker_utci_processor import run_utci_calculations, run_utci_cat_calculations
 
 
-def preprocessMeteorolgoicalData(csvfile, month='8', day='1', hour='12'):
+def preprocessMeteorologicalData(csvfile, month='8', day='1', hour='12'):
     '''This script is used to preprocess the meteoroglocial data, a complete version 
     has the hourly level meteorologocal data
     
@@ -283,7 +283,7 @@ def run_mrt_calculations(method_params, sampling_hours: str, tile_name):
         # NOTE: WRI does not filter by date in this code, so sampling date is not passed here.
         month = None
         day = None
-        day_summer_df, sampling_date = preprocessMeteorolgoicalData(csvfile, month=month, day=day, hour=hour)
+        day_summer_df, sampling_date = preprocessMeteorologicalData(csvfile, month=month, day=day, hour=hour)
 
         # calculate the average of mean radiant temperature in summer
         tmrt_mean = np.zeros((rows, cols))

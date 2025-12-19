@@ -1,7 +1,20 @@
 import numpy as np
+# UTCI_approx, Version a 0.002, October 2009
+# Copyright (C) 2009  Peter Broede
 
 
 def run_utci_calculations(mrt_rast, row):
+    """
+    Compute Universal Thermal Climate Index (UTCI) from air temperature, wind speed, humidity, and MRT.
+    https://utci.org/
+
+    Parameters
+    - mrt_rast: (raster array) Mean radiant temperature (°C)
+    - row: (pandas.Series) Must include keys:"Temperature" (°C), "Wind Speed" (m/s), "Relative Humidity" (%)
+
+    Returns
+    - utci_values: (raster array) UTCI value(s) in °C
+    """
     at = float(row["Temperature"])
     va = float(row["Wind Speed"])
     rh = float(row["Relative Humidity"])
@@ -46,6 +59,12 @@ def run_utci_cat_calculations(utci_rast):
     32 to 38: Strong Heat Stress (8)
     38 to 46: Very Strong Heat Stress (9)
     > 46: Extreme Heat Stress (10)
+
+    Parameters
+    - utci_rast: (raster array) UTCI value(s) in °C.
+
+    Returns
+    - utci_cat: (raster array) UTCI categories 
     """
     utci_cat = np.full(utci_rast.shape, np.nan)
 
@@ -83,6 +102,12 @@ def _validate_met_and_mrt(at, wind, vpd, tmrt):
 
 def _calculate_utci(at, ehpa, va, tmrt):
     """
+    sources for this code include
+    https://gist.github.com/chriswmackey/b852dd9e01f79402d8a7b355f97b84c8
+    https://james-ramsden.com/calculate-utci-c-code/
+    eOUBLE PRECISION Function value is the UTCI in degree Celsius
+    computed by a 6th order approximating polynomial from the 4 Input paramters 
+    Input parameters (all of type double precision)
     at : air temperature, degree Celsius
     ehpa : water vapour presure, hPa=hecto Pascal
     va : wind speed 10 m above ground level in m/s

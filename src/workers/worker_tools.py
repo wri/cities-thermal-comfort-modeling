@@ -1,16 +1,16 @@
 import shutil
 import os
-
 import yaml
 import utm
 from datetime import datetime
-
-from city_metrix import s3_client
 from shapely.geometry import box
 from src.constants import ROOT_DIR
 
+from city_metrix import s3_client
+
 
 toBool = {'true': True, 'false': False}
+
 
 def get_utm_zone_epsg(bbox) -> str:
     """
@@ -29,13 +29,16 @@ def get_utm_zone_epsg(bbox) -> str:
 
     return f"EPSG:{epsg}"
 
+
 def create_folder(folder_path):
     if not os.path.isdir(folder_path):
         os.makedirs(folder_path)
 
+
 def remove_folder(folder_path):
     if os.path.isdir(folder_path):
         shutil.rmtree(folder_path)
+
 
 def remove_file(file_path):
     if os.path.isfile(file_path):
@@ -146,11 +149,12 @@ def any_value_matches_in_dict_list(dict_list, target_string):
             return True
     return False
 
+
 def ctcm_standardize_y_dimension_direction(data_array):
     """
     Function resets y-values so they comply with the standard GDAL top-down increasing order, as needed.
     """
-    was_reversed= False
+    was_reversed = False
     y_dimensions = data_array.shape[0]
     if data_array.y.data[0] < data_array.y.data[y_dimensions - 1]:
         data_array = data_array.isel({data_array.rio.y_dim: slice(None, None, -1)})

@@ -194,6 +194,7 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logg
             "OUTPUT_LDOWN": False,
             "OUTPUT_LUP": False,
             "OUTPUT_SH": tiled_city_data.output_sh,
+            "OUTPUT_UTCI": tiled_city_data.output_utci,
             "OUTPUT_TREEPLANTER": False,
             "OUTPUT_DIR": temp_met_folder,
         }

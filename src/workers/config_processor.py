@@ -222,6 +222,7 @@ def parse_method_attributes_config(yml_values):
         emis_ground = method_attributes['solweig']['emis_ground']
         output_tmrt = to_bool(method_attributes['solweig']['output_tmrt'])
         output_sh = to_bool(method_attributes['solweig']['output_sh'])
+        output_utci = to_bool(method_attributes['solweig']['output_utci'])
         sampling_local_hours = method_attributes['solweig']['sampling_local_hours']
 
     except Exception as e_msg:
@@ -229,5 +230,5 @@ def parse_method_attributes_config(yml_values):
             f'The {FILENAME_METHOD_YML_CONFIG} file not found or improperly defined in {FILENAME_METHOD_YML_CONFIG} file. (Error: {e_msg})')
 
     return (processing_method, northern_leaf_start, northern_leaf_end, southern_leaf_start, southern_leaf_end, wall_lower_limit_height,
-            light_transmissivity, trunk_zone_height, conifer_trees, albedo_walls,
-            albedo_ground, emis_walls, emis_ground, output_tmrt, output_sh, sampling_local_hours)
+            light_transmissivity, trunk_zone_height, conifer_trees, albedo_walls, albedo_ground,
+            emis_walls, emis_ground, output_tmrt, output_sh, output_utci, sampling_local_hours)

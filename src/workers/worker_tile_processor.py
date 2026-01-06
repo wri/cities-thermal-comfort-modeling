@@ -137,7 +137,7 @@ def process_tile(city_json_str, processing_method, source_base_path, target_base
         # Remove buffered area from mrt results
         buffer_meters = tiled_city_data.tile_buffer_meters
         if len(custom_primary_features) == 0 and tiled_city_data.remove_mrt_buffer_for_final_output is True:
-            _trim_mrt_buffer(target_tcm_results_path, tile_folder_name, met_filenames, tile_boundary, buffer_meters)
+            _trim_mrt_buffer(target_tcm_results_path, met_filenames, tile_boundary, buffer_meters)
 
     # Cache project files in S3
     if tiled_city_data.city_json_str is not None and tiled_city_data.publishing_target in ('s3', 'both'):
@@ -150,7 +150,7 @@ def process_tile(city_json_str, processing_method, source_base_path, target_base
     return result_json
 
 
-def _trim_mrt_buffer(target_tcm_results_path, tile_folder_name, met_filenames, tile_boundary, buffer_meters):
+def _trim_mrt_buffer(target_tcm_results_path, met_filenames, tile_boundary, buffer_meters):
     """
     See https://gfw.atlassian.net/browse/CDB-182 for logic behind this function.
     Briefly, the concept is that the code buffers out some hundreds of meters from a tiled area and then clips back to
@@ -175,7 +175,7 @@ def _trim_mrt_buffer(target_tcm_results_path, tile_folder_name, met_filenames, t
 
     for met_filename in met_filenames:
         file_stem = Path(met_filename).stem
-        tile_path = str(os.path.join(target_tcm_results_path, file_stem, tile_folder_name))
+        tile_path = str(os.path.join(target_tcm_results_path, file_stem))
         for file in os.listdir(tile_path):
             if file.endswith('.tif'):
                 file_path = os.path.join(tile_path, file)

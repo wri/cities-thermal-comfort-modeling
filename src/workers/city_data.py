@@ -134,12 +134,12 @@ class CityData:
             obj.target_tcm_results_path = os.path.join(obj.target_city_path, FOLDER_NAME_UMEP_TCM_RESULTS)
 
             if obj.folder_name_tile_data:
+                obj.target_tile_path = os.path.join(obj.target_city_path, obj.folder_name_tile_data)
                 metadata_file_name = f'{obj.folder_name_tile_data}_metadata.log'
                 obj.target_umep_metadata_log_path = os.path.join(obj.target_log_path, 'model_metadata', metadata_file_name)
 
-                obj.target_raster_files_path = os.path.join(obj.target_city_primary_data_path,
-                                                            FOLDER_NAME_PRIMARY_RASTER_FILES)
-                obj.target_primary_tile_data_path = os.path.join(obj.target_raster_files_path, obj.folder_name_tile_data)
+                obj.target_raster_files_path = os.path.join(obj.target_tile_path, FOLDER_NAME_PRIMARY_RASTER_FILES)
+                obj.target_primary_tile_data_path = obj.target_raster_files_path
 
                 obj.target_albedo_cloud_masked_path = os.path.join(obj.target_primary_tile_data_path,
                                                            obj.albedo_cloud_masked_tif_filename)
@@ -150,7 +150,8 @@ class CityData:
                 obj.target_tree_canopy_path = os.path.join(obj.target_primary_tile_data_path,
                                                            obj.tree_canopy_tif_filename)
 
-                obj.target_intermediate_tile_data_path = os.path.join(obj.target_intermediate_data_path, obj.folder_name_tile_data)
+                obj.target_intermediate_tile_data_path = os.path.join(obj.target_tile_path, FOLDER_NAME_INTERMEDIATE_DATA)
+                obj.target_tcm_results_path = os.path.join(obj.target_tile_path, FOLDER_NAME_UMEP_TCM_RESULTS)
                 obj.target_wallheight_path = os.path.join(obj.target_intermediate_tile_data_path, obj.wall_height_filename)
                 obj.target_wallaspect_path = os.path.join(obj.target_intermediate_tile_data_path, obj.wall_aspect_filename)
                 obj.target_svfszip_path = os.path.join(obj.target_intermediate_tile_data_path, obj.skyview_factor_filename)

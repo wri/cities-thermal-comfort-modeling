@@ -5,7 +5,7 @@ from pathlib import Path
 
 from src.constants import DATA_DIR, FILENAME_METHOD_YML_CONFIG, FILENAME_ERA5_UMEP, METHOD_TRIGGER_ERA5_DOWNLOAD, \
     FILENAME_ERA5_UPENN, TILE_NUMBER_PADCOUNT, FOLDER_NAME_PRIMARY_RASTER_FILES, \
-    FOLDER_NAME_INTERMEDIATE_DATA, FOLDER_NAME_UMEP_TCM_RESULTS
+    FOLDER_NAME_INTERMEDIATE_DATA, FOLDER_NAME_UMEP_TCM_RESULTS, FOLDER_NAME_METADATA
 from src.worker_manager.reporter import _find_files_with_name
 from src.worker_manager.tools import delete_files_with_extension
 from src.workers.worker_dao import write_raster_vrt_gdal, write_raster_vrt_wri
@@ -172,7 +172,7 @@ def _modify_and_write_qgis_file(vrt_files, city_data, crs_str, target_city_path)
 
         data = data.replace(source_line, target_line)
 
-    target_qgs_file = os.path.join(target_city_path, 'qgis_viewer.qgs')
+    target_qgs_file = os.path.join(target_city_path, FOLDER_NAME_METADATA, 'qgis_viewer.qgs')
     with open(target_qgs_file, 'w') as file:
         file.write(data)
 
@@ -245,7 +245,7 @@ def _write_raster_vrt_file_for_folder(source_folder, files, target_viewer_folder
 def write_config_files(non_tiled_city_data, updated_aoi):
     # write updated config files to target
     source_yml_config_path = non_tiled_city_data.city_method_config_path
-    target_yml_config_path = os.path.join(non_tiled_city_data.target_city_path, FILENAME_METHOD_YML_CONFIG)
+    target_yml_config_path = os.path.join(non_tiled_city_data.target_metadata_path, FILENAME_METHOD_YML_CONFIG)
 
     updated_yml_config = _update_custom_yml_parameters(non_tiled_city_data, updated_aoi)
     write_commented_yaml(updated_yml_config, target_yml_config_path)

@@ -20,6 +20,7 @@ FOLDER_NAME_QGIS_DATA = '.qgis_data'
 FOLDER_NAME_PRIMARY_DATA = 'primary_data'
 FOLDER_NAME_PRIMARY_RASTER_FILES = 'raster_files'
 FOLDER_NAME_PRIMARY_MET_FILES = 'met_files'
+FOLDER_NAME_METADATA = 'metadata'
 FOLDER_NAME_INTERMEDIATE_DATA = 'processed_data'
 FOLDER_NAME_UMEP_TCM_RESULTS = 'tcm_results'
 
@@ -76,4 +77,3 @@ VALID_PRIMARY_TYPES = [
         "cif_template_name": 'cif_tree_canopy.tif'
     },
 ]
-

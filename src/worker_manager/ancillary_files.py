@@ -4,7 +4,8 @@ import pandas as pd
 from pathlib import Path
 
 from src.constants import DATA_DIR, FILENAME_METHOD_YML_CONFIG, FILENAME_ERA5_UMEP, METHOD_TRIGGER_ERA5_DOWNLOAD, \
-    FILENAME_ERA5_UPENN, TILE_NUMBER_PADCOUNT
+    FILENAME_ERA5_UPENN, TILE_NUMBER_PADCOUNT, FOLDER_NAME_PRIMARY_RASTER_FILES, \
+    FOLDER_NAME_INTERMEDIATE_DATA, FOLDER_NAME_UMEP_TCM_RESULTS
 from src.worker_manager.reporter import _find_files_with_name
 from src.worker_manager.tools import delete_files_with_extension
 from src.workers.worker_dao import write_raster_vrt_gdal, write_raster_vrt_wri
@@ -15,12 +16,17 @@ def write_qgis_files(city_data):
     from src.worker_manager.reporter import find_files_with_substring_in_name
 
     target_city_path = city_data.target_city_path
+    tile_folders = sorted(
+        folder for folder in os.listdir(target_city_path)
+        if folder.startswith("tile_") and os.path.isdir(os.path.join(target_city_path, folder))
+    )
+    first_tile_folder = tile_folders[0] if tile_folders else None
     crs_str = city_data.grid_crs
     target_qgis_data_folder = city_data.target_qgis_data_path
     create_folder(target_qgis_data_folder)
 
     # Build VRTs for base layers
-    target_folder = city_data.target_city_primary_data_path
+    target_folder = target_city_path
     dem_file_name = city_data.dem_tif_filename
     dsm_file_name = city_data.dsm_tif_filename
     lulc_file_name = city_data.lulc_tif_filename
@@ -29,27 +35,27 @@ def write_qgis_files(city_data):
     albedo_cloud_masked_file_name = city_data.albedo_cloud_masked_tif_filename
 
     target_raster_files = []
-    target_bucket = Path(target_folder).stem
-    dem = _build_file_dict(target_bucket, 'base', 'dem', 0, [dem_file_name])
-    target_raster_files += dem
-    dsm = _build_file_dict(target_bucket, 'base', 'dsm', 0, [dsm_file_name])
-    target_raster_files += dsm
-    lulc = _build_file_dict(target_bucket, 'base', 'lulc', 0, [lulc_file_name])
-    target_raster_files += lulc
-    open_urban = _build_file_dict(target_bucket, 'base', 'open_urban', 0, [open_urban_file_name])
-    target_raster_files += open_urban
-    tree_canopy = _build_file_dict(target_bucket, 'base', 'tree_canopy', 0, [tree_canopy_file_name])
-    target_raster_files += tree_canopy
-    albedo_cloud_masked = _build_file_dict(target_bucket, 'base', 'albedo_cloud_masked', 0, [albedo_cloud_masked_file_name])
-    target_raster_files += albedo_cloud_masked
-    _write_raster_vrt_file_for_folder(target_folder, target_raster_files, target_qgis_data_folder)
+    target_bucket = Path(FOLDER_NAME_PRIMARY_RASTER_FILES).stem
+    if first_tile_folder is not None:
+        dem = _build_file_dict(target_bucket, 'base', 'dem', 0, [dem_file_name])
+        target_raster_files += dem
+        dsm = _build_file_dict(target_bucket, 'base', 'dsm', 0, [dsm_file_name])
+        target_raster_files += dsm
+        lulc = _build_file_dict(target_bucket, 'base', 'lulc', 0, [lulc_file_name])
+        target_raster_files += lulc
+        open_urban = _build_file_dict(target_bucket, 'base', 'open_urban', 0, [open_urban_file_name])
+        target_raster_files += open_urban
+        tree_canopy = _build_file_dict(target_bucket, 'base', 'tree_canopy', 0, [tree_canopy_file_name])
+        target_raster_files += tree_canopy
+        albedo_cloud_masked = _build_file_dict(target_bucket, 'base', 'albedo_cloud_masked', 0, [albedo_cloud_masked_file_name])
+        target_raster_files += albedo_cloud_masked
+        _write_raster_vrt_file_for_folder(target_folder, target_raster_files, target_qgis_data_folder)
 
     # Build VRTs for preprocessed results
     preprocessed_files = []
-    target_preproc_folder = city_data.target_intermediate_data_path
-    if os.path.isdir(target_preproc_folder):
-        first_tile_folder = next((f for f in os.listdir(target_preproc_folder) if os.path.isdir(os.path.join(target_preproc_folder, f))), None)
-        target_preproc_first_tile_folder = os.path.join(target_preproc_folder, first_tile_folder)
+    target_preproc_folder = target_city_path
+    if first_tile_folder is not None:
+        target_preproc_first_tile_folder = os.path.join(target_city_path, first_tile_folder, FOLDER_NAME_INTERMEDIATE_DATA)
         if os.path.exists(target_preproc_first_tile_folder):
             wall_aspect_file_stem = Path(city_data.wall_aspect_filename).stem
             wall_aspect_file_names = find_files_with_substring_in_name(target_preproc_first_tile_folder, wall_aspect_file_stem, '.tif')
@@ -73,31 +79,30 @@ def write_qgis_files(city_data):
             met_file_name = met_filename
 
         met_folder_name = Path(met_file_name).stem
-        target_tcm_folder = str(os.path.join(city_data.target_tcm_results_path, met_folder_name))
-        if os.path.isdir(target_tcm_folder):
-            first_tile_folder = next(
-                (f for f in os.listdir(target_tcm_folder) if os.path.isdir(os.path.join(target_tcm_folder, f))),
-                None)
-            target_tcm_first_tile_folder = os.path.join(target_tcm_folder, first_tile_folder)
+        target_tcm_folder = None
+        if first_tile_folder is not None:
+            target_tcm_folder = str(os.path.join(target_city_path, first_tile_folder, FOLDER_NAME_UMEP_TCM_RESULTS, met_folder_name))
+        if target_tcm_folder and os.path.isdir(target_tcm_folder):
+            target_tcm_first_tile_folder = target_tcm_folder
 
             shadow_file_names = find_files_with_substring_in_name(target_tcm_first_tile_folder, 'Shadow_', '.tif')
             shadow_files = _build_file_dict(met_folder_name, 'tcm', 'shadow', set_id, shadow_file_names)
-            _write_raster_vrt_file_for_folder(target_tcm_folder, shadow_files, target_qgis_data_folder)
+            _write_raster_vrt_file_for_folder(target_city_path, shadow_files, target_qgis_data_folder)
             met_filenames += shadow_files
 
             tmrt_file_names = find_files_with_substring_in_name(target_tcm_first_tile_folder, 'Tmrt_', '.tif')
             tmrt_files = _build_file_dict(met_folder_name, 'tcm', 'tmrt', set_id, tmrt_file_names)
-            _write_raster_vrt_file_for_folder(target_tcm_folder, tmrt_files, target_qgis_data_folder)
+            _write_raster_vrt_file_for_folder(target_city_path, tmrt_files, target_qgis_data_folder)
             met_filenames += tmrt_files
 
             utci_file_names = find_files_with_substring_in_name(target_tcm_first_tile_folder, 'UTCI_', '.tif')
             utci_files = _build_file_dict(met_folder_name, 'tcm', 'utci', set_id, utci_file_names)
-            _write_raster_vrt_file_for_folder(target_tcm_folder, utci_files, target_qgis_data_folder)
+            _write_raster_vrt_file_for_folder(target_city_path, utci_files, target_qgis_data_folder)
             met_filenames += utci_files
 
             utci_cat_file_names = find_files_with_substring_in_name(target_tcm_first_tile_folder, 'UTCIcat_', '.tif')
             utci_cat_files = _build_file_dict(met_folder_name, 'tcm', 'utci_cat', set_id, utci_cat_file_names)
-            _write_raster_vrt_file_for_folder(target_tcm_folder, utci_cat_files, target_qgis_data_folder)
+            _write_raster_vrt_file_for_folder(target_city_path, utci_cat_files, target_qgis_data_folder)
             met_filenames += utci_cat_files
 
             set_id += 1

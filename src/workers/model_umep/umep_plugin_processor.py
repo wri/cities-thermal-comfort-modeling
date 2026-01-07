@@ -151,7 +151,7 @@ def _prepare_method_execution(method, tiled_city_data, tmpdirname, metadata_logg
         target_met_file_path = os.path.join(tiled_city_data.target_met_files_path, met_filename)
         temp_met_folder = os.path.join(tmpdirname, Path(met_filename).stem, tiled_city_data.folder_name_tile_data)
         create_folder(temp_met_folder)
-        target_met_folder = os.path.join(tiled_city_data.target_tcm_results_path, Path(met_filename).stem, tiled_city_data.folder_name_tile_data)
+        target_met_folder = os.path.join(tiled_city_data.target_tcm_results_path, Path(met_filename).stem)
         method_params = {
             "INPUT_DSM": tiled_city_data.target_dsm_path,
             "INPUT_SVF": tiled_city_data.target_svfszip_path,

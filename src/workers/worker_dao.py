@@ -152,12 +152,12 @@ def cache_tile_files(tiled_city_data:CityData):
     # Cache primary raster
     local_folder = tiled_city_data.target_raster_files_path
     s3_folder_uri = f"{tile_folder_key}/{FOLDER_NAME_PRIMARY_RASTER_FILES}"
-    _process_tile_folder(local_folder, tile_id, bucket_name, s3_folder_uri, publishing_target, '.tif')
+    _process_tile_folder(local_folder, None, bucket_name, s3_folder_uri, publishing_target, '.tif')
 
     # Cache intermediate files
     local_folder = tiled_city_data.target_intermediate_data_path
     s3_folder_uri = f"{tile_folder_key}/{FOLDER_NAME_INTERMEDIATE_DATA}"
-    _process_tile_folder(local_folder, tile_id, bucket_name, s3_folder_uri, publishing_target, '.tif')
+    _process_tile_folder(local_folder, None, bucket_name, s3_folder_uri, publishing_target, '.tif')
 
     # Cache tcm results
     tcm_path = tiled_city_data.target_tcm_results_path
@@ -165,7 +165,13 @@ def cache_tile_files(tiled_city_data:CityData):
     for met_folder in met_folders:
         local_folder = os.path.join(tiled_city_data.target_tcm_results_path, met_folder)
         s3_folder_uri = f"{tile_folder_key}/{FOLDER_NAME_UMEP_TCM_RESULTS}/{met_folder}"
-        _process_tile_folder(local_folder, tile_id, bucket_name, s3_folder_uri, publishing_target, extension_filter='.tif')
+        _process_tile_folder(local_folder, None, bucket_name, s3_folder_uri, publishing_target, extension_filter='.tif')
+
+    if publishing_target == 's3':
+        remove_folder(tiled_city_data.target_tile_path)
+        notice_file = os.path.join(tiled_city_data.target_city_path, f"{tile_id}_contents_cached_to_s3.txt")
+        with open(notice_file, "w") as file:
+            pass
 
 
 def identify_tiles_with_partial_file_set(non_tiled_city_data: CityData):

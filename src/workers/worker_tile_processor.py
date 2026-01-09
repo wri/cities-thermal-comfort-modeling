@@ -26,6 +26,11 @@ def process_tile(city_json_str, processing_method, source_base_path, target_base
     seasonal_utc_offset = unpack_quoted_value(seasonal_utc_offset)
     met_filenames = tiled_city_data.met_filenames
 
+    create_folder(tiled_city_data.target_tile_path)
+    create_folder(tiled_city_data.target_raster_files_path)
+    create_folder(tiled_city_data.target_intermediate_data_path)
+    create_folder(tiled_city_data.target_tcm_results_path)
+
     def _execute_retrieve_cif_data(cif_city_json_str, source_path, target_path, folder_city, folder_tile, cif_features,
                                    boundary, resolution, grid_crs):
         cif_stdout = \
@@ -175,7 +180,7 @@ def _trim_mrt_buffer(target_tcm_results_path, tile_folder_name, met_filenames, t
 
     for met_filename in met_filenames:
         file_stem = Path(met_filename).stem
-        tile_path = str(os.path.join(target_tcm_results_path, file_stem, tile_folder_name))
+        tile_path = str(os.path.join(target_tcm_results_path, file_stem))
         for file in os.listdir(tile_path):
             if file.endswith('.tif'):
                 file_path = os.path.join(tile_path, file)

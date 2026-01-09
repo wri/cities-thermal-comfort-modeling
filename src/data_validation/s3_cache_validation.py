@@ -9,7 +9,7 @@ from src.constants import S3_PUBLICATION_BUCKET, S3_PUBLICATION_ENV
 def check_city_data_availability(city_geoextent: GeoExtent):
     invalids = []
 
-    if city_geoextent is not None and city_geoextent.geo_type == GeoType.CITY:
+    if city_geoextent is not None and city_geoextent.geo_type == GeoType.CITY_AREA:
         city_id = city_geoextent.city_id
         is_open_urban_available = is_openurban_available_for_city(city_id)
         if not is_open_urban_available:

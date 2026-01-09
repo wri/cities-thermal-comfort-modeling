@@ -164,7 +164,7 @@ class CityData:
 
 def _get_grid_crs(city_geoextent, min_lon, min_lat, max_lon, max_lat, source_aoi_crs):
     grid_crs = None
-    if city_geoextent is not None and city_geoextent.geo_type == GeoType.CITY:
+    if city_geoextent is not None and city_geoextent.geo_type == GeoType.CITY_AREA:
         grid_crs = city_geoextent.crs
     elif min_lon is not None:
         if source_aoi_crs is not None and get_projection_type(source_aoi_crs) == ProjectionType.UTM:

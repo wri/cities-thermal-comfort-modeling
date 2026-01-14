@@ -1,7 +1,7 @@
 from city_metrix import GeoExtent
 from city_metrix.cache_manager import is_cache_usable
 from city_metrix.constants import CTCM_PADDED_AOI_BUFFER, GeoType
-from city_metrix.layers import FabDEM, OpenUrban, OvertureBuildingsDSM, AlbedoCloudMasked, TreeCanopyHeightCTCM, AirTemperature
+from city_metrix.layers import FabDEM, OpenUrban, OvertureBuildingsDSM, AlbedoCloudMasked, TreeCanopyHeightCTCM, BuAirTemperature
 
 from city_metrix.metrix_tools import is_openurban_available_for_city
 from src.constants import S3_PUBLICATION_BUCKET, S3_PUBLICATION_ENV
@@ -36,8 +36,8 @@ def check_city_data_availability(city_geoextent: GeoExtent):
         invalid = _check_layer_availability(AlbedoCloudMasked(), city_geoextent)
         if invalid is not None: invalids.append(invalid)
 
-        # AirTemperature
-        invalid = _check_layer_availability(AirTemperature(), city_geoextent)
+        # BuAirTemperature
+        invalid = _check_layer_availability(BuAirTemperature(), city_geoextent)
         if invalid is not None: invalids.append(invalid)
 
     return invalids

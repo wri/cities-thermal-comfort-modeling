@@ -424,7 +424,7 @@ def _get_building_height_dsm(city_geoextent, city_aoi, tiled_city_data, tile_dat
 
 def _get_air_temperature(city_geoextent, city_aoi, tiled_city_data, tile_data_path, aoi_gdf, output_resolution, logger, start_date, end_date, single_date):
     try:
-        from city_metrix.layers import AirTemperature
+        from city_metrix.layers import BuAirTemperature
 
         seasonal_utc_offset = tiled_city_data.seasonal_utc_offset
         sampling_local_hours = tiled_city_data.sampling_local_hours
@@ -432,18 +432,18 @@ def _get_air_temperature(city_geoextent, city_aoi, tiled_city_data, tile_data_pa
         air_temperature = None
         for i in range(MAX_RETRY_COUNT):
             try:
-                air_temperature = (AirTemperature(start_date, end_date, single_date, seasonal_utc_offset, sampling_local_hours)
+                air_temperature = (BuAirTemperature(start_date, end_date, single_date, seasonal_utc_offset, sampling_local_hours)
                                    .retrieve_data(city_geoextent, s3_bucket=S3_PUBLICATION_BUCKET, s3_env=S3_PUBLICATION_ENV,
                                              aoi_buffer_m=CTCM_PADDED_AOI_BUFFER, city_aoi_subarea=city_aoi,
                                              spatial_resolution=output_resolution))
                 break
             except Exception as e_msg:
                 if i < MAX_RETRY_COUNT - 1:
-                    print(f"AirTemperature download failed. Retrying...")
+                    print(f"BuAirTemperature download failed. Retrying...")
                     wait_secs = int(random.uniform(MIN_TILE_PAUSE_MINS * 60, MAX_TILE_PAUSE_MINS * 60))
                     time.sleep(wait_secs)
                 else:
-                    raise Exception(f"Layer AirTemperature download failed due to error: {e_msg}")
+                    raise Exception(f"Layer BuAirTemperature download failed due to error: {e_msg}")
 
         if air_temperature is None:
             return False
@@ -459,8 +459,8 @@ def _get_air_temperature(city_geoextent, city_aoi, tiled_city_data, tile_data_pa
             return True
 
     except Exception as e_msg:
-        msg = f'AirTemperature processing cancelled due to failure {e_msg}.'
-        log_method_failure(datetime.now(), 'AirTemperature', tiled_city_data.source_base_path, msg, logger)
+        msg = f'BuAirTemperature processing cancelled due to failure {e_msg}.'
+        log_method_failure(datetime.now(), 'BuAirTemperature', tiled_city_data.source_base_path, msg, logger)
         return False
 
 def _resample_categorical_raster(xarray, resolution_m):

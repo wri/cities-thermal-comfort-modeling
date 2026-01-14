@@ -24,8 +24,9 @@ def test_ZAF_Capetown_cif_upenn():
         expected_signature = {'crs': 'EPSG:32734',
                               'transform': (1.0, 0.0, 260838.78469714464, 0.0, -1.0, 6243703.498204948, 0.0, 0.0, 1.0),
                               'width': 97, 'height': 115, 'count': 1, 'dtype': ('float32',),
-                              'band_checksums': ['9f1b35b2a91cb9641c7738063d859317'],
-                              'full_checksum': '9f1b35b2a91cb9641c7738063d859317'}
+                              'band_checksums': ['766c3963284520a27d42c7e63f6a01b6'],
+                              'full_checksum': '766c3963284520a27d42c7e63f6a01b6'}
+
         is_matched, actual_file_signature = does_file_signature_match(expected_signature, target_met_file)
         assert is_matched, f"Expected signature does not match actual: ({actual_file_signature})"
 

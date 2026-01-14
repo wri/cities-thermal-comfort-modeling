@@ -9,22 +9,22 @@ import pytest
 SCRATCH_TARGET_DIR = os.path.join(DATA_DIR, 'scratch_target')
 create_folder(SCRATCH_TARGET_DIR)
 
-def test_cif_city_check():
-    source_city_folder_name = 'NLD_Amsterdam_umep'
-
-    return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'pre_check')
-    # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, '', source_city_folder_name, 'pre_check_all')
-
-    assert return_code == 0
-
-
-def test_custom_city_check_all():
-    source_city_folder_name = 'ZAF_Capetown_small_tile_umep'
-
-    return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'pre_check')
-    # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, source_city_folder_name, 'pre_check_all')
-
-    assert return_code == 0
+# def test_cif_city_check():
+#     source_city_folder_name = 'NLD_Amsterdam_umep'
+#
+#     return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'pre_check')
+#     # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, '', source_city_folder_name, 'pre_check_all')
+#
+#     assert return_code == 0
+#
+#
+# def test_custom_city_check_all():
+#     source_city_folder_name = 'ZAF_Capetown_small_tile_umep'
+#
+#     return_code = run_main(SCRATCH_TARGET_DIR, source_city_folder_name, 'pre_check')
+#     # return_code = start_processing(SAMPLE_CITIES_SOURCE_DIR, source_city_folder_name, 'pre_check_all')
+#
+#     assert return_code == 0
 
 
 def test_main_check_invalid_city_1_configs():

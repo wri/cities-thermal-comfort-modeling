@@ -77,7 +77,7 @@ class CityData:
         (obj.processing_method, northern_leaf_start, northern_leaf_end, southern_leaf_start, southern_leaf_end,
          obj.wall_lower_limit_height, obj.light_transmissivity, obj.trunk_zone_height,
          obj.conifer_trees, obj.albedo_walls, obj.albedo_ground, obj.emis_walls, obj.emis_ground, obj.output_tmrt,
-         obj.output_sh, obj.sampling_local_hours, obj.use_airt_file) = (parse_method_attributes_config(yml_values))
+         obj.output_sh, obj.output_utci, obj.sampling_local_hours, obj.use_airt_file) = (parse_method_attributes_config(yml_values))
 
         (obj.wall_aspect_filename, obj.wall_height_filename, obj.skyview_factor_filename,
          obj.custom_intermediate_list, obj.ctcm_intermediate_list) = parse_intermediate_filenames_config(yml_values, obj.processing_method)

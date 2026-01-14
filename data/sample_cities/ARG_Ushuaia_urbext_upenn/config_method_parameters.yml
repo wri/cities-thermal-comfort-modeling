@@ -84,4 +84,5 @@
     emis_ground: 0.95
     output_tmrt: true
     output_sh: true
+    output_utci: true
     sampling_local_hours: 12,15,18

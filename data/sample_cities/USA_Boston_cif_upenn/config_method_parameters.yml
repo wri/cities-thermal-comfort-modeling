@@ -72,5 +72,5 @@
     output_tmrt: true
     output_sh: true
     output_utci: true
-    sampling_local_hours: "15"
+    sampling_local_hours: 14,15,16
     use_airt_raster: true

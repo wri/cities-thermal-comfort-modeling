@@ -20,20 +20,20 @@
   aoi_bounds:
     epsg_code: 32734
     # 1-tile aoi given 600 m tile
-    # west: 263972
-    # south: 6236149
-    # east: 264293
-    # north: 6236437
+    west: 263972
+    south: 6236149
+    east: 264293
+    north: 6236437
     # 6-tile aoi given 600 m tile
-    west: 264035
-    south: 6236158
-    east: 264821
-    north: 6237470
-##     16-tile aoi given 600 m tile
-#    west: 264035
-#    south: 6236158
-#    east: 265899
-#    north: 6238099
+    # west: 264035
+    # south: 6236158
+    # east: 264821
+    # north: 6237470
+    # 16-tile aoi given 600 m tile
+    # west: 264035
+    # south: 6236158
+    # east: 265899
+    # north: 6238099
   tile_side_meters: 600
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: true

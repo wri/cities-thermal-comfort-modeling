@@ -152,12 +152,12 @@ def cache_tile_files(tiled_city_data:CityData):
     # Cache primary raster
     local_folder = tiled_city_data.target_raster_files_path
     s3_folder_uri = f"{tile_folder_key}/{FOLDER_NAME_PRIMARY_RASTER_FILES}"
-    _process_tile_folder(local_folder, tile_id, bucket_name, s3_folder_uri, publishing_target, '.tif')
+    _upload_tiff_files_in_folder_to_s3(local_folder, bucket_name, s3_folder_uri, '.tif')
 
     # Cache intermediate files
     local_folder = tiled_city_data.target_intermediate_data_path
     s3_folder_uri = f"{tile_folder_key}/{FOLDER_NAME_INTERMEDIATE_DATA}"
-    _process_tile_folder(local_folder, tile_id, bucket_name, s3_folder_uri, publishing_target, '.tif')
+    _upload_tiff_files_in_folder_to_s3(local_folder, bucket_name, s3_folder_uri, '.tif')
 
     # Cache tcm results
     tcm_path = tiled_city_data.target_tcm_results_path
@@ -165,7 +165,14 @@ def cache_tile_files(tiled_city_data:CityData):
     for met_folder in met_folders:
         local_folder = os.path.join(tiled_city_data.target_tcm_results_path, met_folder)
         s3_folder_uri = f"{tile_folder_key}/{FOLDER_NAME_UMEP_TCM_RESULTS}/{met_folder}"
-        _process_tile_folder(local_folder, tile_id, bucket_name, s3_folder_uri, publishing_target, extension_filter='.tif')
+        _upload_tiff_files_in_folder_to_s3(local_folder, bucket_name, s3_folder_uri, '.tif')
+
+    # for s3 option, clean up files on local OS
+    if publishing_target == 's3':
+        remove_folder(tiled_city_data.target_tile_path)
+        notice_file = os.path.join(tiled_city_data.target_city_path, f"{tile_id}_contents_cached_to_s3.txt")
+        with open(notice_file, "w") as file:
+            pass
 
 
 def identify_tiles_with_partial_file_set(non_tiled_city_data: CityData):
@@ -247,7 +254,6 @@ def cache_metadata_files(city_data: CityData):
     s3_metadata_folder_uri = f"{scenario_folder_key}/metadata/"
 
     bucket_name = get_bucket_name_from_s3_uri(S3_PUBLICATION_BUCKET)
-    publishing_target = city_data.publishing_target
 
     # Create metadata folder by uploading an empty object
     s3_client.put_object(Bucket=bucket_name, Key=s3_metadata_folder_uri)
@@ -255,23 +261,23 @@ def cache_metadata_files(city_data: CityData):
     # Cache admin
     local_folder = city_data.target_log_path
     s3_folder_uri = f"{s3_metadata_folder_uri}/{FOLDER_NAME_ADMIN_DATA}".replace('//','/')
-    _process_tile_folder(local_folder, None, bucket_name, s3_folder_uri, publishing_target)
+    _upload_tiff_files_in_folder_to_s3(local_folder, bucket_name, s3_folder_uri)
 
     # Cache met files
     local_folder = city_data.target_met_files_path
     s3_folder_uri = f"{s3_metadata_folder_uri}/{FOLDER_NAME_PRIMARY_MET_FILES}".replace('//','/')
-    _process_tile_folder(local_folder, None, bucket_name, s3_folder_uri, publishing_target)
+    _upload_tiff_files_in_folder_to_s3(local_folder, bucket_name, s3_folder_uri)
 
     # Cache qgis data for tile grids
     local_folder = city_data.target_qgis_data_path
     s3_folder_uri = f"{s3_metadata_folder_uri}/{FOLDER_NAME_QGIS_DATA}".replace('//','/')
     file_list = [FILENAME_TILE_GRID, FILENAME_UNBUFFERED_TILE_GRID, FILENAME_URBAN_EXTENT_BOUNDARY]
-    _process_tile_folder(local_folder, None, bucket_name, s3_folder_uri, publishing_target, file_list=file_list)
+    _upload_tiff_files_in_folder_to_s3(local_folder, bucket_name, s3_folder_uri, file_list=file_list)
 
     # Cache yml file
-    local_folder = city_data.target_city_path
+    local_folder = city_data.target_metadata_path
     file_list = [FILENAME_METHOD_YML_CONFIG]
-    _process_tile_folder(local_folder, None, bucket_name, s3_metadata_folder_uri, publishing_target, file_list=file_list)
+    _upload_tiff_files_in_folder_to_s3(local_folder, bucket_name, s3_metadata_folder_uri, file_list=file_list)
 
 
 def get_scenario_folder_key(city_data: CityData):
@@ -317,19 +323,6 @@ def get_ctcm_data_folder_key(city_data: CityData, feature_name):
     return data_folder_key
 
 
-def _process_tile_folder(local_folder_root, tile_id, bucket_name, raster_folder_uri, publishing_target,
-                         extension_filter=None, file_list=None):
-    local_tile_folder = local_folder_root if tile_id is None else str(os.path.join(local_folder_root, tile_id))
-    _upload_tiff_files_in_folder_to_s3(local_tile_folder, bucket_name, raster_folder_uri, extension_filter, file_list)
-
-    # for s3 option, clean up files on local OS
-    if publishing_target == 's3' and tile_id is not None:
-        remove_folder(local_tile_folder)
-        notice_file = os.path.join(local_folder_root, f"{tile_id}_contents_cached_to_s3.txt")
-        with open(notice_file, "w") as file:
-            pass  # Creates an empty file
-
-
 def _upload_tiff_files_in_folder_to_s3(local_folder:str, bucket_name:str, s3_folder:str, extension_filter:str=None,
                                        file_list=None):
     for root, dirs, files in os.walk(local_folder):
@@ -344,6 +337,7 @@ def _upload_tiff_files_in_folder_to_s3(local_folder:str, bucket_name:str, s3_fol
             relative_path = os.path.relpath(local_path, local_folder)
             s3_path = os.path.join(s3_folder, relative_path).replace("\\", "/")  # Ensure S3 uses forward slashes
             s3_client.upload_file(local_path, bucket_name, s3_path)
+
 
 def check_s3_folder_exists(bucket_name, folder_name):
     response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=folder_name, MaxKeys=1)

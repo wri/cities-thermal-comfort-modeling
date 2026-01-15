@@ -22,6 +22,7 @@ FOLDER_NAME_PRIMARY_RASTER_FILES = 'raster_files'
 FOLDER_NAME_PRIMARY_MET_FILES = 'met_files'
 FOLDER_NAME_INTERMEDIATE_DATA = 'processed_data'
 FOLDER_NAME_UMEP_TCM_RESULTS = 'tcm_results'
+FOLDER_NAME_METADATA = 'metadata'
 
 FILENAME_METHOD_YML_CONFIG = 'config_method_parameters.yml'
 FILENAME_TILE_GRID = 'tile_grid.geojson'
@@ -81,4 +82,3 @@ VALID_PRIMARY_TYPES = [
         "cif_template_name": 'cif_air_temperature.tif'
     },
 ]
-

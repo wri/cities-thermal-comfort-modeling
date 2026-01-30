@@ -16,13 +16,13 @@
 # Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
   seasonal_utc_offset: -4 # DST offset
-  city: None
+  city: None  # {"city_id": "USA-Boston", "aoi_id": "urban_extent", "tile_method": None }
   aoi_bounds:
     epsg_code: 4326
-    west: -71.04542959209346
-    south: 42.370398091093435
-    east: -71.01942289450875
-    north: 42.38707323887031
+    west: -71.03
+    south: 42.37
+    east: -71.02
+    north: 42.38
   tile_side_meters: None
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: true
@@ -31,7 +31,7 @@
 # For era5 download, specify either "ERA5:<prior_5_years>" or two dates as "ERA5:<2023-01-01,2023-12-31>"
 - MetFiles:
   - files:
-      era5_file: {"filename": "ERA5:<2022-01-01,2022-12-31>", "date": None}
+      era5_file: {"filename": "ERA5:<2021-01-01,2021-12-31>", "date": None}
       air_temperature_tif_filename: None
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
 # All file mappings must be specified here. Specify None for filename where custom file is not available for processing.

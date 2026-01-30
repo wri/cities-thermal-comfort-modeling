@@ -33,7 +33,6 @@ def write_qgis_files(city_data):
     open_urban_file_name = city_data.open_urban_tif_filename
     tree_canopy_file_name = city_data.tree_canopy_tif_filename
     albedo_cloud_masked_file_name = city_data.albedo_cloud_masked_tif_filename
-    sampling_local_hours = city_data.sampling_local_hours
 
     # mapping for base layer filename
     target_raster_files = []
@@ -56,17 +55,6 @@ def write_qgis_files(city_data):
             air_temperature = _build_file_dict(target_bucket, 'base', 'air_temperature', 0, [air_temperature_file_name])
             target_raster_files += air_temperature
         _write_raster_vrt_file_for_folder(target_folder, target_raster_files, target_qgis_data_folder)
-
-    # mapping for base layer custom-display=names
-    if city_data.use_airt_file:
-        air_temperature_file_name = city_data.air_temperature_tif_filename
-        # Assign mapping for the first three hours
-        sampling_hours = sampling_local_hours.split(',')
-        for i in range(0,3):
-            hour_suffix = f'_{sampling_hours[i]}00D'
-            file_name = air_temperature_file_name.replace('.tif',hour_suffix)
-            air_temperature = _build_file_dict(target_bucket, 'base', 'air_temperature_hr', i, [file_name])
-            target_raster_files += air_temperature
 
     # Build VRTs for preprocessed results
     preprocessed_files = []

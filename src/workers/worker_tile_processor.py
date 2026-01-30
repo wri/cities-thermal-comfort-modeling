@@ -48,6 +48,11 @@ def process_tile(city_json_str, processing_method, source_base_path, target_base
             else:
                 met_filename = met_filename
 
+            # make sure there is an output file to write to
+            file_stem = Path(met_filename).stem
+            tile_output_path = os.path.join(target_tcm_results_path, file_stem, tile_folder_name)
+            create_folder(tile_output_path)
+
             if processing_method == 'umep_solweig':
                 stdout = run_umep_plugin(step_index, processing_method, folder_city, folder_tile, source_path, target_path,
                                          met_filename, offset_utc)

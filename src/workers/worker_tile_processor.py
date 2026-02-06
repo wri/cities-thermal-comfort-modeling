@@ -51,7 +51,7 @@ def process_tile(city_json_str, processing_method, source_base_path, target_base
 
             # make sure there is an output file to write to
             file_stem = Path(met_filename).stem
-            tile_output_path = os.path.join(target_tcm_results_path, file_stem, tile_folder_name)
+            tile_output_path = os.path.join(target_tcm_results_path, file_stem)
             os.makedirs(tile_output_path, exist_ok=True)
 
             if processing_method == 'umep_solweig':

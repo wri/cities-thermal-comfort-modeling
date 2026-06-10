@@ -1,4 +1,3 @@
-import json
 import os
 import shutil
 import subprocess
@@ -338,7 +337,8 @@ def _get_and_write_city_boundary(non_tiled_city_data, unbuffered_tile_grid):
 
     if aoi_id == 'urban_extent':
         utm_crs = unbuffered_tile_grid.crs
-        urban_extent_gdf = UrbanExtents(buffer=CTCM_PADDED_AOI_BUFFER).get_data(geo_extent).to_crs(utm_crs) 
+        urban_extent_gdf = get_city_boundaries(city_id, aoi_id).to_crs(utm_crs)
+        urban_extent_gdf.geometry = urban_extent_gdf.geometry.buffer(CTCM_PADDED_AOI_BUFFER)
             ###formerly unbuffered using # get_city_boundaries(city_id, aoi_id).to_crs(utm_crs)
 
         # Save the boundary to disk
@@ -346,6 +346,7 @@ def _get_and_write_city_boundary(non_tiled_city_data, unbuffered_tile_grid):
         write_layer(urban_extent_gdf, urban_extent_file_path, GEOJSON_FILE_EXTENSION)
 
         urban_extent_polygon = (urban_extent_gdf['geometry']).to_crs(utm_crs)
+        
 
         return urban_extent_polygon
     else:

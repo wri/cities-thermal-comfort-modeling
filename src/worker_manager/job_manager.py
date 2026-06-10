@@ -1,4 +1,3 @@
-import json
 import os
 import shutil
 import subprocess
@@ -13,7 +12,9 @@ import dask
 from dask.distributed import Client, LocalCluster
 from math import floor
 
-from city_metrix.constants import GEOJSON_FILE_EXTENSION
+from city_metrix.constants import GEOJSON_FILE_EXTENSION, CTCM_PADDED_AOI_BUFFER
+from city_metrix.layers import UrbanExtents
+from city_metrix.metrix_model import GeoExtent
 from city_metrix.metrix_dao import get_city_boundaries, write_layer, get_bucket_name_from_s3_uri, \
     read_geojson_from_cache
 from shapely import wkt
@@ -337,12 +338,15 @@ def _get_and_write_city_boundary(non_tiled_city_data, unbuffered_tile_grid):
     if aoi_id == 'urban_extent':
         utm_crs = unbuffered_tile_grid.crs
         urban_extent_gdf = get_city_boundaries(city_id, aoi_id).to_crs(utm_crs)
+        urban_extent_gdf.geometry = urban_extent_gdf.geometry.buffer(CTCM_PADDED_AOI_BUFFER)
+            ###formerly unbuffered using # get_city_boundaries(city_id, aoi_id).to_crs(utm_crs)
 
         # Save the boundary to disk
         urban_extent_file_path = os.path.join(non_tiled_city_data.target_qgis_data_path, FILENAME_URBAN_EXTENT_BOUNDARY)
         write_layer(urban_extent_gdf, urban_extent_file_path, GEOJSON_FILE_EXTENSION)
 
         urban_extent_polygon = (urban_extent_gdf['geometry']).to_crs(utm_crs)
+        
 
         return urban_extent_polygon
     else:

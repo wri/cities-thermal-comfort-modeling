@@ -107,6 +107,7 @@ def run_mrt_calculations(method_params, sampling_hours: str, tile_name):
     INPUT_ASPECT = method_params['INPUT_ASPECT']
     INPUT_CDSM = method_params['INPUT_CDSM']
     INPUT_ALBEDO = method_params['INPUT_ALBEDO']
+    INPUT_AT = method_params['INPUT_AT']
     TRANS_VEG = method_params['TRANS_VEG']
     LEAF_START = method_params['LEAF_START']
     LEAF_END = method_params['LEAF_END']
@@ -122,6 +123,7 @@ def run_mrt_calculations(method_params, sampling_hours: str, tile_name):
     ALBEDO_GROUND = method_params['ALBEDO_GROUND']
     EMIS_WALLS = method_params['EMIS_WALLS']
     EMIS_GROUND = method_params['EMIS_GROUND']
+    USE_AT = method_params['USE_AT']
     # ABS_S = method_params['ABS_S'] # CTCM/UPenn does not use this parameter
     # ABS_L = method_params['ABS_L'] # CTCM/UPenn does not use this parameter
     # POSTURE = method_params['POSTURE'] # CTCM/UPenn does not use this parameter
@@ -155,6 +157,7 @@ def run_mrt_calculations(method_params, sampling_hours: str, tile_name):
     aspectfile = INPUT_ASPECT
     chmfile = INPUT_CDSM
     albedo_file = INPUT_ALBEDO
+    airTfile = INPUT_AT
     trans = TRANS_VEG / 100 # convert to fraction instead of percent
     leafon1 = LEAF_START
     leafoff1 = LEAF_END
@@ -179,11 +182,12 @@ def run_mrt_calculations(method_params, sampling_hours: str, tile_name):
     Twater = 15.0 # water temperature, this doesn't impact the mean radiant temperature
     ani = 0
     diffsh = None
-    use_airt_file = False # TODO (WRI) CTCM is currently not using air temperature tiles
+    # use_airt_file = False # TODO (WRI) CTCM is currently not using air temperature tiles
+    use_airt_file = USE_AT
 
     # the air temperature tile
     if use_airt_file:
-        airTfile = None
+        airTfile = airTfile
     else:
         airTfile = ''
 
@@ -279,7 +283,8 @@ def run_mrt_calculations(method_params, sampling_hours: str, tile_name):
     # buildings[dsm >= 2.] = 0.
 
     ## loop all the weather csv data to get the information meteorological data
-    for hour in sampling_hours.split(","):
+    # for hour in sampling_hours.split(","):
+    for index, hour in enumerate(sampling_hours.split(",")):
         # NOTE: WRI does not filter by date in this code, so sampling date is not passed here.
         month = None
         day = None
@@ -337,7 +342,7 @@ def run_mrt_calculations(method_params, sampling_hours: str, tile_name):
                 if os.path.exists(airTfile):
                     airT_ds = gdal.Open(airTfile)
                     print("the air temperature file is:", airTfile)
-                    airT_value = airT_ds.ReadAsArray().astype(float)
+                    airT_value = airT_ds.GetRasterBand(index+1).ReadAsArray().astype(float)
                     print("The largest value is:", airT_value.max())
                 else:
                     airT_value = Ta[i]

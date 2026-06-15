@@ -68,4 +68,3 @@ def test_ZAF_Capetown_cif_upenn():
 #     finally:
 #         if CLEANUP_RESULTS:
 #             remove_folder(non_tiled_city_data.target_city_parent_path)
-

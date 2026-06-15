@@ -2,9 +2,9 @@
 # Options for publishing_target: [local, s3, both].
 - Scenario:
   scenario_id: first scenario
-  infra_id: test_capetown_subarea
+  infra_id: baseline
   description: Scenario that demonstrates blah.
-  author: author@wri.org
+  author: weiqi.zhou@wri.org
   publishing_target: local
 # Processing Area of Interest used for tile construction and ERA5-data download. If any custom files are specified in
 # CustomTiffFilenames section, then the system will not construct a new tile grid and will instead use the existing one.
@@ -15,26 +15,15 @@
 # Specify None for tile_side_meters to not subdivide the AOI. Recommended value for tile_buffer_meters is 600.
 # Specify True for remove_mrt_buffer_for_final_output to remove buffer around MRT result otherwise False. Default is True.
 - ProcessingAOI:
-  seasonal_utc_offset: 2 # year-round
-  city: None # {"city_id": "ZAF-Cape_Town", "aoi_id": "urban_extent", "tile_method": None }
+  seasonal_utc_offset: -4 # DST offset
+  city: None  # {"city_id": "USA-Boston", "aoi_id": "urban_extent", "tile_method": None }
   aoi_bounds:
-    epsg_code: 32734
-    # 1-tile aoi given 600 m tile
-    west: 263972
-    south: 6236149
-    east: 264293
-    north: 6236437
-    # 6-tile aoi given 600 m tile
-    # west: 264035
-    # south: 6236158
-    # east: 264821
-    # north: 6237470
-    # 16-tile aoi given 600 m tile
-    # west: 264035
-    # south: 6236158
-    # east: 265899
-    # north: 6238099
-  tile_side_meters: 600
+    epsg_code: 4326
+    west: -71.03
+    south: 42.37
+    east: -71.02
+    north: 42.38
+  tile_side_meters: None
   tile_buffer_meters: 100
   remove_mrt_buffer_for_final_output: true
 # Names of custom meteorological file(s) or ERA5 data range. Maximum of two filenames can be specified.
@@ -42,7 +31,7 @@
 # For era5 download, specify either "ERA5:<prior_5_years>" or two dates as "ERA5:<2023-01-01,2023-12-31>"
 - MetFiles:
   - files:
-      era5_file: {"filename": "met_era5_hottest_days.csv", "date": 2023-03-16}
+      era5_file: {"filename": "ERA5:<2021-01-01,2021-12-31>", "date": None}
       air_temperature_tif_filename: None
 # Custom source-files that were independently created and will replace standard files pulled from CIF system.
 # All file mappings must be specified here. Specify None for filename where custom file is not available for processing.
@@ -83,5 +72,5 @@
     output_tmrt: true
     output_sh: true
     output_utci: true
-    sampling_local_hours: 12,15,18
+    sampling_local_hours: 14,15,16
     use_airt_raster: true

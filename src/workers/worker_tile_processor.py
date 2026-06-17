@@ -2,6 +2,7 @@ import os.path
 import shutil
 import time
 import rioxarray
+import os
 
 from pathlib import Path
 
@@ -47,6 +48,11 @@ def process_tile(city_json_str, processing_method, source_base_path, target_base
                 met_filename = FILENAME_ERA5_UPENN if processing_method == 'upenn_model' else FILENAME_ERA5_UMEP
             else:
                 met_filename = met_filename
+
+            # make sure there is an output file to write to
+            file_stem = Path(met_filename).stem
+            tile_output_path = os.path.join(target_tcm_results_path, file_stem)
+            os.makedirs(tile_output_path, exist_ok=True)
 
             if processing_method == 'umep_solweig':
                 stdout = run_umep_plugin(step_index, processing_method, folder_city, folder_tile, source_path, target_path,

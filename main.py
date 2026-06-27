@@ -130,8 +130,10 @@ def _get_tile_raster_cell_count(non_tiled_city_data:CityData, existing_tiles_met
         cell_count = (tile_side_meters + (2*tile_buffer)) ** 2
     else:
         # Infer raster cell count from aoi
-        square_meters = get_aoi_area_in_square_meters(non_tiled_city_data.min_lon, non_tiled_city_data.min_lat,
-                                                      non_tiled_city_data.max_lon, non_tiled_city_data.max_lat)
+        aoi_crs = non_tiled_city_data.source_aoi_crs
+        geo_bbox = GeoExtent((non_tiled_city_data.min_lon, non_tiled_city_data.min_lat,
+                              non_tiled_city_data.max_lon, non_tiled_city_data.max_lat), aoi_crs).as_geographic_bbox()
+        square_meters = get_aoi_area_in_square_meters(geo_bbox.min_x, geo_bbox.min_y, geo_bbox.max_x, geo_bbox.max_y)
         # Assume 1-meter resolution of target cif files
         cell_count = math.ceil(square_meters)
     return cell_count

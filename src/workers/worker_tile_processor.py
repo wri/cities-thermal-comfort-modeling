@@ -181,6 +181,8 @@ def _trim_mrt_buffer(target_tcm_results_path, tile_folder_name, met_filenames, t
     for met_filename in met_filenames:
         file_stem = Path(met_filename).stem
         tile_path = str(os.path.join(target_tcm_results_path, file_stem))
+        if not os.path.exists(tile_path):
+            continue
         for file in os.listdir(tile_path):
             if file.endswith('.tif'):
                 file_path = os.path.join(tile_path, file)

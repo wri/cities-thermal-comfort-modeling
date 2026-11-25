@@ -29,7 +29,7 @@ def run_utci_calculations(mrt_rast, row):
     tk = at + 273.15
     es = 2.7150305 * np.log(tk)
     for i, gi in enumerate(g, start=1):
-        es = es + (gi * (tk ** (i - 2)))
+        es = es + (gi * (tk ** (i - 3)))
 
     # Convert from Pa to hPa
     es = np.exp(es) * 0.01
